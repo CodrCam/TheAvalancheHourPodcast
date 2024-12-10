@@ -1,7 +1,7 @@
-// pages/api/spotify.js
+import fetch from 'node-fetch';
 
-const client_id = process.env.SPOTIFY_CLIENT_ID; // Spotify Client ID to .env.local
-const client_secret = process.env.SPOTIFY_CLIENT_SECRET; // Spotify Client Secret to .env.local
+const client_id = process.env.SPOTIFY_CLIENT_ID; // Spotify Client ID
+const client_secret = process.env.SPOTIFY_CLIENT_SECRET; // Spotify Client Secret
 const podcast_show_id = '1BNdDDvI4drM0vRIn5kKlU'; // Spotify podcast show ID
 
 async function getAccessToken() {
@@ -15,6 +15,9 @@ async function getAccessToken() {
   });
 
   const data = await response.json();
+  if (!data.access_token) {
+    throw new Error('Failed to fetch Spotify access token.');
+  }
   return data.access_token;
 }
 
@@ -30,24 +33,28 @@ export default async function handler(req, res) {
       });
 
       if (!response.ok) {
-        throw new Error(`Error fetching episodes: ${response.statusText}`);
+        const errorDetails = await response.text();
+        throw new Error(`Error fetching episodes: ${response.statusText}. Details: ${errorDetails}`);
       }
 
-      const data = await response.json();
-      return data;
+      return response.json();
     };
 
     let episodes = [];
     let url = `https://api.spotify.com/v1/shows/${podcast_show_id}/episodes`;
+
     do {
       const data = await fetchEpisodes(url);
       episodes = episodes.concat(data.items);
-      url = data.next; // `next` contains the URL for the next page of results
+      url = data.next;
+
+      // Add delay to prevent rate-limiting
+      if (url) await new Promise((resolve) => setTimeout(resolve, 500));
     } while (url);
 
-    res.status(200).json(episodes); // Return all episodes
+    res.status(200).json(episodes);
   } catch (error) {
-    console.error('Error fetching Spotify data:', error);
-    res.status(500).json({ error: 'Failed to fetch episodes from Spotify' });
+    console.error('Error fetching Spotify data:', error.message);
+    res.status(500).json({ error: error.message || 'Failed to fetch episodes from Spotify.' });
   }
 }
