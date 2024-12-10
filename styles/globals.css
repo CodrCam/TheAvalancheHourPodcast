@@ -1,0 +1,9 @@
+/* styles/globals.css */
+
+/* Import the Amatic font */
+@import url('https://fonts.googleapis.com/css2?family=Amatic+SC:wght@700&display=swap');
+
+/* Apply Amatic font as default */
+body, h1, h2, h3, h4, h5, h6, p, div {
+  font-family: 'Amatic SC', sans-serif !important;
+}
