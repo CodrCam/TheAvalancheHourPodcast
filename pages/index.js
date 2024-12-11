@@ -44,7 +44,7 @@ export default function Home() {
 
       {/* First Parallax Section with Tagline */}
       <ParallaxSection
-        backgroundImage="/images/background1.jpg"
+        backgroundImage="/images/main-page3.jpg"
         height={`${topSectionHeight}px`}
         strength={500}
         bgImageStyle={{
@@ -54,29 +54,52 @@ export default function Home() {
       >
         <Box
           sx={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'white',
+            position: 'relative',
+            width: '100%',
             height: '100%',
-            textAlign: 'center',
-            px: 2,
           }}
         >
-          <Typography
-            variant="h4"
-            component="h1"
+          {/* Overlay */}
+          <Box
             sx={{
-              maxWidth: '800px',
-              fontSize: { xs: '1.5rem', md: '2.5rem' },
-              fontFamily: 'Amatic, sans-serif',
-              fontWeight: 'bold',
-              color: 'text.primary',
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              backgroundColor: 'rgba(0, 0, 0, 0.25)', // Black with 18% transparency
+              zIndex: 1,
+            }}
+          />
+          {/* Content */}
+          <Box
+            sx={{
+              position: 'relative',
+              zIndex: 2,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'white',
+              height: '100%',
+              textAlign: 'center',
+              px: 2,
             }}
           >
-            Creating a stronger community through sharing stories, knowledge, and news amongst
-            people who have a curious fascination with avalanches.
-          </Typography>
+            <Typography
+              variant="h4"
+              component="h1"
+              sx={{
+                maxWidth: '800px',
+                fontSize: { xs: '1.5rem', md: '2.5rem' },
+                fontFamily: 'sans-serif',
+                fontWeight: 'bold',
+                color: '#edf0f2',
+              }}
+            >
+              Creating a stronger community through sharing stories, knowledge, and news amongst
+              people who have a curious fascination with avalanches.
+            </Typography>
+          </Box>
         </Box>
       </ParallaxSection>
 
@@ -119,7 +142,7 @@ export default function Home() {
 
       {/* Second Parallax Section as Separator with the Same Background Image */}
       <ParallaxSection
-        backgroundImage="/images/background1.jpg"
+        backgroundImage="/images/main-page1.jpg"
         height={`${separatorSectionHeight}px`}
         strength={500}
         bgImageStyle={{

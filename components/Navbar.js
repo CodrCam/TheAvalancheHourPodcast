@@ -13,8 +13,15 @@ export default function Navbar() {
       <Toolbar>
         {/* Logo on the top-left */}
         <Logo src="/images/logo.png" alt="The Avalanche Hour Logo" />
-        <Typography variant="h6" sx={{ flexGrow: 1 }}>
-          The Avalanche Hour
+        <Typography
+          variant="h4"
+          sx={{
+            flexGrow: 1,
+            fontFamily: "'Amatic SC', sans-serif", // Add font style inline
+            fontWeight: 700,
+          }}
+        >
+          The Avalanche Hour Podcast
         </Typography>
         <Button color="inherit" href="/">
           Home
