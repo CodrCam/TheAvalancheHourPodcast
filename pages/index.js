@@ -4,10 +4,11 @@ import Navbar from '../components/Navbar';
 import ParallaxSection from '../components/ParallaxSection';
 import EpisodeCard from '../components/EpisodeCard';
 import SponsorGrid from '../components/SponsorGrid';
-import SurveyBanner from '../components/SurveyBanner'; // Import SurveyBanner
+import SurveyBanner from '../components/SurveyBanner';
+import SEO from '../components/SEO';
 
-const topSectionHeight = 350; // Height of the tagline section
-const separatorSectionHeight = 300; // Height of each parallax separator section
+const topSectionHeight = 350;
+const separatorSectionHeight = 300;
 
 export default function Home() {
   const [episodes, setEpisodes] = useState([]);
@@ -16,12 +17,10 @@ export default function Home() {
   useEffect(() => {
     async function fetchEpisodes() {
       try {
-        const response = await fetch('/api/spotify'); // Fetch data from your API
+        const response = await fetch('/api/spotify');
         if (!response.ok) throw new Error('Failed to fetch episodes');
 
         const data = await response.json();
-
-        // Sort episodes by release date (descending) and pick the latest three
         const latestEpisodes = data
           .sort((a, b) => new Date(b.release_date) - new Date(a.release_date))
           .slice(0, 3);
@@ -39,10 +38,18 @@ export default function Home() {
 
   return (
     <>
+      <SEO
+        title="The Avalanche Hour Podcast - Stories from the Snow Science Community"
+        description="Creating a stronger community through sharing stories, knowledge, and news amongst people who have a curious fascination with avalanches. Listen to expert interviews, safety tips, and backcountry stories."
+        keywords="avalanche podcast, snow science, backcountry safety, avalanche forecasting, winter sports, mountaineering, ski safety, avalanche education"
+        url="/"
+        type="website"
+      />
+      
       <Navbar />
-      <SurveyBanner /> {/* Add the survey banner */}
+      <SurveyBanner />
 
-      {/* First Parallax Section with Tagline */}
+      {/* Hero Section with improved accessibility */}
       <ParallaxSection
         backgroundImage="/images/main-page3.jpg"
         height={`${topSectionHeight}px`}
@@ -51,6 +58,7 @@ export default function Home() {
           objectFit: 'cover',
           objectPosition: 'top',
         }}
+        bgImageAlt="Mountain landscape with snow-covered peaks"
       >
         <Box
           sx={{
@@ -67,7 +75,7 @@ export default function Home() {
               left: 0,
               width: '100%',
               height: '100%',
-              backgroundColor: 'rgba(0, 0, 0, 0.25)', // Black with 18% transparency
+              backgroundColor: 'rgba(0, 0, 0, 0.25)',
               zIndex: 1,
             }}
           />
@@ -86,7 +94,6 @@ export default function Home() {
             }}
           >
             <Typography
-              variant="h4"
               component="h1"
               sx={{
                 maxWidth: '800px',
@@ -94,6 +101,7 @@ export default function Home() {
                 fontFamily: 'sans-serif',
                 fontWeight: 'bold',
                 color: '#edf0f2',
+                lineHeight: 1.2,
               }}
             >
               Creating a stronger community through sharing stories, knowledge, and news amongst
@@ -103,66 +111,83 @@ export default function Home() {
         </Box>
       </ParallaxSection>
 
-      {/* Latest Episodes Section with White Background */}
-      <Box sx={{ backgroundColor: 'white', py: 4 }}>
+      {/* Latest Episodes Section */}
+      <Box 
+        component="section" 
+        sx={{ backgroundColor: 'white', py: 4 }}
+        aria-labelledby="latest-episodes-heading"
+      >
         <Container maxWidth="lg">
           <Typography
-            variant="h4"
+            id="latest-episodes-heading"
+            variant="h2"
             component="h2"
             gutterBottom
             align="center"
             sx={{
-              fontFamily: 'Amatic, sans-serif',
+              fontFamily: 'Amatic SC, sans-serif',
               fontWeight: 'bold',
               color: 'text.primary',
+              fontSize: { xs: '2rem', md: '3rem' },
             }}
           >
             Latest Episodes
           </Typography>
           {loading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-              <CircularProgress />
+              <CircularProgress aria-label="Loading latest episodes" />
             </Box>
-          ) : (
+          ) : episodes.length > 0 ? (
             <Grid container spacing={4}>
-          {episodes.map((episode) => (
-            <Grid item xs={12} sm={6} md={4} key={episode.id}>
-              <EpisodeCard
-                episode={{
-                  ...episode,
-                  images: episode.images || [{ url: '/images/default.jpg' }], // Fallback image
-                }}
-              />
+              {episodes.map((episode) => (
+                <Grid item xs={12} sm={6} md={4} key={episode.id}>
+                  <EpisodeCard
+                    episode={{
+                      ...episode,
+                      images: episode.images || [{ url: '/images/default.jpg' }],
+                    }}
+                  />
+                </Grid>
+              ))}
             </Grid>
-          ))}
-        </Grid>
+          ) : (
+            <Typography variant="body1" align="center" color="text.secondary">
+              No episodes available at the moment. Please check back later.
+            </Typography>
           )}
         </Container>
       </Box>
 
-      {/* Second Parallax Section as Separator with the Same Background Image */}
+      {/* Separator */}
       <ParallaxSection
         backgroundImage="/images/main-page1.jpg"
         height={`${separatorSectionHeight}px`}
         strength={500}
         bgImageStyle={{
           objectFit: 'cover',
-          objectPosition: `center`,
+          objectPosition: 'center',
         }}
+        bgImageAlt="Snowy mountain terrain"
       />
 
-      {/* Sponsors Section with White Background */}
-      <Box sx={{ backgroundColor: 'white', py: 4 }}>
+      {/* Sponsors Section */}
+      <Box 
+        component="section" 
+        sx={{ backgroundColor: 'white', py: 4 }}
+        aria-labelledby="sponsors-heading"
+      >
         <Container maxWidth="lg">
           <Typography
-            variant="h4"
+            id="sponsors-heading"
+            variant="h2"
             component="h2"
             gutterBottom
             align="center"
             sx={{
-              fontFamily: 'Amatic, sans-serif',
+              fontFamily: 'Amatic SC, sans-serif',
               fontWeight: 'bold',
               color: 'text.primary',
+              fontSize: { xs: '2rem', md: '3rem' },
             }}
           >
             Our Sponsors
@@ -170,6 +195,29 @@ export default function Home() {
           <SponsorGrid />
         </Container>
       </Box>
+
+      {/* Structured Data for Podcast */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "PodcastSeries",
+            "name": "The Avalanche Hour Podcast",
+            "description": "Creating a stronger community through sharing stories, knowledge, and news amongst people who have a curious fascination with avalanches.",
+            "url": "https://www.theavalanchehour.com",
+            "image": "https://www.theavalanchehour.com/images/podcast-logo.jpg",
+            "author": {
+              "@type": "Organization",
+              "name": "The Avalanche Hour Team"
+            },
+            "publisher": {
+              "@type": "Organization",
+              "name": "The Avalanche Hour Podcast"
+            }
+          })
+        }}
+      />
     </>
   );
 }
