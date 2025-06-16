@@ -150,7 +150,7 @@ export default function Contact() {
             align="center"
             sx={{ mb: 4, maxWidth: '600px', mx: 'auto' }}
           >
-            Have a question, story idea, or feedback? We'd love to hear from you!
+            Have a question, story idea, or feedback? We'd love to hear from you.
           </Typography>
 
           {/* Success Message */}

@@ -352,7 +352,7 @@ export default function BeAGuest() {
                 </Button>
                 
                 <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-                  We'll get back to you within 1-2 weeks.
+                  We'll get back to you within 1-2 weeks
                 </Typography>
                 
                 <Typography variant="body2" color="text.secondary" sx={{ mt: 1, fontStyle: 'italic' }}>
