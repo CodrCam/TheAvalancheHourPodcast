@@ -1,10 +1,10 @@
+// pages/index.js
 import React, { useEffect, useState } from 'react';
 import { Container, Typography, Grid, Box, CircularProgress } from '@mui/material';
 import Navbar from '../components/Navbar';
 import ParallaxSection from '../components/ParallaxSection';
 import EpisodeCard from '../components/EpisodeCard';
 import SponsorGrid from '../components/SponsorGrid';
-import SurveyBanner from '../components/SurveyBanner';
 import SEO from '../components/SEO';
 
 const topSectionHeight = 350;
@@ -47,7 +47,7 @@ export default function Home() {
       />
       
       <Navbar />
-      <SurveyBanner />
+      {/* Survey Banner removed from here */}
 
       {/* Hero Section with improved accessibility */}
       <ParallaxSection

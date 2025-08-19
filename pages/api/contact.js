@@ -13,7 +13,16 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { name, email, message, subject } = req.body;
+    const { 
+      name, 
+      email, 
+      message, 
+      subject,
+      isSponsorship,
+      companyName,
+      sponsorshipBudget,
+      sponsorshipGoals
+    } = req.body;
 
     // Basic validation
     if (!name || !email || !message) {
@@ -32,7 +41,7 @@ export default async function handler(req, res) {
     }
 
     // Create transporter
-    const transporter = nodemailer.createTransport({
+    const transporter = nodemailer.createTransporter({
       service: 'gmail',
       auth: {
         user: EMAIL_USER,
@@ -40,28 +49,71 @@ export default async function handler(req, res) {
       },
     });
 
-    // Email content
+    // Determine email subject and content based on inquiry type
+    const emailSubject = isSponsorship 
+      ? `🎯 SPONSORSHIP INQUIRY: ${companyName || name}`
+      : (subject || `Contact Form: Message from ${name}`);
+
+    // Email content for the podcast team
     const mailOptions = {
       from: EMAIL_USER,
       to: TO_EMAIL,
-      subject: subject || `Contact Form: Message from ${name}`,
+      subject: emailSubject,
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #1976d2; border-bottom: 2px solid #1976d2; padding-bottom: 10px;">
-            New Contact Form Submission
-          </h2>
+        <div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto;">
+          ${isSponsorship ? `
+            <div style="background-color: #4caf50; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
+              <h1 style="margin: 0; font-size: 24px;">
+                💼 Sponsorship Inquiry
+              </h1>
+            </div>
+          ` : `
+            <h2 style="color: #1976d2; border-bottom: 2px solid #1976d2; padding-bottom: 10px;">
+              New Contact Form Submission
+            </h2>
+          `}
           
           <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
             <h3 style="margin-top: 0; color: #333;">Contact Details:</h3>
             <p><strong>Name:</strong> ${name}</p>
             <p><strong>Email:</strong> <a href="mailto:${email}">${email}</a></p>
+            ${isSponsorship && companyName ? `<p><strong>Company:</strong> ${companyName}</p>` : ''}
             <p><strong>Submitted:</strong> ${new Date().toLocaleString()}</p>
+            <p><strong>Inquiry Type:</strong> ${isSponsorship ? '🎯 Sponsorship' : '📧 General'}</p>
           </div>
+          
+          ${isSponsorship ? `
+            <div style="background-color: #e8f5e9; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <h3 style="margin-top: 0; color: #2e7d32;">Sponsorship Information:</h3>
+              ${sponsorshipBudget ? `<p><strong>Budget Range:</strong> ${sponsorshipBudget}</p>` : ''}
+              ${sponsorshipGoals ? `
+                <p><strong>Marketing Goals & Target Audience:</strong></p>
+                <p style="line-height: 1.6; white-space: pre-wrap; background-color: white; padding: 15px; border-radius: 5px;">
+                  ${sponsorshipGoals}
+                </p>
+              ` : ''}
+            </div>
+          ` : ''}
           
           <div style="background-color: #fff; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
             <h3 style="margin-top: 0; color: #333;">Message:</h3>
             <p style="line-height: 1.6; white-space: pre-wrap;">${message}</p>
           </div>
+          
+          ${isSponsorship ? `
+            <div style="margin-top: 20px; padding: 20px; background-color: #fff3e0; border-radius: 8px; border-left: 4px solid #ff9800;">
+              <h4 style="margin-top: 0; color: #e65100;">📋 Next Steps for Sponsorship:</h4>
+              <ol style="margin: 10px 0; padding-left: 20px;">
+                <li>Send media kit with audience demographics</li>
+                <li>Provide download statistics and analytics</li>
+                <li>Share sponsorship package options</li>
+                <li>Schedule a call to discuss custom solutions</li>
+              </ol>
+              <p style="margin-bottom: 0; font-weight: bold; color: #e65100;">
+                ⚡ Priority: Respond within 2-3 business days with media kit
+              </p>
+            </div>
+          ` : ''}
           
           <div style="margin-top: 20px; padding: 15px; background-color: #e3f2fd; border-radius: 8px;">
             <p style="margin: 0; color: #1976d2; font-size: 14px;">
@@ -72,36 +124,67 @@ export default async function handler(req, res) {
           <hr style="margin: 30px 0; border: none; border-top: 1px solid #ddd;">
           <p style="color: #666; font-size: 12px; text-align: center;">
             This message was sent from the Avalanche Hour Podcast website contact form.
+            ${isSponsorship ? 'This is a sponsorship inquiry - please prioritize response.' : ''}
           </p>
         </div>
       `,
-      replyTo: email, // Allow direct reply to the sender
+      replyTo: email,
     };
 
-    // Send email
-    console.log('📧 Sending contact form email...');
+    // Send email to podcast team
+    console.log(`📧 Sending ${isSponsorship ? 'sponsorship' : 'contact'} form email...`);
     await transporter.sendMail(mailOptions);
-    console.log('✅ Contact form email sent successfully');
+    console.log(`✅ ${isSponsorship ? 'Sponsorship' : 'Contact'} form email sent successfully`);
 
     // Send confirmation email to user
     const confirmationOptions = {
       from: EMAIL_USER,
       to: email,
-      subject: 'Thank you for contacting The Avalanche Hour Podcast',
+      subject: isSponsorship 
+        ? 'Sponsorship Inquiry Received - The Avalanche Hour Podcast'
+        : 'Thank you for contacting The Avalanche Hour Podcast',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #1976d2;">Thank you for your message!</h2>
+          <h2 style="color: #1976d2;">
+            ${isSponsorship ? '🎯 Sponsorship Inquiry Received!' : 'Thank you for your message!'}
+          </h2>
           
           <p>Hi ${name},</p>
           
-          <p>Thank you for reaching out to The Avalanche Hour Podcast. We've received your message and will get back to you as soon as possible.</p>
+          ${isSponsorship ? `
+            <p>Thank you for your interest in sponsoring The Avalanche Hour Podcast! We're excited to explore partnership opportunities with ${companyName || 'your organization'}.</p>
+            
+            <div style="background-color: #e8f5e9; padding: 15px; border-radius: 8px; margin: 20px 0;">
+              <h3 style="margin-top: 0;">What happens next:</h3>
+              <ol>
+                <li><strong>Media Kit:</strong> We'll send you our comprehensive media kit within 2-3 business days</li>
+                <li><strong>Analytics:</strong> You'll receive detailed audience demographics and download statistics</li>
+                <li><strong>Package Options:</strong> We'll share our sponsorship packages and pricing</li>
+                <li><strong>Custom Solutions:</strong> We can discuss tailored advertising options for your needs</li>
+              </ol>
+            </div>
+            
+            <p>Our media kit includes:</p>
+            <ul>
+              <li>Audience demographics and psychographics</li>
+              <li>Monthly download statistics</li>
+              <li>Listener geographic distribution</li>
+              <li>Engagement metrics</li>
+              <li>Sponsorship package details</li>
+              <li>Success stories from previous sponsors</li>
+            </ul>
+          ` : `
+            <p>Thank you for reaching out to The Avalanche Hour Podcast. We've received your message and will get back to you as soon as possible.</p>
+            
+            <div style="background-color: #f5f5f5; padding: 15px; border-radius: 8px; margin: 20px 0;">
+              <h3 style="margin-top: 0;">Your message:</h3>
+              <p style="font-style: italic;">"${message.length > 100 ? message.substring(0, 100) + '...' : message}"</p>
+            </div>
+            
+            <p>We typically respond within 24-48 hours.</p>
+          `}
           
-          <div style="background-color: #f5f5f5; padding: 15px; border-radius: 8px; margin: 20px 0;">
-            <h3 style="margin-top: 0;">Your message:</h3>
-            <p style="font-style: italic;">"${message.length > 100 ? message.substring(0, 100) + '...' : message}"</p>
-          </div>
-          
-          <p>We typically respond within 24-48 hours. In the meantime, feel free to:</p>
+          <p>In the meantime, feel free to:</p>
           <ul>
             <li><a href="https://www.theavalanchehour.com/episodes/current">Listen to our latest episodes</a></li>
             <li><a href="https://www.theavalanchehour.com/resources">Check out our resources</a></li>
@@ -113,7 +196,11 @@ export default async function handler(req, res) {
           
           <hr style="margin: 30px 0; border: none; border-top: 1px solid #ddd;">
           <p style="color: #666; font-size: 12px;">
-            This is an automated confirmation email. Please do not reply to this message.
+            This is an automated confirmation email. 
+            ${isSponsorship 
+              ? 'Our sponsorship team will contact you directly within 2-3 business days.' 
+              : 'Please do not reply to this message.'
+            }
           </p>
         </div>
       `
@@ -129,7 +216,9 @@ export default async function handler(req, res) {
 
     res.status(200).json({ 
       success: true, 
-      message: 'Message sent successfully! We\'ll get back to you soon.' 
+      message: isSponsorship 
+        ? 'Sponsorship inquiry received! We\'ll send you our media kit within 2-3 business days.' 
+        : 'Message sent successfully! We\'ll get back to you soon.' 
     });
 
   } catch (error) {

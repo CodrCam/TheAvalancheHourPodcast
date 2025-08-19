@@ -19,7 +19,6 @@ import {
 } from '@mui/material';
 import { Search, Clear, CalendarToday } from '@mui/icons-material';
 import Navbar from '../../components/Navbar';
-import SurveyBanner from '../../components/SurveyBanner';
 import SEO from '../../components/SEO';
 
 // Import your performance hooks
@@ -196,7 +195,6 @@ export default function CurrentSeason() {
     return (
       <>
         <Navbar />
-        <SurveyBanner />
         <Container maxWidth="lg">
           <Box sx={{ display: 'flex', justifyContent: 'center', mt: 8 }}>
             <CircularProgress size={60} />
@@ -213,7 +211,6 @@ export default function CurrentSeason() {
     return (
       <>
         <Navbar />
-        <SurveyBanner />
         <Container maxWidth="lg">
           <Alert severity="error" sx={{ mt: 4 }}>
             <Typography variant="h6">Error loading episodes</Typography>
@@ -234,7 +231,6 @@ export default function CurrentSeason() {
       />
       
       <Navbar />
-      <SurveyBanner />
       
       <Container maxWidth="lg">
         <Box sx={{ mt: 4, mb: 4 }}>

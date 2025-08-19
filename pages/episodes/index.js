@@ -1,3 +1,4 @@
+// pages/episodes/index.js
 import React, { useState, useEffect } from 'react';
 import {
   Container,
@@ -17,7 +18,8 @@ import {
   CalendarToday, 
   History, 
   TrendingUp, 
-  LibraryBooks 
+  LibraryBooks,
+  Schedule as ScheduleIcon
 } from '@mui/icons-material';
 import { useRouter } from 'next/router';
 import Navbar from '../../components/Navbar';
@@ -33,7 +35,7 @@ export default function Episodes() {
   useEffect(() => {
     async function fetchEpisodeStats() {
       try {
-        console.log('🔄 Fetching episode statistics...');
+        console.log('📄 Fetching episode statistics...');
         setLoading(true);
         setError(null);
 
@@ -168,13 +170,12 @@ export default function Episodes() {
     <>
       <SEO
         title="Episodes - The Avalanche Hour Podcast"
-        description={`Browse all ${episodeStats?.total || 0} episodes of The Avalanche Hour Podcast. Listen to current season episodes and explore our complete archive.`}
+        description={`Browse all ${episodeStats?.total || 0} episodes of The Avalanche Hour Podcast. New episodes released 3 times per month from October through June.`}
         keywords="avalanche podcast episodes, snow science interviews, backcountry safety, avalanche education episodes"
         url="/episodes"
       />
       
       <Navbar />
-      <SurveyBanner />
       
       <Container maxWidth="lg">
         <Box sx={{ mt: 4, mb: 4 }}>
@@ -202,6 +203,31 @@ export default function Episodes() {
             Explore our collection of episodes featuring stories, knowledge, 
             and insights from the avalanche and snow science community.
           </Typography>
+
+          {/* Release Schedule Banner */}
+          <Paper 
+            elevation={3} 
+            sx={{ 
+              p: 3, 
+              mb: 4, 
+              background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)',
+              color: 'white',
+              textAlign: 'center'
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
+              <ScheduleIcon sx={{ fontSize: 40, mr: 2 }} />
+              <Typography variant="h5" component="h2" sx={{ fontWeight: 'bold' }}>
+                Release Schedule
+              </Typography>
+            </Box>
+            <Typography variant="h6" sx={{ mb: 1 }}>
+              3 New Episodes Per Month
+            </Typography>
+            <Typography variant="body1">
+              October through June
+            </Typography>
+          </Paper>
 
           {/* Episode Stats Overview */}
           {episodeStats && (
@@ -288,8 +314,7 @@ export default function Episodes() {
                   )}
                   
                   <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-                    Listen to the latest episodes from the current season. 
-                    New episodes are released regularly throughout the season.
+                    Listen to the latest episodes from the current season.
                   </Typography>
                   
                   <Button
@@ -374,12 +399,15 @@ export default function Episodes() {
           {/* Season Information */}
           <Paper elevation={1} sx={{ p: 3, backgroundColor: 'grey.50' }}>
             <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
-              About Our Seasons
+              About Our Release Schedule
+            </Typography>
+            <Typography variant="body1" color="text.secondary" paragraph>
+              The Avalanche Hour Podcast releases <strong>3 new episodes per month from October through June</strong>, 
+              perfectly timed with the North American avalanche season. This schedule ensures our content 
+              is most relevant when our community needs it most.
             </Typography>
             <Typography variant="body1" color="text.secondary">
-              Our podcast seasons follow the natural avalanche season cycle, running from August through July. 
-              This aligns with when avalanche professionals and enthusiasts are most active in the backcountry, 
-              ensuring our content is timely and relevant to the community's needs.
+              
             </Typography>
           </Paper>
         </Box>
