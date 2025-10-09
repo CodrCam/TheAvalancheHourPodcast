@@ -1,3 +1,4 @@
+// components/SponsorGrid.js
 import React from 'react';
 import {
   Box,
@@ -12,24 +13,24 @@ import {
 import { sponsors } from '../src/data/sponsors';
 
 function Tier({ title, items, variant }) {
-  // Noticeable but balanced size steps
+  // Balanced visual steps + centered layout
   const cfg = {
     legacy: {
-      mediaH: { xs: 100, sm: 120, md: 140 }, // larger but not overwhelming
+      mediaH: { xs: 100, sm: 120, md: 140 },
       nameFs: { xs: '0.95rem', md: '1.05rem' },
       maxW: { xs: 340, sm: 380, md: 420 },
       borderW: 5,
       elevation: 2,
     },
     partner: {
-      mediaH: { xs: 80, sm: 95, md: 110 },  // smaller
+      mediaH: { xs: 80, sm: 95, md: 110 },
       nameFs: { xs: '0.9rem', md: '0.98rem' },
       maxW: { xs: 300, sm: 340, md: 360 },
       borderW: 4,
       elevation: 1,
     },
     friends: {
-      mediaH: { xs: 64, sm: 72, md: 88 },   // smallest
+      mediaH: { xs: 64, sm: 72, md: 88 },
       nameFs: { xs: '0.85rem', md: '0.9rem' },
       maxW: { xs: 260, sm: 280, md: 300 },
       borderW: 3,
@@ -45,7 +46,7 @@ function Tier({ title, items, variant }) {
         sx={{
           fontWeight: 700,
           mb: 2,
-          textAlign: 'center', // center section headings
+          textAlign: 'center',
           fontSize: { xs: '1.2rem', md: '1.4rem' },
         }}
       >
@@ -55,17 +56,10 @@ function Tier({ title, items, variant }) {
       <Grid
         container
         spacing={{ xs: 2, sm: 3 }}
-        justifyContent="center" // center the grid rows
+        justifyContent="center" // center the row of cards
       >
         {items.map((s) => {
           const hasLogo = Boolean(s.logo && s.logo.trim());
-          const hostname = (() => {
-            try {
-              return new URL(s.url).hostname.replace(/^www\./, '');
-            } catch {
-              return s.url;
-            }
-          })();
 
           return (
             <Grid
@@ -91,14 +85,14 @@ function Tier({ title, items, variant }) {
                   href={s.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  aria-label={`${s.name} (${hostname})`}
+                  aria-label={s.name} // no hostname usage
                   sx={{
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'stretch',
                   }}
                 >
-                  {hasLogo && (
+                  {hasLogo ? (
                     <CardMedia
                       component="img"
                       image={s.logo}
@@ -112,22 +106,17 @@ function Tier({ title, items, variant }) {
                         p: { xs: 1, sm: 1.5 },
                       }}
                     />
+                  ) : (
+                    // Graceful fallback when no logo: show the sponsor name only
+                    <CardContent sx={{ textAlign: 'center', py: 2 }}>
+                      <Typography
+                        variant="subtitle1"
+                        sx={{ fontWeight: 600, fontSize: cfg.nameFs, lineHeight: 1.3 }}
+                      >
+                        {s.name}
+                      </Typography>
+                    </CardContent>
                   )}
-                  <CardContent sx={{ textAlign: 'center', pt: hasLogo ? 1 : 2 }}>
-                    <Typography
-                      variant="subtitle1"
-                      sx={{
-                        fontWeight: 600,
-                        fontSize: cfg.nameFs,
-                        lineHeight: 1.3,
-                      }}
-                    >
-                      {s.name}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {hostname}
-                    </Typography>
-                  </CardContent>
                 </CardActionArea>
               </Card>
             </Grid>
