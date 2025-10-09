@@ -4,7 +4,7 @@ import nodemailer from 'nodemailer';
 // Email configuration from environment variables
 const EMAIL_USER = process.env.EMAIL_USER; // Your Gmail address
 const EMAIL_PASS = process.env.EMAIL_PASS; // Your Gmail app password
-const TO_EMAIL = process.env.CONTACT_EMAIL || 'ct.griffin7@gmail.com'; // Test email, change to theavalanchehourpodcast@gmail.com for production
+const TO_EMAIL = process.env.CONTACT_EMAIL || 'theavalanchehourpodcast@gmail.com'; 
 
 export default async function handler(req, res) {
   // Only allow POST requests
@@ -41,7 +41,7 @@ export default async function handler(req, res) {
     }
 
     // Create transporter
-    const transporter = nodemailer.createTransporter({
+    const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
         user: EMAIL_USER,
