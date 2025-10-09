@@ -44,6 +44,7 @@ export default function Contact() {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
   const [errors, setErrors] = useState({});
+  const [wasSponsorship, setWasSponsorship] = useState(false);
 
   const handleChange = (event) => {
     const { name, value, type, checked } = event.target;
@@ -91,57 +92,55 @@ export default function Contact() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-    
-    if (!validateForm()) {
-      return;
-    }
-    
-    setLoading(true);
-    setError('');
-    setSuccess(false);
-    
-    try {
-      const response = await fetch('/api/contact', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
-      
-      const data = await response.json();
-      
-      if (response.ok) {
-        setSuccess(true);
-        setFormData({
-          name: '',
-          email: '',
-          subject: '',
-          message: '',
-          isSponsorship: false,
-          companyName: '',
-          sponsorshipBudget: '',
-          sponsorshipGoals: ''
-        });
-        
-        // Scroll to success message
-        setTimeout(() => {
-          document.getElementById('success-message')?.scrollIntoView({ 
-            behavior: 'smooth' 
+    const handleSubmit = async (event) => {
+        event.preventDefault();
+
+        if (!validateForm()) return;
+
+        setLoading(true);
+        setError('');
+        setSuccess(false);
+
+        try {
+          const response = await fetch('/api/contact', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData),
           });
-        }, 100);
-      } else {
-        setError(data.message || data.error || 'Failed to send message');
-      }
-    } catch (error) {
-      console.error('Contact form error:', error);
-      setError('Network error. Please check your connection and try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
+
+          const data = await response.json();
+
+          if (response.ok) {
+            setWasSponsorship(formData.isSponsorship);
+            setSuccess(true);
+
+            // reset form
+            setFormData({
+              name: '',
+              email: '',
+              subject: '',
+              message: '',
+              isSponsorship: false,
+              companyName: '',
+              sponsorshipBudget: '',
+              sponsorshipGoals: ''
+            });
+
+            // Scroll to success message (async to allow render)
+            setTimeout(() => {
+              document.getElementById('success-message')
+                ?.scrollIntoView({ behavior: 'smooth' });
+            }, 100);
+          } else {
+            setError(data.message || data.error || 'Failed to send message');
+          }
+        } catch (err) {
+          console.error('Contact form error:', err);
+          setError('Network error. Please check your connection and try again.');
+        } finally {
+          setLoading(false);
+        }
+    };
 
   return (
     <>
@@ -192,7 +191,7 @@ export default function Contact() {
                   Message sent successfully! 🎉
                 </Typography>
                 <Typography>
-                  {formData.isSponsorship 
+                  {wasSponsorship 
                     ? "Thank you for your sponsorship inquiry. We'll send you our media kit and get back to you within 2-3 business days."
                     : "Thank you for reaching out. We'll get back to you within 24-48 hours."
                   }
@@ -453,6 +452,20 @@ export default function Contact() {
                   }}
                 >
                   Take the Survey
+                </Button>
+              </Paper>
+
+                            {/* VoicemailBag Hotline */}
+              <Paper elevation={1} sx={{ p: 3, mb: 3 }}>
+                <Typography variant="h6" component="h3" gutterBottom sx={{ fontWeight: 600 }}>
+                  VoicemailBag Hotline
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                  Leave your stories, comments, news, and questions. Selected messages may air on
+                  <em> Slabs and Sluffs with Dom and Sara</em>.
+                </Typography>
+                <Button component="a" href="tel:15414060221" variant="contained">
+                  Call 541-406-0221
                 </Button>
               </Paper>
 
