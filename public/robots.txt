@@ -1,0 +1,21 @@
+# robots.txt for The Avalanche Hour
+User-agent: *
+Allow: /
+
+# Disallow any internal or development routes
+Disallow: /api/
+Disallow: /admin/
+Disallow: /store/admin/
+Disallow: /_next/
+Disallow: /private/
+Disallow: /tmp/
+Disallow: /drafts/
+
+# Point crawlers to sitemap
+Sitemap: https://theavalanchehourpodcast.com/api/sitemap.xml
+
+# Optional: specify clean crawl-delay for heavy crawlers
+Crawl-delay: 5
+
+# Contact (for webmasters or search engines)
+Host: theavalanchehourpodcast.com

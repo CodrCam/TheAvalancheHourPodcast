@@ -1,47 +1,35 @@
-// pages/api/robots.txt.js
-export default function handler(req, res) {
-  const baseUrl = 'https://www.theavalanchehour.com';
-  
-  const robotsTxt = `User-agent: *
-Allow: /
+// /pages/api/robots.txt.js
 
-# Sitemap
-Sitemap: ${baseUrl}/api/sitemap.xml
-
-# Disallow admin pages if any
-Disallow: /admin/
-Disallow: /_next/
-Disallow: /api/
-
-# Allow specific API endpoints that should be crawled
-Allow: /api/sitemap.xml
-Allow: /api/robots.txt
-
-# Crawl delay for polite crawling
-Crawl-delay: 1
-
-# Block common bot traps
-Disallow: /trap/
-Disallow: /honeypot/`;
-
-  res.setHeader('Content-Type', 'text/plain');
-  res.setHeader('Cache-Control', 'public, s-maxage=86400, stale-while-revalidate');
-  res.status(200).send(robotsTxt);
+function resolveSiteUrl(req) {
+  const base = process.env.NEXT_PUBLIC_BASE_URL;
+  if (base) return base.startsWith('http') ? base : `https://${base}`;
+  const host = req.headers['x-forwarded-host'] || req.headers.host || 'localhost:3000';
+  const proto = req.headers['x-forwarded-proto'] || (String(host).includes('localhost') ? 'http' : 'https');
+  return String(host).startsWith('http') ? String(host) : `${proto}://${host}`;
 }
 
-// Also create static robots.txt in public folder with this content:
-/*
+export default function handler(req, res) {
+  const siteUrl = resolveSiteUrl(req);
+  const host = siteUrl.replace(/^https?:\/\//, '');
+
+  const content = `
 User-agent: *
 Allow: /
 
-Sitemap: https://www.theavalanchehour.com/api/sitemap.xml
-
-Disallow: /admin/
-Disallow: /_next/
+# Disallow internal/admin/dev paths
 Disallow: /api/
+Disallow: /admin/
+Disallow: /store/admin/
+Disallow: /_next/
+Disallow: /private/
+Disallow: /tmp/
+Disallow: /drafts/
 
-Allow: /api/sitemap.xml
-Allow: /api/robots.txt
+Sitemap: ${siteUrl}/api/sitemap.xml
+Crawl-delay: 5
+Host: ${host}
+`.trim();
 
-Crawl-delay: 1
-*/
+  res.setHeader('Content-Type', 'text/plain; charset=UTF-8');
+  res.status(200).send(content);
+}
