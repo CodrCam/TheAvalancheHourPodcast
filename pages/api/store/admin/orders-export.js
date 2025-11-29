@@ -46,7 +46,6 @@ export default async function handler(req, res) {
     `);
 
     // Pirate Ship–friendly headers
-    // (you’ll map these once on upload in Pirate Ship)
     const headers = [
       'Name',          // Shipping recipient
       'Company',
@@ -78,17 +77,26 @@ export default async function handler(req, res) {
 
     const lines = [headers.join(',')];
 
+    // Helper to format each line item with variant options, e.g.
+    // "1× Season 10 Zip-Up Hoodie (Dark Grey Heather / L)"
+    function formatItemText(it) {
+      if (!it || typeof it !== 'object') return '1× Item';
+      const qty = it.qty || it.quantity || 1;
+      const name = it.name || it.sku || it.id || 'Item';
+      const opt = it.options || {};
+      const parts = [];
+      if (opt.style) parts.push(opt.style);
+      if (opt.size) parts.push(opt.size);
+      if (opt.color) parts.push(opt.color);
+      const variant =
+        parts.length > 0 ? ` (${parts.join(' / ')})` : '';
+      return `${qty}× ${name}${variant}`;
+    }
+
     for (const r of rows) {
-      // Items as "2× ReCaps Corduroy — Blue/Grey; 1× Voile Strap 20\" — Black"
+      // Items as "2× ReCaps Corduroy — Blue/Grey (L); 1× Voile Strap 20\" — Black"
       const itemsText = Array.isArray(r.items)
-        ? r.items
-            .map((it) => {
-              const qty = it.qty || it.quantity || 1;
-              const name =
-                it.name || it.sku || it.id || 'Item';
-              return `${qty}× ${name}`;
-            })
-            .join('; ')
+        ? r.items.map((it) => formatItemText(it)).join('; ')
         : '';
 
       // For now we leave weight & dims blank and let Pirate Ship's

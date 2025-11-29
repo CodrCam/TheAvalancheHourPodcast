@@ -13,7 +13,31 @@ function formatMoney(cents) {
   return `$${(cents / 100).toFixed(2)}`;
 }
 
-function OrdersSearch({ searchTerm, onSearchChange, statusFilter, onStatusFilterChange }) {
+// Build a human-readable item label including variant options
+function formatItemLabel(it) {
+  if (!it || typeof it !== 'object') return 'Item';
+
+  const qty = it.qty || it.quantity || 1;
+  const name = it.name || it.sku || it.id || 'Item';
+
+  const opt = it.options || {};
+  const parts = [];
+  if (opt.style) parts.push(opt.style);
+  if (opt.size) parts.push(opt.size);
+  if (opt.color) parts.push(opt.color);
+
+  const variant =
+    parts.length > 0 ? ` (${parts.join(' / ')})` : '';
+
+  return `${qty}× ${name}${variant}`;
+}
+
+function OrdersSearch({
+  searchTerm,
+  onSearchChange,
+  statusFilter,
+  onStatusFilterChange,
+}) {
   return (
     <div
       style={{
@@ -173,7 +197,9 @@ export default function AdminOrdersPage() {
           <p style={{ fontSize: 13, color: '#555', marginBottom: 8 }}>
             Showing {filteredOrders.length} of {orders.length} orders
           </p>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+          <table
+            style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}
+          >
             <thead>
               <tr>
                 <th style={th}>Created</th>
@@ -234,13 +260,7 @@ export default function AdminOrdersPage() {
                   <td style={td}>{o.customer_email || '—'}</td>
                   <td style={td}>
                     {Array.isArray(o.items)
-                      ? o.items
-                          .map((it) => {
-                            const qty = it.qty || it.quantity || 1;
-                            const name = it.name || it.sku || it.id || 'Item';
-                            return `${qty}× ${name}`;
-                          })
-                          .join(', ')
+                      ? o.items.map((it) => formatItemLabel(it)).join(', ')
                       : '—'}
                   </td>
                 </tr>
