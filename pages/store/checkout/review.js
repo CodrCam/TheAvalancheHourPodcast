@@ -173,27 +173,28 @@ export default function ReviewPage() {
     writeCart(next);
   }
 
-  async function handleContinueToPayment() {
-    if (!clientSecret || !intentId || !breakdown) return;
+async function handleContinueToPayment() {
+  if (!clientSecret || !intentId || !breakdown) return;
 
-    try {
-      if (typeof window !== 'undefined') {
-        sessionStorage.setItem(
-          'ah_checkout_payment_intent',
-          JSON.stringify({
-            clientSecret,
-            intentId,
-            breakdown,
-            discountCode: breakdown.discountCode || null,
-          })
-        );
-      }
-    } catch {
-      // ignore
+  try {
+    if (typeof window !== 'undefined') {
+      // IMPORTANT: key must match CHECKOUT_PAYMENT_KEY in src/config/store.js
+      sessionStorage.setItem(
+        'ah_checkout_payment',
+        JSON.stringify({
+          clientSecret,
+          intentId,
+          breakdown,
+          discountCode: breakdown.discountCode || null,
+        })
+      );
     }
-
-    router.push('/store/checkout/payment');
+  } catch {
+    // ignore
   }
+
+  router.push('/store/checkout/payment');
+}
 
   const subtotalCents = breakdown?.subtotalCents ?? 0;
   const discountCents = breakdown?.discountAmountCents ?? 0;
