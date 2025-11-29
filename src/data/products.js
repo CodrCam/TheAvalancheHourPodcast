@@ -252,7 +252,7 @@ export const products = [
     price: 5500, // $55.00
     active: true,
     description:
-      'Ahh yes – you remember these Free Range tote bags from the Bend ISSW. You see them everywhere now. We partnered with our friends at Free Range Equipment to bring you a limited edition tote featuring our Season 10 artwork by Brooke Maushund. Carry ski gear, haul a pot of soup to the potluck, or use the zippered pocket for your valuables, all while showing your support for The Avalanche Hour Podcast.',
+      'Ahh yes — you remember these Free Range tote bags from the Bend ISSW. You see them everywhere now. We partnered with our friends at Free Range Equipment to bring you a limited edition tote featuring our Season 10 artwork by Brooke Maushund. Carry ski gear, haul a pot of soup to the potluck, or use the zippered pocket for your valuables, all while showing your support for The Avalanche Hour Podcast.\n\nNote: This tote is a preorder item and will ship on or after January 20th, 2026.',
 
     image: '/images/store/tote/free-range-canvas.jpg',
     images: ['/images/store/tote/free-range-canvas.jpg'],

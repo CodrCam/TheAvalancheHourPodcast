@@ -290,9 +290,13 @@ export default function ProductSlugPage() {
             </Typography>
             <Typography variant="h6" sx={{ mb: 2 }}>
               {money(unitPrice)}   {/* <<-- SHOW VARIANT PRICE */}
-            </Typography>
-            <Typography sx={{ color: 'text.secondary', mb: 3 }}>
+            <Typography
+              variant="body1"
+              paragraph
+              sx={{ whiteSpace: 'pre-line' }}
+            >
               {product.description}
+            </Typography>
             </Typography>
 
             {/* Style */}
