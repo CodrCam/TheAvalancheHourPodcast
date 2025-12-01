@@ -15,17 +15,18 @@ import {
   InputAdornment,
   IconButton,
   Fade,
-  Button
+  Button,
 } from '@mui/material';
 import { Search, Clear, CalendarToday } from '@mui/icons-material';
 import Navbar from '../../components/Navbar';
 import SEO from '../../components/SEO';
+import { sponsors } from '../../src/data/sponsors';
 
 // Import your performance hooks
-import { 
-  usePerformanceMonitor, 
-  useRenderPerformance, 
-  useApiPerformance 
+import {
+  usePerformanceMonitor,
+  useRenderPerformance,
+  useApiPerformance,
 } from '../../hooks/usePerformanceMonitor';
 
 export default function CurrentSeason() {
@@ -37,7 +38,9 @@ export default function CurrentSeason() {
   const [currentSeasonInfo, setCurrentSeasonInfo] = useState(null);
 
   // Performance monitoring hooks
-  const { startTimer, endTimer, getTimings } = usePerformanceMonitor('Current Season Page Load');
+  const { startTimer, endTimer, getTimings } = usePerformanceMonitor(
+    'Current Season Page Load'
+  );
   const { measureApiCall } = useApiPerformance();
   useRenderPerformance('CurrentSeason Component');
 
@@ -45,7 +48,7 @@ export default function CurrentSeason() {
     async function fetchEpisodes() {
       // Start performance timer
       startTimer();
-      
+
       try {
         console.log('🔄 Fetching episodes for current season...');
         setLoading(true);
@@ -73,13 +76,13 @@ export default function CurrentSeason() {
 
         // Measure data processing time
         const processingStart = performance.now();
-        
+
         const currentSeasonEpisodes = getCurrentSeasonEpisodes(data);
         const seasonInfo = getCurrentSeasonInfo();
-        
+
         const processingTime = performance.now() - processingStart;
         console.log(`⚙️ Data processing: ${processingTime.toFixed(2)}ms`);
-        
+
         setEpisodes(currentSeasonEpisodes);
         setFilteredEpisodes(currentSeasonEpisodes);
         setCurrentSeasonInfo(seasonInfo);
@@ -87,14 +90,16 @@ export default function CurrentSeason() {
 
         // End performance timer
         const totalTime = endTimer();
-        
+
         // Log performance summary
         console.log('📊 Performance Summary:', {
           totalLoadTime: totalTime,
           episodeCount: currentSeasonEpisodes.length,
-          averageTimePerEpisode: totalTime / currentSeasonEpisodes.length
+          averageTimePerEpisode:
+            currentSeasonEpisodes.length > 0
+              ? totalTime / currentSeasonEpisodes.length
+              : 0,
         });
-
       } catch (error) {
         console.error('💥 Error fetching episodes:', error);
         setError(error.message);
@@ -117,7 +122,8 @@ export default function CurrentSeason() {
         episodes.filter(
           (episode) =>
             episode.name.toLowerCase().includes(query) ||
-            (episode.description && episode.description.toLowerCase().includes(query))
+            (episode.description &&
+              episode.description.toLowerCase().includes(query))
         )
       );
     } else {
@@ -149,17 +155,26 @@ export default function CurrentSeason() {
       endYear: seasonEndYear,
       startDate: new Date(seasonStartYear, 7, 1), // August 1st
       endDate: new Date(seasonEndYear, 6, 31), // July 31st
-      label: `${seasonStartYear}-${seasonEndYear}`
+      label: `${seasonStartYear}-${seasonEndYear}`,
     };
   };
 
   const getCurrentSeasonEpisodes = (allEpisodes) => {
     const seasonInfo = getCurrentSeasonInfo();
-    
-    return allEpisodes.filter(episode => {
-      const releaseDate = new Date(episode.release_date);
-      return releaseDate >= seasonInfo.startDate && releaseDate <= seasonInfo.endDate;
-    }).sort((a, b) => new Date(b.release_date) - new Date(a.release_date));
+
+    return allEpisodes
+      .filter((episode) => {
+        const releaseDate = new Date(episode.release_date);
+        return (
+          releaseDate >= seasonInfo.startDate &&
+          releaseDate <= seasonInfo.endDate
+        );
+      })
+      .sort(
+        (a, b) =>
+          new Date(b.release_date).getTime() -
+          new Date(a.release_date).getTime()
+      );
   };
 
   const truncateDescription = (text, maxLength = 150) => {
@@ -178,11 +193,11 @@ export default function CurrentSeason() {
   // Add this button in development mode for debugging
   const PerformanceDebugButton = () => {
     if (process.env.NODE_ENV !== 'development') return null;
-    
+
     return (
-      <Button 
+      <Button
         onClick={showPerformanceData}
-        variant="outlined" 
+        variant="outlined"
         size="small"
         sx={{ position: 'fixed', bottom: 20, right: 20, zIndex: 1000 }}
       >
@@ -229,20 +244,20 @@ export default function CurrentSeason() {
         keywords="current avalanche podcast episodes, latest episodes, current season, snow science"
         url="/episodes/current"
       />
-      
+
       <Navbar />
-      
+
       <Container maxWidth="lg">
         <Box sx={{ mt: 4, mb: 4 }}>
-          <Typography 
-            variant="h1" 
-            component="h1" 
+          <Typography
+            variant="h1"
+            component="h1"
             gutterBottom
-            sx={{ 
+            sx={{
               fontSize: { xs: '2.5rem', md: '3.5rem' },
               fontFamily: 'Amatic SC, cursive',
               textAlign: 'center',
-              mb: 2
+              mb: 2,
             }}
           >
             Current Season
@@ -250,7 +265,7 @@ export default function CurrentSeason() {
 
           {currentSeasonInfo && (
             <Box sx={{ textAlign: 'center', mb: 4 }}>
-              <Chip 
+              <Chip
                 icon={<CalendarToday />}
                 label={`Season ${currentSeasonInfo.label}`}
                 color="primary"
@@ -259,11 +274,101 @@ export default function CurrentSeason() {
                 sx={{ mb: 2, fontSize: '1.1rem', py: 3 }}
               />
               <Typography variant="h6" color="text.secondary">
-                August {currentSeasonInfo.startYear} - July {currentSeasonInfo.endYear}
+                August {currentSeasonInfo.startYear} - July{' '}
+                {currentSeasonInfo.endYear}
               </Typography>
-              <Typography variant="body1" color="text.secondary" sx={{ mt: 1 }}>
-                {episodes.length} episode{episodes.length !== 1 ? 's' : ''} available
+              <Typography
+                variant="body1"
+                color="text.secondary"
+                sx={{ mt: 1 }}
+              >
+                {episodes.length} episode
+                {episodes.length !== 1 ? 's' : ''} available
               </Typography>
+
+              {/* Friend-level sponsors for this season */}
+              {sponsors?.friends && sponsors.friends.length > 0 && (
+                <Box sx={{ mt: 3 }}>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ mb: 1 }}
+                  >
+                    This season is supported by:
+                  </Typography>
+
+                  <Grid
+                    container
+                    spacing={2}
+                    justifyContent="center"
+                  >
+                    {sponsors.friends.map((s) => (
+                      <Grid
+                        item
+                        key={s.id}
+                        xs={6}
+                        sm={4}
+                        md={3}
+                        lg={2}
+                      >
+                        <Box
+                          component="a"
+                          href={s.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          sx={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            px: 1.5,
+                            py: 1,
+                            borderRadius: 999,
+                            bgcolor: 'grey.50',
+                            border: '1px solid',
+                            borderColor: 'grey.200',
+                            textDecoration: 'none',
+                            height: '100%',
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              mb: 0.5,
+                              width: '100%',
+                            }}
+                          >
+                            <img
+                              src={s.logo}
+                              alt={s.name}
+                              style={{
+                                maxHeight: 28,
+                                width: 'auto',
+                                maxWidth: '100%',
+                                display: 'block',
+                              }}
+                            />
+                          </Box>
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            align="center"
+                            sx={{
+                              fontWeight: 500,
+                              lineHeight: 1.3,
+                              px: 0.5,
+                            }}
+                          >
+                            {s.name}
+                          </Typography>
+                        </Box>
+                      </Grid>
+                    ))}
+                  </Grid>
+                </Box>
+              )}
             </Box>
           )}
 
@@ -284,7 +389,11 @@ export default function CurrentSeason() {
                 ),
                 endAdornment: searchQuery && (
                   <InputAdornment position="end">
-                    <IconButton onClick={clearSearch} size="small" aria-label="Clear search">
+                    <IconButton
+                      onClick={clearSearch}
+                      size="small"
+                      aria-label="Clear search"
+                    >
                       <Clear />
                     </IconButton>
                   </InputAdornment>
@@ -296,10 +405,9 @@ export default function CurrentSeason() {
           {/* Results Summary */}
           <Box sx={{ mb: 3, textAlign: 'center' }}>
             <Typography variant="body2" color="text.secondary">
-              {searchQuery 
+              {searchQuery
                 ? `Showing ${filteredEpisodes.length} of ${episodes.length} episodes matching "${searchQuery}"`
-                : `Showing all ${filteredEpisodes.length} episodes from current season`
-              }
+                : `Showing all ${filteredEpisodes.length} episodes from current season`}
             </Typography>
           </Box>
 
@@ -310,10 +418,9 @@ export default function CurrentSeason() {
                 {searchQuery ? 'No episodes found' : 'No episodes available'}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                {searchQuery 
+                {searchQuery
                   ? 'Try adjusting your search criteria.'
-                  : 'Episodes will appear here as they are released.'
-                }
+                  : 'Episodes will appear here as they are released.'}
               </Typography>
             </Box>
           ) : (
@@ -321,16 +428,17 @@ export default function CurrentSeason() {
               <Grid container spacing={4}>
                 {filteredEpisodes.map((episode) => (
                   <Grid item key={episode.id} xs={12} sm={6} md={4}>
-                    <Card 
-                      sx={{ 
-                        display: 'flex', 
-                        flexDirection: 'column', 
+                    <Card
+                      sx={{
+                        display: 'flex',
+                        flexDirection: 'column',
                         height: '100%',
-                        transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
+                        transition:
+                          'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
                         '&:hover': {
                           transform: 'translateY(-4px)',
                           boxShadow: 4,
-                        }
+                        },
                       }}
                     >
                       <Box
@@ -354,9 +462,9 @@ export default function CurrentSeason() {
                         />
                       </Box>
                       <CardContent sx={{ flexGrow: 1, p: 3 }}>
-                        <Typography 
-                          gutterBottom 
-                          variant="h6" 
+                        <Typography
+                          gutterBottom
+                          variant="h6"
                           component="h3"
                           sx={{
                             display: '-webkit-box',
@@ -365,21 +473,24 @@ export default function CurrentSeason() {
                             overflow: 'hidden',
                             lineHeight: 1.3,
                             minHeight: '3.6em',
-                            fontWeight: 600
+                            fontWeight: 600,
                           }}
                         >
                           <a
                             href={episode.external_urls?.spotify}
                             target="_blank"
                             rel="noopener noreferrer"
-                            style={{ textDecoration: 'none', color: 'inherit' }}
+                            style={{
+                              textDecoration: 'none',
+                              color: 'inherit',
+                            }}
                           >
                             {episode.name}
                           </a>
                         </Typography>
-                        
-                        <Typography 
-                          variant="body2" 
+
+                        <Typography
+                          variant="body2"
                           color="text.secondary"
                           sx={{
                             mb: 2,
@@ -388,26 +499,37 @@ export default function CurrentSeason() {
                             WebkitBoxOrient: 'vertical',
                             overflow: 'hidden',
                             lineHeight: 1.4,
-                            minHeight: '4.2em'
+                            minHeight: '4.2em',
                           }}
                         >
                           {truncateDescription(episode.description)}
                         </Typography>
-                        
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <Chip 
-                            label={new Date(episode.release_date).toLocaleDateString('en-US', {
+
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                          }}
+                        >
+                          <Chip
+                            label={new Date(
+                              episode.release_date
+                            ).toLocaleDateString('en-US', {
                               month: 'short',
                               day: 'numeric',
-                              year: 'numeric'
+                              year: 'numeric',
                             })}
                             size="small"
                             variant="outlined"
                             color="primary"
                           />
-                          
+
                           {episode.duration_ms && (
-                            <Typography variant="caption" color="text.secondary">
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                            >
                               {Math.floor(episode.duration_ms / 60000)} min
                             </Typography>
                           )}
@@ -420,7 +542,7 @@ export default function CurrentSeason() {
             </Fade>
           )}
         </Box>
-        
+
         {/* Debug button for development */}
         <PerformanceDebugButton />
       </Container>

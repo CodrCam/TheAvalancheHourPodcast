@@ -13,27 +13,28 @@ import {
 import { sponsors } from '../src/data/sponsors';
 
 function Tier({ title, items, variant }) {
-  // Balanced visual steps + centered layout
+  // Legacy stays as-is; Partner is smaller; Friends kept for reuse if needed.
   const cfg = {
     legacy: {
-      mediaH: { xs: 100, sm: 120, md: 140 },
+      mediaH: { xs: 80, sm: 96, md: 110 },
       nameFs: { xs: '0.95rem', md: '1.05rem' },
-      maxW: { xs: 340, sm: 380, md: 420 },
-      borderW: 5,
+      maxW: { xs: 300, sm: 320, md: 340 },
+      borderW: 3,
       elevation: 2,
     },
     partner: {
-      mediaH: { xs: 80, sm: 95, md: 110 },
-      nameFs: { xs: '0.9rem', md: '0.98rem' },
-      maxW: { xs: 300, sm: 340, md: 360 },
-      borderW: 4,
+      // Make partners visibly smaller than legacy
+      mediaH: { xs: 62, sm: 72, md: 82 },
+      nameFs: { xs: '0.88rem', md: '0.95rem' },
+      maxW: { xs: 250, sm: 270, md: 290 },
+      borderW: 2,
       elevation: 1,
     },
     friends: {
-      mediaH: { xs: 64, sm: 72, md: 88 },
+      mediaH: { xs: 60, sm: 70, md: 80 },
       nameFs: { xs: '0.85rem', md: '0.9rem' },
       maxW: { xs: 260, sm: 280, md: 300 },
-      borderW: 3,
+      borderW: 1,
       elevation: 0,
     },
   }[variant];
@@ -56,15 +57,17 @@ function Tier({ title, items, variant }) {
       <Grid
         container
         spacing={{ xs: 2, sm: 3 }}
-        justifyContent="center" // center the row of cards
+        justifyContent="center"
       >
         {items.map((s) => {
           const hasLogo = Boolean(s.logo && s.logo.trim());
+          const isAvss =
+            s.id === 'avss' || s.name.toLowerCase().includes('avss');
 
           return (
             <Grid
               item
-              key={s.name}
+              key={s.id || s.name}
               xs={12}
               sm="auto"
               md="auto"
@@ -74,10 +77,16 @@ function Tier({ title, items, variant }) {
                 elevation={cfg.elevation}
                 sx={{
                   width: '100%',
-                  maxWidth: cfg.maxW,
-                  borderLeft: (theme) => `${cfg.borderW}px solid ${theme.palette.primary.main}`,
+                  maxWidth: cfg.maxW, // default per tier
+                  borderLeft: (theme) =>
+                    `${cfg.borderW}px solid ${theme.palette.primary.main}`,
                   transition: 'transform 120ms ease, box-shadow 120ms ease',
                   '&:hover': { transform: 'translateY(-2px)', boxShadow: 4 },
+
+                  // AVSS: make the entire card narrower than the others
+                  ...(isAvss && {
+                    maxWidth: { xs: 200, sm: 240, md: 260 },
+                  }),
                 }}
               >
                 <CardActionArea
@@ -85,7 +94,7 @@ function Tier({ title, items, variant }) {
                   href={s.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  aria-label={s.name} // no hostname usage
+                  aria-label={s.name}
                   sx={{
                     display: 'flex',
                     flexDirection: 'column',
@@ -103,15 +112,18 @@ function Tier({ title, items, variant }) {
                         objectFit: 'contain',
                         backgroundColor: '#fff',
                         mixBlendMode: 'multiply',
-                        p: { xs: 1, sm: 1.5 },
+                        p: { xs: 0.75, sm: 1 },
                       }}
                     />
                   ) : (
-                    // Graceful fallback when no logo: show the sponsor name only
                     <CardContent sx={{ textAlign: 'center', py: 2 }}>
                       <Typography
                         variant="subtitle1"
-                        sx={{ fontWeight: 600, fontSize: cfg.nameFs, lineHeight: 1.3 }}
+                        sx={{
+                          fontWeight: 600,
+                          fontSize: cfg.nameFs,
+                          lineHeight: 1.3,
+                        }}
                       >
                         {s.name}
                       </Typography>
@@ -130,11 +142,10 @@ function Tier({ title, items, variant }) {
 export default function SponsorGrid() {
   return (
     <Box sx={{ px: { xs: 1, sm: 2 } }}>
+      {/* Homepage: Legacy + Partner only */}
       <Tier title="Legacy" items={sponsors.legacy} variant="legacy" />
       <Divider sx={{ my: 2 }} />
       <Tier title="Partner" items={sponsors.partner} variant="partner" />
-      <Divider sx={{ my: 2 }} />
-      <Tier title="Friends" items={sponsors.friends} variant="friends" />
     </Box>
   );
 }
