@@ -3,7 +3,7 @@
 // Conventions:
 // - slug: lower-kebab-case for URLs
 // - role: 'host' | 'producer'
-// - images: paths under /public/images
+// - images: paths under /public/images/hosts
 // - bioShort: 1–2 lines
 // - bioFull: full HTML/text (safe to include <a>, <br/>, etc.)
 // - needsBio / needsImages: flags for incomplete entries
@@ -17,7 +17,11 @@ export const people = [
     slug: 'caleb-merrill',
     role: 'host',
     name: 'Caleb Merrill',
-    images: ['/images/caleb1.jpg', '/images/caleb2.jpg', '/images/caleb3.jpg'],
+    images: [
+      '/images/hosts/caleb1.jpg',
+      '/images/hosts/caleb2.jpg',
+      '/images/hosts/caleb3.jpg',
+    ],
     bioShort:
       'Founder/host of The Avalanche Hour; AMGA-certified ski guide and avalanche forecaster/educator.',
     bioFull:
@@ -28,7 +32,11 @@ export const people = [
     slug: 'dom-baker',
     role: 'host',
     name: 'Dom Baker',
-    images: ['/images/dom1.jpg', '/images/dom2.jpg', '/images/dom3.jpg'],
+    images: [
+      '/images/hosts/dom1.jpg',
+      '/images/hosts/dom2.jpg',
+      '/images/hosts/dom3.jpg',
+    ],
     bioShort:
       'Whitewater Resort forecaster; BC Ministry of Transportation Kootenay Pass Program; CAA instructor.',
     bioFull:
@@ -39,7 +47,11 @@ export const people = [
     slug: 'sean-zimmerman-wall',
     role: 'host',
     name: 'Sean Zimmerman-Wall',
-    images: ['/images/sean1.jpg', '/images/sean2.jpg', '/images/sean3.jpg'],
+    images: [
+      '/images/hosts/sean1.jpg',
+      '/images/hosts/sean2.jpg',
+      '/images/hosts/sean3.jpg',
+    ],
     bioShort:
       'Utah-based avalanche pro and educator; founding member of Snowbird Patrol’s Peer Support Team.',
     bioFull:
@@ -50,7 +62,11 @@ export const people = [
     slug: 'brooke-edwards',
     role: 'host',
     name: 'Brooke Edwards',
-    images: ['/images/brookeE1.jpg', '/images/brookeE2.jpg', '/images/brookeE3.jpg'],
+    images: [
+      '/images/hosts/brookeE1.jpg',
+      '/images/hosts/brookeE2.jpg',
+      '/images/hosts/brookeE3.jpg',
+    ],
     bioShort:
       'Career guide/educator (30 yrs) in AK & WA; PSIA III; shifting into resiliency coaching.',
     bioFull:
@@ -62,7 +78,11 @@ export const people = [
     slug: 'matthias-walcher',
     role: 'host',
     name: 'Matthias Walcher',
-    images: ['/images/matthias1.jpg', '/images/matthias2.jpg', '/images/matthias3.jpg'],
+    images: [
+      '/images/hosts/matthias1.jpg',
+      '/images/hosts/matthias2.jpg',
+      '/images/hosts/matthias3.jpg',
+    ],
     bioShort:
       'Avalanche forecaster (Tyrol) and President of ÖGSL; background across Europe and the Americas.',
     bioFull:
@@ -73,7 +93,11 @@ export const people = [
     slug: 'sara-boilen',
     role: 'host',
     name: 'Sara Boilen',
-    images: ['/images/sara1.jpeg', '/images/sara2.jpg', '/images/sara3.jpeg'],
+    images: [
+      '/images/hosts/sara1.jpeg',
+      '/images/hosts/sara2.jpg',
+      '/images/hosts/sara3.jpeg',
+    ],
     bioShort:
       'Clinical psychologist focusing on human factors in avalanche terrain; prolific workshop presenter.',
     bioFull:
@@ -84,7 +108,11 @@ export const people = [
     slug: 'brooke-maushund',
     role: 'host',
     name: 'Brooke Maushund',
-    images: ['/images/brookeM1.jpg', '/images/brookeM2.jpg', '/images/brookeM3.jpg'],
+    images: [
+      '/images/hosts/brookeM1.jpg',
+      '/images/hosts/brookeM2.jpg',
+      '/images/hosts/brookeM3.jpg',
+    ],
     bioShort:
       'ESAC forecaster; prior roles with NWAC, Sawtooths, SAR, NPS; risk management across seasons.',
     bioFull:
@@ -95,7 +123,11 @@ export const people = [
     slug: 'jason-antin',
     role: 'host',
     name: 'Jason Antin',
-    images: ['/images/jason1.jpg', '/images/jason2.jpg', '/images/jason3.jpg'],
+    images: [
+      '/images/hosts/jason1.jpg',
+      '/images/hosts/jason2.jpg',
+      '/images/hosts/jason3.jpg',
+    ],
     bioShort:
       'IFMGA guide, AAI/AIARE educator; endurance athlete; “Beat Monday” co-creator.',
     bioFull:
@@ -106,7 +138,11 @@ export const people = [
     slug: 'jake-hutchinson',
     role: 'host',
     name: 'Jake Hutchinson',
-    images: ['/images/jake1.jpg', '/images/jake2.jpg', '/images/jake3.jpg'],
+    images: [
+      '/images/hosts/jake1.jpg',
+      '/images/hosts/jake2.jpg',
+      '/images/hosts/jake3.jpg',
+    ],
     bioShort:
       'Snow Safety Manager (Irwin Cats); Technical Director (AAI); 30+ years as an avalanche pro.',
     bioFull:
@@ -118,7 +154,11 @@ export const people = [
     slug: 'kim-vinet',
     role: 'host',
     name: 'Kim Vinet',
-    images: ['/images/kim1.jpg', '/images/kim2.jpg', '/images/kim3.jpg'],
+    images: [
+      '/images/hosts/kim1.jpg',
+      '/images/hosts/kim2.jpg',
+      '/images/hosts/kim3.jpg',
+    ],
     bioShort:
       'Former freeride skier and heli-ski guide; vice chair at Mountain Muskox Mentorship.',
     bioFull:
@@ -129,7 +169,11 @@ export const people = [
     slug: 'lynne-wolfe',
     role: 'host',
     name: 'Lynne Wolfe',
-    images: ['/images/lynne1.jpg', '/images/lynne2.jpg', '/images/lynne3.jpg'],
+    images: [
+      '/images/hosts/lynne1.jpg',
+      '/images/hosts/lynne2.jpg',
+      '/images/hosts/lynne3.jpg',
+    ],
     bioShort:
       'Retired Teton guide; longtime editor of The Avalanche Review; AAI Pro Program instructor.',
     bioFull:
@@ -141,7 +185,11 @@ export const people = [
     slug: 'sierra-bishop',
     role: 'host',
     name: 'Sierra Bishop',
-    images: ['/images/sierra1.png', '/images/sierra2.jpg', '/images/sierra3.jpg'],
+    images: [
+      '/images/hosts/sierra1.png',
+      '/images/hosts/sierra2.jpg',
+      '/images/hosts/sierra3.jpg',
+    ],
     needsBio: true,
     needsImages: false,
     bioShort: 'Bio coming soon.',
@@ -151,21 +199,29 @@ export const people = [
     slug: 'bruce-jamieson',
     role: 'host',
     name: 'Bruce Jamieson',
-    images: ['/images/bruce1.jpg', '/images/bruce2.jpg', '/images/bruce3.jpg'],
+    images: [
+      '/images/hosts/bruce1.jpg',
+      '/images/hosts/bruce2.jpg',
+      '/images/hosts/bruce3.jpg',
+    ],
     needsBio: true,
     needsImages: true,
     bioShort: 'Bio coming soon.',
     bioFull: 'Bio coming soon.',
   },
   {
-  slug: 'joe-stock',
-  role: 'host',
-  name: 'Joe Stock',
-  images: ['/images/joe1.jpg', '/images/joe2.jpg', '/images/joe3.jpg'],
-  bioShort:
-    'Anchorage-based IFMGA Mountain Guide with a lifelong passion for avalanches, teaching, and exploration.',
-  bioFull:
-    'Joe is an Anchorage, Alaska-based IFMGA Mountain Guide. His avalanche passion began as a kid learning to backcountry ski in the Wallowa Mountains in Oregon. Since then his avalanche obsession has become chronic: avoiding avalanches in remote Alaska with friends and clients, teaching avalanche classes, and learning about avalanche topics that have never been written about. When not in Alaska, Joe is guiding in Chamonix, or rock climbing with his dream wife Cathy.',
+    slug: 'joe-stock',
+    role: 'host',
+    name: 'Joe Stock',
+    images: [
+      '/images/hosts/joe1.jpg',
+      '/images/hosts/joe2.jpg',
+      '/images/hosts/joe3.jpg',
+    ],
+    bioShort:
+      'Anchorage-based IFMGA Mountain Guide with a lifelong passion for avalanches, teaching, and exploration.',
+    bioFull:
+      'Joe is an Anchorage, Alaska-based IFMGA Mountain Guide. His avalanche passion began as a kid learning to backcountry ski in the Wallowa Mountains in Oregon. Since then his avalanche obsession has become chronic: avoiding avalanches in remote Alaska with friends and clients, teaching avalanche classes, and learning about avalanche topics that have never been written about. When not in Alaska, Joe is guiding in Chamonix, or rock climbing with his dream wife Cathy.',
   },
 
   // =========================
@@ -176,7 +232,11 @@ export const people = [
     slug: 'cam-griffin',
     role: 'producer',
     name: 'Cam Griffin',
-    images: ['/images/cam1.jpg', '/images/cam2.jpeg', '/images/cam3.jpeg'],
+    images: [
+      '/images/hosts/cam1.jpg',
+      '/images/hosts/cam2.jpeg',
+      '/images/hosts/cam3.jpeg',
+    ],
     bioShort:
       'Season 7+ producer handling audio, social, and web; lifelong outdoorsman.',
     bioFull:
@@ -187,7 +247,11 @@ export const people = [
     slug: 'bob-keating',
     role: 'producer',
     name: 'Bob Keating',
-    images: ['/images/bob1.jpg', '/images/bob2.jpg', '/images/bob3.jpg'],
+    images: [
+      '/images/hosts/bob1.jpg',
+      '/images/hosts/bob2.jpg',
+      '/images/hosts/bob3.jpg',
+    ],
     needsBio: true,
     needsImages: true,
     bioShort: 'Producer — bio coming soon.',

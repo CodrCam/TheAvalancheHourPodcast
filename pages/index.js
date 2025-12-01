@@ -51,7 +51,7 @@ export default function Home() {
 
       {/* Hero Section with improved accessibility */}
       <ParallaxSection
-        backgroundImage="/images/main-page3.jpg"
+        backgroundImage="/images/background/main-page3.jpg"
         height={`${topSectionHeight}px`}
         strength={500}
         bgImageStyle={{
@@ -160,7 +160,7 @@ export default function Home() {
 
       {/* Separator */}
       <ParallaxSection
-        backgroundImage="/images/main-page1.jpg"
+        backgroundImage="/images/background/main-page1.jpg"
         height={`${separatorSectionHeight}px`}
         strength={500}
         bgImageStyle={{
