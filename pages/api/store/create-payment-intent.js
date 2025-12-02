@@ -201,7 +201,7 @@ export default async function handler(req, res) {
     const pi = await stripe.paymentIntents.create({
       amount: totalCents,
       currency: 'usd',
-      automatic_payment_methods: { enabled: true },
+      payment_method_types: ['card'],
       receipt_email: email || undefined,
       metadata: {
         order_id: orderId,
