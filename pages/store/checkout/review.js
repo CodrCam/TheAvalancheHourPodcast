@@ -52,8 +52,7 @@ export default function ReviewPage() {
   const [shipping, setShipping] = React.useState(null);
 
   const [discountInput, setDiscountInput] = React.useState('');
-  const [appliedDiscountCode, setAppliedDiscountCode] =
-    React.useState('');
+  const [appliedDiscountCode, setAppliedDiscountCode] = React.useState('');
 
   const [clientSecret, setClientSecret] = React.useState(null);
   const [intentId, setIntentId] = React.useState(null);
@@ -173,32 +172,33 @@ export default function ReviewPage() {
     writeCart(next);
   }
 
-async function handleContinueToPayment() {
-  if (!clientSecret || !intentId || !breakdown) return;
+  async function handleContinueToPayment() {
+    if (!clientSecret || !intentId || !breakdown) return;
 
-  try {
-    if (typeof window !== 'undefined') {
-      // IMPORTANT: key must match CHECKOUT_PAYMENT_KEY in src/config/store.js
-      sessionStorage.setItem(
-        'ah_checkout_payment',
-        JSON.stringify({
-          clientSecret,
-          intentId,
-          breakdown,
-          discountCode: breakdown.discountCode || null,
-        })
-      );
+    try {
+      if (typeof window !== 'undefined') {
+        // IMPORTANT: key must match CHECKOUT_PAYMENT_KEY in src/config/store.js
+        sessionStorage.setItem(
+          'ah_checkout_payment',
+          JSON.stringify({
+            clientSecret,
+            intentId,
+            breakdown,
+            discountCode: breakdown.discountCode || null,
+          })
+        );
+      }
+    } catch {
+      // ignore
     }
-  } catch {
-    // ignore
-  }
 
-  router.push('/store/checkout/payment');
-}
+    router.push('/store/checkout/payment');
+  }
 
   const subtotalCents = breakdown?.subtotalCents ?? 0;
   const discountCents = breakdown?.discountAmountCents ?? 0;
   const taxCents = breakdown?.taxAmountCents ?? 0;
+  const shippingCents = breakdown?.shippingCents ?? 0; // NEW: show shipping on Review
   const totalCents = breakdown?.totalCents ?? 0;
 
   // Just show a generic label so we never leak old code names like "Friends 20"
@@ -431,6 +431,16 @@ async function handleContinueToPayment() {
                 justifyContent: 'space-between',
               }}
             >
+              <span>Shipping</span>
+              <span>{money(shippingCents)}</span>
+            </Box>
+
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'space-between',
+              }}
+            >
               <span>Tax</span>
               <span>{money(taxCents)}</span>
             </Box>
@@ -453,7 +463,7 @@ async function handleContinueToPayment() {
             <Button
               variant="contained"
               onClick={handleContinueToPayment}
-              disabled={!clientSecret || !intentId || !breakdown}
+              disabled={!clientSecret || !intentId || !breakdown || loading}
             >
               Continue to payment
             </Button>

@@ -10,7 +10,7 @@ const stripe = process.env.STRIPE_SECRET_KEY
   ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2022-11-15' })
   : null;
 
-// Simple discount codes: keys are UPPERCASE, matching  normalization
+// Simple discount codes: keys are UPPERCASE, matching normalization
 const DISCOUNT_CODES = {
   S10HOST40: { type: 'percent', value: 40 },  // 40% off
   TAHFRIENDS: { type: 'percent', value: 15 }, // 15% off
@@ -175,8 +175,11 @@ export default async function handler(req, res) {
     // For now, we do NOT calculate tax (handled later if needed)
     const taxAmountCents = 0;
 
-    // Flat shipping for all orders
-    const shippingCents = FLAT_SHIPPING_CENTS;
+    // Shipping:
+    // - Waive shipping entirely when the host code is used (S10HOST40)
+    // - Otherwise, charge the flat rate
+    const isHostCode = normalizedCode === 'S10HOST40';
+    const shippingCents = isHostCode ? 0 : FLAT_SHIPPING_CENTS;
 
     // Final total = discounted subtotal + shipping + tax (0)
     const totalCents =
