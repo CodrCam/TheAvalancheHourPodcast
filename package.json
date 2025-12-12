@@ -10,11 +10,9 @@
     "seed:inventory": "node scripts/seedInventory.js",
     "clear:inventory": "node scripts/clearInventory.js"
   },
-
   "engines": {
     "node": ">=20"
   },
-
   "dependencies": {
     "@emotion/react": "^11.0.0",
     "@emotion/styled": "^11.0.0",
@@ -25,18 +23,17 @@
     "@stripe/stripe-js": "^8.1.0",
     "dotenv": "^17.2.3",
     "lru-cache": "^11.2.2",
-    "next": "^15.0.3",
+    "next": "^16.0.10",
     "node-fetch": "^3.3.2",
     "nodemailer": "^7.0.3",
     "pg": "^8.16.3",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
     "react-parallax": "^3.5.1",
     "stripe": "^19.1.0",
     "swr": "^2.3.6",
     "zod": "^4.1.12"
   },
-
   "devDependencies": {
     "eslint": "^7.32.0",
     "eslint-config-next": "12.0.0"
