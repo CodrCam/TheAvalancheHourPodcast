@@ -1,6 +1,7 @@
 // pages/api/webhook.js
 
 import Stripe from 'stripe';
+import nodemailer from 'nodemailer';
 import { Client } from 'pg';
 import { products } from '../../src/data/products';
 
@@ -12,6 +13,11 @@ export const config = {
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
 const SUPABASE_DB_URL = process.env.SUPABASE_DB_URL;
+
+// Email configuration (same as /api/contact)
+const EMAIL_USER = process.env.EMAIL_USER;
+const EMAIL_PASS = process.env.EMAIL_PASS;
+const TO_EMAIL = process.env.CONTACT_EMAIL || 'theavalanchehourpodcast@gmail.com';
 
 const stripe = STRIPE_SECRET_KEY
   ? new Stripe(STRIPE_SECRET_KEY, { apiVersion: '2022-11-15' })
@@ -96,7 +102,7 @@ async function decrementInventoryForItems(pg, items) {
 
     const sku = resolveSkuForItem(it);
     if (!sku) {
-      console.warn('⚠️  Could not resolve SKU for item', it);
+      console.warn('Could not resolve SKU for item', it);
       continue;
     }
 
@@ -125,12 +131,127 @@ async function decrementInventoryForItems(pg, items) {
         [sku, delta]
       );
 
-      console.log('📉 Inventory updated for SKU', sku, 'delta', delta);
+      console.log('Inventory updated for SKU', sku, 'delta', delta);
     } catch (err) {
       console.error('Inventory update failed for SKU', sku, err);
       // We swallow per-SKU errors so one bad row doesn't tank the whole webhook.
     }
   }
+}
+
+function formatMoney(cents) {
+  if (!Number.isFinite(cents)) return 'N/A';
+  try {
+    return (cents / 100).toLocaleString('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    });
+  } catch {
+    return `${cents / 100} USD`;
+  }
+}
+
+async function sendOrderNotificationEmail({
+  orderId,
+  amountCents,
+  items,
+  customerEmail,
+  customerName,
+  shippingName,
+  shippingAddress1,
+  shippingAddress2,
+  shippingCity,
+  shippingState,
+  shippingPostalCode,
+  shippingCountry,
+}) {
+  if (!EMAIL_USER || !EMAIL_PASS || !TO_EMAIL) {
+    console.warn(
+      'Email environment variables not fully configured, skipping order notification email'
+    );
+    return;
+  }
+
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: EMAIL_USER,
+      pass: EMAIL_PASS,
+    },
+  });
+
+  const safeItems = Array.isArray(items) ? items : [];
+  const itemsHtml =
+    safeItems.length > 0
+      ? safeItems
+          .map((it, index) => {
+            const name = it.name || it.title || it.id || `Item ${index + 1}`;
+            const qty = it.qty ?? it.quantity ?? 1;
+            const options = it.options || {};
+            const parts = [
+              options.style || options.variant || null,
+              options.size || null,
+              options.color || null,
+            ].filter(Boolean);
+            const details = parts.length ? ` (${parts.join(' / ')})` : '';
+            return `<li>${name}${details} x ${qty}</li>`;
+          })
+          .join('\n')
+      : '<li>No items found in metadata</li>';
+
+  const addressLines = [
+    shippingName,
+    shippingAddress1,
+    shippingAddress2,
+    [shippingCity, shippingState, shippingPostalCode].filter(Boolean).join(', '),
+    shippingCountry,
+  ]
+    .filter((line) => !!line)
+    .map((line) => `<div>${line}</div>`)
+    .join('');
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto;">
+      <h2>New store order received</h2>
+      
+      <p><strong>Order ID:</strong> ${orderId}</p>
+      <p><strong>Total amount:</strong> ${formatMoney(amountCents)}</p>
+      
+      <h3>Customer</h3>
+      <p>
+        ${customerName ? `<div><strong>Name:</strong> ${customerName}</div>` : ''}
+        ${
+          customerEmail
+            ? `<div><strong>Email:</strong> <a href="mailto:${customerEmail}">${customerEmail}</a></div>`
+            : ''
+        }
+      </p>
+
+      <h3>Shipping address</h3>
+      <p>
+        ${addressLines || 'No shipping address recorded'}
+      </p>
+
+      <h3>Items</h3>
+      <ul>
+        ${itemsHtml}
+      </ul>
+
+      <p style="margin-top: 20px; font-size: 12px; color: #555;">
+        This message was generated automatically by the store webhook when the Stripe payment succeeded.
+      </p>
+    </div>
+  `;
+
+  const mailOptions = {
+    from: EMAIL_USER,
+    to: TO_EMAIL,
+    subject: `New store order: ${orderId}`,
+    html,
+  };
+
+  await transporter.sendMail(mailOptions);
+  console.log('Order notification email sent for order', orderId);
 }
 
 export default async function handler(req, res) {
@@ -159,12 +280,12 @@ export default async function handler(req, res) {
     return res.status(200).json({ received: true, note: 'bad signature' });
   }
 
-  console.log('➡️  WEBHOOK EVENT TYPE:', event.type);
+  console.log('WEBHOOK EVENT TYPE:', event.type);
 
   if (event.type === 'payment_intent.succeeded') {
     const pi = event.data.object;
 
-    console.log('✅ payment_intent.succeeded for PI', pi.id);
+    console.log('payment_intent.succeeded for PI', pi.id);
 
     // Items list saved in metadata by create-payment-intent
     let items = [];
@@ -251,8 +372,8 @@ export default async function handler(req, res) {
         [
           orderId,
           pi.id,
-          'paid',         // payment status
-          'New',          // fulfillment status for admin UI
+          'paid', // payment status
+          'New', // fulfillment status for admin UI
           amountCents,
           JSON.stringify(items || []),
           customerEmail,
@@ -267,7 +388,7 @@ export default async function handler(req, res) {
         ]
       );
 
-      console.log('📦 Order upserted into orders table:', orderId);
+      console.log('Order upserted into orders table:', orderId);
 
       // 2) Decrement inventory for each SKU in the order
       await decrementInventoryForItems(pg, items);
@@ -275,8 +396,10 @@ export default async function handler(req, res) {
       console.error('WEBHOOK DB INSERT / INVENTORY ERROR:', err);
       try {
         await pg.end();
-      } catch {}
-      // Don’t keep 500’ing; just log and acknowledge
+      } catch (e) {
+        // ignore
+      }
+      // Do not keep returning 500 to Stripe; just log and acknowledge
       return res
         .status(200)
         .json({ received: true, note: 'db insert or inventory update failed' });
@@ -284,7 +407,29 @@ export default async function handler(req, res) {
 
     try {
       await pg.end();
-    } catch {}
+    } catch (e) {
+      // ignore
+    }
+
+    // 3) Fire off internal notification email (non-blocking from Stripe's POV if it fails)
+    try {
+      await sendOrderNotificationEmail({
+        orderId,
+        amountCents,
+        items,
+        customerEmail,
+        customerName,
+        shippingName,
+        shippingAddress1,
+        shippingAddress2,
+        shippingCity,
+        shippingState,
+        shippingPostalCode,
+        shippingCountry,
+      });
+    } catch (err) {
+      console.error('Order notification email failed:', err);
+    }
   }
 
   // All other event types: just acknowledge
