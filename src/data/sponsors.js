@@ -28,7 +28,7 @@ export const sponsorsById = {
     id: 'cil-avalanche',
     name: 'CIL Avalanche',
     tier: 'partner',
-    url: 'https://www.cilexplosives.com/',
+    url: 'https://www.cilavalanche.com',
     logo: '/images/sponsors/CIL_Avy.png',
   },
   safeback: {
