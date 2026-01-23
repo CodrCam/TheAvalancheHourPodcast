@@ -26,6 +26,11 @@ const SKU_LABELS = {
   'hoodie-dark-grey-heather-l': 'Hoodie Dark Grey Heather — L',
   'hoodie-dark-grey-heather-xl': 'Hoodie Dark Grey Heather — XL',
   'free-range-tote': 'Free Range Canvas Tote',
+  'ah-hat-black-camo': 'Avalanche Hour Hat — Black Camo',
+  'ah-hat-blue': 'Avalanche Hour Hat — Blue',
+  'ah-hat-blue-mesh': 'Avalanche Hour Hat — Blue Mesh',
+  'ah-hat-green-cord': 'Avalanche Hour Hat — Green Corduroy (Brooke Maushund)',
+  'ah-sticker-logo': 'Avalanche Hour Sticker — New Logo',
 };
 
 const th = {

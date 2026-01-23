@@ -2,6 +2,145 @@
 
 export const products = [
   //
+  // Avalanche Hour Hats – one product with multiple variants
+  //
+  {
+    id: 'avalanche-hour-hats',
+    slug: 'avalanche-hour-hats',
+    name: 'Avalanche Hour Hats',
+
+    // This is just a fallback display price on the card in some UIs.
+    // Real price is set per-variant below.
+    price: 2500, // from $25
+
+    active: true,
+    description:
+      'Everyday hats built for skin tracks, road trips, and everything in between. Choose your style—from embroidered classics to mesh truckers and specialty fabrics.',
+
+    styles: [
+      'Black Camo',
+      'Blue',
+      'Dark Heather',
+      'Rust Rope',
+      'Green Corduroy',
+      'Black Mesh',
+      'Blue Mesh',
+    ],
+    colors: [],
+
+    variants: {
+      'Black Camo': {
+        price: 3000, // $30
+        colors: ['Black Camo'],
+        skuByColor: {
+          'Black Camo': 'ah-hat-black-camo',
+        },
+        imageByColor: {
+          'Black Camo': '/images/store/caps/Black_Camo.jpg',
+        },
+      },
+
+      Blue: {
+        price: 3000, // $30
+        colors: ['Blue'],
+        skuByColor: {
+          Blue: 'ah-hat-blue',
+        },
+        imageByColor: {
+          Blue: '/images/store/caps/Blue_Cap.jpg',
+        },
+      },
+
+      'Dark Heather': {
+        price: 3000, // $30
+        colors: ['Dark Heather'],
+        skuByColor: {
+          'Dark Heather': 'ah-hat-dark-heather',
+        },
+        imageByColor: {
+          'Dark Heather': '/images/store/caps/dark_heather1.jpg',
+        },
+      },
+
+      'Rust Rope': {
+        price: 3000, // $30
+        colors: ['Rust Rope'],
+        skuByColor: {
+          'Rust Rope': 'ah-hat-rust-rope',
+        },
+        imageByColor: {
+          'Rust Rope': '/images/store/caps/rust_rope1.JPG',
+        },
+      },
+
+      'Green Corduroy': {
+        price: 2500, // $25
+        colors: ['Green Corduroy'],
+        skuByColor: {
+          'Green Corduroy': 'ah-hat-green-cord',
+        },
+        imageByColor: {
+          'Green Corduroy': '/images/store/caps/Green_Cord.jpg',
+        },
+      },
+
+      'Black Mesh': {
+        price: 2500, // $25
+        colors: ['Black Mesh'],
+        skuByColor: {
+          'Black Mesh': 'ah-hat-black-mesh',
+        },
+        imageByColor: {
+          'Black Mesh': '/images/store/caps/black_mesh1.JPG',
+        },
+      },
+
+      'Blue Mesh': {
+        price: 2500, // $25
+        colors: ['Blue Mesh'],
+        skuByColor: {
+          'Blue Mesh': 'ah-hat-blue-mesh',
+        },
+        imageByColor: {
+          'Blue Mesh': '/images/store/caps/Blue_Mesh.jpg',
+        },
+      },
+    },
+
+    // Card image + product gallery
+    image: '/images/store/caps/Black_Camo.jpg',
+    images: [
+      '/images/store/caps/Black_Camo.jpg',
+      '/images/store/caps/Black_Camo2.jpg',
+
+      '/images/store/caps/Blue_Cap.jpg',
+      '/images/store/caps/Blue_Cap2.jpg',
+
+      '/images/store/caps/dark_heather1.jpg',
+
+      '/images/store/caps/rust_rope1.JPG',
+
+      '/images/store/caps/Green_Cord.jpg',
+      '/images/store/caps/Green_Cord2.jpg',
+
+      '/images/store/caps/black_mesh1.JPG',
+
+      '/images/store/caps/Blue_Mesh.jpg',
+      '/images/store/caps/Blue_Mesh2.jpg',
+    ],
+
+    imageMap: {
+      'Black Camo': '/images/store/caps/Black_Camo.jpg',
+      Blue: '/images/store/caps/Blue_Cap.jpg',
+      'Dark Heather': '/images/store/caps/dark_heather1.jpg',
+      'Rust Rope': '/images/store/caps/rust_rope1.JPG',
+      'Green Corduroy': '/images/store/caps/Green_Cord.jpg',
+      'Black Mesh': '/images/store/caps/black_mesh1.JPG',
+      'Blue Mesh': '/images/store/caps/Blue_Mesh.jpg',
+    },
+  },
+
+  //
   // ReCaps – Corduroy & Foam Trucker (brimmed caps)
   //
   {
@@ -13,7 +152,6 @@ export const products = [
     description:
       "We've partnered with ReCaps to bring some unique and fun styles of hats. Inspired by the outdoors, motivated by uniqueness, and focused on sustainability, ReCaps designs hats with a distinctive style that will take you from work to play and everywhere in between. Each hat features a slightly shorter brim and hand-printed block prints on reclaimed materials, so print fabric color and shade may vary but that's the beauty of one-of-a-kind.",
 
-    // Styles on this product: brimmed caps only
     styles: ['Corduroy', 'Foam Trucker'],
     colors: [],
 
@@ -45,7 +183,6 @@ export const products = [
       },
     },
 
-    // Gallery for caps
     image: '/images/store/recaps/cord-blue-grey.jpg',
     images: [
       '/images/store/recaps/cord-blue-grey.jpg',
@@ -76,7 +213,6 @@ export const products = [
     description:
       "Support The Avalanche Hour Podcast while staying cozy on the skin track and around town. We've partnered with ReCaps to bring you Pom and cuff beanies with a distinctive look and sustainable story. Each block print is hand printed on reclaimed materials, so print fabric color and shade will vary from hat to hat. Enjoy the surprise of a one-of-a-kind beanie.",
 
-    // Styles on this product: beanies only
     styles: ['Beanie', 'Pom'],
     colors: [],
 
@@ -110,7 +246,6 @@ export const products = [
       },
     },
 
-    // Gallery for beanies & poms
     image: '/images/store/recaps/cuff-blue.jpg',
     images: [
       '/images/store/recaps/cuff-black.jpg',
@@ -137,13 +272,11 @@ export const products = [
     id: 'voile-straps',
     slug: 'voile-straps',
     name: 'Voile Straps',
-    // Base price is only a fallback; real price comes from variant-level pricing below
     price: 800, // fallback $8.00
     active: true,
     description:
       '“Sometimes I forget what holds my life together... and then I see another Voile strap.” – CM. Show your support of our community and The Avalanche Hour Podcast by grabbing a handful of ski straps so you never wonder where your last strap went. Perfect for first aid, gear repair, storage, and more.',
 
-    // Customer-facing style options
     styles: ['20"', '25"'],
     colors: [],
 
@@ -151,27 +284,18 @@ export const products = [
       '20"': {
         price: 800, // $8.00
         colors: ['Black'],
-        skuByColor: {
-          Black: 'strap-20-black',
-        },
-        imageByColor: {
-          Black: '/images/store/straps/strap-20-black.jpg',
-        },
+        skuByColor: { Black: 'strap-20-black' },
+        imageByColor: { Black: '/images/store/straps/strap-20-black.jpg' },
       },
 
       '25"': {
         price: 850, // $8.50
         colors: ['Blue'],
-        skuByColor: {
-          Blue: 'strap-25-blue',
-        },
-        imageByColor: {
-          Blue: '/images/store/straps/strap-25-blue.jpg',
-        },
+        skuByColor: { Blue: 'strap-25-blue' },
+        imageByColor: { Blue: '/images/store/straps/strap-25-blue.jpg' },
       },
     },
 
-    // Gallery used on the product page + store card
     image: '/images/store/straps/strap-20-black.jpg',
     images: [
       '/images/store/straps/strap-20-black.jpg',
@@ -223,8 +347,7 @@ export const products = [
           XL: 'hoodie-dark-grey-heather-xl',
         },
         imageByColor: {
-          'Dark Grey Heather':
-            '/images/store/hoodies/dark-grey-heather.jpg',
+          'Dark Grey Heather': '/images/store/hoodies/dark-grey-heather.jpg',
         },
       },
     },
@@ -256,5 +379,24 @@ export const products = [
 
     image: '/images/store/tote/free-range-canvas.jpg',
     images: ['/images/store/tote/free-range-canvas.jpg'],
+  },
+
+  //
+  // Avalanche Hour Sticker
+  //
+  {
+    id: 'ah-sticker-logo',
+    slug: 'avalanche-hour-sticker',
+    name: 'Avalanche Hour Sticker',
+    price: 200, // $2.00
+    active: true,
+    description:
+      'A fresh take on the Avalanche Hour logo—built for water bottles, ski boxes, laptops, and gear bins.',
+
+    image: '/images/store/stickers/Sticker.jpg',
+    images: [
+      '/images/store/stickers/Sticker.jpg',
+      '/images/store/stickers/Sticker2.jpg',
+    ],
   },
 ];

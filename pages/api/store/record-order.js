@@ -1,5 +1,10 @@
 // pages/api/store/record-order.js
 import { Client } from 'pg';
+import nodemailer from 'nodemailer';
+
+const EMAIL_USER = process.env.EMAIL_USER;
+const EMAIL_PASS = process.env.EMAIL_PASS;
+const TO_EMAIL = process.env.CONTACT_EMAIL || 'theavalanchehourpodcast@gmail.com';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -17,7 +22,6 @@ export default async function handler(req, res) {
     paymentIntentId,
     amountCents,
     items,
-    // status, // we ignore this now
     email,
     shipping,
   } = req.body || {};
@@ -52,8 +56,16 @@ export default async function handler(req, res) {
   try {
     await pg.connect();
 
+    // 1) Check if this order already exists (prevents duplicate emails)
+    const existing = await pg.query(
+      `select 1 from orders where order_id = $1 limit 1`,
+      [orderId]
+    );
+    const isNewOrder = existing.rowCount === 0;
+
     const fulfillmentStatus = 'New';
 
+    // 2) Upsert order (same as you already had)
     await pg.query(
       `
       insert into orders (
@@ -107,7 +119,58 @@ export default async function handler(req, res) {
       ]
     );
 
-    return res.status(200).json({ ok: true });
+    // 3) Email Caleb ONLY on brand-new orders
+    if (isNewOrder) {
+      if (!EMAIL_USER || !EMAIL_PASS) {
+        // Don’t fail the order if email isn’t configured; just log it.
+        console.warn('record-order: EMAIL_USER/EMAIL_PASS not configured; skipping notification email');
+      } else {
+        const transporter = nodemailer.createTransport({
+          service: 'gmail',
+          auth: { user: EMAIL_USER, pass: EMAIL_PASS },
+        });
+
+        const safeItems = Array.isArray(items) ? items : [];
+        const lines = safeItems.map((it) => {
+          const qty = it.qty ?? 1;
+          const name = it.name || it.label || it.title || it.id || 'Item';
+          const sku = it.sku ? ` (SKU: ${it.sku})` : '';
+          return `- ${qty} × ${name}${sku}`;
+        });
+
+        const dollars = (Number(amountCents || 0) / 100).toFixed(2);
+
+        const subject = `New order placed — ${orderId}`;
+        const text =
+`A new order was placed.
+
+Order ID: ${orderId}
+PaymentIntent: ${paymentIntentId}
+Total: $${dollars}
+
+Customer: ${customerName || '(no name)'}
+Email: ${customerEmail || '(no email)'}
+Ship to:
+${shippingName || ''}
+${shippingAddress1 || ''}
+${shippingAddress2 || ''}
+${shippingCity || ''}${shippingCity && shippingState ? ', ' : ''}${shippingState || ''} ${shippingPostalCode || ''}
+${shippingCountry || ''}
+
+Items:
+${lines.length ? lines.join('\n') : '- (no items provided)'}
+`;
+
+        await transporter.sendMail({
+          from: EMAIL_USER,
+          to: TO_EMAIL,
+          subject,
+          text,
+        });
+      }
+    }
+
+    return res.status(200).json({ ok: true, isNewOrder });
   } catch (err) {
     console.error('record-order error:', err);
     return res.status(500).json({ error: 'Failed to record order' });
