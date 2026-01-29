@@ -69,7 +69,7 @@ export const products = [
           'Rust Rope': 'ah-hat-rust-rope',
         },
         imageByColor: {
-          'Rust Rope': '/images/store/caps/rust_rope1.JPG',
+          'Rust Rope': '/images/store/caps/rust_rope2.JPG',
         },
       },
 
@@ -119,6 +119,7 @@ export const products = [
       '/images/store/caps/dark_heather1.jpg',
 
       '/images/store/caps/rust_rope1.JPG',
+      '/images/store/caps/rust_rope2.JPG',
 
       '/images/store/caps/Green_Cord.jpg',
       '/images/store/caps/Green_Cord2.jpg',
