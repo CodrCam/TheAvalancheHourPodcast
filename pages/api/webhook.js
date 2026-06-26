@@ -3,6 +3,7 @@
 import Stripe from 'stripe';
 import nodemailer from 'nodemailer';
 import { Client } from 'pg';
+import { escapeHtml } from '../../lib/escapeHtml';
 import { products } from '../../src/data/products';
 
 // Stripe needs the raw body, not JSON-parsed
@@ -185,14 +186,14 @@ async function sendOrderNotificationEmail({
     safeItems.length > 0
       ? safeItems
           .map((it, index) => {
-            const name = it.name || it.title || it.id || `Item ${index + 1}`;
-            const qty = it.qty ?? it.quantity ?? 1;
+            const name = escapeHtml(it.name || it.title || it.id || `Item ${index + 1}`);
+            const qty = escapeHtml(it.qty ?? it.quantity ?? 1);
             const options = it.options || {};
             const parts = [
               options.style || options.variant || null,
               options.size || null,
               options.color || null,
-            ].filter(Boolean);
+            ].filter(Boolean).map(escapeHtml);
             const details = parts.length ? ` (${parts.join(' / ')})` : '';
             return `<li>${name}${details} x ${qty}</li>`;
           })
@@ -207,22 +208,26 @@ async function sendOrderNotificationEmail({
     shippingCountry,
   ]
     .filter((line) => !!line)
-    .map((line) => `<div>${line}</div>`)
+    .map((line) => `<div>${escapeHtml(line)}</div>`)
     .join('');
+
+  const safeOrderId = escapeHtml(orderId);
+  const safeCustomerName = escapeHtml(customerName);
+  const safeCustomerEmail = escapeHtml(customerEmail);
 
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto;">
       <h2>New store order received</h2>
       
-      <p><strong>Order ID:</strong> ${orderId}</p>
+      <p><strong>Order ID:</strong> ${safeOrderId}</p>
       <p><strong>Total amount:</strong> ${formatMoney(amountCents)}</p>
       
       <h3>Customer</h3>
       <p>
-        ${customerName ? `<div><strong>Name:</strong> ${customerName}</div>` : ''}
+        ${customerName ? `<div><strong>Name:</strong> ${safeCustomerName}</div>` : ''}
         ${
           customerEmail
-            ? `<div><strong>Email:</strong> <a href="mailto:${customerEmail}">${customerEmail}</a></div>`
+            ? `<div><strong>Email:</strong> <a href="mailto:${safeCustomerEmail}">${safeCustomerEmail}</a></div>`
             : ''
         }
       </p>

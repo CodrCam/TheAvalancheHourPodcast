@@ -24,12 +24,12 @@ export const sponsorsById = {
     logo: '/images/sponsors/DroneAmp.png',
   },
 
-  'cil-avalanche': {
-    id: 'cil-avalanche',
-    name: 'CIL Avalanche',
+  'austin-powder': {
+    id: 'austin-powder',
+    name: 'Austin Powder',
     tier: 'partner',
-    url: 'https://www.cilavalanche.com',
-    logo: '/images/sponsors/CIL_Avy.png',
+    url: 'https://www.austinpowder.com/',
+    logo: '/images/sponsors/AustinPowder.png',
   },
   safeback: {
     id: 'safeback',

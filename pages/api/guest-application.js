@@ -1,5 +1,6 @@
 // pages/api/guest-application.js
 import nodemailer from 'nodemailer';
+import { escapeHtml } from '../../lib/escapeHtml';
 
 // Email configuration from environment variables
 const EMAIL_USER = process.env.EMAIL_USER; // Your Gmail address
@@ -30,6 +31,12 @@ export default async function handler(req, res) {
       });
     }
 
+    const safeName = escapeHtml(name);
+    const safeEmail = escapeHtml(email);
+    const safeBackground = escapeHtml(background);
+    const safeTopics = escapeHtml(topics);
+    const safeContact = escapeHtml(contact);
+
     // Create transporter
     const transporter = nodemailer.createTransport({
       service: 'gmail',
@@ -52,33 +59,33 @@ export default async function handler(req, res) {
           
           <div style="background-color: #f5f5f5; padding: 16px; border-radius: 8px; margin: 16px 0;">
             <h3 style="margin-top: 0; color: #333;">Applicant Details:</h3>
-            <p style="margin: 0 0 4px 0;"><strong>Name:</strong> ${name}</p>
-            <p style="margin: 0 0 4px 0;"><strong>Email:</strong> <a href="mailto:${email}">${email}</a></p>
+            <p style="margin: 0 0 4px 0;"><strong>Name:</strong> ${safeName}</p>
+            <p style="margin: 0 0 4px 0;"><strong>Email:</strong> <a href="mailto:${safeEmail}">${safeEmail}</a></p>
             <p style="margin: 0 0 4px 0;"><strong>Submitted:</strong> ${new Date().toLocaleString()}</p>
           </div>
 
           <div style="background-color: #fff; padding: 16px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 16px;">
             <h3 style="margin-top: 0; color: #333;">Background</h3>
-            <p style="margin: 0; line-height: 1.5; white-space: pre-wrap;">${background}</p>
+            <p style="margin: 0; line-height: 1.5; white-space: pre-wrap;">${safeBackground}</p>
           </div>
 
           ${topics ? `
             <div style="background-color: #fff; padding: 16px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 16px;">
               <h3 style="margin-top: 0; color: #333;">Topics / Story Ideas</h3>
-              <p style="margin: 0; line-height: 1.5; white-space: pre-wrap;">${topics}</p>
+              <p style="margin: 0; line-height: 1.5; white-space: pre-wrap;">${safeTopics}</p>
             </div>
           ` : ''}
 
           ${contact ? `
             <div style="background-color: #fff; padding: 16px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 16px;">
               <h3 style="margin-top: 0; color: #333;">Best Way to Reach / Availability</h3>
-              <p style="margin: 0; line-height: 1.5; white-space: pre-wrap;">${contact}</p>
+              <p style="margin: 0; line-height: 1.5; white-space: pre-wrap;">${safeContact}</p>
             </div>
           ` : ''}
 
           <div style="margin-top: 16px; padding: 12px; background-color: #e3f2fd; border-radius: 8px;">
             <p style="margin: 0; color: #1976d2; font-size: 14px;">
-              <strong>Reply directly to this email to respond to ${name}</strong>
+              <strong>Reply directly to this email to respond to ${safeName}</strong>
             </p>
           </div>
 
@@ -116,7 +123,7 @@ export default async function handler(req, res) {
     `;
 
     const confirmationHtmlBody = `
-      Hello ${name}<br><br>
+      Hello ${safeName}<br><br>
       Thank you for your submission to The Avalanche Hour Podcast. Our goal is to make this platform a meaningful resource for our community, and we appreciate your input.<br><br>
       Your submission has been added to our guest list cache. We begin our planning for each season during the summer, and will contact you if we have an available slot.<br><br>
       If you have any questions or comments, you can reply directly to this email.<br><br>

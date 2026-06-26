@@ -1,5 +1,6 @@
 // pages/api/contact.js
 import nodemailer from 'nodemailer';
+import { escapeHtml } from '../../lib/escapeHtml';
 
 // Email configuration from environment variables
 const EMAIL_USER = process.env.EMAIL_USER; // Your Gmail address
@@ -40,6 +41,13 @@ export default async function handler(req, res) {
       });
     }
 
+    const safeName = escapeHtml(name);
+    const safeEmail = escapeHtml(email);
+    const safeMessage = escapeHtml(message);
+    const safeCompanyName = escapeHtml(companyName);
+    const safeSponsorshipBudget = escapeHtml(sponsorshipBudget);
+    const safeSponsorshipGoals = escapeHtml(sponsorshipGoals);
+
     // Create transporter
     const transporter = nodemailer.createTransport({
       service: 'gmail',
@@ -75,9 +83,9 @@ export default async function handler(req, res) {
           
           <div style="background-color: #f5f5f5; padding: 16px; border-radius: 8px; margin: 16px 0;">
             <h3 style="margin-top: 0; color: #333;">Contact Details:</h3>
-            <p style="margin: 0 0 4px 0;"><strong>Name:</strong> ${name}</p>
-            <p style="margin: 0 0 4px 0;"><strong>Email:</strong> <a href="mailto:${email}">${email}</a></p>
-            ${isSponsorship && companyName ? `<p style="margin: 0 0 4px 0;"><strong>Company:</strong> ${companyName}</p>` : ''}
+            <p style="margin: 0 0 4px 0;"><strong>Name:</strong> ${safeName}</p>
+            <p style="margin: 0 0 4px 0;"><strong>Email:</strong> <a href="mailto:${safeEmail}">${safeEmail}</a></p>
+            ${isSponsorship && companyName ? `<p style="margin: 0 0 4px 0;"><strong>Company:</strong> ${safeCompanyName}</p>` : ''}
             <p style="margin: 0 0 4px 0;"><strong>Submitted:</strong> ${new Date().toLocaleString()}</p>
             <p style="margin: 0;"><strong>Inquiry Type:</strong> ${isSponsorship ? '🎯 Sponsorship' : '📧 General'}</p>
           </div>
@@ -85,11 +93,11 @@ export default async function handler(req, res) {
           ${isSponsorship ? `
             <div style="background-color: #e8f5e9; padding: 16px; border-radius: 8px; margin: 16px 0;">
               <h3 style="margin-top: 0; color: #2e7d32;">Sponsorship Information:</h3>
-              ${sponsorshipBudget ? `<p style="margin: 0 0 4px 0;"><strong>Budget Range:</strong> ${sponsorshipBudget}</p>` : ''}
+              ${sponsorshipBudget ? `<p style="margin: 0 0 4px 0;"><strong>Budget Range:</strong> ${safeSponsorshipBudget}</p>` : ''}
               ${sponsorshipGoals ? `
                 <p style="margin: 8px 0 4px 0;"><strong>Marketing Goals & Target Audience:</strong></p>
                 <p style="line-height: 1.5; white-space: pre-wrap; background-color: white; padding: 12px; border-radius: 5px; margin: 0;">
-                  ${sponsorshipGoals}
+                  ${safeSponsorshipGoals}
                 </p>
               ` : ''}
             </div>
@@ -97,7 +105,7 @@ export default async function handler(req, res) {
           
           <div style="background-color: #fff; padding: 16px; border: 1px solid #ddd; border-radius: 8px;">
             <h3 style="margin-top: 0; color: #333;">Message:</h3>
-            <p style="line-height: 1.5; white-space: pre-wrap; margin: 0;">${message}</p>
+            <p style="line-height: 1.5; white-space: pre-wrap; margin: 0;">${safeMessage}</p>
           </div>
           
           ${isSponsorship ? `
@@ -117,7 +125,7 @@ export default async function handler(req, res) {
           
           <div style="margin-top: 16px; padding: 12px; background-color: #e3f2fd; border-radius: 8px;">
             <p style="margin: 0; color: #1976d2; font-size: 14px;">
-              <strong>Reply directly to this email to respond to ${name}</strong>
+              <strong>Reply directly to this email to respond to ${safeName}</strong>
             </p>
           </div>
           
@@ -161,7 +169,7 @@ export default async function handler(req, res) {
     if (isSponsorship) {
       // SPONSOR CONFIRMATION – exact copy, compact HTML
       confirmationHtmlBody = `
-        Hello ${name},<br><br>
+        Hello ${safeName},<br><br>
         Thank you for your interest in partnering with The Avalanche Hour Podcast. We will send our media kit and detailed audience analytics within 2–3 business days and will follow up with next steps.<br><br>
         If you have any questions in the meantime, you can reply directly to this email.<br><br>
         Sincerely,<br>
@@ -171,7 +179,7 @@ export default async function handler(req, res) {
     } else {
       // LISTENER CONFIRMATION – exact copy, compact HTML
       confirmationHtmlBody = `
-        Hello ${name}<br><br>
+        Hello ${safeName}<br><br>
         Thank you for your submission to the Avalanche Hour Podcast. We have received your message.<br><br>
         Our goal is to make this platform a meaningful resource for our community, and we appreciate your input. During peak season there may be a delay in response.<br><br>
         If you have anything additional to add, you can reply directly to this email.<br><br>
