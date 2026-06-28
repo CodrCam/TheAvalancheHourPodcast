@@ -83,6 +83,7 @@ export default function Navbar() {
   const menuItems = [
     { text: 'About', link: '/about' },
     { text: 'Resources', link: '/resources' },
+    { text: 'Support', link: '/support' },
     { text: 'Store', link: '/store' },
     { text: 'Donate', link: 'https://www.paypal.com/donate?hosted_button_id=4UMMRC9CCBQ3A' },
   ];

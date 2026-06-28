@@ -1,6 +1,7 @@
 // pages/index.js
 import React, { useEffect, useState } from 'react';
-import { Container, Typography, Grid, Box, CircularProgress } from '@mui/material';
+import { Container, Typography, Grid, Box, CircularProgress, Button, Stack } from '@mui/material';
+import Link from 'next/link';
 import Navbar from '../components/Navbar';
 import ParallaxSection from '../components/ParallaxSection';
 import EpisodeCard from '../components/EpisodeCard';
@@ -169,6 +170,56 @@ export default function Home() {
         }}
         bgImageAlt="Snowy mountain terrain"
       />
+
+      {/* Support Section */}
+      <Box
+        component="section"
+        sx={{ backgroundColor: 'background.default', py: { xs: 5, md: 7 } }}
+        aria-labelledby="support-heading"
+      >
+        <Container maxWidth="lg">
+          <Grid container spacing={3} alignItems="center">
+            <Grid item xs={12} md={8}>
+              <Typography
+                id="support-heading"
+                variant="h2"
+                component="h2"
+                gutterBottom
+                sx={{
+                  fontFamily: 'Amatic SC, sans-serif',
+                  fontWeight: 'bold',
+                  color: 'text.primary',
+                  fontSize: { xs: '2rem', md: '3rem' },
+                }}
+              >
+                Support the Podcast
+              </Typography>
+              <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 760 }}>
+                Interested in advertising, underwriting, or helping keep The
+                Avalanche Hour growing? Explore single-episode and season-long
+                support options, including secure Stripe checkout links and the
+                Season 11 rate card.
+              </Typography>
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <Stack direction={{ xs: 'column', sm: 'row', md: 'column' }} spacing={1.5}>
+                <Button component={Link} href="/support" variant="contained">
+                  View Support Options
+                </Button>
+                <Button
+                  component="a"
+                  href="/files/avalanche-hour-s11-rate-card.pdf"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  variant="outlined"
+                >
+                  Download Rate Card
+                </Button>
+              </Stack>
+            </Grid>
+          </Grid>
+        </Container>
+      </Box>
 
       {/* Sponsors Section */}
       <Box 
