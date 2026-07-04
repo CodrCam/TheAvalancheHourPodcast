@@ -19,6 +19,10 @@ import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import { products } from '../../src/data/products';
 import Navbar from '../../components/Navbar';
 import VariantPickerDialog from '../../components/VariantPickerDialog';
+import {
+  getAllCatalogSkuEntries,
+  getProductSkus,
+} from '../../lib/productCatalog';
 
 function money(cents) {
   return (cents / 100).toLocaleString('en-US', {
@@ -26,6 +30,11 @@ function money(cents) {
     currency: 'USD',
     maximumFractionDigits: 0,
   });
+}
+
+function readStockQuantity(record) {
+  if (!record || record.hidden) return 0;
+  return Math.max(0, Number(record.quantity) || 0);
 }
 
 function getVariantPriceRange(product) {
@@ -79,6 +88,9 @@ function compareByFeaturedOrder(a, b) {
 export default function StoreIndexPage() {
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [activeProduct, setActiveProduct] = React.useState(null);
+  const [stockMap, setStockMap] = React.useState({});
+  const [stockLoaded, setStockLoaded] = React.useState(false);
+  const [stockError, setStockError] = React.useState(false);
 
   const openVariantPicker = (product) => {
     setActiveProduct(product);
@@ -90,12 +102,144 @@ export default function StoreIndexPage() {
     setActiveProduct(null);
   };
 
-  const visibleProducts = React.useMemo(() => {
+  const activeProducts = React.useMemo(() => {
     return products
       .filter((p) => p.active)
       .slice()
       .sort(compareByFeaturedOrder);
   }, []);
+
+  React.useEffect(() => {
+    let ignore = false;
+    const skus = getAllCatalogSkuEntries().map((entry) => entry.sku);
+    setStockError(false);
+
+    async function loadStock() {
+      try {
+        const query = skus.map(encodeURIComponent).join(',');
+        const res = await fetch(`/api/stock?sku=${query}`);
+        const data = await res.json();
+        if (!res.ok || data.ok === false) {
+          throw new Error(data.error || 'Inventory lookup failed');
+        }
+        if (ignore) return;
+
+        const next = {};
+        for (const row of data.data || []) {
+          const sku = row.sku || row.sku_key;
+          next[sku] = {
+            hidden: row.hidden === true,
+            quantity: Math.max(0, Number(row.quantity) || 0),
+          };
+        }
+        setStockMap(next);
+      } catch {
+        if (!ignore) {
+          setStockMap({});
+          setStockError(true);
+        }
+      } finally {
+        if (!ignore) setStockLoaded(true);
+      }
+    }
+
+    loadStock();
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  const getProductAvailableQuantity = React.useCallback((product) => {
+    return getProductSkus(product).reduce(
+      (sum, sku) => sum + readStockQuantity(stockMap[sku]),
+      0
+    );
+  }, [stockMap]);
+
+  const availableProducts = React.useMemo(() => {
+    if (!stockLoaded || stockError) return [];
+    return activeProducts.filter((product) => {
+      return getProductAvailableQuantity(product) > 0;
+    });
+  }, [activeProducts, getProductAvailableQuantity, stockError, stockLoaded]);
+
+  function renderStoreContent() {
+    if (stockError) {
+      return (
+        <Box sx={{ py: 4 }}>
+          <Typography variant="h6" sx={{ mb: 1 }}>
+            Store inventory is temporarily unavailable.
+          </Typography>
+          <Typography color="text.secondary">
+            Please check back shortly.
+          </Typography>
+        </Box>
+      );
+    }
+
+    if (!stockLoaded) {
+      return (
+        <Box sx={{ py: 4 }}>
+          <Typography color="text.secondary">Checking inventory...</Typography>
+        </Box>
+      );
+    }
+
+    if (!availableProducts.length) {
+      return (
+        <Box sx={{ py: 4 }}>
+          <Typography variant="h6" sx={{ mb: 1 }}>
+            No store products are currently available.
+          </Typography>
+          <Typography color="text.secondary">
+            Please check back later.
+          </Typography>
+        </Box>
+      );
+    }
+
+    return (
+      <Grid container spacing={3}>
+        {availableProducts.map((p) => (
+          <Grid key={p.id} item xs={12} sm={6} md={4}>
+            <Card
+              sx={{
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+              }}
+            >
+              <Link href={`/store/${p.slug}`} passHref legacyBehavior>
+                <CardActionArea sx={{ flexGrow: 1 }}>
+                  <CardMedia
+                    component="img"
+                    image={p.image}
+                    alt={p.name}
+                    sx={{ aspectRatio: '1 / 1', objectFit: 'cover' }}
+                  />
+                  <CardContent>
+                    <Typography variant="h6" sx={{ mb: 0.5 }}>
+                      {p.name}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {priceLabel(p)}
+                    </Typography>
+                  </CardContent>
+                </CardActionArea>
+              </Link>
+
+              <CardActions sx={{ px: 2, pb: 2 }}>
+                <Button variant="contained" onClick={() => openVariantPicker(p)}>
+                  Quick add
+                </Button>
+              </CardActions>
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
+    );
+  }
 
   return (
     <>
@@ -122,44 +266,7 @@ export default function StoreIndexPage() {
           </Link>
         </Box>
 
-        <Grid container spacing={3}>
-          {visibleProducts.map((p) => (
-            <Grid key={p.id} item xs={12} sm={6} md={4}>
-              <Card
-                sx={{
-                  height: '100%',
-                  display: 'flex',
-                  flexDirection: 'column',
-                }}
-              >
-                <Link href={`/store/${p.slug}`} passHref legacyBehavior>
-                  <CardActionArea sx={{ flexGrow: 1 }}>
-                    <CardMedia
-                      component="img"
-                      image={p.image}
-                      alt={p.name}
-                      sx={{ aspectRatio: '1 / 1', objectFit: 'cover' }}
-                    />
-                    <CardContent>
-                      <Typography variant="h6" sx={{ mb: 0.5 }}>
-                        {p.name}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {priceLabel(p)}
-                      </Typography>
-                    </CardContent>
-                  </CardActionArea>
-                </Link>
-
-                <CardActions sx={{ px: 2, pb: 2 }}>
-                  <Button variant="contained" onClick={() => openVariantPicker(p)}>
-                    Quick add
-                  </Button>
-                </CardActions>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
+        {renderStoreContent()}
       </Container>
 
       <VariantPickerDialog

@@ -1,22 +1,12 @@
 // pages/api/store/admin/orders.js
-
-import { Client } from 'pg';
-
-const SUPABASE_DB_URL = process.env.SUPABASE_DB_URL;
-
-async function getClient() {
-  if (!SUPABASE_DB_URL) {
-    throw new Error('SUPABASE_DB_URL not configured');
-  }
-
-  const client = new Client({
-    connectionString: SUPABASE_DB_URL,
-    ssl: { rejectUnauthorized: false },
-  });
-
-  await client.connect();
-  return client;
-}
+import {
+  ADMIN_PERMISSIONS,
+  requirePermissionAsync,
+} from '../../../../lib/adminAuth';
+import {
+  listOrders,
+  updateFulfillmentStatus,
+} from '../../../../lib/orderStore';
 
 export default async function handler(req, res) {
   // Allow GET (list orders) and PATCH (update fulfillment_status)
@@ -26,58 +16,33 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'GET') {
+    if (!(await requirePermissionAsync(req, res, ADMIN_PERMISSIONS.ORDERS_READ))) {
+      return;
+    }
     return handleGet(req, res);
   }
 
   if (req.method === 'PATCH') {
+    if (
+      !(await requirePermissionAsync(req, res, ADMIN_PERMISSIONS.ORDERS_UPDATE))
+    ) {
+      return;
+    }
     return handlePatch(req, res);
   }
 }
 
 async function handleGet(_req, res) {
-  let pg;
   try {
-    pg = await getClient();
-
-    const { rows } = await pg.query(`
-      select
-        order_id,
-        stripe_payment_intent_id,
-        status,
-        fulfillment_status,
-        amount_cents,
-        items,
-        customer_email,
-        customer_name,
-        shipping_name,
-        shipping_address1,
-        shipping_address2,
-        shipping_city,
-        shipping_state,
-        shipping_postal_code,
-        shipping_country,
-        created_at
-      from orders
-      order by created_at desc
-      limit 200
-    `);
-
-    return res.status(200).json({ orders: rows });
+    const orders = await listOrders({ limit: 200, sort: 'desc' });
+    return res.status(200).json({ orders });
   } catch (err) {
     console.error('admin orders fetch error:', err);
     return res.status(500).json({ error: 'Failed to fetch orders' });
-  } finally {
-    if (pg) {
-      try {
-        await pg.end();
-      } catch {}
-    }
   }
 }
 
 async function handlePatch(req, res) {
-  let pg;
-
   try {
     const { order_id, fulfillment_status } = req.body || {};
 
@@ -99,47 +64,13 @@ async function handlePatch(req, res) {
       });
     }
 
-    pg = await getClient();
-
-    const { rows, rowCount } = await pg.query(
-      `
-      update orders
-      set fulfillment_status = $2
-      where order_id = $1
-      returning
-        order_id,
-        stripe_payment_intent_id,
-        status,
-        fulfillment_status,
-        amount_cents,
-        items,
-        customer_email,
-        customer_name,
-        shipping_name,
-        shipping_address1,
-        shipping_address2,
-        shipping_city,
-        shipping_state,
-        shipping_postal_code,
-        shipping_country,
-        created_at
-      `,
-      [order_id, statusNorm]
-    );
-
-    if (rowCount === 0) {
+    const order = await updateFulfillmentStatus(order_id, statusNorm);
+    return res.status(200).json({ order });
+  } catch (err) {
+    if (err.code === 'ORDER_NOT_FOUND' || String(err.message).includes('conditional')) {
       return res.status(404).json({ error: 'Order not found' });
     }
-
-    return res.status(200).json({ order: rows[0] });
-  } catch (err) {
     console.error('admin orders patch error:', err);
     return res.status(500).json({ error: 'Failed to update fulfillment status' });
-  } finally {
-    if (pg) {
-      try {
-        await pg.end();
-      } catch {}
-    }
   }
 }

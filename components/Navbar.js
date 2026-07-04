@@ -25,6 +25,9 @@ const HomeLink = styled(Link)({
 const keyOf = (id, options = {}) => JSON.stringify({ id, ...options });
 function loadCart() { try { return JSON.parse(localStorage.getItem(CART_KEY) || '[]'); } catch { return []; } }
 function saveCart(c) { localStorage.setItem(CART_KEY, JSON.stringify(c)); try { window.dispatchEvent(new Event('ah_cart_updated')); } catch {} }
+function cartLineKey(item = {}) {
+  return item.key || keyOf(item.id, item.options || {});
+}
 
 export default function Navbar() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -33,6 +36,7 @@ export default function Navbar() {
 
   // Cart state for badge & popover
   const [cart, setCart] = useState([]);
+  const [stockBySku, setStockBySku] = useState({});
   const [cartAnchor, setCartAnchor] = useState(null);
   const cartOpen = Boolean(cartAnchor);
 
@@ -51,24 +55,98 @@ export default function Navbar() {
     };
   }, []);
 
+  useEffect(() => {
+    const skus = [...new Set(cart.map((item) => item.sku).filter(Boolean))];
+    if (!skus.length) {
+      setStockBySku({});
+      return;
+    }
+
+    let ignore = false;
+
+    async function loadStock() {
+      try {
+        const query = skus.map(encodeURIComponent).join(',');
+        const res = await fetch(`/api/stock?sku=${query}`);
+        const data = await res.json();
+        if (ignore || !res.ok || data.ok === false) return;
+
+        const nextStock = Object.fromEntries(skus.map((sku) => [sku, 0]));
+        for (const row of data.data || []) {
+          const sku = row.sku || row.sku_key;
+          nextStock[sku] = row.hidden ? 0 : Math.max(0, Number(row.quantity) || 0);
+        }
+
+        setStockBySku(nextStock);
+
+        let adjusted = false;
+        const nextCart = cart
+          .map((item) => {
+            if (!item.sku || !(item.sku in nextStock)) return item;
+            const available = nextStock[item.sku];
+            if (available <= 0) {
+              adjusted = true;
+              return null;
+            }
+            const qty = Math.min(item.qty || 1, available);
+            if (qty !== item.qty) adjusted = true;
+            return { ...item, qty };
+          })
+          .filter(Boolean);
+
+        if (adjusted) {
+          setCart(nextCart);
+          saveCart(nextCart);
+        }
+      } catch {
+        // Keep the current cart usable if the live stock check is temporarily unavailable.
+      }
+    }
+
+    loadStock();
+
+    return () => {
+      ignore = true;
+    };
+  }, [cart]);
+
+  const getAvailableForItem = (item = {}) => {
+    if (item.sku && Number.isFinite(stockBySku[item.sku])) return stockBySku[item.sku];
+    if (item.sku) return item.qty || 1;
+    return 100;
+  };
+
   const totalItems = cart.reduce((s, i) => s + (i.qty || 0), 0);
 
   // Build display lines with product + options
-  const display = cart.map(({ id, qty, options }) => {
+  const display = cart.map((item) => {
+    const { id, options, qty } = item;
     const p = products.find(x => x.id === id);
-    return p ? { ...p, qty, options: options || {} } : null;
+    return p
+      ? {
+          ...p,
+          key: cartLineKey(item),
+          options: options || {},
+          price: item.price || p.price,
+          qty,
+          sku: item.sku,
+          available: getAvailableForItem(item),
+        }
+      : null;
   }).filter(Boolean);
 
   // Variant-aware +/- handlers
-  const inc = (id, options) => {
-    const k = keyOf(id, options);
-    const next = cart.map(i => keyOf(i.id, i.options || {}) === k ? { ...i, qty: Math.min((i.qty || 1) + 1, 10) } : i);
+  const inc = (lineKey) => {
+    const next = cart.map(i =>
+      cartLineKey(i) === lineKey
+        ? { ...i, qty: Math.min((i.qty || 1) + 1, getAvailableForItem(i)) }
+        : i
+    );
     setCart(next); saveCart(next);
   };
-  const dec = (id, options) => {
-    const k = keyOf(id, options);
+  const dec = (lineKey) => {
     const next = cart
-      .map(i => keyOf(i.id, i.options || {}) === k ? { ...i, qty: (i.qty || 1) - 1 } : i)
+      .map(i => cartLineKey(i) === lineKey ? { ...i, qty: (i.qty || 1) - 1 } : i)
       .filter(i => i.qty > 0);
     setCart(next); saveCart(next);
   };
@@ -165,8 +243,9 @@ export default function Navbar() {
                     i.options?.size ? i.options.size : null
                   ].filter(Boolean).join(' · ');
                   return (
-                    <ListItem key={keyOf(i.id, i.options)} sx={{ alignItems: 'flex-start' }}>
+                    <ListItem key={i.key} sx={{ alignItems: 'flex-start' }}>
                       <ListItemText
+                        disableTypography
                         primary={
                           <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 1 }}>
                             <Typography sx={{ fontWeight: 600, mr: 1 }}>
@@ -182,9 +261,16 @@ export default function Navbar() {
                         }
                         secondary={
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
-                            <Button size="small" variant="outlined" onClick={() => dec(i.id, i.options)}>-</Button>
+                            <Button size="small" variant="outlined" onClick={() => dec(i.key)}>-</Button>
                             <Typography variant="body2">Qty: {i.qty}</Typography>
-                            <Button size="small" variant="outlined" onClick={() => inc(i.id, i.options)}>+</Button>
+                            <Button
+                              size="small"
+                              variant="outlined"
+                              onClick={() => inc(i.key)}
+                              disabled={i.qty >= i.available}
+                            >
+                              +
+                            </Button>
                           </Box>
                         }
                       />

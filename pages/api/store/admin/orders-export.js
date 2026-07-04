@@ -1,5 +1,9 @@
 // pages/api/store/admin/orders-export.js
-import { Client } from 'pg';
+import {
+  ADMIN_PERMISSIONS,
+  requirePermissionAsync,
+} from '../../../../lib/adminAuth';
+import { listOrders } from '../../../../lib/orderStore';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -7,43 +11,17 @@ export default async function handler(req, res) {
     return res.status(405).end('Method not allowed');
   }
 
-  const SUPABASE_DB_URL = process.env.SUPABASE_DB_URL;
-  if (!SUPABASE_DB_URL) {
-    return res.status(500).end('SUPABASE_DB_URL not configured');
+  if (!(await requirePermissionAsync(req, res, ADMIN_PERMISSIONS.ORDERS_EXPORT))) {
+    return;
   }
 
-  const pg = new Client({
-    connectionString: SUPABASE_DB_URL,
-    ssl: { rejectUnauthorized: false },
-  });
-
   try {
-    await pg.connect();
-
-    // Export only orders that are NOT shipped yet
-    const { rows } = await pg.query(`
-      select
-        order_id,
-        stripe_payment_intent_id,
-        status,
-        fulfillment_status,
-        amount_cents,
-        items,
-        customer_email,
-        customer_name,
-        shipping_name,
-        shipping_address1,
-        shipping_address2,
-        shipping_city,
-        shipping_state,
-        shipping_postal_code,
-        shipping_country,
-        created_at
-      from orders
-      where fulfillment_status is distinct from 'shipped'
-      order by created_at asc
-      limit 1000
-    `);
+    // Export only orders that are NOT shipped yet.
+    const rows = await listOrders({
+      limit: 1000,
+      sort: 'asc',
+      unshippedOnly: true,
+    });
 
     // Pirate Ship–friendly headers
     const headers = [
@@ -143,9 +121,5 @@ export default async function handler(req, res) {
   } catch (err) {
     console.error('orders-export error:', err);
     return res.status(500).end('Failed to export orders');
-  } finally {
-    try {
-      await pg.end();
-    } catch {}
   }
 }

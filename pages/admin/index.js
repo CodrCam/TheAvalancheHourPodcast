@@ -1,9 +1,10 @@
 // pages/admin/index.js
 import Link from 'next/link';
+import AdminLayout from '../../components/AdminLayout';
 
 export default function AdminHome() {
   return (
-    <main style={{ padding: 24, maxWidth: 800, margin: '0 auto' }}>
+    <AdminLayout>
       <h1>Admin</h1>
       <p>Internal tools for The Avalanche Hour store.</p>
 
@@ -37,6 +38,6 @@ export default function AdminHome() {
           <li>After labels are printed, set the orders to <em>Shipped</em> in the admin.</li>
         </ol>
       </section>
-    </main>
+    </AdminLayout>
   );
 }

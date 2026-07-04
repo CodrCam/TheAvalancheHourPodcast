@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "eslint .",
     "seed:inventory": "node scripts/seedInventory.js",
-    "clear:inventory": "node scripts/clearInventory.js"
+    "clear:inventory": "node scripts/clearInventory.js",
+    "export:supabase-inventory": "node scripts/exportSupabaseInventorySeed.js",
+    "seed:dynamo-inventory": "node scripts/seedDynamoInventory.js"
   },
   "engines": {
     "node": ">=22.13.0"

@@ -1,58 +1,51 @@
-// pages/api/store/admin/update-stock.js
-import { Client } from 'pg';
+import {
+  ADMIN_PERMISSIONS,
+  requirePermissionAsync,
+} from '../../../../lib/adminAuth';
+import {
+  applyInventoryDelta,
+  deleteInventorySku,
+  setInventoryHidden,
+  setInventoryQuantity,
+} from '../../../../lib/inventoryStore';
 
 export const config = { api: { bodyParser: true } };
-
-function getPg() {
-  const cs = process.env.SUPABASE_DB_URL;
-  if (!cs) return null;
-  return new Client({ connectionString: cs, ssl: { rejectUnauthorized: false } });
-}
 
 function normalizeBody(req, mode) {
   // mode: 'delta' for PUT, 'set' for PATCH
   const b = req.body || {};
   if (Array.isArray(b.items)) return b.items;
   if (mode === 'delta') return b.sku ? [{ sku: b.sku, delta: Number(b.delta) }] : [];
-  if (mode === 'set') return b.sku ? [{ sku: b.sku, quantity: Number(b.quantity) }] : [];
+  if (mode === 'set') {
+    return b.sku
+      ? [
+          {
+            sku: b.sku,
+            quantity: Number(b.quantity),
+            name: b.name,
+            hidden: b.hidden,
+          },
+        ]
+      : [];
+  }
   return [];
 }
 
-async function applyDelta(pg, sku, delta) {
-  // increments by delta; floors at 0
-  const { rows } = await pg.query(
-    `
-    insert into inventory (sku_key, quantity, updated_at)
-    values ($1, greatest(0, $2), now())
-    on conflict (sku_key)
-    do update set quantity = greatest(0, inventory.quantity + $2), updated_at = now()
-    returning sku_key as sku, quantity
-    `,
-    [sku, delta]
-  );
-  return rows[0];
-}
-
-async function applySet(pg, sku, quantity) {
-  const q = Math.max(0, Number.isFinite(quantity) ? quantity : 0);
-  const { rows } = await pg.query(
-    `
-    insert into inventory (sku_key, quantity, updated_at)
-    values ($1, $2, now())
-    on conflict (sku_key)
-    do update set quantity = $2, updated_at = now()
-    returning sku_key as sku, quantity
-    `,
-    [sku, q]
-  );
-  return rows[0];
-}
-
 export default async function handler(req, res) {
-  // Allow only PUT (delta) and PATCH (set)
-  if (!['PUT', 'PATCH'].includes(req.method)) {
-    res.setHeader('Allow', 'PUT,PATCH');
+  // Allow PUT (delta), PATCH (set), POST (visibility), and DELETE (remove custom row)
+  if (!['PUT', 'PATCH', 'POST', 'DELETE'].includes(req.method)) {
+    res.setHeader('Allow', 'PUT,PATCH,POST,DELETE');
     return res.status(405).json({ ok: false, error: 'Method not allowed' });
+  }
+
+  if (
+    !(await requirePermissionAsync(
+      req,
+      res,
+      ADMIN_PERMISSIONS.INVENTORY_UPDATE
+    ))
+  ) {
+    return;
   }
 
   // Require JSON
@@ -60,9 +53,35 @@ export default async function handler(req, res) {
     return res.status(400).json({ ok: false, error: 'Content-Type must be application/json' });
   }
 
-  const pg = getPg();
-  if (!pg) {
-    return res.status(200).json({ ok: false, error: 'Missing SUPABASE_DB_URL' });
+  if (req.method === 'DELETE') {
+    const sku = String(req.body?.sku || '').trim();
+    if (!sku) {
+      return res.status(200).json({ ok: false, error: 'No SKU provided' });
+    }
+
+    try {
+      const deleted = await deleteInventorySku(sku);
+      return res.status(200).json({ ok: true, deleted });
+    } catch (err) {
+      console.error('admin stock delete error:', err);
+      return res.status(200).json({ ok: false, error: 'delete failed' });
+    }
+  }
+
+  if (req.method === 'POST') {
+    const action = String(req.body?.action || '').trim();
+    const sku = String(req.body?.sku || '').trim();
+    if (action !== 'visibility' || !sku) {
+      return res.status(200).json({ ok: false, error: 'Invalid action' });
+    }
+
+    try {
+      const updated = await setInventoryHidden(sku, !!req.body?.hidden);
+      return res.status(200).json({ ok: true, updated });
+    } catch (err) {
+      console.error('admin stock visibility error:', err);
+      return res.status(200).json({ ok: false, error: 'visibility update failed' });
+    }
   }
 
   const mode = req.method === 'PUT' ? 'delta' : 'set';
@@ -73,7 +92,6 @@ export default async function handler(req, res) {
   }
 
   try {
-    await pg.connect();
     const updated = [];
 
     if (mode === 'delta') {
@@ -81,22 +99,26 @@ export default async function handler(req, res) {
         const sku = String(it.sku || '').trim();
         const delta = Number(it.delta);
         if (!sku || !Number.isFinite(delta)) continue;
-        updated.push(await applyDelta(pg, sku, delta));
+        updated.push(await applyInventoryDelta(sku, delta));
       }
     } else {
       for (const it of items) {
         const sku = String(it.sku || '').trim();
         const q = Number(it.quantity);
         if (!sku || !Number.isFinite(q)) continue;
-        updated.push(await applySet(pg, sku, q));
+        const name = String(it.name || '').trim();
+        const options = { name };
+        if (typeof it.hidden === 'boolean') {
+          options.hidden = it.hidden;
+        }
+        updated.push(await setInventoryQuantity(sku, q, options));
       }
     }
 
     return res.status(200).json({ ok: true, updated });
-  } catch {
+  } catch (err) {
+    console.error('admin stock update error:', err);
     // Hardened: no 500s, quiet failure
     return res.status(200).json({ ok: false, error: 'update failed' });
-  } finally {
-    try { await pg.end(); } catch {}
   }
 }

@@ -1,6 +1,6 @@
 // pages/api/store/record-order.js
-import { Client } from 'pg';
 import nodemailer from 'nodemailer';
+import { upsertOrder } from '../../../lib/orderStore';
 
 const EMAIL_USER = process.env.EMAIL_USER;
 const EMAIL_PASS = process.env.EMAIL_PASS;
@@ -12,14 +12,10 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const SUPABASE_DB_URL = process.env.SUPABASE_DB_URL;
-  if (!SUPABASE_DB_URL) {
-    return res.status(500).json({ error: 'SUPABASE_DB_URL not configured' });
-  }
-
   const {
     orderId,
     paymentIntentId,
+    status,
     amountCents,
     items,
     email,
@@ -48,78 +44,26 @@ export default async function handler(req, res) {
   const customerEmail = typeof email === 'string' && email ? email : null;
   const customerName = shippingName || null;
 
-  const pg = new Client({
-    connectionString: SUPABASE_DB_URL,
-    ssl: { rejectUnauthorized: false },
-  });
-
   try {
-    await pg.connect();
+    const { isNewOrder } = await upsertOrder({
+      order_id: orderId,
+      stripe_payment_intent_id: paymentIntentId,
+      status: status || 'paid',
+      fulfillment_status: 'new',
+      amount_cents: typeof amountCents === 'number' ? amountCents : 0,
+      items: Array.isArray(items) ? items : [],
+      customer_email: customerEmail,
+      customer_name: customerName,
+      shipping_name: shippingName,
+      shipping_address1: shippingAddress1,
+      shipping_address2: shippingAddress2,
+      shipping_city: shippingCity,
+      shipping_state: shippingState,
+      shipping_postal_code: shippingPostalCode,
+      shipping_country: shippingCountry,
+    });
 
-    // 1) Check if this order already exists (prevents duplicate emails)
-    const existing = await pg.query(
-      `select 1 from orders where order_id = $1 limit 1`,
-      [orderId]
-    );
-    const isNewOrder = existing.rowCount === 0;
-
-    const fulfillmentStatus = 'New';
-
-    // 2) Upsert order (same as you already had)
-    await pg.query(
-      `
-      insert into orders (
-        order_id,
-        stripe_payment_intent_id,
-        fulfillment_status,
-        amount_cents,
-        items,
-        customer_email,
-        customer_name,
-        shipping_name,
-        shipping_address1,
-        shipping_address2,
-        shipping_city,
-        shipping_state,
-        shipping_postal_code,
-        shipping_country,
-        created_at
-      )
-      values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, now())
-      on conflict (order_id) do update set
-        stripe_payment_intent_id = excluded.stripe_payment_intent_id,
-        fulfillment_status = excluded.fulfillment_status,
-        amount_cents = excluded.amount_cents,
-        items = excluded.items,
-        customer_email = excluded.customer_email,
-        customer_name = excluded.customer_name,
-        shipping_name = excluded.shipping_name,
-        shipping_address1 = excluded.shipping_address1,
-        shipping_address2 = excluded.shipping_address2,
-        shipping_city = excluded.shipping_city,
-        shipping_state = excluded.shipping_state,
-        shipping_postal_code = excluded.shipping_postal_code,
-        shipping_country = excluded.shipping_country
-      `,
-      [
-        orderId,
-        paymentIntentId,
-        fulfillmentStatus,
-        typeof amountCents === 'number' ? amountCents : 0,
-        JSON.stringify(Array.isArray(items) ? items : []),
-        customerEmail,
-        customerName,
-        shippingName,
-        shippingAddress1,
-        shippingAddress2,
-        shippingCity,
-        shippingState,
-        shippingPostalCode,
-        shippingCountry,
-      ]
-    );
-
-    // 3) Email Caleb ONLY on brand-new orders
+    // Email Caleb ONLY on brand-new orders.
     if (isNewOrder) {
       if (!EMAIL_USER || !EMAIL_PASS) {
         // Don’t fail the order if email isn’t configured; just log it.
@@ -174,9 +118,5 @@ ${lines.length ? lines.join('\n') : '- (no items provided)'}
   } catch (err) {
     console.error('record-order error:', err);
     return res.status(500).json({ error: 'Failed to record order' });
-  } finally {
-    try {
-      await pg.end();
-    } catch {}
   }
 }

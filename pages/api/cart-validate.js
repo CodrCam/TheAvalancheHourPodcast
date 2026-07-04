@@ -1,16 +1,13 @@
 // pages/api/cart-validate.js
 // POST /api/cart-validate
 // Body: { items: [{ sku: "hat-001:Corduroy:Navy", qty: 2 }, ...] }
-import { Client } from 'pg';
+import { getInventoryForSkus } from '../../lib/inventoryStore';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', ['POST']);
     return res.status(405).json({ error: `Method ${req.method} Not Allowed` });
   }
-
-  const url = process.env.SUPABASE_DB_URL;
-  if (!url) return res.status(500).json({ error: 'Missing SUPABASE_DB_URL' });
 
   let items = [];
   try {
@@ -34,19 +31,14 @@ export default async function handler(req, res) {
 
   const skus = [...new Set(items.map(i => i.sku))];
 
-  const client = new Client({
-    connectionString: url,
-    ssl: { rejectUnauthorized: false },
-  });
-
   try {
-    await client.connect();
-    const { rows } = await client.query(
-      'select sku_key, quantity from inventory where sku_key = any($1)',
-      [skus]
+    const rows = await getInventoryForSkus(skus);
+    const qtyMap = new Map(
+      rows.map((r) => [
+        r.sku || r.sku_key,
+        r.hidden ? 0 : Number(r.quantity),
+      ])
     );
-
-    const qtyMap = new Map(rows.map(r => [r.sku_key, Number(r.quantity)]));
     const problems = [];
 
     for (const line of items) {
@@ -67,7 +59,5 @@ export default async function handler(req, res) {
   } catch (err) {
     console.error(err);
     return res.status(500).json({ ok: false, error: err.message });
-  } finally {
-    try { await client.end(); } catch {}
   }
 }

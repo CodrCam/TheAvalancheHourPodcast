@@ -49,17 +49,101 @@ function writeCart(items) {
 export default function CartPage() {
   const router = useRouter();
   const [items, setItems] = React.useState([]);
+  const [inventoryMessage, setInventoryMessage] = React.useState('');
+  const [inventoryUnavailable, setInventoryUnavailable] = React.useState(false);
+  const [stockBySku, setStockBySku] = React.useState({});
+  const [checkingInventory, setCheckingInventory] = React.useState(false);
 
   React.useEffect(() => {
     setItems(readCart());
   }, []);
+
+  React.useEffect(() => {
+    if (!items.length) {
+      setInventoryMessage('');
+      setInventoryUnavailable(false);
+      setStockBySku({});
+      return;
+    }
+
+    let ignore = false;
+
+    async function validateCart() {
+      const skus = [...new Set(items.map((item) => item.sku).filter(Boolean))];
+      if (!skus.length) return;
+
+      setCheckingInventory(true);
+      setInventoryUnavailable(false);
+      try {
+        const query = skus.map(encodeURIComponent).join(',');
+        const res = await fetch(`/api/stock?sku=${query}`);
+        const data = await res.json();
+        if (ignore) return;
+
+        if (!res.ok || data.ok === false) {
+          setInventoryMessage('Inventory could not be checked. Please try again shortly.');
+          setInventoryUnavailable(true);
+          return;
+        }
+
+        const nextStock = Object.fromEntries(skus.map((sku) => [sku, 0]));
+        for (const row of data.data || []) {
+          const sku = row.sku || row.sku_key;
+          nextStock[sku] = row.hidden ? 0 : Math.max(0, Number(row.quantity) || 0);
+        }
+        setStockBySku(nextStock);
+
+        let adjusted = false;
+        const nextItems = items
+          .map((item) => {
+            if (!item.sku || !(item.sku in nextStock)) return item;
+            const available = nextStock[item.sku];
+            if (available <= 0) {
+              adjusted = true;
+              return null;
+            }
+            const qty = Math.min(item.qty || 1, available);
+            if (qty !== item.qty) adjusted = true;
+            return { ...item, qty };
+          })
+          .filter(Boolean);
+
+        if (adjusted) {
+          writeCart(nextItems);
+          setItems(nextItems);
+          setInventoryMessage('Your cart was adjusted to the currently available stock.');
+        } else {
+          setInventoryMessage('');
+        }
+      } catch {
+        if (!ignore) {
+          setInventoryMessage('Inventory could not be checked. Please try again shortly.');
+          setInventoryUnavailable(true);
+        }
+      } finally {
+        if (!ignore) setCheckingInventory(false);
+      }
+    }
+
+    validateCart();
+
+    return () => {
+      ignore = true;
+    };
+  }, [items]);
 
   const updateQty = (key, next) => {
     setItems((prev) => {
       const copy = prev.map((i) => ({ ...i }));
       const it = copy.find((i) => i.key === key);
       if (!it) return prev;
-      it.qty = Math.max(1, Math.min(99, parseInt(next, 10) || 1));
+      const available =
+        it.sku && Number.isFinite(stockBySku[it.sku])
+          ? stockBySku[it.sku]
+          : it.sku
+            ? it.qty || 1
+          : 100;
+      it.qty = Math.max(1, Math.min(available, parseInt(next, 10) || 1));
       writeCart(copy);
       return copy;
     });
@@ -75,7 +159,10 @@ export default function CartPage() {
 
   const subtotal = items.reduce((sum, it) => sum + (it.price || 0) * (it.qty || 0), 0);
 
-  const goCheckout = () => router.push('/store/checkout');
+  const goCheckout = () => {
+    if (checkingInventory || inventoryUnavailable) return;
+    router.push('/store/checkout');
+  };
 
   return (
     <>
@@ -120,7 +207,15 @@ export default function CartPage() {
                 elevation={0}
                 sx={{ p: { xs: 1, sm: 2 }, border: '1px solid', borderColor: 'divider', borderRadius: 2 }}
               >
-                {items.map((it, idx) => (
+                {items.map((it, idx) => {
+                  const available =
+                    it.sku && Number.isFinite(stockBySku[it.sku])
+                      ? stockBySku[it.sku]
+                      : it.sku
+                        ? it.qty || 1
+                      : 100;
+                  const atMax = it.qty >= available;
+                  return (
                   <Box key={it.key} sx={{ py: 2 }}>
                     <Grid container spacing={2} alignItems="center">
                       <Grid item xs={3} sm={2}>
@@ -156,6 +251,11 @@ export default function CartPage() {
                         <Typography component="div" sx={{ fontSize: 14, mt: 0.5 }}>
                           {money(it.price)} each
                         </Typography>
+                        {atMax && available < 100 ? (
+                          <Typography component="div" sx={{ color: 'text.secondary', fontSize: 14, mt: 0.5 }}>
+                            Maximum available quantity selected.
+                          </Typography>
+                        ) : null}
                       </Grid>
 
                       {/* Qty controls */}
@@ -173,6 +273,7 @@ export default function CartPage() {
                               size="small"
                               onClick={() => updateQty(it.key, (it.qty || 1) - 1)}
                               aria-label="Decrease quantity"
+                              disabled={(it.qty || 1) <= 1}
                             >
                               <RemoveIcon fontSize="small" />
                             </IconButton>
@@ -183,7 +284,7 @@ export default function CartPage() {
                               onChange={(e) => updateQty(it.key, e.target.value)}
                               type="number"
                               min={1}
-                              max={99}
+                              max={available}
                               style={{
                                 width: 56,
                                 textAlign: 'center',
@@ -197,6 +298,7 @@ export default function CartPage() {
                               size="small"
                               onClick={() => updateQty(it.key, (it.qty || 1) + 1)}
                               aria-label="Increase quantity"
+                              disabled={atMax}
                             >
                               <AddIcon fontSize="small" />
                             </IconButton>
@@ -220,7 +322,8 @@ export default function CartPage() {
 
                     {idx < items.length - 1 ? <Divider sx={{ mt: 2 }} /> : null}
                   </Box>
-                ))}
+                );
+                })}
               </Paper>
             </Grid>
 
@@ -243,6 +346,16 @@ export default function CartPage() {
                 <Typography component="div" sx={{ color: 'text.secondary', fontSize: 14, mb: 2 }}>
                   Shipping and taxes calculated at checkout.
                 </Typography>
+                {checkingInventory ? (
+                  <Typography component="div" sx={{ color: 'text.secondary', fontSize: 14, mb: 1 }}>
+                    Checking inventory...
+                  </Typography>
+                ) : null}
+                {inventoryMessage ? (
+                  <Typography component="div" sx={{ color: inventoryUnavailable ? 'error.main' : 'text.secondary', fontSize: 14, mb: 1 }}>
+                    {inventoryMessage}
+                  </Typography>
+                ) : null}
 
                 <Button
                   fullWidth
@@ -250,6 +363,7 @@ export default function CartPage() {
                   size="large"
                   startIcon={<ShoppingCartCheckoutIcon />}
                   onClick={goCheckout}
+                  disabled={checkingInventory || inventoryUnavailable}
                 >
                   Checkout
                 </Button>

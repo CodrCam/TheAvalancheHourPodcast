@@ -1,0 +1,157 @@
+[
+  {
+    "sku": "ah-hat-black-camo",
+    "quantity": 8,
+    "updated_at": "2026-01-22T23:45:01.377Z"
+  },
+  {
+    "sku": "ah-hat-black-mesh",
+    "quantity": 8,
+    "updated_at": "2026-01-22T23:54:35.324Z"
+  },
+  {
+    "sku": "ah-hat-blue",
+    "quantity": 9,
+    "updated_at": "2026-01-22T23:48:00.589Z"
+  },
+  {
+    "sku": "ah-hat-blue-mesh",
+    "quantity": 9,
+    "updated_at": "2026-01-22T23:48:15.503Z"
+  },
+  {
+    "sku": "ah-hat-dark-heather",
+    "quantity": 9,
+    "updated_at": "2026-01-22T23:53:35.728Z"
+  },
+  {
+    "sku": "ah-hat-green-cord",
+    "quantity": 9,
+    "updated_at": "2026-01-22T23:48:36.584Z"
+  },
+  {
+    "sku": "ah-hat-rust-rope",
+    "quantity": 9,
+    "updated_at": "2026-01-22T23:54:04.984Z"
+  },
+  {
+    "sku": "ah-sticker-logo",
+    "quantity": 10,
+    "updated_at": "2026-01-17T04:00:40.973Z"
+  },
+  {
+    "sku": "free-range-tote",
+    "quantity": 100,
+    "updated_at": "2025-11-26T05:34:28.165Z"
+  },
+  {
+    "sku": "hoodie-blue-storm-l",
+    "quantity": 10,
+    "updated_at": "2025-11-26T05:34:27.964Z"
+  },
+  {
+    "sku": "hoodie-blue-storm-m",
+    "quantity": 9,
+    "updated_at": "2026-01-22T18:34:32.199Z"
+  },
+  {
+    "sku": "hoodie-blue-storm-s",
+    "quantity": 5,
+    "updated_at": "2025-11-26T05:34:27.896Z"
+  },
+  {
+    "sku": "hoodie-blue-storm-xl",
+    "quantity": 0,
+    "updated_at": "2026-01-16T17:25:15.683Z"
+  },
+  {
+    "sku": "hoodie-dark-grey-heather-l",
+    "quantity": 9,
+    "updated_at": "2025-11-29T03:56:13.247Z"
+  },
+  {
+    "sku": "hoodie-dark-grey-heather-m",
+    "quantity": 8,
+    "updated_at": "2025-12-05T14:32:32.886Z"
+  },
+  {
+    "sku": "hoodie-dark-grey-heather-s",
+    "quantity": 5,
+    "updated_at": "2025-11-26T05:34:28.030Z"
+  },
+  {
+    "sku": "hoodie-dark-grey-heather-xl",
+    "quantity": 7,
+    "updated_at": "2025-12-05T14:32:43.920Z"
+  },
+  {
+    "sku": "recap-cord-blue-grey",
+    "quantity": 4,
+    "updated_at": "2025-11-26T05:34:27.477Z"
+  },
+  {
+    "sku": "recap-cord-sage-purp",
+    "quantity": 3,
+    "updated_at": "2025-11-26T05:34:27.512Z"
+  },
+  {
+    "sku": "recap-cord-teal",
+    "quantity": 4,
+    "updated_at": "2025-11-26T05:34:27.582Z"
+  },
+  {
+    "sku": "recap-cord-yellow",
+    "quantity": 4,
+    "updated_at": "2025-11-26T05:34:27.548Z"
+  },
+  {
+    "sku": "recap-cuff-black",
+    "quantity": 2,
+    "updated_at": "2025-11-26T05:34:27.722Z"
+  },
+  {
+    "sku": "recap-cuff-blue",
+    "quantity": 3,
+    "updated_at": "2025-12-12T18:09:04.191Z"
+  },
+  {
+    "sku": "recap-cuff-purp",
+    "quantity": 2,
+    "updated_at": "2025-11-26T05:34:27.793Z"
+  },
+  {
+    "sku": "recap-pom-blue",
+    "quantity": 0,
+    "updated_at": "2025-12-05T14:30:51.756Z"
+  },
+  {
+    "sku": "recap-pom-brown",
+    "quantity": 0,
+    "updated_at": "2026-01-22T18:34:17.530Z"
+  },
+  {
+    "sku": "recap-pom-green",
+    "quantity": 1,
+    "updated_at": "2026-01-16T17:25:22.448Z"
+  },
+  {
+    "sku": "recap-trucker-gold-dirt",
+    "quantity": 15,
+    "updated_at": "2025-11-26T05:34:27.431Z"
+  },
+  {
+    "sku": "strap-20-black",
+    "quantity": 95,
+    "updated_at": "2025-12-12T17:45:47.816Z"
+  },
+  {
+    "sku": "strap-25-blue",
+    "quantity": 95,
+    "updated_at": "2025-12-12T17:45:54.110Z"
+  },
+  {
+    "sku": "tote-free-range-canvas",
+    "quantity": 0,
+    "updated_at": "2025-11-26T05:45:25.927Z"
+  }
+]

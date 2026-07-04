@@ -2,8 +2,13 @@
 
 import Stripe from 'stripe';
 import nodemailer from 'nodemailer';
-import { Client } from 'pg';
 import { escapeHtml } from '../../lib/escapeHtml';
+import { applyInventoryDelta } from '../../lib/inventoryStore';
+import {
+  claimInventoryDecrement,
+  markInventoryDecremented,
+  upsertOrder,
+} from '../../lib/orderStore';
 import { products } from '../../src/data/products';
 
 // Stripe needs the raw body, not JSON-parsed
@@ -13,7 +18,6 @@ export const config = {
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
-const SUPABASE_DB_URL = process.env.SUPABASE_DB_URL;
 
 // Email configuration (same as /api/contact)
 const EMAIL_USER = process.env.EMAIL_USER;
@@ -89,7 +93,7 @@ function resolveSkuForItem(item) {
  *   quantity = greatest(0, quantity + delta)
  * where delta is negative for an order.
  */
-async function decrementInventoryForItems(pg, items) {
+async function decrementInventoryForItems(items) {
   if (!Array.isArray(items) || !items.length) return;
 
   const skuDeltas = new Map();
@@ -118,20 +122,7 @@ async function decrementInventoryForItems(pg, items) {
     if (!Number.isFinite(delta) || delta === 0) continue;
 
     try {
-      // This matches the "delta" logic from /api/store/admin/update-stock:
-      // - insert with quantity = greatest(0, delta) for new row
-      // - on conflict, quantity = greatest(0, inventory.quantity + delta)
-      await pg.query(
-        `
-        insert into inventory (sku_key, quantity, updated_at)
-        values ($1, greatest(0, $2), now())
-        on conflict (sku_key)
-        do update set quantity = greatest(0, inventory.quantity + $2),
-                     updated_at = now()
-        `,
-        [sku, delta]
-      );
-
+      await applyInventoryDelta(sku, delta);
       console.log('Inventory updated for SKU', sku, 'delta', delta);
     } catch (err) {
       console.error('Inventory update failed for SKU', sku, err);
@@ -328,112 +319,71 @@ export default async function handler(req, res) {
     const shippingPostalCode = addr?.postal_code || null;
     const shippingCountry = addr?.country || null;
 
-    const pg = new Client({
-      connectionString: SUPABASE_DB_URL,
-      ssl: { rejectUnauthorized: false },
-    });
-
     try {
-      await pg.connect();
-
-      // 1) Upsert the order
-      await pg.query(
-        `
-        insert into orders (
-          order_id,
-          stripe_payment_intent_id,
-          status,
-          fulfillment_status,
-          amount_cents,
-          items,
-          customer_email,
-          customer_name,
-          shipping_name,
-          shipping_address1,
-          shipping_address2,
-          shipping_city,
-          shipping_state,
-          shipping_postal_code,
-          shipping_country,
-          created_at
-        )
-        values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, now())
-        on conflict (order_id) do update set
-          stripe_payment_intent_id = excluded.stripe_payment_intent_id,
-          status = excluded.status,
-          fulfillment_status = excluded.fulfillment_status,
-          amount_cents = excluded.amount_cents,
-          items = excluded.items,
-          customer_email = excluded.customer_email,
-          customer_name = excluded.customer_name,
-          shipping_name = excluded.shipping_name,
-          shipping_address1 = excluded.shipping_address1,
-          shipping_address2 = excluded.shipping_address2,
-          shipping_city = excluded.shipping_city,
-          shipping_state = excluded.shipping_state,
-          shipping_postal_code = excluded.shipping_postal_code,
-          shipping_country = excluded.shipping_country
-        `,
-        [
-          orderId,
-          pi.id,
-          'paid', // payment status
-          'New', // fulfillment status for admin UI
-          amountCents,
-          JSON.stringify(items || []),
-          customerEmail,
-          customerName,
-          shippingName,
-          shippingAddress1,
-          shippingAddress2,
-          shippingCity,
-          shippingState,
-          shippingPostalCode,
-          shippingCountry,
-        ]
+      // 1) Upsert the order. Webhook metadata can be compact, so preserve
+      // fuller cart line details if /api/store/record-order already saved them.
+      const { isNewOrder } = await upsertOrder(
+        {
+          order_id: orderId,
+          stripe_payment_intent_id: pi.id,
+          status: 'paid',
+          fulfillment_status: 'new',
+          amount_cents: amountCents,
+          items: items || [],
+          customer_email: customerEmail,
+          customer_name: customerName,
+          shipping_name: shippingName,
+          shipping_address1: shippingAddress1,
+          shipping_address2: shippingAddress2,
+          shipping_city: shippingCity,
+          shipping_state: shippingState,
+          shipping_postal_code: shippingPostalCode,
+          shipping_country: shippingCountry,
+        },
+        { preserveExistingItems: true }
       );
 
       console.log('Order upserted into orders table:', orderId);
 
-      // 2) Decrement inventory for each SKU in the order
-      await decrementInventoryForItems(pg, items);
+      // 2) Decrement inventory once for each paid order. Stripe may retry
+      // webhooks, so claim the decrement before touching stock.
+      const shouldDecrementInventory = await claimInventoryDecrement(orderId);
+      if (shouldDecrementInventory) {
+        await decrementInventoryForItems(items);
+        await markInventoryDecremented(orderId);
+      } else {
+        console.log('Inventory already decremented for order:', orderId);
+      }
+
+      // 3) Fire off internal notification email only when this webhook created
+      // the order. If the browser fallback recorded it first, that endpoint
+      // already sent the notification.
+      if (isNewOrder) {
+        try {
+          await sendOrderNotificationEmail({
+            orderId,
+            amountCents,
+            items,
+            customerEmail,
+            customerName,
+            shippingName,
+            shippingAddress1,
+            shippingAddress2,
+            shippingCity,
+            shippingState,
+            shippingPostalCode,
+            shippingCountry,
+          });
+        } catch (err) {
+          console.error('Order notification email failed:', err);
+        }
+      }
     } catch (err) {
       console.error('WEBHOOK DB INSERT / INVENTORY ERROR:', err);
-      try {
-        await pg.end();
-      } catch (e) {
-        // ignore
-      }
       // Do not keep returning 500 to Stripe; just log and acknowledge
       return res
         .status(200)
         .json({ received: true, note: 'db insert or inventory update failed' });
-    }
-
-    try {
-      await pg.end();
-    } catch (e) {
-      // ignore
-    }
-
-    // 3) Fire off internal notification email (non-blocking from Stripe's POV if it fails)
-    try {
-      await sendOrderNotificationEmail({
-        orderId,
-        amountCents,
-        items,
-        customerEmail,
-        customerName,
-        shippingName,
-        shippingAddress1,
-        shippingAddress2,
-        shippingCity,
-        shippingState,
-        shippingPostalCode,
-        shippingCountry,
-      });
-    } catch (err) {
-      console.error('Order notification email failed:', err);
     }
   }
 

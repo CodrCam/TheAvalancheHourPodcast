@@ -32,6 +32,7 @@ function writeCart(items) {
   if (typeof window === 'undefined') return;
   try {
     localStorage.setItem(CART_KEY, JSON.stringify(items));
+    window.dispatchEvent(new Event('ah_cart_updated'));
   } catch {
     // ignore
   }
@@ -60,6 +61,8 @@ export default function ReviewPage() {
 
   const [loading, setLoading] = React.useState(true);
   const [errorMsg, setErrorMsg] = React.useState('');
+  const [inventoryProblems, setInventoryProblems] = React.useState([]);
+  const [stockBySku, setStockBySku] = React.useState({});
 
   // Load cart + shipping/email from storage
   React.useEffect(() => {
@@ -99,6 +102,64 @@ export default function ReviewPage() {
     setEmail(emailData);
   }, []);
 
+  React.useEffect(() => {
+    if (!items.length) {
+      setStockBySku({});
+      return;
+    }
+
+    const skus = [...new Set(items.map((item) => item.sku).filter(Boolean))];
+    if (!skus.length) return;
+
+    let ignore = false;
+
+    async function syncStock() {
+      try {
+        const query = skus.map(encodeURIComponent).join(',');
+        const res = await fetch(`/api/stock?sku=${query}`);
+        const data = await res.json();
+        if (ignore || !res.ok || data.ok === false) return;
+
+        const nextStock = Object.fromEntries(skus.map((sku) => [sku, 0]));
+        for (const row of data.data || []) {
+          const sku = row.sku || row.sku_key;
+          nextStock[sku] = row.hidden ? 0 : Math.max(0, Number(row.quantity) || 0);
+        }
+        setStockBySku(nextStock);
+
+        let adjusted = false;
+        const nextItems = items
+          .map((item) => {
+            if (!item.sku || !(item.sku in nextStock)) return item;
+            const available = nextStock[item.sku];
+            if (available <= 0) {
+              adjusted = true;
+              return null;
+            }
+            const qty = Math.min(item.qty || 1, available);
+            if (qty !== item.qty) adjusted = true;
+            return { ...item, qty };
+          })
+          .filter(Boolean);
+
+        if (adjusted) {
+          setItems(nextItems);
+          setInventoryProblems([]);
+          writeCart(nextItems);
+          if (!nextItems.length) router.push('/store/cart');
+        }
+      } catch {
+        // The final payment-intent request still validates stock server-side.
+      }
+    }
+
+    syncStock();
+
+    return () => {
+      ignore = true;
+    };
+  }, [items, router]);
+
   // Whenever we have items + shipping, (re)create the PaymentIntent
   React.useEffect(() => {
     if (!items.length || !shipping) return;
@@ -124,6 +185,18 @@ export default function ReviewPage() {
         const data = await res.json();
 
         if (!res.ok) {
+          if (res.status === 409 && Array.isArray(data?.details)) {
+            setInventoryProblems(data.details);
+            setClientSecret(null);
+            setIntentId(null);
+            setBreakdown(null);
+            setErrorMsg(
+              'Some quantities are no longer available. Update or remove those items before payment.'
+            );
+            setLoading(false);
+            return;
+          }
+
           setErrorMsg(
             data?.error || 'Failed to prepare order (tax/total).'
           );
@@ -133,6 +206,7 @@ export default function ReviewPage() {
 
         if (ignore) return;
 
+        setInventoryProblems([]);
         setClientSecret(data.clientSecret);
         setIntentId(data.intentId);
         setBreakdown(data.breakdown || null);
@@ -164,13 +238,31 @@ export default function ReviewPage() {
   }
 
   function handleQtyChange(key, qty) {
-    const safeQty = Math.max(1, Math.min(99, qty || 1));
     const next = items.map((it) =>
-      it.key === key ? { ...it, qty: safeQty } : it
+      it.key === key
+        ? {
+            ...it,
+            qty: Math.max(
+              1,
+              Math.min(
+                it.sku && Number.isFinite(stockBySku[it.sku])
+                  ? stockBySku[it.sku]
+                  : it.sku
+                    ? it.qty || 1
+                    : 99,
+                qty || 1
+              )
+            ),
+          }
+        : it
     );
     setItems(next);
     writeCart(next);
   }
+
+  const problemBySku = React.useMemo(() => {
+    return new Map(inventoryProblems.map((p) => [p.key || p.sku, p]));
+  }, [inventoryProblems]);
 
   async function handleContinueToPayment() {
     if (!clientSecret || !intentId || !breakdown) return;
@@ -310,7 +402,16 @@ export default function ReviewPage() {
               </Typography>
 
               <Box sx={{ display: 'grid', gap: 1 }}>
-                {items.map((it) => (
+                {items.map((it) => {
+                  const problem = problemBySku.get(it.key) || problemBySku.get(it.sku);
+                  const available =
+                    it.sku && Number.isFinite(stockBySku[it.sku])
+                      ? stockBySku[it.sku]
+                      : it.sku
+                        ? it.qty || 1
+                      : 99;
+                  const atMax = it.qty >= available && available < 99;
+                  return (
                   <Box
                     key={it.key}
                     sx={{
@@ -361,7 +462,7 @@ export default function ReviewPage() {
                         <input
                           type="number"
                           min={1}
-                          max={99}
+                          max={available}
                           value={it.qty}
                           onChange={(e) =>
                             handleQtyChange(
@@ -379,6 +480,24 @@ export default function ReviewPage() {
                           }}
                         />
                       </Typography>
+                      {problem ? (
+                        <Typography
+                          variant="body2"
+                          sx={{ color: 'error.main', mt: 0.5 }}
+                        >
+                          {problem.available > 0
+                            ? 'Only limited stock remains for this item.'
+                            : 'This item is no longer available.'}
+                          </Typography>
+                      ) : null}
+                      {!problem && atMax ? (
+                        <Typography
+                          variant="body2"
+                          sx={{ color: 'text.secondary', mt: 0.5 }}
+                        >
+                          Maximum available quantity selected.
+                        </Typography>
+                      ) : null}
                     </Box>
                     <Box sx={{ textAlign: 'right' }}>
                       <Typography sx={{ fontWeight: 500 }}>
@@ -393,7 +512,8 @@ export default function ReviewPage() {
                       </Button>
                     </Box>
                   </Box>
-                ))}
+                );
+                })}
               </Box>
             </Grid>
           </Grid>
