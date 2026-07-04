@@ -32,6 +32,11 @@ function toAmzDate(date) {
 }
 
 function getAwsConfig() {
+  const dynamoAccessKeyId = process.env.DYNAMODB_ACCESS_KEY_ID;
+  const dynamoSecretAccessKey = process.env.DYNAMODB_SECRET_ACCESS_KEY;
+  const usingDynamoNamedCredentials =
+    !!(dynamoAccessKeyId || dynamoSecretAccessKey);
+
   return {
     region:
       process.env.DYNAMODB_REGION ||
@@ -39,12 +44,15 @@ function getAwsConfig() {
       process.env.COGNITO_REGION ||
       'us-east-2',
     tableName: process.env.DYNAMODB_INVENTORY_TABLE,
-    accessKeyId:
-      process.env.DYNAMODB_ACCESS_KEY_ID || process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey:
-      process.env.DYNAMODB_SECRET_ACCESS_KEY || process.env.AWS_SECRET_ACCESS_KEY,
-    sessionToken:
-      process.env.DYNAMODB_SESSION_TOKEN || process.env.AWS_SESSION_TOKEN,
+    accessKeyId: usingDynamoNamedCredentials
+      ? dynamoAccessKeyId
+      : process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: usingDynamoNamedCredentials
+      ? dynamoSecretAccessKey
+      : process.env.AWS_SECRET_ACCESS_KEY,
+    sessionToken: usingDynamoNamedCredentials
+      ? process.env.DYNAMODB_SESSION_TOKEN
+      : process.env.AWS_SESSION_TOKEN,
   };
 }
 
