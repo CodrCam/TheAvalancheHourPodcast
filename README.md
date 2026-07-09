@@ -47,6 +47,7 @@ npm install
 
 SPOTIFY_CLIENT_ID=your_spotify_client_id
 SPOTIFY_CLIENT_SECRET=your_spotify_client_secret
+NEXT_PUBLIC_GA_MEASUREMENT_ID=G-XXXXXXXXXX
 
 
 	4.	Start the development server:
@@ -74,6 +75,7 @@ This project is hosted on Vercel.
 	1.	Deploy the repository to Vercel:
 	•	Connect the GitHub repository to your Vercel account.
 	•	Add your .env variables in the Vercel dashboard.
+	•	Add `NEXT_PUBLIC_GA_MEASUREMENT_ID` to enable Google Analytics 4 tracking.
 	2.	The site will be available at your Vercel-provided URL (e.g., https://the-avalanche-hour.vercel.app).
 
 👥 Contributors

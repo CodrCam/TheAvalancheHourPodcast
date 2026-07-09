@@ -14,6 +14,7 @@ import {
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import Navbar from '../../../components/Navbar';
+import { ecommerceEvent } from '../../../lib/gtag';
 
 const CART_KEY = 'ah_cart';
 
@@ -48,8 +49,15 @@ export default function ShippingPage() {
     country: 'US', // we only ship in the US
   });
   const [errorMsg, setErrorMsg] = React.useState('');
+  const trackedBeginCheckoutRef = React.useRef(false);
 
   const items = React.useMemo(() => readCart(), []);
+
+  React.useEffect(() => {
+    if (trackedBeginCheckoutRef.current || !items.length) return;
+    trackedBeginCheckoutRef.current = true;
+    ecommerceEvent('begin_checkout', { items });
+  }, [items]);
 
   // Hydrate from any existing session data
   React.useEffect(() => {

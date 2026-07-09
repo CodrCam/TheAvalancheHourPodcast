@@ -15,6 +15,7 @@ import {
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import Navbar from '../../../components/Navbar';
+import { ecommerceEvent } from '../../../lib/gtag';
 
 const CART_KEY = 'ah_cart';
 
@@ -266,6 +267,12 @@ export default function ReviewPage() {
 
   async function handleContinueToPayment() {
     if (!clientSecret || !intentId || !breakdown) return;
+
+    ecommerceEvent('add_shipping_info', {
+      items,
+      value: (breakdown.totalCents || 0) / 100,
+      shipping_tier: 'Flat rate',
+    });
 
     try {
       if (typeof window !== 'undefined') {

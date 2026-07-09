@@ -28,6 +28,7 @@ import {
   getUnitPrice,
   getVariantImage,
 } from '../../lib/productCatalog';
+import { ecommerceEvent } from '../../lib/gtag';
 
 const CART_KEY = 'ah_cart';
 const LOW_STOCK_THRESHOLD = 5;
@@ -125,6 +126,7 @@ export default function ProductSlugPage({ initialProduct = null }) {
 
   // Gallery state
   const [selectedImage, setSelectedImage] = React.useState(null);
+  const viewedProductRef = React.useRef('');
 
   // Initialize defaults when product changes
   React.useEffect(() => {
@@ -231,6 +233,38 @@ export default function ProductSlugPage({ initialProduct = null }) {
     style,
   ]);
 
+  React.useEffect(() => {
+    if (!product || viewedProductRef.current === product.id) return;
+    if (product.styles?.length && !style) return;
+    if (product.sizes?.length && !size) return;
+
+    const colorOptions = getSelectableColors(
+      product,
+      getProductSkuEntries(product),
+      style
+    );
+    if (colorOptions.length && !color) return;
+
+    const trackingOptions = {};
+    if (product.styles?.length && style) trackingOptions.style = style;
+    if (product.sizes?.length && size) trackingOptions.size = size;
+    if (color) trackingOptions.color = color;
+
+    viewedProductRef.current = product.id;
+    ecommerceEvent('view_item', {
+      items: [
+        {
+          id: product.id,
+          sku: getSkuForOptions(product, trackingOptions),
+          name: product.name,
+          price: getUnitPrice(product, trackingOptions),
+          qty: 1,
+          options: trackingOptions,
+        },
+      ],
+    });
+  }, [color, product, size, style]);
+
   if (!product) {
     // Could render a spinner or 404 here instead of null if you want
     return null;
@@ -326,6 +360,18 @@ export default function ProductSlugPage({ initialProduct = null }) {
     }
 
     writeCart(items);
+    ecommerceEvent('add_to_cart', {
+      items: [
+        {
+          id: product.id,
+          sku: selectedSku,
+          name: product.name,
+          price: unitPrice,
+          qty: nextQty,
+          options,
+        },
+      ],
+    });
     if (goCheckout) router.push('/store/checkout');
   }
 

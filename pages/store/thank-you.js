@@ -12,6 +12,8 @@ import {
   Grid,
 } from '@mui/material';
 import Navbar from '../../components/Navbar';
+import { LAST_ORDER_KEY } from '../../src/config/store';
+import { ecommerceEvent } from '../../lib/gtag';
 
 // Treat the argument as **dollars**, not cents
 const money = (amount = 0) =>
@@ -20,13 +22,19 @@ const money = (amount = 0) =>
     currency: 'USD',
   });
 
+function getOrderAmountDollars(meta) {
+  if (typeof meta?.amountCents === 'number') return meta.amountCents / 100;
+  if (typeof meta?.amount === 'number') return meta.amount;
+  return 0;
+}
+
 export default function ThankYouPage() {
   const [meta, setMeta] = React.useState(null);
 
   React.useEffect(() => {
     if (typeof window === 'undefined') return;
     try {
-      const raw = sessionStorage.getItem('ah_last_order');
+      const raw = sessionStorage.getItem(LAST_ORDER_KEY);
       if (!raw) return;
       const parsed = JSON.parse(raw);
       setMeta(parsed);
@@ -34,6 +42,28 @@ export default function ThankYouPage() {
       // ignore parse errors
     }
   }, []);
+
+  React.useEffect(() => {
+    if (!meta || typeof window === 'undefined') return;
+
+    const transactionId = meta.orderId || meta.paymentIntentId || '';
+    const purchaseKey = transactionId
+      ? `ah_ga_purchase_${transactionId}`
+      : 'ah_ga_purchase_latest';
+
+    try {
+      if (sessionStorage.getItem(purchaseKey)) return;
+      sessionStorage.setItem(purchaseKey, '1');
+    } catch {
+      // If session storage is unavailable, still try to record the purchase once.
+    }
+
+    ecommerceEvent('purchase', {
+      transaction_id: transactionId,
+      value: getOrderAmountDollars(meta),
+      items: Array.isArray(meta.items) ? meta.items : [],
+    });
+  }, [meta]);
 
   const hasItems = !!meta && Array.isArray(meta.items) && meta.items.length > 0;
 
@@ -83,8 +113,7 @@ export default function ThankYouPage() {
               Total paid
             </Typography>
             <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-              {/* meta.amount is already dollars */}
-              {money(meta?.amount ?? 0)}
+              {money(getOrderAmountDollars(meta))}
             </Typography>
           </Box>
 

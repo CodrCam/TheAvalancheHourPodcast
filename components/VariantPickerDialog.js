@@ -23,6 +23,7 @@ import {
   getUnitPrice,
   getVariantImage,
 } from '../lib/productCatalog';
+import { ecommerceEvent } from '../lib/gtag';
 
 const CART_KEY = 'ah_cart';
 const LOW_STOCK_THRESHOLD = 5;
@@ -287,6 +288,18 @@ export default function VariantPickerDialog({
     }
 
     writeCart(items);
+    ecommerceEvent('add_to_cart', {
+      items: [
+        {
+          id: product.id,
+          sku: selectedSku,
+          name: product.name,
+          price: unitPrice,
+          qty: 1,
+          options,
+        },
+      ],
+    });
     if (onAdded) onAdded();
     if (onClose) onClose();
   };

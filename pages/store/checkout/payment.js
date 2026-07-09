@@ -27,6 +27,7 @@ import {
   CHECKOUT_PAYMENT_KEY,
   LAST_ORDER_KEY,
 } from '../../../src/config/store';
+import { ecommerceEvent } from '../../../lib/gtag';
 
 const stripePromise = loadStripe(
   process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || ''
@@ -94,6 +95,11 @@ function PaymentForm({ clientSecret, breakdown }) {
 
     setSubmitting(true);
     setErrorMsg('');
+    ecommerceEvent('add_payment_info', {
+      items,
+      value: (breakdown?.totalCents || 0) / 100,
+      payment_type: 'card',
+    });
 
     try {
       const result = await stripe.confirmPayment({
