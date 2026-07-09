@@ -6,6 +6,7 @@ import {
 import { listInventory } from '../../../../lib/inventoryStore';
 import { listOrders } from '../../../../lib/orderStore';
 import { getAllCatalogSkuEntries, getSkuCatalog } from '../../../../lib/productCatalog';
+import { getHomeContent } from '../../../../lib/siteContentStore';
 
 const LOW_STOCK_THRESHOLD = 2;
 
@@ -74,13 +75,18 @@ export default async function handler(req, res) {
     return res.status(403).json({ error: 'Forbidden' });
   }
 
-  const [ordersResult, inventoryResult] = await Promise.allSettled([
-      listOrders({ limit: 1000, sort: 'desc' }),
-      listInventory(),
+  const [ordersResult, inventoryResult, siteContentResult] = await Promise.allSettled([
+    listOrders({ limit: 1000, sort: 'desc' }),
+    listInventory(),
+    getHomeContent({ allowDefault: true }),
   ]);
 
   const ordersOk = ordersResult.status === 'fulfilled';
   const inventoryOk = inventoryResult.status === 'fulfilled';
+  const siteContentOk =
+    siteContentResult.status === 'fulfilled' &&
+    siteContentResult.value.configured === true &&
+    siteContentResult.value.source === 'dynamo';
   const orders = ordersOk ? ordersResult.value.map(cleanOrder) : [];
   const inventory = inventoryOk
     ? inventoryResult.value.map(normalizeInventoryRow)
@@ -119,6 +125,16 @@ export default async function handler(req, res) {
       emailConfigured ? 'good' : 'warn'
     ),
     healthCheck(
+      'site_content',
+      'Homepage content',
+      siteContentOk,
+      siteContentOk ? 'Managed' : 'Using defaults',
+      siteContentOk
+        ? 'Homepage CTA content is loading from DynamoDB.'
+        : 'Homepage CTA is using static fallback content.',
+      siteContentOk ? 'good' : 'warn'
+    ),
+    healthCheck(
       'last_order',
       'Last order recorded',
       true,
@@ -139,7 +155,12 @@ export default async function handler(req, res) {
       lastInventoryUpdate ? 'good' : 'neutral'
     ),
   ];
-  const overallTone = !ordersOk || !inventoryOk ? 'bad' : emailConfigured ? 'good' : 'warn';
+  const overallTone =
+    !ordersOk || !inventoryOk
+      ? 'bad'
+      : emailConfigured && siteContentOk
+        ? 'good'
+        : 'warn';
 
   try {
     const catalogEntries = getAllCatalogSkuEntries();

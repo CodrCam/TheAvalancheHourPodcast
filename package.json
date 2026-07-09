@@ -10,7 +10,9 @@
     "export:supabase-inventory": "node scripts/exportSupabaseInventorySeed.js",
     "seed:dynamo-inventory": "node scripts/seedDynamoInventory.js",
     "export:supabase-orders": "node scripts/exportSupabaseOrdersSeed.js",
-    "seed:dynamo-orders": "node scripts/seedDynamoOrders.js"
+    "seed:dynamo-orders": "node scripts/seedDynamoOrders.js",
+    "seed:dynamo-site-content": "node scripts/seedDynamoSiteContent.js",
+    "seed:dynamo-sponsors": "node scripts/seedDynamoSponsors.js"
   },
   "engines": {
     "node": ">=22.13.0"

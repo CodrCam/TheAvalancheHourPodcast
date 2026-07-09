@@ -20,6 +20,10 @@ function parseBasicAuth(header = '') {
 }
 
 function configuredPrincipals() {
+  if (process.env.ALLOW_LEGACY_ADMIN_AUTH !== 'true') {
+    return [];
+  }
+
   return [
     {
       username: process.env.ADMIN_USER || '',
@@ -112,10 +116,7 @@ export function middleware(req) {
     return NextResponse.redirect(loginUrl);
   }
 
-  return new NextResponse('Unauthorized', {
-    status: 401,
-    headers: { 'WWW-Authenticate': 'Basic realm="Admin"' },
-  });
+  return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 }
 
 export const config = {

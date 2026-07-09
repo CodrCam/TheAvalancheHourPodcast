@@ -101,9 +101,7 @@ class MyDocument extends Document {
                 "logo": "https://www.theavalanchehour.com/images/logo.png",
                 "description": "Creating a stronger community through sharing stories, knowledge, and news amongst people who have a curious fascination with avalanches.",
                 "sameAs": [
-                  "https://open.spotify.com/show/your-show-id",
-                  "https://podcasts.apple.com/podcast/your-podcast-id",
-                  // Add other social media and podcast platform URLs
+                  "https://www.instagram.com/theavalanchehourpodcast/"
                 ],
                 "contactPoint": {
                   "@type": "ContactPoint",

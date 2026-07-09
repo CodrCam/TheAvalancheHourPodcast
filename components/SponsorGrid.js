@@ -12,23 +12,26 @@ import {
 } from '@mui/material';
 import { sponsors } from '../src/data/sponsors';
 
-function Tier({ title, items, variant }) {
-  // Legacy stays as-is; Partner is smaller; Friends kept for reuse if needed.
+function Tier({ title, items, variant, visibility }) {
+  const visibleItems = items.filter((s) => visibility?.[s.id] !== false);
+  if (!visibleItems.length) return null;
+
   const cfg = {
     legacy: {
-      mediaH: { xs: 80, sm: 96, md: 110 },
+      mediaH: { xs: 126, sm: 146, md: 164 },
       nameFs: { xs: '0.95rem', md: '1.05rem' },
-      maxW: { xs: 300, sm: 320, md: 340 },
+      maxW: { xs: 320, sm: 350, md: 380 },
       borderW: 3,
       elevation: 2,
+      imageP: { xs: 1.25, sm: 1.75 },
     },
     partner: {
-      // Make partners visibly smaller than legacy
-      mediaH: { xs: 62, sm: 72, md: 82 },
+      mediaH: { xs: 48, sm: 56, md: 64 },
       nameFs: { xs: '0.88rem', md: '0.95rem' },
-      maxW: { xs: 250, sm: 270, md: 290 },
-      borderW: 2,
+      maxW: { xs: 230, sm: 245, md: 260 },
+      borderW: 1,
       elevation: 1,
+      imageP: { xs: 0.75, sm: 1 },
     },
     friends: {
       mediaH: { xs: 60, sm: 70, md: 80 },
@@ -36,6 +39,7 @@ function Tier({ title, items, variant }) {
       maxW: { xs: 260, sm: 280, md: 300 },
       borderW: 1,
       elevation: 0,
+      imageP: { xs: 0.75, sm: 1 },
     },
   }[variant];
 
@@ -59,10 +63,8 @@ function Tier({ title, items, variant }) {
         spacing={{ xs: 2, sm: 3 }}
         justifyContent="center"
       >
-        {items.map((s) => {
+        {visibleItems.map((s) => {
           const hasLogo = Boolean(s.logo && s.logo.trim());
-          const isAvss =
-            s.id === 'avss' || s.name.toLowerCase().includes('avss');
 
           return (
             <Grid
@@ -82,11 +84,6 @@ function Tier({ title, items, variant }) {
                     `${cfg.borderW}px solid ${theme.palette.primary.main}`,
                   transition: 'transform 120ms ease, box-shadow 120ms ease',
                   '&:hover': { transform: 'translateY(-2px)', boxShadow: 4 },
-
-                  // AVSS: make the entire card narrower than the others
-                  ...(isAvss && {
-                    maxWidth: { xs: 200, sm: 240, md: 260 },
-                  }),
                 }}
               >
                 <CardActionArea
@@ -112,7 +109,7 @@ function Tier({ title, items, variant }) {
                         objectFit: 'contain',
                         backgroundColor: '#fff',
                         mixBlendMode: 'multiply',
-                        p: { xs: 0.75, sm: 1 },
+                        p: cfg.imageP,
                       }}
                     />
                   ) : (
@@ -139,13 +136,28 @@ function Tier({ title, items, variant }) {
   );
 }
 
-export default function SponsorGrid() {
+export default function SponsorGrid({ sponsorsByTier = sponsors, visibility = {} }) {
+  const legacyItems = sponsorsByTier.legacy || [];
+  const partnerItems = sponsorsByTier.partner || [];
+  const legacyVisible = legacyItems.some((s) => visibility?.[s.id] !== false);
+  const partnerVisible = partnerItems.some((s) => visibility?.[s.id] !== false);
+
   return (
     <Box sx={{ px: { xs: 1, sm: 2 } }}>
       {/* Homepage: Legacy + Partner only */}
-      <Tier title="Legacy" items={sponsors.legacy} variant="legacy" />
-      <Divider sx={{ my: 2 }} />
-      <Tier title="Partner" items={sponsors.partner} variant="partner" />
+      <Tier
+        title="Legacy"
+        items={legacyItems}
+        variant="legacy"
+        visibility={visibility}
+      />
+      {legacyVisible && partnerVisible ? <Divider sx={{ my: 2 }} /> : null}
+      <Tier
+        title="Partner"
+        items={partnerItems}
+        variant="partner"
+        visibility={visibility}
+      />
     </Box>
   );
 }

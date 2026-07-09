@@ -350,26 +350,25 @@ export default function AdminHome() {
               }}
             />
 
-            <div style={card}>
-              <h2 style={{ marginTop: 0, fontSize: 18 }}>Website Controls</h2>
-              <p style={{ ...muted, marginTop: 0 }}>
-                Planned areas for quick site updates once the admin expands.
-              </p>
-              <div style={{ display: 'grid', gap: 8 }}>
-                <div>
-                  <StatusPill tone="neutral">Planned</StatusPill>{' '}
-                  Homepage banner
-                </div>
-                <div>
-                  <StatusPill tone="neutral">Planned</StatusPill>{' '}
-                  Sponsors
-                </div>
-                <div>
-                  <StatusPill tone="neutral">Planned</StatusPill>{' '}
-                  Store CTA
-                </div>
-              </div>
-            </div>
+            <AdminSectionCard
+              href="/admin/site-content"
+              title="Homepage Content"
+              description="Update the support message, community spotlight, and Instagram call to action."
+              meta={{
+                tone: 'good',
+                label: 'Editable',
+              }}
+            />
+
+            <AdminSectionCard
+              href="/admin/sponsors"
+              title="Sponsors"
+              description="Add sponsors, update logo paths, change tiers, and turn sponsors on or off."
+              meta={{
+                tone: 'good',
+                label: 'Editable',
+              }}
+            />
           </section>
         </>
       ) : null}

@@ -1,5 +1,5 @@
 // pages/episodes/current.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Container,
   Typography,
@@ -20,7 +20,7 @@ import {
 import { Search, Clear, CalendarToday } from '@mui/icons-material';
 import Navbar from '../../components/Navbar';
 import SEO from '../../components/SEO';
-import { sponsors } from '../../src/data/sponsors';
+import { sponsors as DEFAULT_SPONSORS } from '../../src/data/sponsors';
 
 // Import your performance hooks
 import {
@@ -36,6 +36,7 @@ export default function CurrentSeason() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentSeasonInfo, setCurrentSeasonInfo] = useState(null);
+  const [seasonSponsorTiers, setSeasonSponsorTiers] = useState(DEFAULT_SPONSORS);
 
   // Performance monitoring hooks
   const { startTimer, endTimer, getTimings } = usePerformanceMonitor(
@@ -110,6 +111,32 @@ export default function CurrentSeason() {
 
     fetchEpisodes();
   }, [startTimer, endTimer, measureApiCall]);
+
+  useEffect(() => {
+    let alive = true;
+
+    async function fetchSponsors() {
+      try {
+        const response = await fetch('/api/site-content/sponsors');
+        const data = await response.json();
+        if (alive && response.ok && data.ok && data.tiers) {
+          setSeasonSponsorTiers({
+            legacy: data.tiers.legacy || [],
+            partner: data.tiers.partner || [],
+            friends: data.tiers.friends || [],
+          });
+        }
+      } catch {
+        // Keep the static friend sponsor list if managed sponsors are unavailable.
+      }
+    }
+
+    fetchSponsors();
+
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   // Performance monitoring for search
   const handleSearch = (event) => {
@@ -206,6 +233,57 @@ export default function CurrentSeason() {
     );
   };
 
+  const seasonSponsorRows = [
+    {
+      key: 'legacy',
+      label: 'Legacy Sponsors',
+      items: seasonSponsorTiers.legacy || [],
+      logoHeight: 44,
+      grid: { xs: 12, sm: 6, md: 4 },
+      borderColor: 'primary.main',
+      bgcolor: 'rgba(25, 118, 210, 0.035)',
+      py: 1.5,
+    },
+    {
+      key: 'partner',
+      label: 'Partner Sponsors',
+      items: seasonSponsorTiers.partner || [],
+      logoHeight: 32,
+      grid: { xs: 6, sm: 4, md: 3 },
+      borderColor: 'secondary.main',
+      bgcolor: 'rgba(237, 108, 2, 0.035)',
+      py: 1.15,
+    },
+    {
+      key: 'friends',
+      label: 'Friends of the Season',
+      items: seasonSponsorTiers.friends || [],
+      logoHeight: 24,
+      grid: { xs: 6, sm: 4, md: 3, lg: 2 },
+      borderColor: 'grey.300',
+      bgcolor: 'grey.50',
+      py: 0.9,
+    },
+  ];
+  const episodeSponsorsById = useMemo(() => {
+    const map = new Map();
+    const assignableSponsors = [
+      ...(seasonSponsorTiers.legacy || []),
+      ...(seasonSponsorTiers.partner || []),
+      ...(seasonSponsorTiers.friends || []),
+      ...(seasonSponsorTiers.episode || []),
+    ];
+
+    for (const sponsor of assignableSponsors) {
+      for (const episodeId of sponsor.episode_ids || []) {
+        const sponsorsForEpisode = map.get(episodeId) || [];
+        sponsorsForEpisode.push(sponsor);
+        map.set(episodeId, sponsorsForEpisode);
+      }
+    }
+    return map;
+  }, [seasonSponsorTiers]);
+
   if (loading) {
     return (
       <>
@@ -286,87 +364,137 @@ export default function CurrentSeason() {
                 {episodes.length !== 1 ? 's' : ''} available
               </Typography>
 
-              {/* Friend-level sponsors for this season */}
-              {sponsors?.friends && sponsors.friends.length > 0 && (
-                <Box sx={{ mt: 3 }}>
+              {seasonSponsorRows.some((row) => row.items.length > 0) && (
+                <Box sx={{ mt: 3, maxWidth: 1080, mx: 'auto' }}>
                   <Typography
                     variant="body2"
                     color="text.secondary"
-                    sx={{ mb: 1 }}
+                    sx={{ mb: 1.5 }}
                   >
                     This season is supported by:
                   </Typography>
 
-                  <Grid
-                    container
-                    spacing={2}
-                    justifyContent="center"
-                  >
-                    {sponsors.friends.map((s) => (
-                      <Grid
-                        item
-                        key={s.id}
-                        xs={6}
-                        sm={4}
-                        md={3}
-                        lg={2}
+                  {seasonSponsorRows.map((row) =>
+                    row.items.length ? (
+                      <Box
+                        key={row.key}
+                        sx={{
+                          mt: 1.5,
+                          p: { xs: 1.25, sm: 1.5 },
+                          border: '1px solid',
+                          borderColor: row.borderColor,
+                          borderRadius: 2,
+                          bgcolor: row.bgcolor,
+                        }}
                       >
                         <Box
-                          component="a"
-                          href={s.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
                           sx={{
                             display: 'flex',
-                            flexDirection: 'column',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            px: 1.5,
-                            py: 1,
-                            borderRadius: 999,
-                            bgcolor: 'grey.50',
-                            border: '1px solid',
-                            borderColor: 'grey.200',
-                            textDecoration: 'none',
-                            height: '100%',
+                            gap: 1,
+                            mb: 1.25,
                           }}
                         >
                           <Box
                             sx={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              mb: 0.5,
-                              width: '100%',
+                              width: 28,
+                              height: 2,
+                              bgcolor: row.borderColor,
+                              borderRadius: 999,
                             }}
-                          >
-                            <img
-                              src={s.logo}
-                              alt={s.name}
-                              style={{
-                                maxHeight: 28,
-                                width: 'auto',
-                                maxWidth: '100%',
-                                display: 'block',
-                              }}
-                            />
-                          </Box>
+                          />
                           <Typography
                             variant="caption"
                             color="text.secondary"
-                            align="center"
                             sx={{
-                              fontWeight: 500,
-                              lineHeight: 1.3,
-                              px: 0.5,
+                              display: 'block',
+                              fontWeight: 800,
+                              textTransform: 'uppercase',
+                              letterSpacing: 0,
                             }}
                           >
-                            {s.name}
+                            {row.label}
                           </Typography>
+                          <Box
+                            sx={{
+                              width: 28,
+                              height: 2,
+                              bgcolor: row.borderColor,
+                              borderRadius: 999,
+                            }}
+                          />
                         </Box>
-                      </Grid>
-                    ))}
-                  </Grid>
+                        <Grid container spacing={2} justifyContent="center">
+                          {row.items.map((s) => (
+                            <Grid
+                              item
+                              key={s.id}
+                              xs={row.grid.xs}
+                              sm={row.grid.sm}
+                              md={row.grid.md}
+                              lg={row.grid.lg}
+                            >
+                              <Box
+                                component="a"
+                                href={s.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                sx={{
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  px: 1.5,
+                                  py: row.py,
+                                  borderRadius: 999,
+                                  bgcolor: '#fff',
+                                  border: '1px solid',
+                                  borderColor: row.borderColor,
+                                  textDecoration: 'none',
+                                  height: '100%',
+                                  boxShadow: row.key === 'legacy' ? 1 : 0,
+                                }}
+                              >
+                                <Box
+                                  sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    mb: 0.5,
+                                    width: '100%',
+                                  }}
+                                >
+                                  <img
+                                    src={s.logo}
+                                    alt={s.name}
+                                    style={{
+                                      maxHeight: row.logoHeight,
+                                      width: 'auto',
+                                      maxWidth: '100%',
+                                      display: 'block',
+                                    }}
+                                  />
+                                </Box>
+                                <Typography
+                                  variant="caption"
+                                  color="text.secondary"
+                                  align="center"
+                                  sx={{
+                                    fontWeight: 500,
+                                    lineHeight: 1.3,
+                                    px: 0.5,
+                                  }}
+                                >
+                                  {s.name}
+                                </Typography>
+                              </Box>
+                            </Grid>
+                          ))}
+                        </Grid>
+                      </Box>
+                    ) : null
+                  )}
                 </Box>
               )}
             </Box>
@@ -426,7 +554,10 @@ export default function CurrentSeason() {
           ) : (
             <Fade in={true}>
               <Grid container spacing={4}>
-                {filteredEpisodes.map((episode) => (
+                {filteredEpisodes.map((episode) => {
+                  const episodeSponsors = episodeSponsorsById.get(episode.id) || [];
+
+                  return (
                   <Grid item key={episode.id} xs={12} sm={6} md={4}>
                     <Card
                       sx={{
@@ -505,6 +636,65 @@ export default function CurrentSeason() {
                           {truncateDescription(episode.description)}
                         </Typography>
 
+                        {episodeSponsors.length ? (
+                          <Box
+                            sx={{
+                              mb: 2,
+                              p: 1.25,
+                              borderRadius: 1,
+                              border: '1px solid',
+                              borderColor: 'primary.light',
+                              bgcolor: 'rgba(25, 118, 210, 0.04)',
+                            }}
+                          >
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                              sx={{
+                                display: 'block',
+                                mb: 0.75,
+                                fontWeight: 800,
+                                textTransform: 'uppercase',
+                                letterSpacing: 0,
+                              }}
+                            >
+                              Episode Sponsor
+                            </Typography>
+                            {episodeSponsors.map((sponsor) => (
+                              <Box
+                                key={sponsor.id}
+                                component="a"
+                                href={sponsor.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                sx={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 1,
+                                  color: 'text.primary',
+                                  textDecoration: 'none',
+                                }}
+                              >
+                                {sponsor.logo ? (
+                                  <img
+                                    src={sponsor.logo}
+                                    alt={sponsor.name}
+                                    style={{
+                                      maxHeight: 26,
+                                      maxWidth: 72,
+                                      objectFit: 'contain',
+                                      display: 'block',
+                                    }}
+                                  />
+                                ) : null}
+                                <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                                  {sponsor.name}
+                                </Typography>
+                              </Box>
+                            ))}
+                          </Box>
+                        ) : null}
+
                         <Box
                           sx={{
                             display: 'flex',
@@ -537,7 +727,8 @@ export default function CurrentSeason() {
                       </CardContent>
                     </Card>
                   </Grid>
-                ))}
+                  );
+                })}
               </Grid>
             </Fade>
           )}

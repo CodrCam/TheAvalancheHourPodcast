@@ -1,12 +1,15 @@
 // pages/index.js
 import React, { useEffect, useState } from 'react';
 import { Container, Typography, Grid, Box, CircularProgress, Button, Stack } from '@mui/material';
+import { Instagram } from '@mui/icons-material';
 import Link from 'next/link';
 import Navbar from '../components/Navbar';
 import ParallaxSection from '../components/ParallaxSection';
 import EpisodeCard from '../components/EpisodeCard';
 import SponsorGrid from '../components/SponsorGrid';
 import SEO from '../components/SEO';
+import { DEFAULT_HOME_CONTENT } from '../lib/siteContentDefaults';
+import { sponsors as DEFAULT_SPONSORS } from '../src/data/sponsors';
 
 const topSectionHeight = 350;
 const separatorSectionHeight = 300;
@@ -14,6 +17,8 @@ const separatorSectionHeight = 300;
 export default function Home() {
   const [episodes, setEpisodes] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [homeContent, setHomeContent] = useState(DEFAULT_HOME_CONTENT);
+  const [sponsorTiers, setSponsorTiers] = useState(DEFAULT_SPONSORS);
 
   useEffect(() => {
     async function fetchEpisodes() {
@@ -35,6 +40,54 @@ export default function Home() {
     }
 
     fetchEpisodes();
+  }, []);
+
+  useEffect(() => {
+    let alive = true;
+
+    async function fetchSponsors() {
+      try {
+        const response = await fetch('/api/site-content/sponsors');
+        const data = await response.json();
+        if (alive && response.ok && data.ok && data.tiers) {
+          setSponsorTiers({
+            legacy: data.tiers.legacy || [],
+            partner: data.tiers.partner || [],
+            friends: data.tiers.friends || [],
+          });
+        }
+      } catch {
+        // Keep the static sponsor list if managed sponsors are unavailable.
+      }
+    }
+
+    fetchSponsors();
+
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let alive = true;
+
+    async function fetchHomeContent() {
+      try {
+        const response = await fetch('/api/site-content/homepage');
+        const data = await response.json();
+        if (alive && response.ok && data.ok && data.content) {
+          setHomeContent(data.content);
+        }
+      } catch {
+        // Keep the static defaults if managed content is unavailable.
+      }
+    }
+
+    fetchHomeContent();
+
+    return () => {
+      alive = false;
+    };
   }, []);
 
   return (
@@ -178,8 +231,8 @@ export default function Home() {
         aria-labelledby="support-heading"
       >
         <Container maxWidth="lg">
-          <Grid container spacing={3} alignItems="center">
-            <Grid item xs={12} md={8}>
+          <Grid container spacing={{ xs: 3, md: 5 }} alignItems="center">
+            <Grid item xs={12} md={7}>
               <Typography
                 id="support-heading"
                 variant="h2"
@@ -192,31 +245,73 @@ export default function Home() {
                   fontSize: { xs: '2rem', md: '3rem' },
                 }}
               >
-                Support the Podcast
+                {homeContent.supportHeading}
               </Typography>
               <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 760 }}>
-                Interested in advertising, underwriting, or helping keep The
-                Avalanche Hour growing? Explore single-episode and season-long
-                support options, including secure Stripe checkout links and the
-                Season 11 rate card.
+                {homeContent.supportBody}
               </Typography>
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <Stack direction={{ xs: 'column', sm: 'row', md: 'column' }} spacing={1.5}>
-                <Button component={Link} href="/support" variant="contained">
-                  View Support Options
-                </Button>
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.25} sx={{ mt: 2.5 }}>
                 <Button
-                  component="a"
-                  href="/files/avalanche-hour-s11-rate-card.pdf"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  variant="outlined"
+                  component={Link}
+                  href={homeContent.supportButtonUrl}
+                  variant="contained"
                 >
-                  Download Rate Card
+                  {homeContent.supportButtonLabel}
                 </Button>
+                {homeContent.socialEnabled ? (
+                  <Button
+                    component="a"
+                    href={homeContent.instagramUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    variant="outlined"
+                    startIcon={<Instagram />}
+                  >
+                    {homeContent.socialButtonLabel}
+                  </Button>
+                ) : null}
               </Stack>
             </Grid>
+            {homeContent.spotlightEnabled ? (
+              <Grid item xs={12} md={5}>
+                <Box
+                  sx={{
+                    borderLeft: { xs: 0, md: '1px solid' },
+                    borderTop: { xs: '1px solid', md: 0 },
+                    borderColor: 'grey.300',
+                    pl: { xs: 0, md: 4 },
+                    pt: { xs: 3, md: 0 },
+                  }}
+                >
+                  <Typography
+                    variant="overline"
+                    sx={{
+                      color: 'primary.main',
+                      fontWeight: 800,
+                      letterSpacing: 0,
+                    }}
+                  >
+                    {homeContent.spotlightEyebrow}
+                  </Typography>
+                  <Typography variant="h3" component="h3" sx={{ mt: 0.5, mb: 1 }}>
+                    {homeContent.spotlightHeading}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                    {homeContent.spotlightBody}
+                  </Typography>
+                  <Button
+                    component="a"
+                    href={homeContent.spotlightButtonUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    variant="contained"
+                    color="secondary"
+                  >
+                    {homeContent.spotlightButtonLabel}
+                  </Button>
+                </Box>
+              </Grid>
+            ) : null}
           </Grid>
         </Container>
       </Box>
@@ -243,7 +338,7 @@ export default function Home() {
           >
             Our Sponsors
           </Typography>
-          <SponsorGrid />
+          <SponsorGrid sponsorsByTier={sponsorTiers} />
         </Container>
       </Box>
 

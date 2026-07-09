@@ -15,6 +15,7 @@ export const sponsorsById = {
     tier: 'legacy',
     url: 'https://avss.co/',
     logo: '/images/sponsors/avss-dark.svg',
+    episode_ids: ['1HUTXoWJtCH7ojnp0CVgJE'],
   },
   'drone-amplified': {
     id: 'drone-amplified',

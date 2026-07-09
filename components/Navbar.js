@@ -2,16 +2,17 @@
 import React, { useState, useEffect } from 'react';
 import {
   AppBar, Toolbar, Typography, Button, IconButton, Drawer, List, ListItem, ListItemText,
-  Box, Menu, MenuItem, ListItemIcon, Badge, Popover, Divider
+  Box, Menu, MenuItem, ListItemIcon, Badge, Popover, Divider, Tooltip
 } from '@mui/material';
 import {
   Menu as MenuIcon, ExpandMore, PlayArrow, TrendingUp, History, Email, Mic, Home,
-  ShoppingCart, Storefront
+  ShoppingCart, Storefront, Instagram
 } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { products } from '../src/data/products';
+import { SOCIAL_LINKS } from '../lib/siteLinks';
 
 const CART_KEY = 'ah_cart';
 
@@ -219,6 +220,20 @@ export default function Navbar() {
             </Button>
           ))}
 
+          <Tooltip title="Follow The Avalanche Hour on Instagram">
+            <IconButton
+              color="inherit"
+              aria-label="Follow The Avalanche Hour on Instagram"
+              component="a"
+              href={SOCIAL_LINKS.instagram}
+              target="_blank"
+              rel="noopener noreferrer"
+              sx={{ ml: 0.25 }}
+            >
+              <Instagram />
+            </IconButton>
+          </Tooltip>
+
           {/* Quick cart popover (variant-aware) */}
           <IconButton color="inherit" aria-label="Cart" onClick={(e) => setCartAnchor(e.currentTarget)}>
             <Badge badgeContent={totalItems} color="primary"><ShoppingCart /></Badge>
@@ -349,6 +364,19 @@ export default function Navbar() {
                 <ListItemText primary={item.text} />
               </ListItem>
             ))}
+
+            <ListItem
+              button
+              component="a"
+              href={SOCIAL_LINKS.instagram}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={toggleDrawer(false)}
+              sx={{ mt: 1 }}
+            >
+              <ListItemIcon sx={{ minWidth: 36 }}><Instagram /></ListItemIcon>
+              <ListItemText primary="Instagram" />
+            </ListItem>
           </List>
         </Box>
       </Drawer>

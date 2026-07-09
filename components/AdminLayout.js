@@ -61,6 +61,12 @@ export default function AdminLayout({ children }) {
             <li>
               <Link href="/admin/orders">Orders</Link>
             </li>
+            <li>
+              <Link href="/admin/site-content">Homepage Content</Link>
+            </li>
+            <li>
+              <Link href="/admin/sponsors">Sponsors</Link>
+            </li>
           </ul>
         </nav>
         <form action="/api/store/admin/auth/logout" method="post">

@@ -63,6 +63,67 @@ Each order item is written by the website. Important attributes include:
 `inventory_decremented` prevents Stripe webhook retries from subtracting stock
 more than once.
 
+Homepage/site content uses a third table:
+
+```txt
+Table name: AvalancheHourSiteContent
+Partition key: content_key
+Partition key type: String
+Sort key: none
+Capacity mode: On-demand
+```
+
+The first item is seeded with `content_key` set to `homepage_cta`. It stores the
+editable homepage support message, community spotlight, and Instagram call to
+action.
+
+Sponsors use a fourth table:
+
+```txt
+Table name: AvalancheHourSponsors
+Partition key: sponsor_id
+Partition key type: String
+Sort key: none
+Capacity mode: On-demand
+```
+
+Each sponsor item includes:
+
+```json
+{
+  "sponsor_id": "open-snow",
+  "name": "OpenSnow",
+  "tier": "friend",
+  "url": "https://opensnow.com/",
+  "logo": "/images/sponsors/OpenSnow.png",
+  "active": true,
+  "episode_ids_json": "[]",
+  "sort_order": 10,
+  "updated_at": "2026-07-01T20:00:00.000Z"
+}
+```
+
+The supported tiers are `legacy`, `partner`, `friend`, and `episode`.
+Inactive sponsors remain in admin but are hidden from public sponsor sections.
+Any sponsor can also include `episode_ids_json` as a JSON array of Spotify
+episode IDs. Those sponsors appear on the matching episode cards. In the admin
+page, paste either the full Spotify episode URL or the episode ID; each saved ID
+becomes a removable assignment chip.
+
+`sort_order` is managed by the app. Existing sponsors keep their seed order, and
+new sponsors are placed after existing sponsors in their tier.
+
+Sponsor logos can be either:
+
+- A site-relative path, such as `/images/sponsors/OpenSnow.png`.
+- A public HTTPS image URL.
+- A small uploaded image stored as a data URL in the sponsor row.
+
+For uploaded logos, use a transparent PNG when possible, keep the image roughly
+600px wide or smaller, and keep the file under 220 KB. Larger brand assets
+should be resized before upload so the DynamoDB item stays comfortably below the
+400 KB item limit.
+
 ## Create the Tables
 
 1. Open AWS Console.
@@ -81,6 +142,18 @@ more than once.
 14. Capacity: choose On-demand.
 15. Leave the rest as the defaults.
 16. Create the table.
+17. Create a third table named `AvalancheHourSiteContent`.
+18. Use partition key `content_key` as a String.
+19. Do not add a sort key.
+20. Capacity: choose On-demand.
+21. Leave the rest as the defaults.
+22. Create the table.
+23. Create a fourth table named `AvalancheHourSponsors`.
+24. Use partition key `sponsor_id` as a String.
+25. Do not add a sort key.
+26. Capacity: choose On-demand.
+27. Leave the rest as the defaults.
+28. Create the table.
 
 ## Create the App Access Key
 
@@ -105,7 +178,9 @@ Create a policy with this permission scope:
       ],
       "Resource": [
         "arn:aws:dynamodb:us-east-2:426018612622:table/AvalancheHourInventory",
-        "arn:aws:dynamodb:us-east-2:426018612622:table/AvalancheHourOrders"
+        "arn:aws:dynamodb:us-east-2:426018612622:table/AvalancheHourOrders",
+        "arn:aws:dynamodb:us-east-2:426018612622:table/AvalancheHourSiteContent",
+        "arn:aws:dynamodb:us-east-2:426018612622:table/AvalancheHourSponsors"
       ]
     }
   ]
@@ -124,10 +199,42 @@ DYNAMODB_ACCESS_KEY_ID=your_access_key_id
 DYNAMODB_SECRET_ACCESS_KEY=your_secret_access_key
 DYNAMODB_INVENTORY_TABLE=AvalancheHourInventory
 DYNAMODB_ORDERS_TABLE=AvalancheHourOrders
+DYNAMODB_SITE_CONTENT_TABLE=AvalancheHourSiteContent
+DYNAMODB_SPONSORS_TABLE=AvalancheHourSponsors
 ```
 
 For local testing, put them in `.env.local`. For deployment, add them in the
 hosting provider's server-side environment variables.
+
+## Seed Homepage Site Content
+
+After creating `AvalancheHourSiteContent` and adding
+`DYNAMODB_SITE_CONTENT_TABLE` locally, run a dry run first:
+
+```bash
+npm run seed:dynamo-site-content
+```
+
+Then write the default homepage CTA content:
+
+```bash
+npm run seed:dynamo-site-content -- --apply
+```
+
+## Seed Sponsors
+
+After creating `AvalancheHourSponsors` and adding
+`DYNAMODB_SPONSORS_TABLE` locally, run a dry run first:
+
+```bash
+npm run seed:dynamo-sponsors
+```
+
+Then write the sponsor seed:
+
+```bash
+npm run seed:dynamo-sponsors -- --apply
+```
 
 ## Seed Inventory
 
@@ -245,9 +352,15 @@ npm run seed:dynamo-orders -- --apply --overwrite
 - Orders use DynamoDB when `DYNAMODB_ORDERS_TABLE` is set. Order recording,
   admin order list, order status updates, and the CSV export all use the same
   orders adapter.
-- If either DynamoDB table variable is missing, the server fails loudly instead
-  of silently writing to Supabase.
+- Homepage CTA/site content uses DynamoDB when `DYNAMODB_SITE_CONTENT_TABLE` is
+  set. The public homepage keeps static defaults if managed content is
+  unavailable.
+- Sponsors use DynamoDB when `DYNAMODB_SPONSORS_TABLE` is set. Public sponsor
+  sections keep the static sponsor list as a fallback if managed sponsors are
+  unavailable.
+- If an inventory or orders DynamoDB table variable is missing, the server fails
+  loudly instead of silently writing to Supabase.
 
-For production, set both table variables so DynamoDB is the only live store
+For production, set all four table variables so DynamoDB is the live store
 backend. Old Supabase export scripts may still use `SUPABASE_DB_URL` locally for
 one-off migration work, but it is not part of normal Netlify runtime config.
