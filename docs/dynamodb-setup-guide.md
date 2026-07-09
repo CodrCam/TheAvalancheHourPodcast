@@ -74,8 +74,8 @@ Capacity mode: On-demand
 ```
 
 The first item is seeded with `content_key` set to `homepage_cta`. It stores the
-editable homepage support message, community spotlight, and Instagram call to
-action.
+editable About page program story, homepage support message, community
+spotlight, and Instagram call to action.
 
 Sponsors use a fourth table:
 
@@ -124,6 +124,40 @@ For uploaded logos, use a transparent PNG when possible, keep the image roughly
 should be resized before upload so the DynamoDB item stays comfortably below the
 400 KB item limit.
 
+Team members use a fifth table:
+
+```txt
+Table name: AvalancheHourPeople
+Partition key: person_id
+Partition key type: String
+Sort key: none
+Capacity mode: On-demand
+```
+
+Each team member item includes:
+
+```json
+{
+  "person_id": "caleb-merrill",
+  "slug": "caleb-merrill",
+  "role": "host",
+  "name": "Caleb Merrill",
+  "title": "",
+  "images_json": "[\"/images/hosts/caleb1.JPG\"]",
+  "bio_short": "Founder/host of The Avalanche Hour...",
+  "bio_full": "Full profile text...",
+  "active": true,
+  "needs_bio": false,
+  "needs_images": false,
+  "sort_order": 0,
+  "updated_at": "2026-07-01T20:00:00.000Z"
+}
+```
+
+Inactive people remain editable in admin but are hidden from the public About
+page and profile routes. Images can be site-relative paths, public HTTPS URLs,
+or small uploaded data URLs. For uploaded host images, keep files under 380 KB.
+
 ## Create the Tables
 
 1. Open AWS Console.
@@ -154,6 +188,12 @@ should be resized before upload so the DynamoDB item stays comfortably below the
 26. Capacity: choose On-demand.
 27. Leave the rest as the defaults.
 28. Create the table.
+29. Create a fifth table named `AvalancheHourPeople`.
+30. Use partition key `person_id` as a String.
+31. Do not add a sort key.
+32. Capacity: choose On-demand.
+33. Leave the rest as the defaults.
+34. Create the table.
 
 ## Create the App Access Key
 
@@ -180,7 +220,8 @@ Create a policy with this permission scope:
         "arn:aws:dynamodb:us-east-2:426018612622:table/AvalancheHourInventory",
         "arn:aws:dynamodb:us-east-2:426018612622:table/AvalancheHourOrders",
         "arn:aws:dynamodb:us-east-2:426018612622:table/AvalancheHourSiteContent",
-        "arn:aws:dynamodb:us-east-2:426018612622:table/AvalancheHourSponsors"
+        "arn:aws:dynamodb:us-east-2:426018612622:table/AvalancheHourSponsors",
+        "arn:aws:dynamodb:us-east-2:426018612622:table/AvalancheHourPeople"
       ]
     }
   ]
@@ -201,6 +242,7 @@ DYNAMODB_INVENTORY_TABLE=AvalancheHourInventory
 DYNAMODB_ORDERS_TABLE=AvalancheHourOrders
 DYNAMODB_SITE_CONTENT_TABLE=AvalancheHourSiteContent
 DYNAMODB_SPONSORS_TABLE=AvalancheHourSponsors
+DYNAMODB_PEOPLE_TABLE=AvalancheHourPeople
 ```
 
 For local testing, put them in `.env.local`. For deployment, add them in the
@@ -234,6 +276,21 @@ Then write the sponsor seed:
 
 ```bash
 npm run seed:dynamo-sponsors -- --apply
+```
+
+## Seed Team Members
+
+After creating `AvalancheHourPeople` and adding `DYNAMODB_PEOPLE_TABLE`
+locally, run a dry run first:
+
+```bash
+npm run seed:dynamo-people
+```
+
+Then write the team seed:
+
+```bash
+npm run seed:dynamo-people -- --apply
 ```
 
 ## Seed Inventory
@@ -352,15 +409,18 @@ npm run seed:dynamo-orders -- --apply --overwrite
 - Orders use DynamoDB when `DYNAMODB_ORDERS_TABLE` is set. Order recording,
   admin order list, order status updates, and the CSV export all use the same
   orders adapter.
-- Homepage CTA/site content uses DynamoDB when `DYNAMODB_SITE_CONTENT_TABLE` is
-  set. The public homepage keeps static defaults if managed content is
+- Site content uses DynamoDB when `DYNAMODB_SITE_CONTENT_TABLE` is set. The
+  public homepage and About page keep static defaults if managed content is
   unavailable.
 - Sponsors use DynamoDB when `DYNAMODB_SPONSORS_TABLE` is set. Public sponsor
   sections keep the static sponsor list as a fallback if managed sponsors are
   unavailable.
+- Team members use DynamoDB when `DYNAMODB_PEOPLE_TABLE` is set. Public team
+  pages keep the built-in people list as a fallback if managed people are
+  unavailable.
 - If an inventory or orders DynamoDB table variable is missing, the server fails
   loudly instead of silently writing to Supabase.
 
-For production, set all four table variables so DynamoDB is the live store
+For production, set all five table variables so DynamoDB is the live store
 backend. Old Supabase export scripts may still use `SUPABASE_DB_URL` locally for
 one-off migration work, but it is not part of normal Netlify runtime config.

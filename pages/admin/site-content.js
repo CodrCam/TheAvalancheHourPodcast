@@ -151,11 +151,10 @@ export default function AdminSiteContentPage() {
   return (
     <AdminLayout>
       <div style={{ maxWidth: 920 }}>
-        <h1>Homepage Content</h1>
+        <h1>Site Content</h1>
         <p style={{ color: '#64748b', maxWidth: 720 }}>
-          Edit the homepage support section, community spotlight, and social
-          call to action. The Instagram button appears with the support block,
-          while the spotlight is its own standalone homepage callout.
+          Edit the About page program story, homepage support section,
+          community spotlight, and social call to action.
         </p>
 
         {loading ? <p>Loading...</p> : null}
@@ -169,6 +168,55 @@ export default function AdminSiteContentPage() {
         </div>
 
         <form onSubmit={saveContent} style={{ display: 'grid', gap: 16 }}>
+          <section style={sectionStyle}>
+            <h2 style={{ margin: 0, fontSize: 20 }}>About Page</h2>
+            <TextField
+              label="Eyebrow"
+              name="aboutEyebrow"
+              value={content.aboutEyebrow}
+              onChange={updateField}
+            />
+            <TextField
+              label="Main heading"
+              name="aboutHeading"
+              value={content.aboutHeading}
+              onChange={updateField}
+              multiline
+            />
+            <TextField
+              label="Program description"
+              name="aboutIntro"
+              value={content.aboutIntro}
+              onChange={updateField}
+              multiline
+            />
+            <TextField
+              label="Callout heading"
+              name="aboutMissionHeading"
+              value={content.aboutMissionHeading}
+              onChange={updateField}
+            />
+            <TextField
+              label="Callout body"
+              name="aboutMissionBody"
+              value={content.aboutMissionBody}
+              onChange={updateField}
+              multiline
+            />
+            <TextField
+              label="Spotify button label"
+              name="aboutListenLabel"
+              value={content.aboutListenLabel}
+              onChange={updateField}
+            />
+            <TextField
+              label="Spotify button URL"
+              name="aboutListenUrl"
+              value={content.aboutListenUrl}
+              onChange={updateField}
+            />
+          </section>
+
           <section style={sectionStyle}>
             <h2 style={{ margin: 0, fontSize: 20 }}>Support Block</h2>
             <TextField

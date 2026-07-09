@@ -4,7 +4,7 @@ import Head from 'next/head';
 import { Container, Box, Typography, Grid, CardMedia, Breadcrumbs, Link as MLink, Chip, Alert } from '@mui/material';
 import Navbar from '../../components/Navbar';
 import SEO from '../../components/SEO';
-import { people } from '../../src/data/people';
+import { getPersonBySlug, getStaticPeopleSeed } from '../../lib/peopleStore';
 
 const PLACEHOLDER_IMG = '/images/placeholder-person.jpg';
 
@@ -107,14 +107,18 @@ export default function HostProfile({ person }) {
   );
 }
 
-export async function getStaticPaths() {
-  // Pre-render all profiles
-  const paths = people.map((p) => ({ params: { slug: p.slug } }));
-  return { paths, fallback: false };
-}
+export async function getServerSideProps({ params }) {
+  let person = null;
 
-export async function getStaticProps({ params }) {
-  const person = people.find((p) => p.slug === params.slug) || null;
+  try {
+    const result = await getPersonBySlug(params.slug, { allowStaticFallback: true });
+    person = result.person || null;
+  } catch {
+    person =
+      getStaticPeopleSeed().find((staticPerson) => staticPerson.slug === params.slug) ||
+      null;
+  }
+
   if (!person) return { notFound: true };
   return { props: { person } };
 }

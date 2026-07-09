@@ -62,7 +62,10 @@ export default function AdminLayout({ children }) {
               <Link href="/admin/orders">Orders</Link>
             </li>
             <li>
-              <Link href="/admin/site-content">Homepage Content</Link>
+              <Link href="/admin/site-content">Site Content</Link>
+            </li>
+            <li>
+              <Link href="/admin/people">Team</Link>
             </li>
             <li>
               <Link href="/admin/sponsors">Sponsors</Link>

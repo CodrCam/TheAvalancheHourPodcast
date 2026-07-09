@@ -201,8 +201,6 @@ export const people = [
     name: 'Bruce Jamieson',
     images: [
       '/images/hosts/bruce1.jpg',
-      '/images/hosts/bruce2.jpg',
-      '/images/hosts/bruce3.jpg',
     ],
     needsBio: true,
     needsImages: true,
@@ -249,8 +247,6 @@ export const people = [
     name: 'Bob Keating',
     images: [
       '/images/hosts/bob1.jpg',
-      '/images/hosts/bob2.jpg',
-      '/images/hosts/bob3.jpg',
     ],
     needsBio: true,
     needsImages: true,
