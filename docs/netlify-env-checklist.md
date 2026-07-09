@@ -60,10 +60,10 @@ SPOTIFY_CLIENT_ID=...
 SPOTIFY_CLIENT_SECRET=...
 ```
 
-## Do Not Add for Normal Production
+## Remove From Production
 
-These are local, legacy, or emergency-only values. Leave them out of Netlify
-unless you are intentionally enabling a temporary emergency path.
+The admin now uses Cognito only. Delete these legacy variables from Netlify if
+they exist; the app no longer reads them for admin access.
 
 ```txt
 ALLOW_LEGACY_ADMIN_AUTH

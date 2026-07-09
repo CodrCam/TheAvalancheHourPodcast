@@ -210,24 +210,26 @@ export default function StoreIndexPage() {
                 flexDirection: 'column',
               }}
             >
-              <Link href={`/store/${p.slug}`} passHref legacyBehavior>
-                <CardActionArea sx={{ flexGrow: 1 }}>
-                  <CardMedia
-                    component="img"
-                    image={p.image}
-                    alt={p.name}
-                    sx={{ aspectRatio: '1 / 1', objectFit: 'cover' }}
-                  />
-                  <CardContent>
-                    <Typography variant="h6" sx={{ mb: 0.5 }}>
-                      {p.name}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {priceLabel(p)}
-                    </Typography>
-                  </CardContent>
-                </CardActionArea>
-              </Link>
+              <CardActionArea
+                component={Link}
+                href={`/store/${p.slug}`}
+                sx={{ flexGrow: 1 }}
+              >
+                <CardMedia
+                  component="img"
+                  image={p.image}
+                  alt={p.name}
+                  sx={{ aspectRatio: '1 / 1', objectFit: 'cover' }}
+                />
+                <CardContent>
+                  <Typography variant="h6" sx={{ mb: 0.5 }}>
+                    {p.name}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {priceLabel(p)}
+                  </Typography>
+                </CardContent>
+              </CardActionArea>
 
               <CardActions sx={{ px: 2, pb: 2 }}>
                 <Button variant="contained" onClick={() => openVariantPicker(p)}>
@@ -259,11 +261,14 @@ export default function StoreIndexPage() {
             Store
           </Typography>
 
-          <Link href="/store/cart" passHref legacyBehavior>
-            <Button variant="outlined" startIcon={<ShoppingCartIcon />}>
-              Cart
-            </Button>
-          </Link>
+          <Button
+            component={Link}
+            href="/store/cart"
+            variant="outlined"
+            startIcon={<ShoppingCartIcon />}
+          >
+            Cart
+          </Button>
         </Box>
 
         {renderStoreContent()}

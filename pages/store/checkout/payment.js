@@ -258,11 +258,14 @@ function PaymentForm({ clientSecret, breakdown }) {
       <PaymentElement />
 
       <Box sx={{ mt: 3, display: 'flex', gap: 1 }}>
-        <Link href="/store/checkout/review" legacyBehavior>
-          <Button startIcon={<ArrowBackIcon />} variant="outlined">
-            Back to review
-          </Button>
-        </Link>
+        <Button
+          component={Link}
+          href="/store/checkout/review"
+          startIcon={<ArrowBackIcon />}
+          variant="outlined"
+        >
+          Back to review
+        </Button>
         <Button
           onClick={handlePay}
           disabled={!stripe || submitting}

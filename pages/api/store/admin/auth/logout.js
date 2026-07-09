@@ -25,7 +25,6 @@ export default function handler(req, res) {
     clearCookie(req, config.cookieName),
     clearCookie(req, 'cognito_id_token'),
     clearCookie(req, 'cognito_access_token'),
-    clearCookie(req, 'admin_token'),
     clearCookie(req, oauthCookies.state),
     clearCookie(req, oauthCookies.verifier),
   ]);

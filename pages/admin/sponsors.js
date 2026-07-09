@@ -26,8 +26,8 @@ const tierMeta = {
     description: 'Shown on the homepage and current season page.',
   },
   friend: {
-    title: 'Friends of the Season',
-    description: 'Shown on the current season page.',
+    title: 'Episode Supporters',
+    description: 'Shown on the current season page for single-episode support.',
   },
   episode: {
     title: 'Episode Sponsors',
@@ -495,7 +495,7 @@ export default function AdminSponsorsPage() {
           >
             <option value="legacy">Legacy</option>
             <option value="partner">Partner</option>
-            <option value="friend">Friend</option>
+            <option value="friend">Episode Supporter</option>
             <option value="episode">Episode</option>
           </select>
         </Field>
@@ -581,8 +581,9 @@ export default function AdminSponsorsPage() {
               <strong>1. Pick the sponsor tier</strong>
               <p style={{ margin: '6px 0 0', color: '#475569' }}>
                 Legacy and Partner sponsors show on the homepage and current
-                season page. Friends show on the current season page. Episode
-                sponsors show on assigned episode cards.
+                season page. Episode Supporters show on the current season
+                page for single-episode support. Episode Sponsors show on
+                assigned episode cards.
               </p>
             </div>
             <div style={helpStepStyle}>
@@ -652,7 +653,7 @@ export default function AdminSponsorsPage() {
               >
                 <option value="legacy">Legacy</option>
                 <option value="partner">Partner</option>
-                <option value="friend">Friend</option>
+                <option value="friend">Episode Supporter</option>
                 <option value="episode">Episode</option>
               </select>
             </Field>

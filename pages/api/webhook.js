@@ -272,8 +272,7 @@ export default async function handler(req, res) {
     );
   } catch (err) {
     console.error('Webhook signature verification failed:', err.message);
-    // Return 200 so Stripe stops retrying, but mark as ignored
-    return res.status(200).json({ received: true, note: 'bad signature' });
+    return res.status(400).send('Webhook signature verification failed');
   }
 
   console.log('WEBHOOK EVENT TYPE:', event.type);

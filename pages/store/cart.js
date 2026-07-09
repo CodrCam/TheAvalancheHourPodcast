@@ -175,9 +175,14 @@ export default function CartPage() {
 
       <Container maxWidth="lg" sx={{ py: { xs: 2, md: 4 } }}>
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-          <Link href="/store" legacyBehavior>
-            <Button size="small" startIcon={<ArrowBackIcon />}>Back to store</Button>
-          </Link>
+          <Button
+            component={Link}
+            href="/store"
+            size="small"
+            startIcon={<ArrowBackIcon />}
+          >
+            Back to store
+          </Button>
         </Box>
 
         <Typography variant="h4" sx={{ mb: 3 }}>
@@ -195,9 +200,9 @@ export default function CartPage() {
             <Typography sx={{ color: 'text.secondary', mb: 2 }}>
               Add some merch and come back!
             </Typography>
-            <Link href="/store" legacyBehavior>
-              <Button variant="contained">Browse store</Button>
-            </Link>
+            <Button component={Link} href="/store" variant="contained">
+              Browse store
+            </Button>
           </Paper>
         ) : (
           <Grid container spacing={3}>
@@ -368,11 +373,15 @@ export default function CartPage() {
                   Checkout
                 </Button>
 
-                <Link href="/store" legacyBehavior>
-                  <Button fullWidth sx={{ mt: 1 }} variant="outlined">
-                    Continue shopping
-                  </Button>
-                </Link>
+                <Button
+                  component={Link}
+                  href="/store"
+                  fullWidth
+                  sx={{ mt: 1 }}
+                  variant="outlined"
+                >
+                  Continue shopping
+                </Button>
               </Paper>
             </Grid>
           </Grid>

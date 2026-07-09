@@ -162,11 +162,14 @@ export default function ShippingPage() {
 
       <Container maxWidth="md" sx={{ py: { xs: 3, md: 5 } }}>
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-          <Link href="/store/cart" legacyBehavior>
-            <Button size="small" startIcon={<ArrowBackIcon />}>
-              Back to cart
-            </Button>
-          </Link>
+          <Button
+            component={Link}
+            href="/store/cart"
+            size="small"
+            startIcon={<ArrowBackIcon />}
+          >
+            Back to cart
+          </Button>
           <Box sx={{ flexGrow: 1 }} />
           {subtotal > 0 && (
             <Typography sx={{ fontWeight: 500 }}>

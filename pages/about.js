@@ -110,19 +110,19 @@ export default function AboutPage() {
                 </CardContent>
 
                 <Box sx={{ p: 2, pt: 0 }}>
-                  <Link href={`/hosts/${person.slug}`} passHref legacyBehavior>
-                    <Button
-                      variant="contained"
-                      color="primary"
-                      fullWidth
-                      sx={{
-                        py: { xs: 1, md: 1.2 },
-                        fontSize: { xs: '0.9rem', md: '1rem' },
-                      }}
-                    >
-                      View Profile
-                    </Button>
-                  </Link>
+                  <Button
+                    component={Link}
+                    href={`/hosts/${person.slug}`}
+                    variant="contained"
+                    color="primary"
+                    fullWidth
+                    sx={{
+                      py: { xs: 1, md: 1.2 },
+                      fontSize: { xs: '0.9rem', md: '1rem' },
+                    }}
+                  >
+                    View Profile
+                  </Button>
                 </Box>
               </Card>
             </Grid>

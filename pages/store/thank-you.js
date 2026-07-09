@@ -167,9 +167,9 @@ export default function ThankYouPage() {
               justifyContent: 'space-between',
             }}
           >
-            <Link href="/store" legacyBehavior>
-              <Button variant="outlined">Back to store</Button>
-            </Link>
+            <Button component={Link} href="/store" variant="outlined">
+              Back to store
+            </Button>
             <Button
               variant="text"
               onClick={() => window.print()}

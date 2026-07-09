@@ -348,9 +348,9 @@ export default function ProductSlugPage({ initialProduct = null }) {
           <Typography color="text.secondary" sx={{ mb: 3 }}>
             Returning to the live store selection.
           </Typography>
-          <Link href="/store" passHref legacyBehavior>
-            <Button variant="contained">Back to store</Button>
-          </Link>
+          <Button component={Link} href="/store" variant="contained">
+            Back to store
+          </Button>
         </Container>
       </>
     );
@@ -375,15 +375,15 @@ export default function ProductSlugPage({ initialProduct = null }) {
             <ArrowBackIcon />
           </IconButton>
           <Box sx={{ flexGrow: 1 }} />
-          <Link href="/store/checkout" passHref legacyBehavior>
-            <Button
-              startIcon={<ShoppingCartIcon />}
-              variant="outlined"
-              size="small"
-            >
-              Cart
-            </Button>
-          </Link>
+          <Button
+            component={Link}
+            href="/store/checkout"
+            startIcon={<ShoppingCartIcon />}
+            variant="outlined"
+            size="small"
+          >
+            Cart
+          </Button>
         </Box>
 
         <Grid container spacing={3}>
@@ -634,11 +634,14 @@ export default function ProductSlugPage({ initialProduct = null }) {
             </Box>
 
             <Box sx={{ mt: 3 }}>
-              <Link href="/store" passHref legacyBehavior>
-                <Button startIcon={<ArrowBackIcon />} size="small">
-                  Back to store
-                </Button>
-              </Link>
+              <Button
+                component={Link}
+                href="/store"
+                startIcon={<ArrowBackIcon />}
+                size="small"
+              >
+                Back to store
+              </Button>
             </Box>
           </Grid>
         </Grid>

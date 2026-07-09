@@ -310,11 +310,14 @@ export default function ReviewPage() {
 
       <Container maxWidth="md" sx={{ py: { xs: 3, md: 5 } }}>
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-          <Link href="/store/checkout/shipping" legacyBehavior>
-            <Button size="small" startIcon={<ArrowBackIcon />}>
-              Back to shipping
-            </Button>
-          </Link>
+          <Button
+            component={Link}
+            href="/store/checkout/shipping"
+            size="small"
+            startIcon={<ArrowBackIcon />}
+          >
+            Back to shipping
+          </Button>
         </Box>
 
         <Paper

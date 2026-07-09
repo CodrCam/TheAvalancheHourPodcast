@@ -15,7 +15,6 @@ import {
   InputAdornment,
   IconButton,
   Fade,
-  Button,
 } from '@mui/material';
 import { Search, Clear, CalendarToday } from '@mui/icons-material';
 import Navbar from '../../components/Navbar';
@@ -39,7 +38,7 @@ export default function CurrentSeason() {
   const [seasonSponsorTiers, setSeasonSponsorTiers] = useState(DEFAULT_SPONSORS);
 
   // Performance monitoring hooks
-  const { startTimer, endTimer, getTimings } = usePerformanceMonitor(
+  const { startTimer, endTimer } = usePerformanceMonitor(
     'Current Season Page Load'
   );
   const { measureApiCall } = useApiPerformance();
@@ -210,29 +209,6 @@ export default function CurrentSeason() {
     return text.substring(0, maxLength).trim() + '...';
   };
 
-  // Debug function to show performance data (only in development)
-  const showPerformanceData = () => {
-    if (process.env.NODE_ENV === 'development') {
-      console.table(getTimings());
-    }
-  };
-
-  // Add this button in development mode for debugging
-  const PerformanceDebugButton = () => {
-    if (process.env.NODE_ENV !== 'development') return null;
-
-    return (
-      <Button
-        onClick={showPerformanceData}
-        variant="outlined"
-        size="small"
-        sx={{ position: 'fixed', bottom: 20, right: 20, zIndex: 1000 }}
-      >
-        Show Performance Data
-      </Button>
-    );
-  };
-
   const seasonSponsorRows = [
     {
       key: 'legacy',
@@ -256,7 +232,7 @@ export default function CurrentSeason() {
     },
     {
       key: 'friends',
-      label: 'Friends of the Season',
+      label: 'Episode Supporters',
       items: seasonSponsorTiers.friends || [],
       logoHeight: 24,
       grid: { xs: 6, sm: 4, md: 3, lg: 2 },
@@ -734,8 +710,6 @@ export default function CurrentSeason() {
           )}
         </Box>
 
-        {/* Debug button for development */}
-        <PerformanceDebugButton />
       </Container>
     </>
   );

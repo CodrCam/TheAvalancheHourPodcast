@@ -11,20 +11,8 @@ The app supports two admin roles:
 - `logistics`: order workflow, shipping exports, and inventory updates.
 
 Normal human login uses Amazon Cognito named users and groups. Legacy
-environment-variable credentials are disabled unless
-`ALLOW_LEGACY_ADMIN_AUTH=true` is explicitly set for a temporary emergency path:
-
-- `ALLOW_LEGACY_ADMIN_AUTH`
-- `ADMIN_USER`
-- `ADMIN_PASS`
-- `LOGISTICS_USER`
-- `LOGISTICS_PASS`
-
-Optional token values are supported for scripted access, but should not be used
-for normal human login and also require the legacy flag:
-
-- `ADMIN_TOKEN`
-- `LOGISTICS_TOKEN`
+environment-variable credentials have been removed from the runtime. Production
+admin access should only work through Cognito.
 
 ## Auth model
 
@@ -81,10 +69,10 @@ Logistics:
 
 ## Next implementation steps
 
-1. Create the Cognito user pool with required authenticator-app MFA.
-2. Add `admin` and `logistics` Cognito groups.
-3. Invite named users instead of sharing credentials.
-4. Add a Cognito token verification helper in the Next.js API layer.
-5. Replace basic auth middleware with Cognito session checks.
-6. Keep server-side permission checks on every admin API route.
-7. Add an audit log before expanding content-editing tools.
+1. Require authenticator-app MFA for all admin users.
+2. Keep server-side permission checks on every admin API route.
+3. Remove old admin/logistics credential variables from Netlify if they still
+   exist.
+4. Add read-only UI affordances for logistics on pages where write actions are
+   blocked server-side.
+5. Promote server-log audit events into a persistent audit table when needed.

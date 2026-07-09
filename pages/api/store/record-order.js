@@ -1,10 +1,62 @@
 // pages/api/store/record-order.js
+import Stripe from 'stripe';
 import nodemailer from 'nodemailer';
 import { upsertOrder } from '../../../lib/orderStore';
+import { skuKey } from '../../../lib/stock';
 
+const stripe = process.env.STRIPE_SECRET_KEY
+  ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2022-11-15' })
+  : null;
 const EMAIL_USER = process.env.EMAIL_USER;
 const EMAIL_PASS = process.env.EMAIL_PASS;
 const TO_EMAIL = process.env.CONTACT_EMAIL || 'theavalanchehourpodcast@gmail.com';
+
+function getPaymentIntentOrderId(paymentIntent) {
+  return paymentIntent?.metadata?.order_id || paymentIntent?.id || '';
+}
+
+function parsePaymentIntentItems(paymentIntent) {
+  if (!paymentIntent?.metadata?.items) return [];
+
+  try {
+    const parsed = JSON.parse(paymentIntent.metadata.items);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function aggregateItemsBySku(rawItems = []) {
+  const result = new Map();
+  const items = Array.isArray(rawItems) ? rawItems : [];
+
+  for (const item of items) {
+    if (!item || typeof item !== 'object') continue;
+
+    const qty = parseInt(item.qty ?? item.quantity, 10) || 0;
+    const sku =
+      typeof item.sku === 'string' && item.sku
+        ? item.sku
+        : item.id
+          ? skuKey(item.id, item.options || {})
+          : '';
+
+    if (!sku || qty <= 0) continue;
+    result.set(sku, (result.get(sku) || 0) + qty);
+  }
+
+  return result;
+}
+
+function itemAggregatesMatch(left, right) {
+  if (!left.size || left.size !== right.size) return false;
+
+  for (const [sku, qty] of left.entries()) {
+    if (right.get(sku) !== qty) return false;
+  }
+
+  return true;
+}
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -15,8 +67,6 @@ export default async function handler(req, res) {
   const {
     orderId,
     paymentIntentId,
-    status,
-    amountCents,
     items,
     email,
     shipping,
@@ -28,31 +78,57 @@ export default async function handler(req, res) {
       .json({ error: 'orderId and paymentIntentId are required' });
   }
 
-  const safeShipping =
-    shipping && typeof shipping === 'object'
-      ? shipping
-      : {};
-
-  const shippingName = safeShipping.name || null;
-  const shippingAddress1 = safeShipping.line1 || null;
-  const shippingAddress2 = safeShipping.line2 || null;
-  const shippingCity = safeShipping.city || null;
-  const shippingState = safeShipping.state || null;
-  const shippingPostalCode = safeShipping.postal_code || null;
-  const shippingCountry = safeShipping.country || null;
-
-  const customerEmail = typeof email === 'string' && email ? email : null;
-  const customerName = shippingName || null;
+  if (!stripe) {
+    return res.status(500).json({ error: 'Stripe not configured' });
+  }
 
   try {
+    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+    const verifiedOrderId = getPaymentIntentOrderId(paymentIntent);
+
+    if (paymentIntent.status !== 'succeeded') {
+      return res.status(409).json({ error: 'Payment is not complete' });
+    }
+
+    if (verifiedOrderId !== orderId) {
+      return res.status(403).json({ error: 'Order does not match payment' });
+    }
+
+    const verifiedAmountCents =
+      typeof paymentIntent.amount_received === 'number'
+        ? paymentIntent.amount_received
+        : paymentIntent.amount;
+    const safeShipping =
+      paymentIntent.shipping ||
+      (shipping && typeof shipping === 'object' ? shipping : {});
+    const safeAddress = safeShipping.address || safeShipping;
+    const shippingName = safeShipping.name || null;
+    const shippingAddress1 = safeAddress.line1 || null;
+    const shippingAddress2 = safeAddress.line2 || null;
+    const shippingCity = safeAddress.city || null;
+    const shippingState = safeAddress.state || null;
+    const shippingPostalCode = safeAddress.postal_code || null;
+    const shippingCountry = safeAddress.country || null;
+    const verifiedCustomerEmail =
+      paymentIntent.receipt_email ||
+      (typeof email === 'string' && email ? email : null);
+    const customerName = shippingName || null;
+    const metadataItems = parsePaymentIntentItems(paymentIntent);
+    const postedItems = Array.isArray(items) ? items : [];
+    const postedItemsMatchPayment = itemAggregatesMatch(
+      aggregateItemsBySku(postedItems),
+      aggregateItemsBySku(metadataItems)
+    );
+    const recordedItems = postedItemsMatchPayment ? postedItems : metadataItems;
+
     const { isNewOrder } = await upsertOrder({
-      order_id: orderId,
-      stripe_payment_intent_id: paymentIntentId,
-      status: status || 'paid',
+      order_id: verifiedOrderId,
+      stripe_payment_intent_id: paymentIntent.id,
+      status: paymentIntent.status,
       fulfillment_status: 'new',
-      amount_cents: typeof amountCents === 'number' ? amountCents : 0,
-      items: Array.isArray(items) ? items : [],
-      customer_email: customerEmail,
+      amount_cents: verifiedAmountCents,
+      items: recordedItems,
+      customer_email: verifiedCustomerEmail,
       customer_name: customerName,
       shipping_name: shippingName,
       shipping_address1: shippingAddress1,
@@ -74,7 +150,7 @@ export default async function handler(req, res) {
           auth: { user: EMAIL_USER, pass: EMAIL_PASS },
         });
 
-        const safeItems = Array.isArray(items) ? items : [];
+        const safeItems = recordedItems;
         const lines = safeItems.map((it) => {
           const qty = it.qty ?? 1;
           const name = it.name || it.label || it.title || it.id || 'Item';
@@ -82,18 +158,18 @@ export default async function handler(req, res) {
           return `- ${qty} × ${name}${sku}`;
         });
 
-        const dollars = (Number(amountCents || 0) / 100).toFixed(2);
+        const dollars = (Number(verifiedAmountCents || 0) / 100).toFixed(2);
 
-        const subject = `New order placed — ${orderId}`;
+        const subject = `New order placed — ${verifiedOrderId}`;
         const text =
 `A new order was placed.
 
-Order ID: ${orderId}
-PaymentIntent: ${paymentIntentId}
+Order ID: ${verifiedOrderId}
+PaymentIntent: ${paymentIntent.id}
 Total: $${dollars}
 
 Customer: ${customerName || '(no name)'}
-Email: ${customerEmail || '(no email)'}
+Email: ${verifiedCustomerEmail || '(no email)'}
 Ship to:
 ${shippingName || ''}
 ${shippingAddress1 || ''}
