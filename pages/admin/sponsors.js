@@ -37,6 +37,8 @@ const tierMeta = {
 
 const fieldStyle = {
   width: '100%',
+  minWidth: 0,
+  boxSizing: 'border-box',
   border: '1px solid #cbd5e1',
   borderRadius: 6,
   padding: '8px 9px',
@@ -50,6 +52,8 @@ const cardStyle = {
   background: '#fff',
   display: 'grid',
   gap: 12,
+  minWidth: 0,
+  overflow: 'hidden',
 };
 
 const helpStepStyle = {
@@ -93,7 +97,7 @@ function normalizeEditableSponsor(value = {}) {
 
 function Field({ label, children }) {
   return (
-    <label style={{ display: 'grid', gap: 5 }}>
+    <label style={{ display: 'grid', gap: 5, minWidth: 0 }}>
       <span style={{ fontWeight: 700, color: '#334155', fontSize: 13 }}>
         {label}
       </span>
@@ -217,7 +221,14 @@ function EpisodeAssignments({ sponsor, onChange, onError }) {
   return (
     <div style={{ display: 'grid', gap: 8 }}>
       <Field label="Episode sponsor placement">
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'minmax(0, 1fr) auto',
+            gap: 8,
+            alignItems: 'stretch',
+          }}
+        >
           <input
             style={fieldStyle}
             value={sponsor.episode_id_entry || ''}
@@ -237,7 +248,14 @@ function EpisodeAssignments({ sponsor, onChange, onError }) {
           </button>
         </div>
       </Field>
-      <span style={{ color: '#64748b', fontSize: 12, lineHeight: 1.45 }}>
+      <span
+        style={{
+          color: '#64748b',
+          fontSize: 12,
+          lineHeight: 1.45,
+          overflowWrap: 'anywhere',
+        }}
+      >
         The episode ID is in the Spotify episode link after /episode/. Example:
         open.spotify.com/episode/1HUTXoWJtCH7ojnp0CVgJE uses episode ID
         1HUTXoWJtCH7ojnp0CVgJE.
@@ -440,7 +458,19 @@ export default function AdminSponsorsPage() {
             />
             Active
           </label>
-          <span style={{ color: '#64748b', fontSize: 12 }}>
+          <span
+            title={sponsor.sponsor_id}
+            style={{
+              color: '#64748b',
+              fontSize: 12,
+              minWidth: 0,
+              maxWidth: '48%',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              textAlign: 'right',
+            }}
+          >
             {sponsor.sponsor_id}
           </span>
         </div>
