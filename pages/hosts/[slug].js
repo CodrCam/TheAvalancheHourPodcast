@@ -8,6 +8,14 @@ import { getPersonBySlug, getStaticPeopleSeed } from '../../lib/peopleStore';
 
 const PLACEHOLDER_IMG = '/images/placeholder-person.jpg';
 
+function getCategoryLabel(role) {
+  if (role === 'host') return 'Host';
+  if (role === 'webmaster') return 'Webmaster';
+  if (role === 'social_media_manager') return 'Social Media Manager';
+  if (role === 'team') return 'Team';
+  return 'Producer';
+}
+
 export default function HostProfile({ person }) {
   if (!person) {
     // Shouldn't happen with notFound: true, but keep a guard for dev
@@ -25,6 +33,7 @@ export default function HostProfile({ person }) {
     name,
     role,
     images = [],
+    roles = [],
     bioShort = '',
     bioFull = '',
     needsBio,
@@ -33,7 +42,7 @@ export default function HostProfile({ person }) {
   } = person;
 
   const imgList = images.length ? images : [PLACEHOLDER_IMG];
-  const roleLabel = role === 'host' ? 'Host' : 'Producer';
+  const roleLabel = getCategoryLabel(role);
 
   // Simple JSON-LD for Person (SEO)
   const jsonLd = {
@@ -66,6 +75,9 @@ export default function HostProfile({ person }) {
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1, flexWrap: 'wrap' }}>
           <Typography variant="h3" sx={{ fontWeight: 700, lineHeight: 1.2 }}>{name}</Typography>
           <Chip label={roleLabel} />
+          {roles.map((roleName) => (
+            <Chip key={roleName} label={roleName} variant="outlined" />
+          ))}
           {needsBio && <Chip label="Bio coming soon" color="warning" variant="outlined" />}
           {needsImages && <Chip label="Images needed" color="warning" variant="outlined" />}
         </Box>

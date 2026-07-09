@@ -1,8 +1,9 @@
 // /src/data/people.js
-// Central data source for Hosts & Producers used by /about and /hosts/[slug].
+// Central data source for Hosts & Team used by /about and /hosts/[slug].
 // Conventions:
 // - slug: lower-kebab-case for URLs
-// - role: 'host' | 'producer'
+// - role: 'host' | 'webmaster' | 'social_media_manager' | 'team' | 'producer'
+// - roles: display labels such as Social Media Manager, Webmaster
 // - images: paths under /public/images/hosts
 // - bioShort: 1–2 lines
 // - bioFull: full HTML/text (safe to include <a>, <br/>, etc.)
@@ -223,12 +224,12 @@ export const people = [
   },
 
   // =========================
-  // PRODUCERS
+  // TEAM
   // =========================
 
   {
     slug: 'cam-griffin',
-    role: 'producer',
+    role: 'webmaster',
     name: 'Cam Griffin',
     images: [
       '/images/hosts/cam1.jpg',
@@ -236,9 +237,9 @@ export const people = [
       '/images/hosts/cam3.jpeg',
     ],
     bioShort:
-      'Season 7+ producer handling audio, social, and web; lifelong outdoorsman.',
+      'Webmaster for The Avalanche Hour and lifelong outdoorsman.',
     bioFull:
-      'Cameron is a former Marine who returned to his home state of Washington after completing active duty in 2009. His love for the outdoors eventually pulled him back into the backcountry, where he realized the importance of formal education in safe mountain travel. Cameron pursued courses through renowned organizations such as The Mountaineers, The American Alpine Institute, North Cascade Mountain Guides, and the Silverton Avalanche School.It was during this period of learning that he discovered The Avalanche Hour Podcast. The insightful discussions and expert advice from the podcast had a profound impact on him, helping him make better informed decisions in avalanche terrain. Grateful for the value it brought to his life, Cameron decided to give back by contributing his skills.With a background in audio engineering, Cameron reached out to Caleb and joined the team in Season 7. Since then, he has been an integral part of the program, contributing to audio editing, social media management, and web design.',
+      'Cameron is a former Marine who returned to his home state of Washington after completing active duty in 2009. His love for the outdoors eventually pulled him back into the backcountry, where he realized the importance of formal education in safe mountain travel. Cameron pursued courses through renowned organizations such as The Mountaineers, The American Alpine Institute, North Cascade Mountain Guides, and the Silverton Avalanche School. It was during this period of learning that he discovered The Avalanche Hour Podcast. The insightful discussions and expert advice from the podcast had a profound impact on him, helping him make better informed decisions in avalanche terrain. Grateful for the value it brought to his life, Cameron decided to give back by contributing his skills. With a background in audio engineering, Cameron reached out to Caleb and joined the team in Season 7. Since then, he has been an integral part of the program, contributing to audio editing and web design.',
   },
 
   {
@@ -250,7 +251,7 @@ export const people = [
     ],
     needsBio: true,
     needsImages: true,
-    bioShort: 'Producer — bio coming soon.',
+    bioShort: 'Team member — bio coming soon.',
     bioFull: 'Bio coming soon.',
   },
 ];

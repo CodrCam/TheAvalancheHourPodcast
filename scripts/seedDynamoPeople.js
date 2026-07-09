@@ -131,13 +131,23 @@ async function dynamoDbRequest(action, body) {
 
 function normalizePerson(person, index) {
   const slug = person.slug || String(person.name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  const role = [
+    'host',
+    'webmaster',
+    'social_media_manager',
+    'team',
+    'producer',
+  ].includes(person.role)
+    ? person.role
+    : 'host';
 
   return {
     person_id: slug,
     slug,
-    role: person.role === 'producer' ? 'producer' : 'host',
+    role,
     name: person.name || '',
     title: person.title || '',
+    roles: Array.isArray(person.roles) ? person.roles : [],
     images: Array.isArray(person.images) ? person.images : [],
     bioShort: person.bioShort || '',
     bioFull: person.bioFull || '',
@@ -156,6 +166,7 @@ function toDynamoItem(person) {
     role: { S: person.role },
     name: { S: person.name },
     title: { S: person.title },
+    roles_json: { S: JSON.stringify(person.roles || []) },
     images_json: { S: JSON.stringify(person.images || []) },
     bio_short: { S: person.bioShort },
     bio_full: { S: person.bioFull },

@@ -22,12 +22,28 @@ import { getStaticPeopleSeed, listPeople } from '../lib/peopleStore';
 
 const PLACEHOLDER_IMG = '/images/placeholder-person.jpg';
 
+function getCategoryLabel(role) {
+  if (role === 'host') return 'Host';
+  if (role === 'webmaster') return 'Webmaster';
+  if (role === 'social_media_manager') return 'Social Media Manager';
+  if (role === 'team') return 'Team';
+  return 'Producer';
+}
+
+function getCategoryColor(role) {
+  if (role === 'host') return 'primary';
+  if (role === 'webmaster') return 'info';
+  if (role === 'social_media_manager') return 'warning';
+  if (role === 'team') return 'success';
+  return 'secondary';
+}
+
 export default function AboutPage({ people, aboutContent }) {
   return (
     <>
       <SEO
         title="About The Avalanche Hour Podcast"
-        description="Learn about The Avalanche Hour Podcast, why Caleb Merrill started the program, and meet the hosts and producers behind it."
+        description="Learn about The Avalanche Hour Podcast, why Caleb Merrill started the program, and meet the hosts and team behind it."
         url="/about"
       />
       <Navbar />
@@ -123,7 +139,7 @@ export default function AboutPage({ people, aboutContent }) {
               Meet the Team
             </Typography>
             <Typography color="text.secondary">
-              Hosts and producers helping carry the conversations forward.
+              Hosts and team members helping carry the conversations forward.
             </Typography>
           </Box>
           <Chip label={`${people.length} team members`} variant="outlined" />
@@ -177,9 +193,17 @@ export default function AboutPage({ people, aboutContent }) {
                     </Typography>
                     <Chip
                       size="small"
-                      label={person.role === 'host' ? 'Host' : 'Producer'}
-                      color={person.role === 'host' ? 'primary' : 'secondary'}
+                      label={getCategoryLabel(person.role)}
+                      color={getCategoryColor(person.role)}
                     />
+                    {(person.roles || []).map((roleLabel) => (
+                      <Chip
+                        key={roleLabel}
+                        size="small"
+                        label={roleLabel}
+                        variant="outlined"
+                      />
+                    ))}
                     {person.title ? (
                       <Chip size="small" label={person.title} variant="outlined" />
                     ) : null}

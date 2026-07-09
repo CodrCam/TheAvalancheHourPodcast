@@ -143,6 +143,7 @@ Each team member item includes:
   "role": "host",
   "name": "Caleb Merrill",
   "title": "",
+  "roles_json": "[]",
   "images_json": "[\"/images/hosts/caleb1.JPG\"]",
   "bio_short": "Founder/host of The Avalanche Hour...",
   "bio_full": "Full profile text...",
@@ -154,9 +155,11 @@ Each team member item includes:
 }
 ```
 
-Inactive people remain editable in admin but are hidden from the public About
-page and profile routes. Images can be site-relative paths, public HTTPS URLs,
-or small uploaded data URLs. For uploaded host images, keep files under 380 KB.
+Valid roles are `host`, `webmaster`, `social_media_manager`, `team`, and
+`producer`. Inactive people remain editable in admin but are hidden from the
+public About page and profile routes. Images can be site-relative paths, public
+HTTPS URLs, or uploaded data URLs. The admin uploader resizes photos before
+saving them, and the database rejects stored image values over 300 KB.
 
 ## Create the Tables
 

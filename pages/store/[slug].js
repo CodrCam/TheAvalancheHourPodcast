@@ -405,7 +405,7 @@ export default function ProductSlugPage({ initialProduct = null }) {
   return (
     <>
       <Head>
-        <title>{product.name} — The Avalanche Hour</title>
+        <title>{`${product.name} — The Avalanche Hour`}</title>
         <meta name="description" content={product.description} />
       </Head>
 

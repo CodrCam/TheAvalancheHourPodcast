@@ -7,6 +7,8 @@ const blankPerson = {
   role: 'host',
   name: '',
   title: '',
+  roles: [],
+  roles_entry: '',
   images: [],
   image_entry: '',
   bioShort: '',
@@ -17,7 +19,20 @@ const blankPerson = {
   sort_order: 0,
 };
 
-const MAX_IMAGE_UPLOAD_BYTES = 380 * 1024;
+const ROLE_OPTIONS = [
+  { value: 'host', label: 'Host', sectionLabel: 'Hosts' },
+  { value: 'webmaster', label: 'Webmaster', sectionLabel: 'Webmasters' },
+  {
+    value: 'social_media_manager',
+    label: 'Social Media Manager',
+    sectionLabel: 'Social Media Managers',
+  },
+  { value: 'team', label: 'Team', sectionLabel: 'Team' },
+  { value: 'producer', label: 'Producer', sectionLabel: 'Producers' },
+];
+
+const MAX_SOURCE_IMAGE_BYTES = 6 * 1024 * 1024;
+const MAX_STORED_IMAGE_LENGTH = 300000;
 const ACCEPTED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
 
 const fieldStyle = {
@@ -50,13 +65,57 @@ function slugify(value = '') {
     .replace(/^-+|-+$/g, '');
 }
 
-function readFileAsDataUrl(file) {
+function loadImageFromFile(file) {
   return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result || ''));
-    reader.onerror = () => reject(new Error('Could not read image file'));
-    reader.readAsDataURL(file);
+    const url = URL.createObjectURL(file);
+    const image = new Image();
+    image.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve(image);
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('Could not load image file'));
+    };
+    image.src = url;
   });
+}
+
+function imageToDataUrl(image, maxSide, quality) {
+  const naturalWidth = image.naturalWidth || image.width;
+  const naturalHeight = image.naturalHeight || image.height;
+  const scale = Math.min(1, maxSide / Math.max(naturalWidth, naturalHeight));
+  const width = Math.max(1, Math.round(naturalWidth * scale));
+  const height = Math.max(1, Math.round(naturalHeight * scale));
+  const canvas = document.createElement('canvas');
+  const context = canvas.getContext('2d');
+
+  if (!context) {
+    throw new Error('Could not prepare image for upload.');
+  }
+
+  canvas.width = width;
+  canvas.height = height;
+  context.fillStyle = '#fff';
+  context.fillRect(0, 0, width, height);
+  context.drawImage(image, 0, 0, width, height);
+
+  return canvas.toDataURL('image/jpeg', quality);
+}
+
+async function resizeImageAsDataUrl(file) {
+  const image = await loadImageFromFile(file);
+
+  for (const maxSide of [1400, 1100, 900, 700]) {
+    for (const quality of [0.82, 0.74, 0.66, 0.58]) {
+      const dataUrl = imageToDataUrl(image, maxSide, quality);
+      if (dataUrl.length <= MAX_STORED_IMAGE_LENGTH) {
+        return dataUrl;
+      }
+    }
+  }
+
+  throw new Error('That image is still too large after resizing. Please try a smaller photo.');
 }
 
 function normalizeEditablePerson(value = {}) {
@@ -67,6 +126,8 @@ function normalizeEditablePerson(value = {}) {
     person_id: value.person_id || slug,
     slug,
     active: value.active !== false,
+    roles: Array.isArray(value.roles) ? value.roles : [],
+    roles_entry: Array.isArray(value.roles) ? value.roles.join(', ') : '',
     images: Array.isArray(value.images) ? value.images : [],
     image_entry: '',
   };
@@ -96,8 +157,8 @@ function ImageManager({ person, onChange, onError }) {
     onChange({ images: [...images, image], image_entry: '' });
   }
 
-  function removeImage(image) {
-    onChange({ images: images.filter((item) => item !== image) });
+  function removeImage(index) {
+    onChange({ images: images.filter((_, itemIndex) => itemIndex !== index) });
   }
 
   async function handleFileChange(event) {
@@ -110,16 +171,20 @@ function ImageManager({ person, onChange, onError }) {
       return;
     }
 
-    if (file.size > MAX_IMAGE_UPLOAD_BYTES) {
-      onError('Image file is too large. Please keep uploaded host images under 380 KB.');
+    if (file.size > MAX_SOURCE_IMAGE_BYTES) {
+      onError('Please choose an image under 6 MB.');
       return;
     }
 
     try {
-      const dataUrl = await readFileAsDataUrl(file);
+      const dataUrl = await resizeImageAsDataUrl(file);
+      if (images.includes(dataUrl)) {
+        onError('That image is already attached to this person.');
+        return;
+      }
       onChange({ images: [...images, dataUrl] });
     } catch (err) {
-      onError(err.message || 'Could not read image file.');
+      onError(err.message || 'Could not prepare image file.');
     }
   }
 
@@ -127,8 +192,8 @@ function ImageManager({ person, onChange, onError }) {
     <div style={{ display: 'grid', gap: 8 }}>
       {images.length ? (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))', gap: 8 }}>
-          {images.map((image) => (
-            <div key={image} style={{ display: 'grid', gap: 5 }}>
+          {images.map((image, index) => (
+            <div key={`${image}-${index}`} style={{ display: 'grid', gap: 5 }}>
               <div
                 style={{
                   height: 96,
@@ -144,7 +209,7 @@ function ImageManager({ person, onChange, onError }) {
                   style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                 />
               </div>
-              <button type="button" onClick={() => removeImage(image)}>
+              <button type="button" onClick={() => removeImage(index)}>
                 Remove
               </button>
             </div>
@@ -192,8 +257,8 @@ function ImageManager({ person, onChange, onError }) {
         />
       </label>
       <span style={{ color: '#64748b', fontSize: 12 }}>
-        Best for database uploads: cropped JPG or WebP under 380 KB. Existing files
-        can be referenced by path.
+        Uploads are resized for the database. Existing files can be referenced
+        by path.
       </span>
     </div>
   );
@@ -210,7 +275,9 @@ export default function AdminPeoplePage() {
   const [error, setError] = useState('');
 
   const grouped = useMemo(() => {
-    const groups = { host: [], producer: [] };
+    const groups = Object.fromEntries(
+      ROLE_OPTIONS.map((option) => [option.value, []])
+    );
     for (const person of people) {
       groups[person.role]?.push(person);
     }
@@ -228,7 +295,12 @@ export default function AdminPeoplePage() {
       });
       const data = await res.json();
       if (!res.ok || data.ok === false) {
-        throw new Error(data.error || 'Failed to load team');
+        throw new Error(
+          data.error ||
+            (res.status === 403
+              ? 'You can view the team, but your admin account cannot edit it yet.'
+              : 'Failed to load team')
+        );
       }
       setPeople((data.people || []).map(normalizeEditablePerson));
       setConfigured(data.configured === true);
@@ -266,10 +338,14 @@ export default function AdminPeoplePage() {
   }
 
   function personPayload(person) {
-    const { image_entry, ...cleanPerson } = person;
+    const { image_entry, roles_entry, ...cleanPerson } = person;
     return {
       ...cleanPerson,
       person_id: cleanPerson.person_id || cleanPerson.slug,
+      roles: String(roles_entry || '')
+        .split(/[\n,]+/)
+        .map((role) => role.trim())
+        .filter(Boolean),
       images: Array.isArray(person.images) ? person.images : [],
     };
   }
@@ -288,7 +364,12 @@ export default function AdminPeoplePage() {
       });
       const data = await res.json();
       if (!res.ok || data.ok === false) {
-        throw new Error(data.error || 'Failed to save person');
+        throw new Error(
+          data.error ||
+            (res.status === 403
+              ? 'Your admin account does not have permission to save team edits.'
+              : 'Failed to save person')
+        );
       }
       setMessage(`${data.person.name} saved.`);
       setDraft(blankPerson);
@@ -319,7 +400,12 @@ export default function AdminPeoplePage() {
       });
       const data = await res.json();
       if (!res.ok || data.ok === false) {
-        throw new Error(data.error || 'Failed to delete person');
+        throw new Error(
+          data.error ||
+            (res.status === 403
+              ? 'Your admin account does not have permission to delete team members.'
+              : 'Failed to delete person')
+        );
       }
       setMessage(`${person.name} deleted.`);
       setDeleteConfirmId('');
@@ -390,8 +476,11 @@ export default function AdminPeoplePage() {
               value={person.role}
               onChange={(event) => updatePerson(person.person_id, { role: event.target.value })}
             >
-              <option value="host">Host</option>
-              <option value="producer">Producer</option>
+              {ROLE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
             </select>
           </Field>
           <Field label="Order">
@@ -410,8 +499,19 @@ export default function AdminPeoplePage() {
           <input
             style={fieldStyle}
             value={person.title}
-            placeholder="Forecaster, guide, producer..."
+            placeholder="Optional single-line title"
             onChange={(event) => updatePerson(person.person_id, { title: event.target.value })}
+          />
+        </Field>
+
+        <Field label="Display roles">
+          <input
+            style={fieldStyle}
+            value={person.roles_entry}
+            placeholder="Social Media Manager, Webmaster"
+            onChange={(event) =>
+              updatePerson(person.person_id, { roles_entry: event.target.value })
+            }
           />
         </Field>
 
@@ -486,7 +586,7 @@ export default function AdminPeoplePage() {
       <div style={{ maxWidth: 1180 }}>
         <h1>Team</h1>
         <p style={{ color: '#64748b', maxWidth: 760 }}>
-          Edit the host and producer cards that appear on the About page and
+          Edit the host and team cards that appear on the About page and
           individual profile pages.
         </p>
 
@@ -523,11 +623,22 @@ export default function AdminPeoplePage() {
                 value={draft.role}
                 onChange={(event) => updateDraft({ role: event.target.value })}
               >
-                <option value="host">Host</option>
-                <option value="producer">Producer</option>
+                {ROLE_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
               </select>
             </Field>
           </div>
+          <Field label="Display roles">
+            <input
+              style={fieldStyle}
+              value={draft.roles_entry}
+              placeholder="Social Media Manager, Webmaster"
+              onChange={(event) => updateDraft({ roles_entry: event.target.value })}
+            />
+          </Field>
           <Field label="Short bio">
             <textarea
               style={{ ...fieldStyle, resize: 'vertical' }}
@@ -552,17 +663,15 @@ export default function AdminPeoplePage() {
           </button>
         </section>
 
-        {['host', 'producer'].map((role) => (
-          <section key={role} style={{ marginTop: 22 }}>
-            <h2 style={{ marginBottom: 10 }}>
-              {role === 'host' ? 'Hosts' : 'Producers'}
-            </h2>
-            {grouped[role]?.length ? (
+        {ROLE_OPTIONS.map((option) => (
+          <section key={option.value} style={{ marginTop: 22 }}>
+            <h2 style={{ marginBottom: 10 }}>{option.sectionLabel}</h2>
+            {grouped[option.value]?.length ? (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 14 }}>
-                {grouped[role].map(renderPersonCard)}
+                {grouped[option.value].map(renderPersonCard)}
               </div>
             ) : (
-              <p style={{ color: '#64748b' }}>No {role}s yet.</p>
+              <p style={{ color: '#64748b' }}>No {option.sectionLabel.toLowerCase()} yet.</p>
             )}
           </section>
         ))}

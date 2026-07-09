@@ -132,7 +132,12 @@ export default function AdminSiteContentPage() {
       });
       const data = await res.json();
       if (!res.ok || data.ok === false) {
-        throw new Error(data.error || 'Failed to save homepage content');
+        throw new Error(
+          data.error ||
+            (res.status === 403
+              ? 'Your admin account does not have permission to save site content.'
+              : 'Failed to save site content')
+        );
       }
       setContent({ ...DEFAULT_HOME_CONTENT, ...(data.content || {}) });
       setMeta({
@@ -140,9 +145,9 @@ export default function AdminSiteContentPage() {
         configured: data.configured === true,
         updated_at: data.updated_at || '',
       });
-      setMessage('Homepage content saved.');
+      setMessage('Site content saved.');
     } catch (err) {
-      setError(err.message || 'Failed to save homepage content.');
+      setError(err.message || 'Failed to save site content.');
     } finally {
       setSaving(false);
     }

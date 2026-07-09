@@ -363,7 +363,7 @@ export default function AdminHome() {
             <AdminSectionCard
               href="/admin/people"
               title="Team"
-              description="Edit host and producer bios, photos, profile pages, and visibility."
+              description="Edit host and team bios, photos, profile pages, roles, and visibility."
               meta={{
                 tone: 'good',
                 label: 'Editable',
