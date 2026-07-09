@@ -1,5 +1,16 @@
 // pages/_document.js
 import Document, { Html, Head, Main, NextScript } from 'next/document';
+import {
+  ORGANIZATION_ID,
+  SITE_DESCRIPTION,
+  SITE_EMAIL,
+  SITE_FAVICON_URL,
+  SITE_IMAGE_URL,
+  SITE_LOGO_URL,
+  SITE_NAME,
+  SITE_URL,
+  SOCIAL_PROFILES,
+} from '../lib/siteMetadata';
 
 class MyDocument extends Document {
   render() {
@@ -32,7 +43,8 @@ class MyDocument extends Document {
           />
           
           {/* Favicon and app icons */}
-          <link rel="icon" href="/favicon.ico" />
+          <link rel="icon" href="/favicon.ico" sizes="48x48" />
+          <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png" />
           <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
           <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
           <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
@@ -96,18 +108,25 @@ class MyDocument extends Document {
               __html: JSON.stringify({
                 "@context": "https://schema.org",
                 "@type": "Organization",
-                "name": "The Avalanche Hour Podcast",
-                "url": "https://www.theavalanchehour.com",
-                "logo": "https://www.theavalanchehour.com/images/logo.png",
-                "description": "Creating a stronger community through sharing stories, knowledge, and news amongst people who have a curious fascination with avalanches.",
-                "sameAs": [
-                  "https://www.instagram.com/theavalanchehourpodcast/"
-                ],
+                "@id": ORGANIZATION_ID,
+                "name": SITE_NAME,
+                "alternateName": "The Avalanche Hour",
+                "url": SITE_URL,
+                "logo": {
+                  "@type": "ImageObject",
+                  "url": SITE_LOGO_URL,
+                  "contentUrl": SITE_LOGO_URL
+                },
+                "image": SITE_IMAGE_URL,
+                "description": SITE_DESCRIPTION,
+                "sameAs": SOCIAL_PROFILES,
                 "contactPoint": {
                   "@type": "ContactPoint",
                   "contactType": "Customer Service",
-                  "email": "theavalanchehourpodcast@gmail.com"
-                }
+                  "email": SITE_EMAIL
+                },
+                "publishingPrinciples": SITE_URL,
+                "thumbnailUrl": SITE_FAVICON_URL
               })
             }}
           />

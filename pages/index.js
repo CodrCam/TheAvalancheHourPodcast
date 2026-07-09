@@ -9,6 +9,17 @@ import EpisodeCard from '../components/EpisodeCard';
 import SponsorGrid from '../components/SponsorGrid';
 import SEO from '../components/SEO';
 import { DEFAULT_HOME_CONTENT } from '../lib/siteContentDefaults';
+import {
+  ORGANIZATION_ID,
+  PODCAST_ID,
+  SITE_DESCRIPTION,
+  SITE_IMAGE_URL,
+  SITE_KEYWORDS,
+  SITE_LOGO_URL,
+  SITE_NAME,
+  SITE_URL,
+  SOCIAL_PROFILES,
+} from '../lib/siteMetadata';
 import { sponsors as DEFAULT_SPONSORS } from '../src/data/sponsors';
 
 const topSectionHeight = 350;
@@ -349,17 +360,26 @@ export default function Home() {
           __html: JSON.stringify({
             "@context": "https://schema.org",
             "@type": "PodcastSeries",
-            "name": "The Avalanche Hour Podcast",
-            "description": "Creating a stronger community through sharing stories, knowledge, and news amongst people who have a curious fascination with avalanches.",
-            "url": "https://www.theavalanchehour.com",
-            "image": "https://www.theavalanchehour.com/images/podcast-logo.jpg",
+            "@id": PODCAST_ID,
+            "name": SITE_NAME,
+            "alternateName": "The Avalanche Hour",
+            "description": SITE_DESCRIPTION,
+            "url": SITE_URL,
+            "image": SITE_IMAGE_URL,
+            "thumbnailUrl": SITE_LOGO_URL,
+            "inLanguage": "en-US",
+            "genre": ["Education", "Science", "Outdoor Recreation"],
+            "keywords": SITE_KEYWORDS,
+            "sameAs": SOCIAL_PROFILES,
             "author": {
               "@type": "Organization",
+              "@id": ORGANIZATION_ID,
               "name": "The Avalanche Hour Team"
             },
             "publisher": {
               "@type": "Organization",
-              "name": "The Avalanche Hour Podcast"
+              "@id": ORGANIZATION_ID,
+              "name": SITE_NAME
             }
           })
         }}

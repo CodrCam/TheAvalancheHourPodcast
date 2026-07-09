@@ -3,6 +3,9 @@ User-agent: *
 Allow: /
 
 # Disallow any internal or development routes
+Allow: /api/sitemap.xml
+Allow: /api/rss.xml
+Allow: /api/feed.json
 Disallow: /api/
 Disallow: /admin/
 Disallow: /store/admin/
@@ -12,10 +15,10 @@ Disallow: /tmp/
 Disallow: /drafts/
 
 # Point crawlers to sitemap
-Sitemap: https://theavalanchehourpodcast.com/api/sitemap.xml
+Sitemap: https://www.theavalanchehour.com/api/sitemap.xml
 
 # Optional: specify clean crawl-delay for heavy crawlers
 Crawl-delay: 5
 
 # Contact (for webmasters or search engines)
-Host: theavalanchehourpodcast.com
+Host: www.theavalanchehour.com
