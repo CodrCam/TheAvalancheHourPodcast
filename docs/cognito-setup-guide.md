@@ -142,9 +142,12 @@ You can find it in:
 If you create a browser-style app client without a secret, leave
 `COGNITO_APP_CLIENT_SECRET` unset.
 
-Keep these during the transition:
+Legacy username/password fallback is disabled by default. Only add these for a
+temporary emergency path, and only when `ALLOW_LEGACY_ADMIN_AUTH=true` is also
+set:
 
 ```bash
+ALLOW_LEGACY_ADMIN_AUTH=true
 ADMIN_USER=...
 ADMIN_PASS=...
 LOGISTICS_USER=...
@@ -152,7 +155,7 @@ LOGISTICS_PASS=...
 ```
 
 Optional token values can exist for scripted access, but should not be used for
-normal human login:
+normal human login. They also require `ALLOW_LEGACY_ADMIN_AUTH=true`:
 
 ```bash
 ADMIN_TOKEN=...

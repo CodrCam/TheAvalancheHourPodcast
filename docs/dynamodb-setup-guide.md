@@ -201,6 +201,42 @@ The current Supabase export contains one extra old/unused SKU,
 `tote-free-range-canvas`, with quantity `0`. It is harmless to seed, but it is
 not used by the current product catalog. The live tote SKU is `free-range-tote`.
 
+## Seed Historical Orders
+
+After the orders table exists and the env values are set, export historical
+Supabase/Postgres orders into seed files:
+
+```bash
+npm run export:supabase-orders
+```
+
+This creates:
+
+```txt
+data/dynamodb-orders-seed.json
+data/dynamodb-orders-seed.csv
+```
+
+Dry-run the DynamoDB order seed:
+
+```bash
+npm run seed:dynamo-orders
+```
+
+Apply the seed to DynamoDB:
+
+```bash
+npm run seed:dynamo-orders -- --apply
+```
+
+The order seed skips existing DynamoDB orders by default, which protects any
+new live orders that already landed in DynamoDB. To intentionally overwrite
+existing DynamoDB order rows, use:
+
+```bash
+npm run seed:dynamo-orders -- --apply --overwrite
+```
+
 ## How the Switch Works
 
 - Inventory uses DynamoDB when `DYNAMODB_INVENTORY_TABLE` is set.
@@ -210,8 +246,8 @@ not used by the current product catalog. The live tote SKU is `free-range-tote`.
   admin order list, order status updates, and the CSV export all use the same
   orders adapter.
 - If either DynamoDB table variable is missing, the server fails loudly instead
-  of silently writing to Supabase. For one-off migration/debug work only, set
-  `ALLOW_SUPABASE_FALLBACK=true` to re-enable the old fallback behavior.
+  of silently writing to Supabase.
 
-For production, set both table variables so a Supabase pause cannot block
-fulfillment.
+For production, set both table variables so DynamoDB is the only live store
+backend. Old Supabase export scripts may still use `SUPABASE_DB_URL` locally for
+one-off migration work, but it is not part of normal Netlify runtime config.

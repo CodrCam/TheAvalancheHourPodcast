@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import Head from 'next/head';
+import { useRouter } from 'next/router';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import theme from '../src/theme';
@@ -10,6 +11,9 @@ import VoicemailWidget from '../components/VoicemailWidget';
 import '../styles/globals.css'; // Import the global CSS file
 
 export default function MyApp({ Component, pageProps }) {
+  const router = useRouter();
+  const showVoicemailWidget = !router.pathname.startsWith('/admin');
+
   return (
     <React.Fragment>
       <Head>
@@ -19,7 +23,7 @@ export default function MyApp({ Component, pageProps }) {
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <Component {...pageProps} />
-        <VoicemailWidget />
+        {showVoicemailWidget ? <VoicemailWidget /> : null}
       </ThemeProvider>
     </React.Fragment>
   );

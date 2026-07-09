@@ -7,10 +7,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "seed:inventory": "node scripts/seedInventory.js",
-    "clear:inventory": "node scripts/clearInventory.js",
     "export:supabase-inventory": "node scripts/exportSupabaseInventorySeed.js",
-    "seed:dynamo-inventory": "node scripts/seedDynamoInventory.js"
+    "seed:dynamo-inventory": "node scripts/seedDynamoInventory.js",
+    "export:supabase-orders": "node scripts/exportSupabaseOrdersSeed.js",
+    "seed:dynamo-orders": "node scripts/seedDynamoOrders.js"
   },
   "engines": {
     "node": ">=22.13.0"

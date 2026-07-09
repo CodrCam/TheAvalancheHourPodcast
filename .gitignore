@@ -18,3 +18,7 @@ yarn-error.log*
 .env.development.local
 .env.test.local
 .env.production.local
+
+# Local migration exports with customer/order data
+data/dynamodb-orders-seed.json
+data/dynamodb-orders-seed.csv

@@ -5,13 +5,14 @@ import {
 } from '../../../../lib/adminAuth';
 import {
   listOrders,
+  deleteOrder,
   updateFulfillmentStatus,
 } from '../../../../lib/orderStore';
 
 export default async function handler(req, res) {
-  // Allow GET (list orders) and PATCH (update fulfillment_status)
-  if (!['GET', 'PATCH'].includes(req.method)) {
-    res.setHeader('Allow', ['GET', 'PATCH']);
+  // Allow GET (list orders), PATCH (update fulfillment_status), and DELETE.
+  if (!['GET', 'PATCH', 'DELETE'].includes(req.method)) {
+    res.setHeader('Allow', ['GET', 'PATCH', 'DELETE']);
     return res.status(405).json({ error: `Method ${req.method} not allowed` });
   }
 
@@ -29,6 +30,15 @@ export default async function handler(req, res) {
       return;
     }
     return handlePatch(req, res);
+  }
+
+  if (req.method === 'DELETE') {
+    if (
+      !(await requirePermissionAsync(req, res, ADMIN_PERMISSIONS.USERS_MANAGE))
+    ) {
+      return;
+    }
+    return handleDelete(req, res);
   }
 }
 
@@ -72,5 +82,24 @@ async function handlePatch(req, res) {
     }
     console.error('admin orders patch error:', err);
     return res.status(500).json({ error: 'Failed to update fulfillment status' });
+  }
+}
+
+async function handleDelete(req, res) {
+  try {
+    const { order_id } = req.body || {};
+
+    if (!order_id || typeof order_id !== 'string') {
+      return res.status(400).json({ error: 'order_id is required' });
+    }
+
+    const order = await deleteOrder(order_id);
+    return res.status(200).json({ order });
+  } catch (err) {
+    if (err.code === 'ORDER_NOT_FOUND' || String(err.message).includes('conditional')) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+    console.error('admin orders delete error:', err);
+    return res.status(500).json({ error: 'Failed to delete order' });
   }
 }

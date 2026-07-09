@@ -3,27 +3,30 @@
 This is the working plan for moving The Avalanche Hour admin from shared basic
 auth toward named users, roles, and MFA.
 
-## Current transition state
+## Current state
 
 The app supports two admin roles:
 
 - `admin`: full access.
 - `logistics`: order workflow, shipping exports, and inventory updates.
 
-The current credentials are still environment-variable based:
+Normal human login uses Amazon Cognito named users and groups. Legacy
+environment-variable credentials are disabled unless
+`ALLOW_LEGACY_ADMIN_AUTH=true` is explicitly set for a temporary emergency path:
 
+- `ALLOW_LEGACY_ADMIN_AUTH`
 - `ADMIN_USER`
 - `ADMIN_PASS`
 - `LOGISTICS_USER`
 - `LOGISTICS_PASS`
 
 Optional token values are supported for scripted access, but should not be used
-for normal human login:
+for normal human login and also require the legacy flag:
 
 - `ADMIN_TOKEN`
 - `LOGISTICS_TOKEN`
 
-## Target auth
+## Auth model
 
 Use Amazon Cognito User Pools for named admin users.
 

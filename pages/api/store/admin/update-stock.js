@@ -56,7 +56,7 @@ export default async function handler(req, res) {
   if (req.method === 'DELETE') {
     const sku = String(req.body?.sku || '').trim();
     if (!sku) {
-      return res.status(200).json({ ok: false, error: 'No SKU provided' });
+      return res.status(400).json({ ok: false, error: 'No SKU provided' });
     }
 
     try {
@@ -64,7 +64,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true, deleted });
     } catch (err) {
       console.error('admin stock delete error:', err);
-      return res.status(200).json({ ok: false, error: 'delete failed' });
+      return res.status(500).json({ ok: false, error: 'delete failed' });
     }
   }
 
@@ -72,7 +72,7 @@ export default async function handler(req, res) {
     const action = String(req.body?.action || '').trim();
     const sku = String(req.body?.sku || '').trim();
     if (action !== 'visibility' || !sku) {
-      return res.status(200).json({ ok: false, error: 'Invalid action' });
+      return res.status(400).json({ ok: false, error: 'Invalid action' });
     }
 
     try {
@@ -80,7 +80,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true, updated });
     } catch (err) {
       console.error('admin stock visibility error:', err);
-      return res.status(200).json({ ok: false, error: 'visibility update failed' });
+      return res.status(500).json({ ok: false, error: 'visibility update failed' });
     }
   }
 
@@ -88,7 +88,7 @@ export default async function handler(req, res) {
   const items = normalizeBody(req, mode).filter(Boolean);
 
   if (!items.length) {
-    return res.status(200).json({ ok: false, error: 'No items provided' });
+    return res.status(400).json({ ok: false, error: 'No items provided' });
   }
 
   try {
@@ -118,7 +118,6 @@ export default async function handler(req, res) {
     return res.status(200).json({ ok: true, updated });
   } catch (err) {
     console.error('admin stock update error:', err);
-    // Hardened: no 500s, quiet failure
-    return res.status(200).json({ ok: false, error: 'update failed' });
+    return res.status(500).json({ ok: false, error: 'update failed' });
   }
 }

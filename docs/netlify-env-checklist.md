@@ -61,22 +61,23 @@ SPOTIFY_CLIENT_SECRET=...
 ## Do Not Add for Normal Production
 
 These are local, legacy, or emergency-only values. Leave them out of Netlify
-unless you are intentionally debugging a fallback path.
+unless you are intentionally enabling a temporary emergency path.
 
 ```txt
+ALLOW_LEGACY_ADMIN_AUTH
 ADMIN_USER
 ADMIN_PASS
 ADMIN_TOKEN
 LOGISTICS_USER
 LOGISTICS_PASS
 LOGISTICS_TOKEN
-SUPABASE_DB_URL
-SUPABASE_SERVICE_ROLE
-ALLOW_SUPABASE_FALLBACK
 AWS_SESSION_TOKEN
 DYNAMODB_SESSION_TOKEN
 COGNITO_ISSUER
 ```
+
+`SUPABASE_DB_URL` is only useful locally for one-off migration/export scripts.
+Do not add it to Netlify for the normal production site.
 
 ## Before Publishing
 

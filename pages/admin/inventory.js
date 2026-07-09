@@ -11,7 +11,8 @@ const catalogMap = getSkuCatalog();
 const styles = {
   toolbar: {
     display: 'grid',
-    gridTemplateColumns: 'minmax(220px, 1fr) minmax(180px, auto) minmax(150px, auto) minmax(160px, auto) auto',
+    gridTemplateColumns:
+      'repeat(auto-fit, minmax(160px, 1fr))',
     gap: 12,
     alignItems: 'end',
     marginBottom: 18,
@@ -32,7 +33,7 @@ const styles = {
     border: '1px solid #e5e7eb',
     borderRadius: 8,
     padding: 16,
-    marginBottom: 18,
+    margin: '0 0 18px',
     background: '#fff',
   },
   table: {
@@ -74,6 +75,16 @@ const styles = {
     borderRadius: 6,
     padding: '6px 12px',
     background: '#2563eb',
+    color: '#fff',
+    cursor: 'pointer',
+    fontWeight: 700,
+  },
+  dangerButton: {
+    minHeight: 34,
+    border: '1px solid #dc2626',
+    borderRadius: 6,
+    padding: '6px 10px',
+    background: '#dc2626',
     color: '#fff',
     cursor: 'pointer',
     fontWeight: 700,
@@ -137,6 +148,8 @@ export default function AdminInventoryPage() {
   const [customSku, setCustomSku] = useState('');
   const [newName, setNewName] = useState('');
   const [newQty, setNewQty] = useState('');
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [removeArmedSku, setRemoveArmedSku] = useState('');
   const [query, setQuery] = useState('');
   const [productFilter, setProductFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -373,6 +386,7 @@ export default function AdminInventoryPage() {
         delete next[cleanSku];
         return next;
       });
+      setRemoveArmedSku('');
       setMessage(`Removed ${cleanSku}.`);
     } catch (err) {
       console.error(err);
@@ -414,7 +428,31 @@ export default function AdminInventoryPage() {
 
   return (
     <AdminLayout>
-      <h1>Inventory</h1>
+      <div
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 12,
+        }}
+      >
+        <div>
+          <h1 style={{ marginBottom: 4 }}>Inventory</h1>
+          <p style={{ color: '#64748b', fontSize: 13, margin: 0 }}>
+            Keep active store items stocked and move unavailable items into
+            standby when needed.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setShowAddForm((value) => !value)}
+          style={showAddForm ? styles.button : styles.primaryButton}
+        >
+          {showAddForm ? 'Close add product' : 'Add product'}
+        </button>
+      </div>
+
       {message && <p>{message}</p>}
 
       <section style={styles.summary}>
@@ -440,53 +478,56 @@ export default function AdminInventoryPage() {
         </div>
       </section>
 
-      <section style={styles.panel}>
-        <h2 style={{ marginTop: 0 }}>Add Inventory Row</h2>
-        <form
-          onSubmit={handleAddSku}
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'minmax(200px, 0.8fr) minmax(240px, 1.2fr) 120px auto',
-            gap: 12,
-            alignItems: 'end',
-          }}
-        >
-          <label style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-            New SKU
-            <input
-              type="text"
-              value={customSku}
-              onChange={(e) => setCustomSku(e.target.value)}
-              placeholder="e.g. new-shirt-black-m"
-              style={styles.input}
-            />
-          </label>
-          <label style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-            Product Name
-            <input
-              type="text"
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              placeholder="e.g. New Shirt - Black - M"
-              style={styles.input}
-            />
-          </label>
-          <label style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-            Quantity
-            <input
-              type="number"
-              min="0"
-              value={newQty}
-              onChange={(e) => setNewQty(e.target.value)}
-              placeholder="0"
-              style={{ ...styles.input, width: 90 }}
-            />
-          </label>
-          <button type="submit" style={styles.primaryButton}>
-            Save
-          </button>
-        </form>
-      </section>
+      {showAddForm ? (
+        <section style={styles.panel}>
+          <h2 style={{ marginTop: 0, fontSize: 18 }}>Add Product</h2>
+          <form
+            onSubmit={handleAddSku}
+            style={{
+              display: 'grid',
+              gridTemplateColumns:
+                'repeat(auto-fit, minmax(160px, 1fr))',
+              gap: 12,
+              alignItems: 'end',
+            }}
+          >
+            <label style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+              Product Name
+              <input
+                type="text"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                placeholder="e.g. New Shirt - Black - M"
+                style={styles.input}
+              />
+            </label>
+            <label style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+              SKU
+              <input
+                type="text"
+                value={customSku}
+                onChange={(e) => setCustomSku(e.target.value)}
+                placeholder="e.g. new-shirt-black-m"
+                style={styles.input}
+              />
+            </label>
+            <label style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+              Quantity
+              <input
+                type="number"
+                min="0"
+                value={newQty}
+                onChange={(e) => setNewQty(e.target.value)}
+                placeholder="0"
+                style={{ ...styles.input, width: 90 }}
+              />
+            </label>
+            <button type="submit" style={styles.primaryButton}>
+              Save
+            </button>
+          </form>
+        </section>
+      ) : null}
 
       <section>
         <div style={styles.toolbar}>
@@ -555,11 +596,12 @@ export default function AdminInventoryPage() {
         ) : filteredRows.length === 0 ? (
           <p>No inventory rows match the current filters.</p>
         ) : (
-          <table style={styles.table}>
+          <div style={{ overflowX: 'auto' }}>
+          <table style={{ ...styles.table, minWidth: 900 }}>
             <thead>
               <tr>
-                <th style={styles.th}>SKU</th>
                 <th style={styles.th}>Product</th>
+                <th style={styles.th}>SKU</th>
                 <th style={styles.th}>Status</th>
                 <th style={styles.th}>Quantity</th>
                 <th style={styles.th}>Set Quantity</th>
@@ -570,16 +612,21 @@ export default function AdminInventoryPage() {
               {filteredRows.map((row) => (
                 <tr key={row.sku}>
                   <td style={styles.td}>
-                    <code>{row.sku}</code>
-                    {!row.inCatalog ? (
-                      <div style={{ color: '#92400e', fontSize: 12, marginTop: 3 }}>
-                        Not used by the current store catalog.
-                      </div>
-                    ) : null}
-                  </td>
-                  <td style={styles.td}>
                     {row.inCatalog ? (
-                      row.label || '-'
+                      <>
+                        <strong>{row.label || row.name || '-'}</strong>
+                        {row.productName && row.productName !== row.label ? (
+                          <div
+                            style={{
+                              color: '#64748b',
+                              fontSize: 12,
+                              marginTop: 3,
+                            }}
+                          >
+                            {row.productName}
+                          </div>
+                        ) : null}
+                      </>
                     ) : (
                       <input
                         type="text"
@@ -598,6 +645,14 @@ export default function AdminInventoryPage() {
                         style={{ ...styles.input, minWidth: 220 }}
                       />
                     )}
+                  </td>
+                  <td style={styles.td}>
+                    <code>{row.sku}</code>
+                    {!row.inCatalog ? (
+                      <div style={{ color: '#92400e', fontSize: 12, marginTop: 3 }}>
+                        Not used by the current store catalog.
+                      </div>
+                    ) : null}
                   </td>
                   <td style={styles.td}>
                     <StatusBadge row={row} />
@@ -639,17 +694,36 @@ export default function AdminInventoryPage() {
                   </td>
                   <td style={styles.td}>
                     {!row.inCatalog ? (
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveSku(row.sku)}
-                        style={{
-                          ...styles.button,
-                          borderColor: '#fca5a5',
-                          color: '#991b1b',
-                        }}
-                      >
-                        Remove
-                      </button>
+                      removeArmedSku === row.sku ? (
+                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveSku(row.sku)}
+                            style={styles.dangerButton}
+                          >
+                            Confirm remove
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setRemoveArmedSku('')}
+                            style={styles.button}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setRemoveArmedSku(row.sku)}
+                          style={{
+                            ...styles.button,
+                            borderColor: '#fca5a5',
+                            color: '#991b1b',
+                          }}
+                        >
+                          Remove
+                        </button>
+                      )
                     ) : row.hidden ? (
                       <button
                         type="button"
@@ -674,6 +748,7 @@ export default function AdminInventoryPage() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </section>
     </AdminLayout>
