@@ -202,13 +202,24 @@ function PaymentForm({ checkout }) {
 
     setSubmitting(true);
     setErrorMsg('');
-    ecommerceEvent('add_payment_info', {
-      items,
-      value: (breakdown?.totalCents || 0) / 100,
-      payment_type: 'card',
-    });
 
     try {
+      const { error: submitError } = await elements.submit();
+      if (submitError) {
+        setErrorMsg(
+          submitError.message ||
+            'Please complete your payment details and try again.'
+        );
+        setSubmitting(false);
+        return;
+      }
+
+      ecommerceEvent('add_payment_info', {
+        items,
+        value: (breakdown?.totalCents || 0) / 100,
+        payment_type: 'card',
+      });
+
       const result = await stripe.confirmPayment({
         elements,
         clientSecret,
