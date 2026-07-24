@@ -10,4 +10,5 @@ export const CHECKOUT_SHIPPING_KEY = 'ah_checkout_shipping';
 export const CHECKOUT_EMAIL_KEY = 'ah_checkout_email';
 export const CHECKOUT_DISCOUNT_KEY = 'ah_checkout_discount';
 export const CHECKOUT_PAYMENT_KEY = 'ah_checkout_payment';
+export const CHECKOUT_ATTEMPT_KEY = 'ah_checkout_attempt';
 export const LAST_ORDER_KEY = 'ah_last_order';

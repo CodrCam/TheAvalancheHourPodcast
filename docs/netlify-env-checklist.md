@@ -99,3 +99,7 @@ Do not add it to Netlify for the normal production site.
    - `AvalancheHourSiteContent`
    - `AvalancheHourSponsors`
    - `AvalancheHourPeople`
+5. Confirm the IAM user policy allows `dynamodb:UpdateItem`; paid merchandise
+   orders use transactional `Update` operations to decrement every line item
+   atomically. DynamoDB authorizes those operations through the underlying
+   `UpdateItem` permission.

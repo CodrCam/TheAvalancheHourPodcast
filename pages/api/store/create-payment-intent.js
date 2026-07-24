@@ -25,7 +25,14 @@ function normalizeItems(raw = []) {
     const qty = Math.max(0, Math.min(parseInt(r.qty ?? 0, 10) || 0, 100));
     if (!qty) continue;
 
-    const options = r.options || {}; // { style, size, color }
+    const rawOptions =
+      r.options && typeof r.options === 'object' ? r.options : {};
+    const options = {};
+    for (const key of ['style', 'size', 'color']) {
+      if (typeof rawOptions[key] === 'string' && rawOptions[key].trim()) {
+        options[key] = rawOptions[key].trim();
+      }
+    }
 
     // Variant-level pricing (e.g. Voile 20" vs 25")
     let price = p.price || 0;
@@ -38,8 +45,10 @@ function normalizeItems(raw = []) {
       price = p.variants[options.style].price;
     }
 
+    const sku = skuKey(p.id, options);
     clean.push({
       id: p.id,
+      sku,
       name: p.name || p.id,
       price,   // cents
       qty,
@@ -104,6 +113,67 @@ function applyDiscount(amountCents, rawCode) {
   };
 }
 
+function normalizeEmail(value) {
+  const email = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) ? email : '';
+}
+
+function normalizeShipping(value) {
+  if (!value || typeof value !== 'object') return null;
+
+  const shipping = {
+    name: String(value.name || '').trim(),
+    line1: String(value.line1 || '').trim(),
+    line2: String(value.line2 || '').trim(),
+    city: String(value.city || '').trim(),
+    state: String(value.state || '').trim(),
+    postal_code: String(value.postal_code || '').trim(),
+    country: String(value.country || 'US').trim().toUpperCase(),
+  };
+
+  if (
+    !shipping.name ||
+    !shipping.line1 ||
+    !shipping.city ||
+    !shipping.state ||
+    !/^\d{5}(?:-\d{4})?$/.test(shipping.postal_code) ||
+    !['US', 'USA'].includes(shipping.country)
+  ) {
+    return null;
+  }
+
+  shipping.country = 'US';
+  return shipping;
+}
+
+function normalizeCheckoutAttemptId(value) {
+  const attemptId = typeof value === 'string' ? value.trim() : '';
+  return /^[a-zA-Z0-9_-]{8,100}$/.test(attemptId) ? attemptId : '';
+}
+
+function buildIdempotencyKey({ attemptId, items, email, shipping, discountCode }) {
+  const fingerprint = crypto
+    .createHash('sha256')
+    .update(
+      JSON.stringify({
+        items: items.map(({ id, sku, price, qty, options }) => ({
+          id,
+          sku,
+          price,
+          qty,
+          options,
+        })),
+        email,
+        shipping,
+        discountCode,
+      })
+    )
+    .digest('hex')
+    .slice(0, 32);
+
+  return `checkout-${attemptId}-${fingerprint}`;
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
@@ -118,25 +188,30 @@ export default async function handler(req, res) {
     const items = normalizeItems(body.items);
 
     // Normalize & validate email; require basic structure so receipts go somewhere real.
-    const rawEmail = typeof body.email === 'string' ? body.email.trim() : '';
-    const email =
-      rawEmail && rawEmail.includes('@') ? rawEmail : null;
-
-    const shipping =
-      body.shipping && typeof body.shipping === 'object'
-        ? body.shipping
-        : null;
+    const email = normalizeEmail(body.email);
+    const shipping = normalizeShipping(body.shipping);
     const discountCode =
       typeof body.discountCode === 'string' ? body.discountCode : null;
+    const checkoutAttemptId = normalizeCheckoutAttemptId(
+      body.checkoutAttemptId
+    );
 
     if (!items.length) {
       return res.status(400).json({ error: 'No valid items in order' });
     }
 
-    if (!shipping || !shipping.name) {
+    if (!email) {
+      return res.status(400).json({ error: 'A valid email address is required' });
+    }
+
+    if (!shipping) {
       return res
         .status(400)
-        .json({ error: 'Shipping information is required' });
+        .json({ error: 'Complete U.S. shipping information is required' });
+    }
+
+    if (!checkoutAttemptId) {
+      return res.status(400).json({ error: 'Checkout session is invalid' });
     }
 
     // Inventory validation
@@ -163,6 +238,16 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Invalid order amount' });
     }
 
+    const requestedDiscountCode =
+      typeof discountCode === 'string'
+        ? discountCode.trim().toUpperCase()
+        : '';
+    if (requestedDiscountCode && !DISCOUNT_CODES[requestedDiscountCode]) {
+      return res.status(400).json({
+        error: 'That discount code was not recognized. Check the code and try again.',
+      });
+    }
+
     // Discount
     const {
       subtotalAfterDiscount,
@@ -185,8 +270,18 @@ export default async function handler(req, res) {
     const totalCents =
       discountedSubtotalCents + shippingCents + taxAmountCents;
 
-    // Simple order id
-    const orderId = 'avh_' + crypto.randomBytes(6).toString('hex');
+    const idempotencyKey = buildIdempotencyKey({
+      attemptId: checkoutAttemptId,
+      items,
+      email,
+      shipping,
+      discountCode: normalizedCode || '',
+    });
+    const orderId = `avh_${crypto
+      .createHash('sha256')
+      .update(idempotencyKey)
+      .digest('hex')
+      .slice(0, 12)}`;
 
     // Compact metadata of { sku, qty }
     const metaItems = [];
@@ -201,37 +296,44 @@ export default async function handler(req, res) {
     }
     const metaItemsJson = JSON.stringify(metaItems);
 
-    const pi = await stripe.paymentIntents.create({
-      amount: totalCents,
-      currency: 'usd',
-      payment_method_types: ['card'],
-      receipt_email: email || undefined,
-      metadata: {
-        order_id: orderId,
-        items: metaItemsJson,
-        discount_code: normalizedCode || '',
-        discount_amount_cents: String(discountAmountCents || 0),
-        tax_amount_cents: String(taxAmountCents || 0),
-        subtotal_cents: String(subtotalCents || 0),
-        discounted_subtotal_cents: String(discountedSubtotalCents || 0),
-        shipping_cents: String(shippingCents || 0),
-      },
-      shipping: {
-        name: shipping.name || undefined,
-        address: {
-          line1: shipping.line1 || undefined,
-          line2: shipping.line2 || undefined,
-          city: shipping.city || undefined,
-          state: shipping.state || undefined,
-          postal_code: shipping.postal_code || undefined,
-          country: shipping.country || 'US',
+    const pi = await stripe.paymentIntents.create(
+      {
+        amount: totalCents,
+        currency: 'usd',
+        payment_method_types: ['card'],
+        receipt_email: email,
+        metadata: {
+          order_id: orderId,
+          items: metaItemsJson,
+          checkout_attempt_id: checkoutAttemptId,
+          discount_code: normalizedCode || '',
+          discount_amount_cents: String(discountAmountCents || 0),
+          tax_amount_cents: String(taxAmountCents || 0),
+          subtotal_cents: String(subtotalCents || 0),
+          discounted_subtotal_cents: String(discountedSubtotalCents || 0),
+          shipping_cents: String(shippingCents || 0),
+        },
+        shipping: {
+          name: shipping.name,
+          address: {
+            line1: shipping.line1,
+            line2: shipping.line2 || undefined,
+            city: shipping.city,
+            state: shipping.state,
+            postal_code: shipping.postal_code,
+            country: 'US',
+          },
         },
       },
-    });
+      {
+        idempotencyKey,
+      }
+    );
 
     return res.status(200).json({
       clientSecret: pi.client_secret,
       intentId: pi.id,
+      orderId,
       breakdown: {
         subtotalCents,
         discountAmountCents,

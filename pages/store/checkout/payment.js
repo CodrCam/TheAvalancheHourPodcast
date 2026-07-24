@@ -24,30 +24,24 @@ import {
   CART_KEY,
   CHECKOUT_SHIPPING_KEY,
   CHECKOUT_EMAIL_KEY,
+  CHECKOUT_ATTEMPT_KEY,
+  CHECKOUT_DISCOUNT_KEY,
   CHECKOUT_PAYMENT_KEY,
   LAST_ORDER_KEY,
 } from '../../../src/config/store';
 import { ecommerceEvent } from '../../../lib/gtag';
 
-const stripePromise = loadStripe(
-  process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || ''
-);
+const stripePublishableKey =
+  process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '';
+const stripePromise = stripePublishableKey
+  ? loadStripe(stripePublishableKey)
+  : null;
 
 const money = (cents) =>
   (Number(cents || 0) / 100).toLocaleString('en-US', {
     style: 'currency',
     currency: 'USD',
   });
-
-function readCart() {
-  if (typeof window === 'undefined') return [];
-  try {
-    const raw = localStorage.getItem(CART_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
 
 function writeCart(items) {
   if (typeof window === 'undefined') return;
@@ -59,39 +53,152 @@ function writeCart(items) {
   }
 }
 
-function PaymentForm({ clientSecret, breakdown }) {
+function PaymentForm({ checkout }) {
   const router = useRouter();
   const stripe = useStripe();
   const elements = useElements();
 
-  const [email, setEmail] = React.useState('');
-  const [shipping, setShipping] = React.useState(null);
-  const [items, setItems] = React.useState([]);
   const [submitting, setSubmitting] = React.useState(false);
   const [errorMsg, setErrorMsg] = React.useState('');
+  const returnHandledRef = React.useRef(false);
+  const {
+    clientSecret,
+    breakdown,
+    email,
+    shipping,
+    items,
+    orderId,
+    intentId,
+  } = checkout;
+
+  const finalizePayment = React.useCallback(
+    async (pi) => {
+      if (!pi?.id || pi.id !== intentId) {
+        setErrorMsg(
+          'We could not verify this payment response. Your cart has not been cleared. Please contact us before trying again.'
+        );
+        return;
+      }
+
+      if (pi.status !== 'succeeded') {
+        setErrorMsg(
+          pi.status === 'processing'
+            ? 'Your payment is still processing. Please do not retry it. Check your email for the receipt or contact us for help.'
+            : 'Payment was not completed. Please review your payment details and try again.'
+        );
+        setSubmitting(pi.status === 'processing');
+        return;
+      }
+
+      const last4 =
+        pi?.charges?.data?.[0]?.payment_method_details?.card?.last4 ||
+        pi?.payment_method?.card?.last4 ||
+        '';
+
+      const amountCents =
+        typeof pi.amount_received === 'number'
+          ? pi.amount_received
+          : typeof pi.amount === 'number'
+          ? pi.amount
+          : 0;
+
+      let orderRecordPending = false;
+      try {
+        const recordResponse = await fetch('/api/store/record-order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            orderId,
+            paymentIntentId: pi.id,
+            items,
+            email,
+            shipping,
+          }),
+        });
+        if (!recordResponse.ok) {
+          orderRecordPending = true;
+          console.error(
+            'Order recording will be completed by the Stripe webhook:',
+            recordResponse.status
+          );
+        }
+      } catch (err) {
+        orderRecordPending = true;
+        console.error('Failed to record order via API:', err);
+      }
+
+      try {
+        sessionStorage.setItem(
+          LAST_ORDER_KEY,
+          JSON.stringify({
+            email: email || '',
+            orderId,
+            amountCents,
+            last4,
+            items,
+            paymentIntentId: pi.id,
+            paymentStatus: pi.status,
+            orderRecordPending,
+            createdAt: new Date().toISOString(),
+          })
+        );
+      } catch {
+        // The Stripe receipt remains the durable customer confirmation.
+      }
+
+      writeCart([]);
+      try {
+        for (const key of [
+          CHECKOUT_PAYMENT_KEY,
+          CHECKOUT_SHIPPING_KEY,
+          CHECKOUT_EMAIL_KEY,
+          CHECKOUT_DISCOUNT_KEY,
+          CHECKOUT_ATTEMPT_KEY,
+        ]) {
+          sessionStorage.removeItem(key);
+        }
+      } catch {
+        // Clearing client checkout state is best-effort after a paid order.
+      }
+      router.replace('/store/thank-you');
+    },
+    [email, intentId, items, orderId, router, shipping]
+  );
 
   React.useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    let shippingData = null;
-    let emailData = '';
-    try {
-      const sRaw = sessionStorage.getItem(CHECKOUT_SHIPPING_KEY);
-      const eRaw = sessionStorage.getItem(CHECKOUT_EMAIL_KEY);
-      shippingData = sRaw ? JSON.parse(sRaw) : null;
-      emailData = eRaw || '';
-    } catch {
-      shippingData = null;
-      emailData = '';
+    if (
+      !router.isReady ||
+      router.query.payment_return !== '1' ||
+      !stripe ||
+      returnHandledRef.current
+    ) {
+      return;
     }
 
-    setShipping(shippingData);
-    setEmail(emailData);
-    setItems(readCart());
-  }, []);
+    returnHandledRef.current = true;
+    setSubmitting(true);
+    setErrorMsg('');
+
+    stripe.retrievePaymentIntent(clientSecret).then(({ error, paymentIntent }) => {
+      if (error) {
+        setErrorMsg(
+          error.message ||
+            'We could not verify the returned payment. Please contact us before trying again.'
+        );
+        return;
+      }
+      finalizePayment(paymentIntent);
+    });
+  }, [
+    clientSecret,
+    finalizePayment,
+    router.isReady,
+    router.query.payment_return,
+    stripe,
+  ]);
 
   async function handlePay() {
-    if (!stripe || !elements) return;
+    if (!stripe || !elements || submitting) return;
 
     setSubmitting(true);
     setErrorMsg('');
@@ -104,9 +211,9 @@ function PaymentForm({ clientSecret, breakdown }) {
     try {
       const result = await stripe.confirmPayment({
         elements,
+        clientSecret,
         confirmParams: {
-          // We do NOT send shipping here (it was set on the server).
-          receipt_email: email || undefined,
+          return_url: `${window.location.origin}/store/checkout/payment?payment_return=1`,
         },
         redirect: 'if_required',
       });
@@ -120,63 +227,7 @@ function PaymentForm({ clientSecret, breakdown }) {
         return;
       }
 
-      const pi = result.paymentIntent || {};
-
-      const last4 =
-        pi?.charges?.data?.[0]?.payment_method_details?.card?.last4 ||
-        pi?.payment_method?.card?.last4 ||
-        '';
-
-      const orderId = (pi.metadata && pi.metadata.order_id) || pi.id || '';
-      const amountCents =
-        typeof pi.amount_received === 'number'
-          ? pi.amount_received
-          : typeof pi.amount === 'number'
-          ? pi.amount
-          : 0;
-
-      // Record order for admin backend
-      try {
-        await fetch('/api/store/record-order', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            orderId,
-            paymentIntentId: pi.id,
-            status: pi.status || 'paid',
-            amountCents,
-            items,
-            email,
-            shipping,
-          }),
-        });
-      } catch (err) {
-        console.error('Failed to record order via API:', err);
-      }
-
-      // Save snapshot for thank-you page
-      try {
-        sessionStorage.setItem(
-          LAST_ORDER_KEY,
-          JSON.stringify({
-            email: email || '',
-            orderId,
-            amountCents,
-            last4,
-            items,
-            createdAt: new Date().toISOString(),
-          })
-        );
-      } catch {
-        // ignore
-      }
-
-      // Clear cart + state
-      writeCart([]);
-      try {
-        sessionStorage.removeItem(CHECKOUT_PAYMENT_KEY);
-      } catch {}
-      router.push('/store/thank-you');
+      await finalizePayment(result.paymentIntent);
     } catch (e) {
       setErrorMsg(e?.message || 'Unexpected error during payment.');
       setSubmitting(false);
@@ -267,6 +318,10 @@ function PaymentForm({ clientSecret, breakdown }) {
         <Button
           component={Link}
           href="/store/checkout/review"
+          aria-disabled={submitting}
+          onClick={(event) => {
+            if (submitting) event.preventDefault();
+          }}
           startIcon={<ArrowBackIcon />}
           variant="outlined"
         >
@@ -285,24 +340,26 @@ function PaymentForm({ clientSecret, breakdown }) {
   );
 }
 
-function PaymentWrapper({ clientSecret, breakdown }) {
+function PaymentWrapper({ checkout }) {
   return (
     <Elements
       stripe={stripePromise}
-      options={{ clientSecret, appearance: { theme: 'stripe' } }}
+      options={{
+        clientSecret: checkout.clientSecret,
+        appearance: { theme: 'stripe' },
+      }}
     >
-      <PaymentForm
-        clientSecret={clientSecret}
-        breakdown={breakdown}
-      />
+      <PaymentForm checkout={checkout} />
     </Elements>
   );
 }
 
 export default function PaymentPage() {
   const router = useRouter();
-  const [clientSecret, setClientSecret] = React.useState(null);
-  const [breakdown, setBreakdown] = React.useState(null);
+  const [checkout, setCheckout] = React.useState(null);
+  const pageError = stripePublishableKey
+    ? ''
+    : 'Secure payment is temporarily unavailable. Please contact us or try again later.';
 
   React.useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -314,18 +371,26 @@ export default function PaymentPage() {
         return;
       }
       const parsed = JSON.parse(raw);
-      if (!parsed.clientSecret) {
+      if (
+        !parsed.clientSecret ||
+        !parsed.intentId ||
+        !parsed.orderId ||
+        !parsed.breakdown ||
+        !parsed.email ||
+        !parsed.shipping ||
+        !Array.isArray(parsed.items) ||
+        !parsed.items.length
+      ) {
         router.replace('/store/checkout/review');
         return;
       }
-      setClientSecret(parsed.clientSecret);
-      setBreakdown(parsed.breakdown || null);
+      setCheckout(parsed);
     } catch {
       router.replace('/store/checkout/review');
     }
   }, [router]);
 
-  if (!clientSecret) {
+  if (!checkout && !pageError) {
     return null;
   }
 
@@ -342,10 +407,30 @@ export default function PaymentPage() {
       <Navbar />
 
       <Container maxWidth="sm" sx={{ py: { xs: 3, md: 5 } }}>
-        <PaymentWrapper
-          clientSecret={clientSecret}
-          breakdown={breakdown}
-        />
+        {pageError ? (
+          <Paper
+            elevation={0}
+            sx={{
+              p: 3,
+              border: '1px solid',
+              borderColor: 'divider',
+              borderRadius: 2,
+            }}
+          >
+            <Typography sx={{ color: 'error.main', mb: 2 }}>
+              {pageError}
+            </Typography>
+            <Button
+              component={Link}
+              href="/store/checkout/review"
+              variant="outlined"
+            >
+              Back to review
+            </Button>
+          </Paper>
+        ) : (
+          <PaymentWrapper checkout={checkout} />
+        )}
       </Container>
     </>
   );

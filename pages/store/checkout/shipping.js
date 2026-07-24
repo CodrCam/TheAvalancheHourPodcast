@@ -15,8 +15,12 @@ import {
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import Navbar from '../../../components/Navbar';
 import { ecommerceEvent } from '../../../lib/gtag';
-
-const CART_KEY = 'ah_cart';
+import {
+  CART_KEY,
+  CHECKOUT_ATTEMPT_KEY,
+  CHECKOUT_EMAIL_KEY,
+  CHECKOUT_SHIPPING_KEY,
+} from '../../../src/config/store';
 
 function readCart() {
   if (typeof window === 'undefined') return [];
@@ -50,8 +54,11 @@ export default function ShippingPage() {
   });
   const [errorMsg, setErrorMsg] = React.useState('');
   const trackedBeginCheckoutRef = React.useRef(false);
+  const [items, setItems] = React.useState([]);
 
-  const items = React.useMemo(() => readCart(), []);
+  React.useEffect(() => {
+    setItems(readCart());
+  }, []);
 
   React.useEffect(() => {
     if (trackedBeginCheckoutRef.current || !items.length) return;
@@ -89,7 +96,19 @@ export default function ShippingPage() {
     return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v);
   }
 
-  function handleContinue() {
+  function postalCodeIsValid(value) {
+    return /^\d{5}(?:-\d{4})?$/.test(value.trim());
+  }
+
+  function createCheckoutAttemptId() {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+      return crypto.randomUUID();
+    }
+    return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  }
+
+  function handleContinue(event) {
+    event?.preventDefault();
     setErrorMsg('');
 
     if (!items.length) {
@@ -124,8 +143,8 @@ export default function ShippingPage() {
       return;
     }
 
-    if (!shipping.postal_code.trim()) {
-      setErrorMsg('Please enter your postal code.');
+    if (!postalCodeIsValid(shipping.postal_code)) {
+      setErrorMsg('Please enter a valid U.S. ZIP code (for example: 97814).');
       return;
     }
 
@@ -138,12 +157,27 @@ export default function ShippingPage() {
 
     try {
       sessionStorage.setItem(
-        'ah_checkout_shipping',
-        JSON.stringify(shipping)
+        CHECKOUT_SHIPPING_KEY,
+        JSON.stringify({
+          ...shipping,
+          name: shipping.name.trim(),
+          line1: shipping.line1.trim(),
+          line2: shipping.line2.trim(),
+          city: shipping.city.trim(),
+          state: shipping.state.trim(),
+          postal_code: shipping.postal_code.trim(),
+          country: 'US',
+        })
       );
-      sessionStorage.setItem('ah_checkout_email', email.trim());
+      sessionStorage.setItem(CHECKOUT_EMAIL_KEY, email.trim().toLowerCase());
+      if (!sessionStorage.getItem(CHECKOUT_ATTEMPT_KEY)) {
+        sessionStorage.setItem(CHECKOUT_ATTEMPT_KEY, createCheckoutAttemptId());
+      }
     } catch {
-      // ignore; Review page will complain if it can't load data
+      setErrorMsg(
+        'This browser is blocking checkout storage. Please enable site data or try a standard browsing window.'
+      );
+      return;
     }
 
     router.push('/store/checkout/review');
@@ -187,6 +221,9 @@ export default function ShippingPage() {
         </Box>
 
         <Paper
+          component="form"
+          noValidate
+          onSubmit={handleContinue}
           elevation={0}
           sx={{
             p: { xs: 2, md: 3 },
@@ -212,6 +249,8 @@ export default function ShippingPage() {
               <TextField
                 label="Email"
                 type="email"
+                name="email"
+                autoComplete="email"
                 size="small"
                 fullWidth
                 value={email}
@@ -224,6 +263,8 @@ export default function ShippingPage() {
             <Grid item xs={12}>
               <TextField
                 label="Full name"
+                name="name"
+                autoComplete="name"
                 size="small"
                 fullWidth
                 value={shipping.name}
@@ -235,6 +276,8 @@ export default function ShippingPage() {
             <Grid item xs={12}>
               <TextField
                 label="Street address"
+                name="address-line1"
+                autoComplete="address-line1"
                 size="small"
                 fullWidth
                 value={shipping.line1}
@@ -246,6 +289,8 @@ export default function ShippingPage() {
             <Grid item xs={12}>
               <TextField
                 label="Apartment, suite, etc. (optional)"
+                name="address-line2"
+                autoComplete="address-line2"
                 size="small"
                 fullWidth
                 value={shipping.line2}
@@ -256,6 +301,8 @@ export default function ShippingPage() {
             <Grid item xs={12} sm={6}>
               <TextField
                 label="City"
+                name="address-level2"
+                autoComplete="address-level2"
                 size="small"
                 fullWidth
                 value={shipping.city}
@@ -267,6 +314,8 @@ export default function ShippingPage() {
             <Grid item xs={12} sm={3}>
               <TextField
                 label="State / Province"
+                name="address-level1"
+                autoComplete="address-level1"
                 size="small"
                 fullWidth
                 value={shipping.state}
@@ -278,6 +327,8 @@ export default function ShippingPage() {
             <Grid item xs={12} sm={3}>
               <TextField
                 label="Postal code"
+                name="postal-code"
+                autoComplete="postal-code"
                 size="small"
                 fullWidth
                 value={shipping.postal_code}
@@ -299,7 +350,7 @@ export default function ShippingPage() {
           </Grid>
 
           <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end' }}>
-            <Button variant="contained" onClick={handleContinue}>
+            <Button variant="contained" type="submit">
               Continue to review
             </Button>
           </Box>

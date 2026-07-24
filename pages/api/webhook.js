@@ -3,9 +3,10 @@
 import Stripe from 'stripe';
 import nodemailer from 'nodemailer';
 import { escapeHtml } from '../../lib/escapeHtml';
-import { applyInventoryDelta } from '../../lib/inventoryStore';
+import { applyInventoryDeltasAtomically } from '../../lib/inventoryStore';
 import {
   claimInventoryDecrement,
+  markInventoryDecrementFailed,
   markInventoryDecremented,
   upsertOrder,
 } from '../../lib/orderStore';
@@ -94,7 +95,9 @@ function resolveSkuForItem(item) {
  * where delta is negative for an order.
  */
 async function decrementInventoryForItems(items) {
-  if (!Array.isArray(items) || !items.length) return;
+  if (!Array.isArray(items) || !items.length) {
+    throw new Error('Paid store order has no inventory items');
+  }
 
   const skuDeltas = new Map();
 
@@ -107,8 +110,7 @@ async function decrementInventoryForItems(items) {
 
     const sku = resolveSkuForItem(it);
     if (!sku) {
-      console.warn('Could not resolve SKU for item', it);
-      continue;
+      throw new Error('Could not resolve an inventory SKU for a paid item');
     }
 
     const prev = skuDeltas.get(sku) || 0;
@@ -116,19 +118,14 @@ async function decrementInventoryForItems(items) {
     skuDeltas.set(sku, prev - qty);
   }
 
-  if (!skuDeltas.size) return;
-
-  for (const [sku, delta] of skuDeltas.entries()) {
-    if (!Number.isFinite(delta) || delta === 0) continue;
-
-    try {
-      await applyInventoryDelta(sku, delta);
-      console.log('Inventory updated for SKU', sku, 'delta', delta);
-    } catch (err) {
-      console.error('Inventory update failed for SKU', sku, err);
-      // We swallow per-SKU errors so one bad row doesn't tank the whole webhook.
-    }
+  if (!skuDeltas.size) {
+    throw new Error('Paid store order has no valid inventory quantities');
   }
+
+  const changes = await applyInventoryDeltasAtomically(
+    [...skuDeltas.entries()].map(([sku, delta]) => ({ sku, delta }))
+  );
+  console.log('Inventory transaction completed for SKUs', changes.map((c) => c.sku));
 }
 
 function formatMoney(cents) {
@@ -282,6 +279,13 @@ export default async function handler(req, res) {
 
     console.log('payment_intent.succeeded for PI', pi.id);
 
+    // This Stripe account can also receive support/payment-link payments.
+    // Only PaymentIntents created by the merchandise checkout belong here.
+    if (!pi.metadata?.order_id || !pi.metadata?.items) {
+      console.log('Ignoring non-store PaymentIntent', pi.id);
+      return res.status(200).json({ received: true, ignored: true });
+    }
+
     // Items list saved in metadata by create-payment-intent
     let items = [];
     if (pi.metadata?.items) {
@@ -348,8 +352,24 @@ export default async function handler(req, res) {
       // webhooks, so claim the decrement before touching stock.
       const shouldDecrementInventory = await claimInventoryDecrement(orderId);
       if (shouldDecrementInventory) {
-        await decrementInventoryForItems(items);
-        await markInventoryDecremented(orderId);
+        try {
+          await decrementInventoryForItems(items);
+        } catch (inventoryError) {
+          try {
+            await markInventoryDecrementFailed(orderId);
+          } catch (releaseError) {
+            console.error('Failed to release inventory claim:', releaseError);
+          }
+          throw inventoryError;
+        }
+
+        try {
+          await markInventoryDecremented(orderId);
+        } catch (markError) {
+          // The inventory transaction already completed. Do not ask Stripe to
+          // retry and risk applying the decrement twice.
+          console.error('Inventory updated but completion marker failed:', markError);
+        }
       } else {
         console.log('Inventory already decremented for order:', orderId);
       }
@@ -379,10 +399,9 @@ export default async function handler(req, res) {
       }
     } catch (err) {
       console.error('WEBHOOK DB INSERT / INVENTORY ERROR:', err);
-      // Do not keep returning 500 to Stripe; just log and acknowledge
       return res
-        .status(200)
-        .json({ received: true, note: 'db insert or inventory update failed' });
+        .status(500)
+        .json({ received: false, error: 'Order processing failed; retry required' });
     }
   }
 

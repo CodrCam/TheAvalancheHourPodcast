@@ -16,8 +16,14 @@ import {
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import Navbar from '../../../components/Navbar';
 import { ecommerceEvent } from '../../../lib/gtag';
-
-const CART_KEY = 'ah_cart';
+import {
+  CART_KEY,
+  CHECKOUT_ATTEMPT_KEY,
+  CHECKOUT_DISCOUNT_KEY,
+  CHECKOUT_EMAIL_KEY,
+  CHECKOUT_PAYMENT_KEY,
+  CHECKOUT_SHIPPING_KEY,
+} from '../../../src/config/store';
 
 function readCart() {
   if (typeof window === 'undefined') return [];
@@ -58,7 +64,9 @@ export default function ReviewPage() {
 
   const [clientSecret, setClientSecret] = React.useState(null);
   const [intentId, setIntentId] = React.useState(null);
+  const [orderId, setOrderId] = React.useState(null);
   const [breakdown, setBreakdown] = React.useState(null);
+  const [checkoutAttemptId, setCheckoutAttemptId] = React.useState('');
 
   const [loading, setLoading] = React.useState(true);
   const [errorMsg, setErrorMsg] = React.useState('');
@@ -74,10 +82,24 @@ export default function ReviewPage() {
     let shippingData = null;
     let emailData = '';
     try {
-      const sRaw = sessionStorage.getItem('ah_checkout_shipping');
-      const eRaw = sessionStorage.getItem('ah_checkout_email');
+      const sRaw = sessionStorage.getItem(CHECKOUT_SHIPPING_KEY);
+      const eRaw = sessionStorage.getItem(CHECKOUT_EMAIL_KEY);
+      const dRaw = sessionStorage.getItem(CHECKOUT_DISCOUNT_KEY);
+      let attemptId = sessionStorage.getItem(CHECKOUT_ATTEMPT_KEY);
+      if (!attemptId) {
+        attemptId =
+          typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+            ? crypto.randomUUID()
+            : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        sessionStorage.setItem(CHECKOUT_ATTEMPT_KEY, attemptId);
+      }
       shippingData = sRaw ? JSON.parse(sRaw) : null;
       emailData = eRaw || '';
+      setCheckoutAttemptId(attemptId);
+      if (dRaw) {
+        setDiscountInput(dRaw);
+        setAppliedDiscountCode(dRaw);
+      }
     } catch {
       shippingData = null;
     }
@@ -163,13 +185,17 @@ export default function ReviewPage() {
 
   // Whenever we have items + shipping, (re)create the PaymentIntent
   React.useEffect(() => {
-    if (!items.length || !shipping) return;
+    if (!items.length || !shipping || !checkoutAttemptId) return;
 
     let ignore = false;
 
     async function prepareOrder() {
       setLoading(true);
       setErrorMsg('');
+      setClientSecret(null);
+      setIntentId(null);
+      setOrderId(null);
+      setInventoryProblems([]);
 
       try {
         const res = await fetch('/api/store/create-payment-intent', {
@@ -180,6 +206,7 @@ export default function ReviewPage() {
             email,
             shipping,
             discountCode: appliedDiscountCode || null,
+            checkoutAttemptId,
           }),
         });
 
@@ -190,6 +217,7 @@ export default function ReviewPage() {
             setInventoryProblems(data.details);
             setClientSecret(null);
             setIntentId(null);
+            setOrderId(null);
             setBreakdown(null);
             setErrorMsg(
               'Some quantities are no longer available. Update or remove those items before payment.'
@@ -199,7 +227,7 @@ export default function ReviewPage() {
           }
 
           setErrorMsg(
-            data?.error || 'Failed to prepare order (tax/total).'
+            data?.error || 'We could not prepare this order. Please try again.'
           );
           setLoading(false);
           return;
@@ -208,9 +236,31 @@ export default function ReviewPage() {
         if (ignore) return;
 
         setInventoryProblems([]);
+        if (
+          !data.clientSecret ||
+          !data.intentId ||
+          !data.orderId ||
+          !data.breakdown
+        ) {
+          throw new Error('The payment service returned an incomplete order.');
+        }
+
         setClientSecret(data.clientSecret);
         setIntentId(data.intentId);
-        setBreakdown(data.breakdown || null);
+        setOrderId(data.orderId);
+        setBreakdown(data.breakdown);
+        try {
+          if (data.breakdown.discountCode) {
+            sessionStorage.setItem(
+              CHECKOUT_DISCOUNT_KEY,
+              data.breakdown.discountCode
+            );
+          } else {
+            sessionStorage.removeItem(CHECKOUT_DISCOUNT_KEY);
+          }
+        } catch {
+          // The payment snapshot write below is the required storage check.
+        }
         setLoading(false);
       } catch (e) {
         if (!ignore) {
@@ -227,7 +277,7 @@ export default function ReviewPage() {
     return () => {
       ignore = true;
     };
-  }, [items, shipping, email, appliedDiscountCode]);
+  }, [items, shipping, email, appliedDiscountCode, checkoutAttemptId]);
 
   function handleRemoveItem(key) {
     const next = items.filter((it) => it.key !== key);
@@ -266,7 +316,7 @@ export default function ReviewPage() {
   }, [inventoryProblems]);
 
   async function handleContinueToPayment() {
-    if (!clientSecret || !intentId || !breakdown) return;
+    if (!clientSecret || !intentId || !orderId || !breakdown) return;
 
     ecommerceEvent('add_shipping_info', {
       items,
@@ -278,17 +328,24 @@ export default function ReviewPage() {
       if (typeof window !== 'undefined') {
         // IMPORTANT: key must match CHECKOUT_PAYMENT_KEY in src/config/store.js
         sessionStorage.setItem(
-          'ah_checkout_payment',
+          CHECKOUT_PAYMENT_KEY,
           JSON.stringify({
             clientSecret,
             intentId,
+            orderId,
             breakdown,
             discountCode: breakdown.discountCode || null,
+            items,
+            email,
+            shipping,
           })
         );
       }
     } catch {
-      // ignore
+      setErrorMsg(
+        'This browser could not save the secure payment step. Please enable site data or try a standard browsing window.'
+      );
+      return;
     }
 
     router.push('/store/checkout/payment');
@@ -397,7 +454,7 @@ export default function ReviewPage() {
                   variant="outlined"
                   size="small"
                   onClick={() =>
-                    setAppliedDiscountCode(discountInput.trim())
+                    setAppliedDiscountCode(discountInput.trim().toUpperCase())
                   }
                 >
                   Apply
@@ -593,7 +650,13 @@ export default function ReviewPage() {
             <Button
               variant="contained"
               onClick={handleContinueToPayment}
-              disabled={!clientSecret || !intentId || !breakdown || loading}
+              disabled={
+                !clientSecret ||
+                !intentId ||
+                !orderId ||
+                !breakdown ||
+                loading
+              }
             >
               Continue to payment
             </Button>

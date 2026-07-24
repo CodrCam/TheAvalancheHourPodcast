@@ -139,29 +139,31 @@ export default async function handler(req, res) {
       shipping_country: shippingCountry,
     });
 
-    // Email Caleb ONLY on brand-new orders.
+    // Email Caleb ONLY on brand-new orders. A notification failure must not
+    // turn a successfully recorded, paid order into an HTTP failure.
     if (isNewOrder) {
       if (!EMAIL_USER || !EMAIL_PASS) {
         // Don’t fail the order if email isn’t configured; just log it.
         console.warn('record-order: EMAIL_USER/EMAIL_PASS not configured; skipping notification email');
       } else {
-        const transporter = nodemailer.createTransport({
-          service: 'gmail',
-          auth: { user: EMAIL_USER, pass: EMAIL_PASS },
-        });
+        try {
+          const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: { user: EMAIL_USER, pass: EMAIL_PASS },
+          });
 
-        const safeItems = recordedItems;
-        const lines = safeItems.map((it) => {
-          const qty = it.qty ?? 1;
-          const name = it.name || it.label || it.title || it.id || 'Item';
-          const sku = it.sku ? ` (SKU: ${it.sku})` : '';
-          return `- ${qty} × ${name}${sku}`;
-        });
+          const safeItems = recordedItems;
+          const lines = safeItems.map((it) => {
+            const qty = it.qty ?? 1;
+            const name = it.name || it.label || it.title || it.id || 'Item';
+            const sku = it.sku ? ` (SKU: ${it.sku})` : '';
+            return `- ${qty} × ${name}${sku}`;
+          });
 
-        const dollars = (Number(verifiedAmountCents || 0) / 100).toFixed(2);
+          const dollars = (Number(verifiedAmountCents || 0) / 100).toFixed(2);
 
-        const subject = `New order placed — ${verifiedOrderId}`;
-        const text =
+          const subject = `New order placed — ${verifiedOrderId}`;
+          const text =
 `A new order was placed.
 
 Order ID: ${verifiedOrderId}
@@ -181,12 +183,15 @@ Items:
 ${lines.length ? lines.join('\n') : '- (no items provided)'}
 `;
 
-        await transporter.sendMail({
-          from: EMAIL_USER,
-          to: TO_EMAIL,
-          subject,
-          text,
-        });
+          await transporter.sendMail({
+            from: EMAIL_USER,
+            to: TO_EMAIL,
+            subject,
+            text,
+          });
+        } catch (emailError) {
+          console.error('record-order notification email failed:', emailError);
+        }
       }
     }
 

@@ -19,7 +19,8 @@ import '../styles/globals.css'; // Import the global CSS file
 export default function MyApp({ Component, pageProps }) {
   const router = useRouter();
   const isAdminRoute = router.pathname.startsWith('/admin');
-  const showVoicemailWidget = !isAdminRoute;
+  const isCheckoutRoute = router.pathname.startsWith('/store/checkout');
+  const showVoicemailWidget = !isAdminRoute && !isCheckoutRoute;
   const lastTrackedPathRef = React.useRef('');
 
   React.useEffect(() => {
