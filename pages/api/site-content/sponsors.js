@@ -1,4 +1,8 @@
-import { groupSponsorsByTier, listSponsors } from '../../../lib/sponsorStore';
+import {
+  getStaticSponsorSeed,
+  groupSponsorsByTier,
+  listSponsors,
+} from '../../../lib/sponsorStore';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -18,11 +22,14 @@ export default async function handler(req, res) {
     });
   } catch (err) {
     console.error('public sponsors error:', err);
+    const fallbackSponsors = getStaticSponsorSeed().filter(
+      (sponsor) => sponsor.active
+    );
     return res.status(200).json({
       ok: true,
-      sponsors: [],
-      tiers: { legacy: [], partner: [], friends: [] },
-      source: 'fallback',
+      sponsors: fallbackSponsors,
+      tiers: groupSponsorsByTier(fallbackSponsors),
+      source: 'static',
       configured: false,
     });
   }

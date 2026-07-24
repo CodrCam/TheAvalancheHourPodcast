@@ -6,6 +6,7 @@
     "dev": "WATCHPACK_POLLING=true WATCHPACK_POLLING_INTERVAL=1000 next dev --webpack",
     "build": "next build",
     "start": "next start",
+    "test": "node --test",
     "lint": "eslint .",
     "export:supabase-inventory": "node scripts/exportSupabaseInventorySeed.js",
     "seed:dynamo-inventory": "node scripts/seedDynamoInventory.js",

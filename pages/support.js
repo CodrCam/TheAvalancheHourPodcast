@@ -18,10 +18,15 @@ import {
   Download,
   Handshake,
   LibraryMusic,
+  LocalOffer,
   WorkspacePremium,
 } from '@mui/icons-material';
 import Navbar from '../components/Navbar';
 import SEO from '../components/SEO';
+import {
+  getStaticSponsorSeed,
+  listSponsors,
+} from '../lib/sponsorStore';
 
 const rateCardUrl = '/files/avalanche-hour-s11-rate-card.pdf';
 
@@ -79,12 +84,160 @@ const supportTiers = [
   },
 ];
 
-export default function SupportPage() {
+const sponsorTierLabels = {
+  legacy: 'Legacy Sponsor',
+  partner: 'Season Partner',
+  friend: 'Episode Supporter',
+  episode: 'Episode Sponsor',
+};
+
+function SponsorSupportCard({ sponsor }) {
+  const hasOffer = Boolean(sponsor.promo_code || sponsor.promo_details);
+
+  return (
+    <Card
+      component="article"
+      variant="outlined"
+      sx={{
+        height: '100%',
+        borderRadius: 2.5,
+        borderColor: hasOffer ? 'primary.main' : 'grey.200',
+        boxShadow: hasOffer ? '0 12px 34px rgba(23, 59, 91, 0.10)' : 'none',
+      }}
+    >
+      <CardContent
+        sx={{
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          p: { xs: 2.25, md: 2.5 },
+          '&:last-child': { pb: { xs: 2.25, md: 2.5 } },
+        }}
+      >
+        <Box
+          sx={{
+            height: 104,
+            display: 'grid',
+            placeItems: 'center',
+            mb: 2,
+            p: 1.5,
+            borderRadius: 1.5,
+            bgcolor: '#f7f8fa',
+          }}
+        >
+          {sponsor.logo ? (
+            <Box
+              component="img"
+              src={sponsor.logo}
+              alt={`${sponsor.name} logo`}
+              sx={{
+                width: '100%',
+                height: '100%',
+                display: 'block',
+                objectFit: 'contain',
+              }}
+            />
+          ) : (
+            <Typography
+              variant="h6"
+              component="span"
+              sx={{ color: 'text.secondary', textAlign: 'center' }}
+            >
+              {sponsor.name}
+            </Typography>
+          )}
+        </Box>
+
+        <Chip
+          label={sponsorTierLabels[sponsor.tier] || 'Sponsor'}
+          size="small"
+          variant="outlined"
+          sx={{ alignSelf: 'flex-start', mb: 1.25, fontWeight: 700 }}
+        />
+        <Typography variant="h6" component="h3" sx={{ lineHeight: 1.25 }}>
+          {sponsor.name}
+        </Typography>
+
+        {hasOffer ? (
+          <Box
+            sx={{
+              mt: 2,
+              p: 1.5,
+              border: '1px solid',
+              borderColor: 'success.light',
+              borderRadius: 1.5,
+              bgcolor: '#f4faf6',
+            }}
+          >
+            <Stack direction="row" spacing={0.75} alignItems="center" sx={{ mb: 0.5 }}>
+              <LocalOffer color="success" sx={{ fontSize: 18 }} />
+              <Typography
+                variant="overline"
+                component="span"
+                sx={{ color: 'success.dark', fontWeight: 800, lineHeight: 1.4 }}
+              >
+                Listener offer
+              </Typography>
+            </Stack>
+            {sponsor.promo_details ? (
+              <Typography variant="body2" sx={{ color: 'text.primary' }}>
+                {sponsor.promo_details}
+              </Typography>
+            ) : null}
+            {sponsor.promo_code ? (
+              <Box
+                component="code"
+                sx={{
+                  width: 'fit-content',
+                  display: 'block',
+                  mt: sponsor.promo_details ? 1 : 0,
+                  px: 1,
+                  py: 0.6,
+                  border: '1px dashed',
+                  borderColor: 'success.main',
+                  borderRadius: 1,
+                  color: 'success.dark',
+                  bgcolor: 'white',
+                  fontSize: '0.8rem',
+                  fontWeight: 800,
+                  letterSpacing: '0.04em',
+                  overflowWrap: 'anywhere',
+                }}
+              >
+                Use code {sponsor.promo_code}
+              </Box>
+            ) : null}
+          </Box>
+        ) : null}
+
+        {sponsor.url ? (
+          <Box sx={{ mt: 'auto', pt: 2 }}>
+            <Button
+              component="a"
+              href={sponsor.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              variant={hasOffer ? 'contained' : 'outlined'}
+              endIcon={<ArrowForward />}
+              fullWidth
+            >
+              Visit Sponsor
+            </Button>
+          </Box>
+        ) : (
+          <Box sx={{ mt: 'auto' }} />
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+export default function SupportPage({ sponsors = [] }) {
   return (
     <>
       <SEO
         title="Support & Advertise | The Avalanche Hour"
-        description="Support The Avalanche Hour Podcast through single episode advertising, season-long sponsorship, underwriting, and Slabs 'n Sluffs sponsorship opportunities."
+        description="Support The Avalanche Hour Podcast, explore advertising and underwriting opportunities, and find current sponsor offers for listeners."
         keywords="The Avalanche Hour sponsorship, podcast advertising, avalanche podcast support, podcast underwriting"
         url="/support"
       />
@@ -257,6 +410,47 @@ export default function SupportPage() {
           </Container>
         </Box>
 
+        <Box
+          component="section"
+          sx={{ bgcolor: '#f2f5f3', py: { xs: 5, md: 8 } }}
+        >
+          <Container maxWidth="lg">
+            <Box sx={{ mb: 4 }}>
+              <Typography variant="h2" sx={{ mb: 1 }}>
+                Support the Sponsors Who Support the Show
+              </Typography>
+              <Typography
+                variant="body1"
+                color="text.secondary"
+                sx={{ maxWidth: 760 }}
+              >
+                Explore every current Avalanche Hour sponsor. When a listener
+                offer is available, the details and show-specific code appear
+                right on the sponsor card.
+              </Typography>
+            </Box>
+
+            {sponsors.length ? (
+              <Grid container spacing={2.5}>
+                {sponsors.map((sponsor) => (
+                  <Grid item xs={12} sm={6} md={4} key={sponsor.sponsor_id}>
+                    <SponsorSupportCard sponsor={sponsor} />
+                  </Grid>
+                ))}
+              </Grid>
+            ) : (
+              <Card variant="outlined" sx={{ borderRadius: 2 }}>
+                <CardContent>
+                  <Typography color="text.secondary">
+                    The current sponsor list is being updated. Please check back
+                    soon.
+                  </Typography>
+                </CardContent>
+              </Card>
+            )}
+          </Container>
+        </Box>
+
         <Box component="section" sx={{ bgcolor: 'white', py: { xs: 5, md: 7 } }}>
           <Container maxWidth="md">
             <Stack
@@ -290,4 +484,22 @@ export default function SupportPage() {
       </Box>
     </>
   );
+}
+
+export async function getServerSideProps() {
+  try {
+    const result = await listSponsors({ allowStaticFallback: true });
+    return {
+      props: {
+        sponsors: result.sponsors.filter((sponsor) => sponsor.active),
+      },
+    };
+  } catch (error) {
+    console.error('support sponsors error:', error);
+    return {
+      props: {
+        sponsors: getStaticSponsorSeed().filter((sponsor) => sponsor.active),
+      },
+    };
+  }
 }

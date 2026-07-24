@@ -65,6 +65,8 @@ function Tier({ title, items, variant, visibility }) {
       >
         {visibleItems.map((s) => {
           const hasLogo = Boolean(s.logo && s.logo.trim());
+          const hasUrl = Boolean(s.url && s.url.trim());
+          const SponsorAction = hasUrl ? CardActionArea : Box;
 
           return (
             <Grid
@@ -86,12 +88,16 @@ function Tier({ title, items, variant, visibility }) {
                   '&:hover': { transform: 'translateY(-2px)', boxShadow: 4 },
                 }}
               >
-                <CardActionArea
-                  component="a"
-                  href={s.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={s.name}
+                <SponsorAction
+                  {...(hasUrl
+                    ? {
+                        component: 'a',
+                        href: s.url,
+                        target: '_blank',
+                        rel: 'noopener noreferrer',
+                        'aria-label': `Visit ${s.name}`,
+                      }
+                    : {})}
                   sx={{
                     display: 'flex',
                     flexDirection: 'column',
@@ -126,7 +132,7 @@ function Tier({ title, items, variant, visibility }) {
                       </Typography>
                     </CardContent>
                   )}
-                </CardActionArea>
+                </SponsorAction>
               </Card>
             </Grid>
           );

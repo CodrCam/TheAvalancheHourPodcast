@@ -1,14 +1,38 @@
 // components/AdminLayout.js
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/router';
+import DashboardRoundedIcon from '@mui/icons-material/DashboardRounded';
+import Inventory2RoundedIcon from '@mui/icons-material/Inventory2Rounded';
+import ReceiptLongRoundedIcon from '@mui/icons-material/ReceiptLongRounded';
+import ArticleRoundedIcon from '@mui/icons-material/ArticleRounded';
+import GroupsRoundedIcon from '@mui/icons-material/GroupsRounded';
+import HandshakeRoundedIcon from '@mui/icons-material/HandshakeRounded';
+import OpenInNewRoundedIcon from '@mui/icons-material/OpenInNewRounded';
+import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
+import styles from '../styles/AdminLayout.module.css';
 
 function formatRole(role) {
   if (!role) return 'Checking access';
-  return role.charAt(0).toUpperCase() + role.slice(1);
+  return String(role)
+    .split(/[_-]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
 }
+
+const NAV_ITEMS = [
+  { href: '/admin', label: 'Overview', icon: DashboardRoundedIcon },
+  { href: '/admin/inventory', label: 'Inventory', icon: Inventory2RoundedIcon },
+  { href: '/admin/orders', label: 'Orders', icon: ReceiptLongRoundedIcon },
+  { href: '/admin/site-content', label: 'Site Content', icon: ArticleRoundedIcon },
+  { href: '/admin/people', label: 'Hosts & Team', icon: GroupsRoundedIcon },
+  { href: '/admin/sponsors', label: 'Sponsors', icon: HandshakeRoundedIcon },
+];
 
 export default function AdminLayout({ children }) {
   const [session, setSession] = useState(null);
+  const router = useRouter();
 
   useEffect(() => {
     let alive = true;
@@ -33,65 +57,80 @@ export default function AdminLayout({ children }) {
   }, []);
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh' }}>
-      <aside style={{ width: 220, padding: 16, borderRight: '1px solid #eee' }}>
-        <h2>Admin</h2>
-        <div
-          style={{
-            display: 'inline-block',
-            marginBottom: 16,
-            padding: '4px 8px',
-            borderRadius: 999,
-            background: '#f2f4f7',
-            color: '#344054',
-            fontSize: 12,
-            fontWeight: 700,
-          }}
-        >
-          {formatRole(session?.role)}
-        </div>
-        <nav>
-          <ul style={{ paddingLeft: 18, lineHeight: 1.7 }}>
-            <li>
-              <Link href="/admin">Overview</Link>
-            </li>
-            <li>
-              <Link href="/admin/inventory">Inventory</Link>
-            </li>
-            <li>
-              <Link href="/admin/orders">Orders</Link>
-            </li>
-            <li>
-              <Link href="/admin/site-content">Site Content</Link>
-            </li>
-            <li>
-              <Link href="/admin/people">Team</Link>
-            </li>
-            <li>
-              <Link href="/admin/sponsors">Sponsors</Link>
-            </li>
+    <div className={styles.shell}>
+      <aside className={styles.sidebar}>
+        <Link href="/admin" className={styles.brand}>
+          <span className={styles.brandMark} aria-hidden="true">
+            <img src="/images/logo.png" alt="" />
+          </span>
+          <span className={styles.brandCopy}>
+            <span className={styles.brandEyebrow}>Avalanche Hour</span>
+            <span className={styles.brandTitle}>Admin Studio</span>
+          </span>
+        </Link>
+
+        <nav className={styles.nav} aria-label="Admin navigation">
+          <span className={styles.navLabel}>Workspace</span>
+          <ul className={styles.navList}>
+            {NAV_ITEMS.map((item) => {
+              const isActive =
+                item.href === '/admin'
+                  ? router.pathname === item.href
+                  : router.pathname.startsWith(item.href);
+              const Icon = item.icon;
+
+              return (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    aria-current={isActive ? 'page' : undefined}
+                    className={`${styles.navLink} ${
+                      isActive ? styles.navLinkActive : ''
+                    }`}
+                  >
+                    <Icon className={styles.navIcon} aria-hidden="true" />
+                    <span>{item.label}</span>
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         </nav>
-        <form action="/api/store/admin/auth/logout" method="post">
-          <button
-            type="submit"
-            style={{
-              marginTop: 24,
-              padding: '8px 10px',
-              width: '100%',
-              border: '1px solid #d0d5dd',
-              borderRadius: 6,
-              background: '#fff',
-              color: '#344054',
-              cursor: 'pointer',
-              fontWeight: 700,
-            }}
-          >
-            Sign out
-          </button>
-        </form>
+
+        <div className={styles.sidebarFooter}>
+          <div className={styles.account}>
+            <span className={styles.accountRole}>{formatRole(session?.role)}</span>
+            <span className={styles.accountName}>
+              {session?.username || 'Secure admin session'}
+            </span>
+          </div>
+          <div className={styles.footerActions}>
+            <Link
+              href="/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={styles.footerLink}
+            >
+              <OpenInNewRoundedIcon fontSize="inherit" aria-hidden="true" />
+              View site
+            </Link>
+            <form
+              action="/api/store/admin/auth/logout"
+              method="post"
+              className={styles.signOutForm}
+            >
+              <button type="submit" className={styles.signOutButton}>
+                <LogoutRoundedIcon fontSize="inherit" aria-hidden="true" />
+                Sign out
+              </button>
+            </form>
+          </div>
+        </div>
       </aside>
-      <main style={{ flex: 1, padding: 24 }}>{children}</main>
+
+      <main className={styles.main}>
+        <div className={styles.mainInner}>{children}</div>
+      </main>
     </div>
   );
 }

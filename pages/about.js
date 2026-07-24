@@ -19,6 +19,10 @@ import SEO from '../components/SEO';
 import { DEFAULT_HOME_CONTENT } from '../lib/siteContentDefaults';
 import { getHomeContent } from '../lib/siteContentStore';
 import { getStaticPeopleSeed, listPeople } from '../lib/peopleStore';
+import {
+  PEOPLE_SECTIONS,
+  groupPeopleForDisplay,
+} from '../lib/peoplePresentation.mjs';
 
 const PLACEHOLDER_IMG = '/images/placeholder-person.jpg';
 
@@ -30,15 +34,25 @@ function getCategoryLabel(role) {
   return 'Producer';
 }
 
-function getCategoryColor(role) {
-  if (role === 'host') return 'primary';
-  if (role === 'webmaster') return 'info';
-  if (role === 'social_media_manager') return 'warning';
-  if (role === 'team') return 'success';
-  return 'secondary';
+function getAdditionalLabels(person) {
+  const reserved = new Set(
+    [getCategoryLabel(person.role), person.title]
+      .map((label) => String(label || '').trim().toLowerCase())
+      .filter(Boolean)
+  );
+  const seen = new Set();
+
+  return (person.roles || []).filter((label) => {
+    const key = String(label || '').trim().toLowerCase();
+    if (!key || reserved.has(key) || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 export default function AboutPage({ people, aboutContent }) {
+  const groupedPeople = groupPeopleForDisplay(people);
+
   return (
     <>
       <SEO
@@ -145,108 +159,164 @@ export default function AboutPage({ people, aboutContent }) {
           <Chip label={`${people.length} team members`} variant="outlined" />
         </Stack>
 
-        <Grid container spacing={{ xs: 2, sm: 3, md: 4 }}>
-          {people.map((person) => (
-            <Grid item xs={12} sm={6} md={4} key={person.slug}>
-              <Card
-                sx={{
-                  height: '100%',
-                  display: 'flex',
-                  flexDirection: 'column',
-                }}
+        {PEOPLE_SECTIONS.map((section, sectionIndex) => {
+          const sectionPeople = groupedPeople[section.id];
+          if (!sectionPeople.length) return null;
+
+          return (
+            <Box
+              component="section"
+              key={section.id}
+              aria-labelledby={`${section.id}-heading`}
+              sx={{
+                mt: sectionIndex === 0 ? 0 : { xs: 6, md: 8 },
+              }}
+            >
+              <Stack
+                direction={{ xs: 'column', sm: 'row' }}
+                spacing={1}
+                alignItems={{ xs: 'flex-start', sm: 'flex-end' }}
+                justifyContent="space-between"
+                sx={{ mb: 2.5, pb: 2, borderBottom: '1px solid', borderColor: 'grey.200' }}
               >
-                {/* Headshot */}
-                <CardMedia
-                  component="img"
-                  image={
-                    person.images && person.images.length > 0
-                      ? person.images[0]
-                      : PLACEHOLDER_IMG
-                  }
-                  alt={person.name}
-                  sx={{
-                    height: { xs: 220, sm: 260, md: 280 },
-                    objectFit: 'cover',
-                  }}
-                />
-
-                <CardContent sx={{ flexGrow: 1 }}>
-                  <Box
+                <Box>
+                  <Typography
+                    id={`${section.id}-heading`}
+                    variant="h3"
                     sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 1,
-                      mb: 1,
-                      flexWrap: 'wrap',
+                      fontWeight: 800,
+                      fontSize: { xs: '1.7rem', md: '2.2rem' },
                     }}
                   >
-                    <Typography
-                      gutterBottom
-                      variant="h6"
-                      component="div"
-                      sx={{
-                        fontWeight: 600,
-                        fontSize: { xs: '1.1rem', md: '1.25rem' },
-                      }}
-                    >
-                      {person.name}
-                    </Typography>
-                    <Chip
-                      size="small"
-                      label={getCategoryLabel(person.role)}
-                      color={getCategoryColor(person.role)}
-                    />
-                    {(person.roles || []).map((roleLabel) => (
-                      <Chip
-                        key={roleLabel}
-                        size="small"
-                        label={roleLabel}
-                        variant="outlined"
-                      />
-                    ))}
-                    {person.title ? (
-                      <Chip size="small" label={person.title} variant="outlined" />
-                    ) : null}
-                  </Box>
-
-                  {person.needsBio ? (
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{ fontSize: { xs: '0.85rem', md: '0.95rem' } }}
-                    >
-                      Bio coming soon.
-                    </Typography>
-                  ) : (
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{ fontSize: { xs: '0.85rem', md: '0.95rem' } }}
-                    >
-                      {person.bioShort}
-                    </Typography>
-                  )}
-                </CardContent>
-
-                <Box sx={{ p: 2, pt: 0 }}>
-                  <Button
-                    component={Link}
-                    href={`/hosts/${person.slug}`}
-                    variant="contained"
-                    color="primary"
-                    fullWidth
-                    sx={{
-                      py: { xs: 1, md: 1.2 },
-                      fontSize: { xs: '0.9rem', md: '1rem' },
-                    }}
-                  >
-                    View Profile
-                  </Button>
+                    {section.label}
+                  </Typography>
+                  <Typography color="text.secondary" sx={{ mt: 0.5 }}>
+                    {section.description}
+                  </Typography>
                 </Box>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
+                <Chip
+                  size="small"
+                  label={`${sectionPeople.length} ${
+                    sectionPeople.length === 1 ? 'person' : 'people'
+                  }`}
+                  variant="outlined"
+                />
+              </Stack>
+
+              <Grid container spacing={{ xs: 2, sm: 3, md: 4 }}>
+                {sectionPeople.map((person) => {
+                  const additionalLabels = getAdditionalLabels(person);
+
+                  return (
+                    <Grid item xs={12} sm={6} md={4} key={person.slug}>
+                      <Card
+                        sx={{
+                          height: '100%',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          overflow: 'hidden',
+                          border: '1px solid',
+                          borderColor: 'grey.200',
+                          boxShadow: '0 8px 28px rgba(44, 62, 80, 0.07)',
+                        }}
+                      >
+                        <CardMedia
+                          component="img"
+                          image={
+                            person.images && person.images.length > 0
+                              ? person.images[0]
+                              : PLACEHOLDER_IMG
+                          }
+                          alt={person.name}
+                          sx={{
+                            height: { xs: 240, sm: 270, md: 290 },
+                            objectFit: 'cover',
+                          }}
+                        />
+
+                        <CardContent sx={{ flexGrow: 1 }}>
+                          <Chip
+                            size="small"
+                            label={getCategoryLabel(person.role)}
+                            color={person.role === 'host' ? 'primary' : 'default'}
+                            variant={person.role === 'host' ? 'filled' : 'outlined'}
+                            sx={{ mb: 1.25 }}
+                          />
+                          <Typography
+                            variant="h6"
+                            component="h4"
+                            sx={{
+                              fontWeight: 700,
+                              fontSize: { xs: '1.15rem', md: '1.3rem' },
+                              mb: person.title ? 0.25 : 1.25,
+                            }}
+                          >
+                            {person.name}
+                          </Typography>
+                          {person.title ? (
+                            <Typography
+                              variant="body2"
+                              color="text.secondary"
+                              sx={{ fontWeight: 600, mb: 1.25 }}
+                            >
+                              {person.title}
+                            </Typography>
+                          ) : null}
+                          {additionalLabels.length ? (
+                            <Stack
+                              direction="row"
+                              spacing={0.75}
+                              useFlexGap
+                              flexWrap="wrap"
+                              sx={{ mb: 1.5 }}
+                            >
+                              {additionalLabels.map((roleLabel) => (
+                                <Chip
+                                  key={roleLabel}
+                                  size="small"
+                                  label={roleLabel}
+                                  variant="outlined"
+                                  sx={{ color: 'text.secondary' }}
+                                />
+                              ))}
+                            </Stack>
+                          ) : null}
+
+                          <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            sx={{
+                              fontSize: { xs: '0.88rem', md: '0.95rem' },
+                              lineHeight: 1.65,
+                            }}
+                          >
+                            {person.needsBio ? 'Bio coming soon.' : person.bioShort}
+                          </Typography>
+                        </CardContent>
+
+                        <Box sx={{ p: 2.5, pt: 0 }}>
+                          <Button
+                            component={Link}
+                            href={`/hosts/${person.slug}`}
+                            variant="outlined"
+                            color="primary"
+                            fullWidth
+                            sx={{
+                              py: { xs: 1, md: 1.1 },
+                              fontSize: { xs: '0.9rem', md: '0.95rem' },
+                            }}
+                          >
+                            View Profile
+                          </Button>
+                        </Box>
+                      </Card>
+                    </Grid>
+                  );
+                })}
+              </Grid>
+            </Box>
+          );
+        })}
       </Container>
     </>
   );

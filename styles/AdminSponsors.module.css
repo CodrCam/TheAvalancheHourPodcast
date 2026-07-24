@@ -1,0 +1,518 @@
+.page {
+  --legacy: #845d0b;
+  --partner: #195c9f;
+  --friend: #5f4b8b;
+  --episode: #39705a;
+}
+
+.tierBadge {
+  width: fit-content;
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 7px;
+  border: 1px solid;
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: 0.07em;
+  line-height: 1.2;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.tierLegacy {
+  border-color: #ead69e;
+  color: var(--legacy);
+  background: #fff9e9;
+}
+
+.tierPartner {
+  border-color: #bed9f4;
+  color: var(--partner);
+  background: #eef7ff;
+}
+
+.tierFriend {
+  border-color: #d7cbed;
+  color: var(--friend);
+  background: #f7f2ff;
+}
+
+.tierEpisode {
+  border-color: #bedfce;
+  color: var(--episode);
+  background: #eef9f3;
+}
+
+.placementGuide {
+  margin-bottom: 18px;
+  overflow: hidden;
+  border: 1px solid #dce4ee;
+  border-radius: 14px;
+  color: #24425f;
+  background: #fff;
+  box-shadow: 0 4px 16px rgba(43, 67, 94, 0.04);
+}
+
+.placementGuide summary {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 14px 16px;
+  font-size: 12px;
+  font-weight: 780;
+  cursor: pointer;
+  list-style: none;
+}
+
+.placementGuide summary::-webkit-details-marker {
+  display: none;
+}
+
+.placementGuide summary::after {
+  width: 8px;
+  height: 8px;
+  margin-left: auto;
+  border-right: 2px solid #72869a;
+  border-bottom: 2px solid #72869a;
+  content: "";
+  transform: rotate(45deg);
+  transition: transform 150ms ease;
+}
+
+.placementGuide[open] summary::after {
+  transform: rotate(225deg);
+}
+
+.placementGuide summary svg {
+  width: 18px;
+  height: 18px;
+  color: #2766bd;
+}
+
+.placementGuideGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border-top: 1px solid #e7edf4;
+}
+
+.placementGuideGrid > div {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 7px;
+  padding: 16px;
+}
+
+.placementGuideGrid > div + div {
+  border-left: 1px solid #e7edf4;
+}
+
+.placementGuideGrid strong {
+  color: #1c3854;
+  font-size: 12px;
+}
+
+.placementGuideGrid span:last-child {
+  color: #6b7d90;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.sponsorGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 11px;
+}
+
+.sponsorCard {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 82px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 13px;
+  padding: 12px;
+  border: 1px solid #e0e7ef;
+  border-radius: 13px;
+  background: #fff;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease,
+    transform 150ms ease;
+}
+
+.sponsorCard:hover {
+  border-color: #bdcee2;
+  box-shadow: 0 8px 20px rgba(43, 67, 94, 0.08);
+  transform: translateY(-1px);
+}
+
+.sponsorLogo {
+  width: 82px;
+  height: 70px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  box-sizing: border-box;
+  padding: 9px;
+  border: 1px solid #edf0f3;
+  border-radius: 10px;
+  color: #48657f;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.7), transparent),
+    #f2f5f8;
+  font-size: 17px;
+  font-weight: 850;
+}
+
+.sponsorLogo img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+}
+
+.sponsorMain {
+  min-width: 0;
+}
+
+.sponsorTopline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 5px;
+}
+
+.sponsorMain h3 {
+  overflow: hidden;
+  margin: 0;
+  color: #10243d;
+  font-family:
+    Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  font-size: 15px;
+  font-weight: 760;
+  letter-spacing: -0.012em;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sponsorMain > p {
+  overflow: hidden;
+  margin: 3px 0 7px;
+  color: #64748b;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sponsorMeta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #8492a2;
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.sponsorMeta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.sponsorMeta svg {
+  width: 12px;
+  height: 12px;
+}
+
+.codeMeta {
+  max-width: 130px;
+  overflow: hidden;
+  padding: 2px 6px;
+  border-radius: 5px;
+  color: #276044;
+  background: #edf8f1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.logoFieldset {
+  min-width: 0;
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.logoFieldset > legend {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.logoPreview {
+  min-height: 170px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  box-sizing: border-box;
+  padding: 22px;
+  border: 1px solid #dce4ec;
+  border-radius: 12px;
+  background:
+    linear-gradient(45deg, #f3f5f8 25%, transparent 25%) 0 0 / 18px 18px,
+    linear-gradient(-45deg, #f3f5f8 25%, transparent 25%) 0 0 / 18px 18px,
+    linear-gradient(45deg, transparent 75%, #f3f5f8 75%) 0 0 / 18px 18px,
+    linear-gradient(-45deg, transparent 75%, #f3f5f8 75%) 0 0 / 18px 18px,
+    #fff;
+}
+
+.logoPreview img {
+  width: min(100%, 360px);
+  max-height: 150px;
+  display: block;
+  object-fit: contain;
+}
+
+.logoEmpty {
+  display: grid;
+  place-items: center;
+  gap: 6px;
+  color: #8291a1;
+  text-align: center;
+}
+
+.logoEmpty svg {
+  width: 30px;
+  height: 30px;
+  color: #9aabba;
+}
+
+.logoEmpty strong {
+  color: #536b83;
+  font-size: 12px;
+}
+
+.logoEmpty span {
+  font-size: 10px;
+}
+
+.logoActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.episodeAssignments {
+  display: grid;
+  gap: 12px;
+}
+
+.episodeAddRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 9px;
+}
+
+.episodeChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.episodeChip {
+  min-width: 0;
+  max-width: 100%;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 5px 4px 8px;
+  border: 1px solid #cbdbea;
+  border-radius: 999px;
+  color: #315a80;
+  background: #f1f7fc;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.episodeChip > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.episodeChip > svg {
+  width: 13px;
+  height: 13px;
+  flex: 0 0 auto;
+}
+
+.episodeChip button {
+  width: 24px;
+  height: 24px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  color: #56718b;
+  background: transparent;
+  cursor: pointer;
+}
+
+.episodeChip button:hover:not(:disabled) {
+  color: #963b47;
+  background: #fff;
+}
+
+.episodeChip button:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.2);
+}
+
+.episodeChip button svg {
+  width: 14px;
+  height: 14px;
+}
+
+.episodeEmpty {
+  padding: 12px;
+  border: 1px dashed #cfd9e5;
+  border-radius: 9px;
+  color: #718396;
+  background: #fbfcfd;
+  font-size: 10px;
+  text-align: center;
+}
+
+.offerPreview {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  border: 1px solid #cfe0d5;
+  border-radius: 10px;
+  color: #315744;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(191, 226, 205, 0.36), transparent 9rem),
+    #f7fbf8;
+}
+
+.offerPreview > strong {
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.offerPreview > span {
+  color: #728378;
+  font-size: 10px;
+}
+
+.offerPreview > div {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.offerPreview span {
+  font-size: 11px;
+}
+
+.offerPreview code {
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 4px 7px;
+  border: 1px solid #bdd9c7;
+  border-radius: 6px;
+  color: #205b3b;
+  background: #fff;
+  font-family:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 10px;
+  font-weight: 750;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 1180px) {
+  .sponsorGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .placementGuideGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .placementGuideGrid > div:nth-child(3) {
+    border-left: 0;
+  }
+
+  .placementGuideGrid > div:nth-child(n + 3) {
+    border-top: 1px solid #e7edf4;
+  }
+}
+
+@media (max-width: 700px) {
+  .sponsorCard {
+    grid-template-columns: 70px minmax(0, 1fr);
+  }
+
+  .sponsorLogo {
+    width: 70px;
+    height: 64px;
+  }
+
+  .sponsorCard > button {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  .episodeAddRow {
+    grid-template-columns: 1fr;
+  }
+
+  .logoActions,
+  .logoActions > label,
+  .logoActions > button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 520px) {
+  .placementGuideGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .placementGuideGrid > div + div,
+  .placementGuideGrid > div:nth-child(3) {
+    border-left: 0;
+    border-top: 1px solid #e7edf4;
+  }
+
+  .sponsorTopline {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .sponsorMeta {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .placementGuide summary::after,
+  .sponsorCard {
+    transition: none;
+  }
+}

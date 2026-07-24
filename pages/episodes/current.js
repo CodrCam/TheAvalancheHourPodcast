@@ -123,6 +123,7 @@ export default function CurrentSeason() {
             legacy: data.tiers.legacy || [],
             partner: data.tiers.partner || [],
             friends: data.tiers.friends || [],
+            episode: data.tiers.episode || [],
           });
         }
       } catch {
@@ -412,10 +413,14 @@ export default function CurrentSeason() {
                               lg={row.grid.lg}
                             >
                               <Box
-                                component="a"
-                                href={s.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
+                                component={s.url ? 'a' : 'div'}
+                                {...(s.url
+                                  ? {
+                                      href: s.url,
+                                      target: '_blank',
+                                      rel: 'noopener noreferrer',
+                                    }
+                                  : {})}
                                 sx={{
                                   display: 'flex',
                                   flexDirection: 'column',
@@ -441,16 +446,26 @@ export default function CurrentSeason() {
                                     width: '100%',
                                   }}
                                 >
-                                  <img
-                                    src={s.logo}
-                                    alt={s.name}
-                                    style={{
-                                      maxHeight: row.logoHeight,
-                                      width: 'auto',
-                                      maxWidth: '100%',
-                                      display: 'block',
-                                    }}
-                                  />
+                                  {s.logo ? (
+                                    <img
+                                      src={s.logo}
+                                      alt={s.name}
+                                      style={{
+                                        maxHeight: row.logoHeight,
+                                        width: 'auto',
+                                        maxWidth: '100%',
+                                        display: 'block',
+                                      }}
+                                    />
+                                  ) : (
+                                    <Typography
+                                      variant="body2"
+                                      align="center"
+                                      sx={{ fontWeight: 800, lineHeight: 1.2 }}
+                                    >
+                                      {s.name}
+                                    </Typography>
+                                  )}
                                 </Box>
                                 <Typography
                                   variant="caption"
@@ -639,10 +654,14 @@ export default function CurrentSeason() {
                             {episodeSponsors.map((sponsor) => (
                               <Box
                                 key={sponsor.id}
-                                component="a"
-                                href={sponsor.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
+                                component={sponsor.url ? 'a' : 'div'}
+                                {...(sponsor.url
+                                  ? {
+                                      href: sponsor.url,
+                                      target: '_blank',
+                                      rel: 'noopener noreferrer',
+                                    }
+                                  : {})}
                                 sx={{
                                   display: 'flex',
                                   alignItems: 'center',

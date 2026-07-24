@@ -33,7 +33,13 @@ export default async function handler(req, res) {
         allowStaticFallback: true,
         includeInactive: true,
       });
-      return res.status(200).json({ ok: true, ...result });
+      return res.status(200).json({
+        ok: true,
+        ...result,
+        canUpdate: principal.permissions.includes(
+          ADMIN_PERMISSIONS.PEOPLE_UPDATE
+        ),
+      });
     }
 
     if (!req.headers['content-type']?.includes('application/json')) {

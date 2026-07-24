@@ -7,6 +7,16 @@ import SEO from '../../components/SEO';
 import { getPersonBySlug, getStaticPeopleSeed } from '../../lib/peopleStore';
 
 const PLACEHOLDER_IMG = '/images/placeholder-person.jpg';
+const SITE_ORIGIN = 'https://www.theavalanchehour.com';
+
+function getPublicImageUrl(value) {
+  try {
+    const url = new URL(String(value || ''), SITE_ORIGIN);
+    return ['http:', 'https:'].includes(url.protocol) ? url.href : '';
+  } catch {
+    return '';
+  }
+}
 
 function getCategoryLabel(role) {
   if (role === 'host') return 'Host';
@@ -50,8 +60,8 @@ export default function HostProfile({ person }) {
     '@type': 'Person',
     name,
     description: bioShort || bioFull?.replace(/<[^>]+>/g, '')?.slice(0, 260),
-    url: `https://www.theavalanchehour.com/hosts/${slug}`,
-    image: imgList.map((src) => `https://www.theavalanchehour.com${src}`),
+    url: `${SITE_ORIGIN}/hosts/${slug}`,
+    image: imgList.map(getPublicImageUrl).filter(Boolean),
     jobTitle: roleLabel,
   };
 

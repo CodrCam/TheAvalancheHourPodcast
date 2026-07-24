@@ -35,6 +35,9 @@ export default async function handler(req, res) {
         ok: true,
         ...result,
         tiers: groupSponsorsByTier(result.sponsors),
+        canUpdate: principal.permissions.includes(
+          ADMIN_PERMISSIONS.SPONSORS_UPDATE
+        ),
       });
     }
 
@@ -45,20 +48,40 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'DELETE') {
-      const deleted = await deleteSponsor(req.body?.sponsor_id || req.body?.id);
+      const deleteOptions = Object.prototype.hasOwnProperty.call(
+        req.body || {},
+        'expected_updated_at'
+      )
+        ? { expectedUpdatedAt: req.body.expected_updated_at }
+        : {};
+      const deleted = await deleteSponsor(
+        req.body?.sponsor_id || req.body?.id,
+        deleteOptions
+      );
       logAdminAction(req, principal, 'sponsor.delete', {
         sponsor_id: deleted.sponsor_id,
       });
       return res.status(200).json({ ok: true, deleted });
     }
 
-    const sponsor = await saveSponsor(req.body?.sponsor || {});
+    const saveOptions = {
+      createOnly: req.body?.create === true,
+      requireExisting: req.body?.create === false,
+      ...(Object.prototype.hasOwnProperty.call(
+        req.body || {},
+        'expected_updated_at'
+      )
+        ? { expectedUpdatedAt: req.body.expected_updated_at }
+        : {}),
+    };
+    const sponsor = await saveSponsor(req.body?.sponsor || {}, saveOptions);
     logAdminAction(req, principal, 'sponsor.save', {
       sponsor_id: sponsor.sponsor_id,
       name: sponsor.name,
       tier: sponsor.tier,
       active: sponsor.active,
       episode_count: sponsor.episode_ids?.length || 0,
+      has_promo_code: !!sponsor.promo_code,
       logo_type: sponsor.logo?.startsWith('data:')
         ? 'uploaded'
         : sponsor.logo
@@ -68,9 +91,14 @@ export default async function handler(req, res) {
     return res.status(200).json({ ok: true, sponsor });
   } catch (err) {
     console.error('admin sponsors error:', err);
-    return res.status(500).json({
+    const isConflict = /conditional|already exists|does not exist/i.test(
+      String(err.message || '')
+    );
+    return res.status(isConflict ? 409 : 500).json({
       ok: false,
-      error: err.message || 'Failed to update sponsors',
+      error: isConflict
+        ? 'That sponsor changed or already exists. Refresh and try again.'
+        : err.message || 'Failed to update sponsors',
     });
   }
 }
