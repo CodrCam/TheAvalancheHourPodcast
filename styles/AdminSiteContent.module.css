@@ -1,0 +1,403 @@
+.page {
+  --content-border: #dce4ee;
+  --content-ink: #10243d;
+  --content-muted: #64748b;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.headerActions > a {
+  text-decoration: none;
+}
+
+.headerActions svg,
+.saveActions svg {
+  width: 17px;
+  height: 17px;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.sourceCard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-color: #cbdcf2;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(191, 219, 254, 0.45), transparent 9rem),
+    #f8fbff;
+}
+
+.sourceCard > svg {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  padding: 6px;
+  border-radius: 10px;
+  color: #1f63bd;
+  background: #e5f0ff;
+}
+
+.sourceCard > div {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.sourceCard div > span {
+  color: var(--content-muted);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.sourceCard div > strong {
+  color: #154b8f;
+  font-size: 16px;
+  line-height: 1.1;
+}
+
+.sourceCard div > small {
+  color: #8194a8;
+  font-size: 10px;
+}
+
+.dateValue {
+  overflow: hidden;
+  font-size: 19px !important;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.draftCard {
+  border-color: #dfd3b8;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(253, 230, 138, 0.28), transparent 9rem),
+    #fffdf8;
+}
+
+.contentForm {
+  display: grid;
+  gap: 15px;
+  padding-bottom: 12px;
+}
+
+.contentSection {
+  padding: 22px;
+}
+
+.sectionLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(260px, 0.75fr);
+  align-items: start;
+  gap: 18px;
+}
+
+.sectionFields {
+  min-width: 0;
+  display: grid;
+  gap: 14px;
+  transition: opacity 150ms ease;
+}
+
+.fieldsDisabled {
+  opacity: 0.58;
+}
+
+.previewCard {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid #dce5ee;
+  border-radius: 13px;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(191, 219, 254, 0.24), transparent 11rem),
+    #f8fafc;
+  box-shadow: 0 5px 16px rgba(44, 68, 94, 0.045);
+  transition:
+    opacity 150ms ease,
+    filter 150ms ease;
+}
+
+.previewHidden {
+  opacity: 0.64;
+  filter: grayscale(0.25);
+}
+
+.previewHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 9px;
+  padding: 10px 12px;
+  border-bottom: 1px solid #e1e8ef;
+  background: rgba(255, 255, 255, 0.68);
+}
+
+.previewHeader > span:first-child {
+  color: #6f8295;
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.previewStatusLive,
+.previewStatusHidden {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 6px;
+  border-radius: 999px;
+  font-size: 8px;
+  font-weight: 800;
+}
+
+.previewStatusLive {
+  color: #286247;
+  background: #eaf7ef;
+}
+
+.previewStatusHidden {
+  color: #69798b;
+  background: #edf1f4;
+}
+
+.previewStatusLive svg,
+.previewStatusHidden svg {
+  width: 11px;
+  height: 11px;
+}
+
+.previewBody {
+  min-height: 180px;
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  padding: 18px;
+}
+
+.previewEyebrow {
+  color: #2766bd;
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.previewBody h3 {
+  display: -webkit-box;
+  overflow: hidden;
+  margin: 0;
+  color: #17324e;
+  font-family:
+    Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  font-size: 18px;
+  font-weight: 780;
+  letter-spacing: -0.025em;
+  line-height: 1.2;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.previewBody > p {
+  display: -webkit-box;
+  overflow: hidden;
+  margin: 0;
+  color: #64778a;
+  font-size: 10px;
+  line-height: 1.55;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 5;
+}
+
+.previewBody > b,
+.previewCallout > b {
+  width: fit-content;
+  display: inline-flex;
+  margin-top: 5px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  color: #fff;
+  background: #1762c7;
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.previewCallout {
+  display: grid;
+  gap: 5px;
+  margin-top: 5px;
+  padding: 11px;
+  border: 1px solid #dde5ed;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.previewCallout strong {
+  color: #2b465f;
+  font-size: 10px;
+}
+
+.previewCallout > span {
+  display: -webkit-box;
+  overflow: hidden;
+  color: #6d7e8f;
+  font-size: 9px;
+  line-height: 1.5;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.saveBar {
+  position: sticky;
+  bottom: 12px;
+  z-index: 8;
+  min-height: 76px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 13px 16px;
+  border: 1px solid #cfdae6;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow:
+    0 14px 36px rgba(29, 51, 75, 0.13),
+    0 2px 7px rgba(29, 51, 75, 0.06);
+  backdrop-filter: blur(14px);
+}
+
+.saveActions {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.resetPrompt {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.resetPrompt > div:first-child {
+  display: grid;
+  gap: 3px;
+}
+
+.resetPrompt strong {
+  color: #8b4c17;
+  font-size: 12px;
+}
+
+.resetPrompt span {
+  color: #866e59;
+  font-size: 10px;
+}
+
+.resetPrompt > div:last-child {
+  display: flex;
+  gap: 8px;
+}
+
+.retryButton {
+  min-height: 30px;
+  margin-left: auto;
+  padding: 0 9px;
+  border: 1px solid #e4aab1;
+  border-radius: 8px;
+  color: #8f2d39;
+  background: #fff;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.retryButton:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.2);
+  outline-offset: 2px;
+}
+
+@media (max-width: 1120px) {
+  .statsGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .sectionLayout {
+    grid-template-columns: 1fr;
+  }
+
+  .previewCard {
+    max-width: 620px;
+  }
+}
+
+@media (max-width: 700px) {
+  .headerActions,
+  .headerActions > a {
+    width: 100%;
+  }
+
+  .headerActions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .contentSection {
+    padding: 16px 14px;
+  }
+
+  .saveBar {
+    position: static;
+    align-items: stretch;
+    flex-direction: column;
+    padding: 12px;
+  }
+
+  .saveActions,
+  .saveActions > button {
+    width: 100%;
+  }
+
+  .saveActions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .resetPrompt {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .resetPrompt > div:last-child,
+  .resetPrompt button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 460px) {
+  .statsGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sectionFields,
+  .previewCard {
+    transition: none;
+  }
+}

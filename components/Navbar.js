@@ -12,7 +12,7 @@ import { styled } from '@mui/material/styles';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { products } from '../src/data/products';
-import { SOCIAL_LINKS } from '../lib/siteLinks';
+import { SOCIAL_LINKS, SUPPORT_LINKS } from '../lib/siteLinks';
 
 const CART_KEY = 'ah_cart';
 
@@ -164,7 +164,7 @@ export default function Navbar() {
     { text: 'Resources', link: '/resources' },
     { text: 'Support', link: '/support' },
     { text: 'Store', link: '/store' },
-    { text: 'Donate', link: 'https://www.paypal.com/donate?hosted_button_id=4UMMRC9CCBQ3A' },
+    { text: 'Donate', link: SUPPORT_LINKS.paypalDonate },
   ];
   const episodeMenuItems = [
     { text: 'All Episodes', link: '/episodes', icon: <PlayArrow />, description: 'Browse all episodes' },
@@ -215,7 +215,19 @@ export default function Navbar() {
           </Menu>
 
           {menuItems.map((item) => (
-            <Button key={item.text} color="inherit" href={item.link} target={item.text === 'Donate' ? '_blank' : undefined} sx={{ textTransform: 'none' }}>
+            <Button
+              key={item.text}
+              color="inherit"
+              href={item.link}
+              target={item.text === 'Donate' ? '_blank' : undefined}
+              rel={item.text === 'Donate' ? 'noopener noreferrer' : undefined}
+              aria-label={
+                item.text === 'Donate'
+                  ? 'Donate (opens in a new tab)'
+                  : undefined
+              }
+              sx={{ textTransform: 'none' }}
+            >
               {item.text}
             </Button>
           ))}
@@ -360,7 +372,21 @@ export default function Navbar() {
             </ListItem>
 
             {menuItems.map((item) => (
-              <ListItem button key={item.text} component="a" href={item.link} onClick={toggleDrawer(false)} target={item.text === 'Donate' ? '_blank' : undefined} sx={{ mt: 1 }}>
+              <ListItem
+                button
+                key={item.text}
+                component="a"
+                href={item.link}
+                onClick={toggleDrawer(false)}
+                target={item.text === 'Donate' ? '_blank' : undefined}
+                rel={item.text === 'Donate' ? 'noopener noreferrer' : undefined}
+                aria-label={
+                  item.text === 'Donate'
+                    ? 'Donate (opens in a new tab)'
+                    : undefined
+                }
+                sx={{ mt: 1 }}
+              >
                 <ListItemText primary={item.text} />
               </ListItem>
             ))}

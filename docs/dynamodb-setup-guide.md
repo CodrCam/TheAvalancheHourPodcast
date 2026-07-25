@@ -75,7 +75,7 @@ Capacity mode: On-demand
 
 The first item is seeded with `content_key` set to `homepage_cta`. It stores the
 editable About page program story, homepage support message, community
-spotlight, and Instagram call to action.
+spotlight, flexible featured link, and donation action.
 
 Sponsors use a fourth table:
 

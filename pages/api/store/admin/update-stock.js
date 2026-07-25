@@ -2,14 +2,17 @@ import {
   ADMIN_PERMISSIONS,
   requirePermissionAsync,
 } from '../../../../lib/adminAuth';
+import { logAdminAction } from '../../../../lib/adminAudit';
 import {
   applyInventoryDelta,
   deleteInventorySku,
   setInventoryHidden,
   setInventoryQuantity,
 } from '../../../../lib/inventoryStore';
+import { getSkuCatalog } from '../../../../lib/productCatalog';
 
 export const config = { api: { bodyParser: true } };
+const catalogSkuMap = getSkuCatalog();
 
 function normalizeBody(req, mode) {
   // mode: 'delta' for PUT, 'set' for PATCH
@@ -17,16 +20,19 @@ function normalizeBody(req, mode) {
   if (Array.isArray(b.items)) return b.items;
   if (mode === 'delta') return b.sku ? [{ sku: b.sku, delta: Number(b.delta) }] : [];
   if (mode === 'set') {
-    return b.sku
-      ? [
-          {
-            sku: b.sku,
-            quantity: Number(b.quantity),
-            name: b.name,
-            hidden: b.hidden,
-          },
-        ]
-      : [];
+    if (!b.sku) return [];
+    return [
+      {
+        sku: b.sku,
+        quantity: Number(b.quantity),
+        name: b.name,
+        hidden: b.hidden,
+        create: b.create,
+        ...(Object.prototype.hasOwnProperty.call(b, 'expected_updated_at')
+          ? { expected_updated_at: b.expected_updated_at }
+          : {}),
+      },
+    ];
   }
   return [];
 }
@@ -38,13 +44,12 @@ export default async function handler(req, res) {
     return res.status(405).json({ ok: false, error: 'Method not allowed' });
   }
 
-  if (
-    !(await requirePermissionAsync(
-      req,
-      res,
-      ADMIN_PERMISSIONS.INVENTORY_UPDATE
-    ))
-  ) {
+  const principal = await requirePermissionAsync(
+    req,
+    res,
+    ADMIN_PERMISSIONS.INVENTORY_UPDATE
+  );
+  if (!principal) {
     return;
   }
 
@@ -58,13 +63,33 @@ export default async function handler(req, res) {
     if (!sku) {
       return res.status(400).json({ ok: false, error: 'No SKU provided' });
     }
+    if (catalogSkuMap.has(sku)) {
+      return res.status(400).json({
+        ok: false,
+        error:
+          'Catalog SKUs cannot be removed. Move the item to standby instead.',
+      });
+    }
 
     try {
-      const deleted = await deleteInventorySku(sku);
+      const deleteOptions = Object.prototype.hasOwnProperty.call(
+        req.body || {},
+        'expected_updated_at'
+      )
+        ? { expectedUpdatedAt: req.body.expected_updated_at }
+        : {};
+      const deleted = await deleteInventorySku(sku, deleteOptions);
+      logAdminAction(req, principal, 'inventory.delete', { sku });
       return res.status(200).json({ ok: true, deleted });
     } catch (err) {
       console.error('admin stock delete error:', err);
-      return res.status(500).json({ ok: false, error: 'delete failed' });
+      const isConflict = /conditional/i.test(String(err.message || ''));
+      return res.status(isConflict ? 409 : 500).json({
+        ok: false,
+        error: isConflict
+          ? 'This inventory row changed. Refresh before removing it.'
+          : 'Delete failed',
+      });
     }
   }
 
@@ -76,11 +101,31 @@ export default async function handler(req, res) {
     }
 
     try {
-      const updated = await setInventoryHidden(sku, !!req.body?.hidden);
+      const visibilityOptions = Object.prototype.hasOwnProperty.call(
+        req.body || {},
+        'expected_updated_at'
+      )
+        ? { expectedUpdatedAt: req.body.expected_updated_at }
+        : {};
+      const updated = await setInventoryHidden(
+        sku,
+        !!req.body?.hidden,
+        visibilityOptions
+      );
+      logAdminAction(req, principal, 'inventory.visibility', {
+        sku,
+        hidden: updated.hidden,
+      });
       return res.status(200).json({ ok: true, updated });
     } catch (err) {
       console.error('admin stock visibility error:', err);
-      return res.status(500).json({ ok: false, error: 'visibility update failed' });
+      const isConflict = /conditional/i.test(String(err.message || ''));
+      return res.status(isConflict ? 409 : 500).json({
+        ok: false,
+        error: isConflict
+          ? 'This inventory row changed. Refresh before updating availability.'
+          : 'Visibility update failed',
+      });
     }
   }
 
@@ -90,6 +135,43 @@ export default async function handler(req, res) {
   if (!items.length) {
     return res.status(400).json({ ok: false, error: 'No items provided' });
   }
+  if (items.length > 1) {
+    return res.status(400).json({
+      ok: false,
+      error:
+        'Update one inventory row per request so each change can be confirmed safely.',
+    });
+  }
+
+  for (const item of items) {
+    const sku = String(item?.sku || '').trim();
+    if (!sku) {
+      return res.status(400).json({ ok: false, error: 'SKU is required' });
+    }
+
+    if (mode === 'delta') {
+      if (!Number.isInteger(Number(item.delta))) {
+        return res
+          .status(400)
+          .json({ ok: false, error: 'Inventory delta must be a whole number' });
+      }
+      continue;
+    }
+
+    const quantity = Number(item.quantity);
+    if (!Number.isInteger(quantity) || quantity < 0) {
+      return res.status(400).json({
+        ok: false,
+        error: 'Inventory quantity must be a non-negative whole number',
+      });
+    }
+    if (item.create === true && !String(item.name || '').trim()) {
+      return res.status(400).json({
+        ok: false,
+        error: 'A product name is required for a manual SKU',
+      });
+    }
+  }
 
   try {
     const updated = [];
@@ -98,16 +180,20 @@ export default async function handler(req, res) {
       for (const it of items) {
         const sku = String(it.sku || '').trim();
         const delta = Number(it.delta);
-        if (!sku || !Number.isFinite(delta)) continue;
         updated.push(await applyInventoryDelta(sku, delta));
       }
     } else {
       for (const it of items) {
         const sku = String(it.sku || '').trim();
         const q = Number(it.quantity);
-        if (!sku || !Number.isFinite(q)) continue;
         const name = String(it.name || '').trim();
-        const options = { name };
+        const options = {
+          name,
+          createOnly: it.create === true,
+          ...(Object.prototype.hasOwnProperty.call(it, 'expected_updated_at')
+            ? { expectedUpdatedAt: it.expected_updated_at }
+            : {}),
+        };
         if (typeof it.hidden === 'boolean') {
           options.hidden = it.hidden;
         }
@@ -115,9 +201,20 @@ export default async function handler(req, res) {
       }
     }
 
+    logAdminAction(req, principal, 'inventory.quantity', {
+      mode,
+      item_count: updated.length,
+      skus: updated.map((row) => row.sku),
+    });
     return res.status(200).json({ ok: true, updated });
   } catch (err) {
     console.error('admin stock update error:', err);
-    return res.status(500).json({ ok: false, error: 'update failed' });
+    const isConflict = /conditional/i.test(String(err.message || ''));
+    return res.status(isConflict ? 409 : 500).json({
+      ok: false,
+      error: isConflict
+        ? 'This inventory row changed. Refresh before saving your quantity.'
+        : 'Update failed',
+    });
   }
 }

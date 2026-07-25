@@ -353,7 +353,7 @@ export default function AdminHome() {
             <AdminSectionCard
               href="/admin/site-content"
               title="Site Content"
-              description="Update the About page story, support message, community spotlight, and Instagram call to action."
+              description="Update the About story, support message, community spotlight, featured link, and donation action."
               meta={{
                 tone: 'good',
                 label: 'Editable',

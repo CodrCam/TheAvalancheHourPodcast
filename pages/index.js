@@ -1,7 +1,8 @@
 // pages/index.js
 import React, { useEffect, useState } from 'react';
 import { Container, Typography, Grid, Box, CircularProgress, Button, Stack } from '@mui/material';
-import { Instagram } from '@mui/icons-material';
+import OpenInNewRoundedIcon from '@mui/icons-material/OpenInNewRounded';
+import VolunteerActivismRoundedIcon from '@mui/icons-material/VolunteerActivismRounded';
 import Link from 'next/link';
 import Navbar from '../components/Navbar';
 import ParallaxSection from '../components/ParallaxSection';
@@ -24,11 +25,19 @@ import { sponsors as DEFAULT_SPONSORS } from '../src/data/sponsors';
 
 const topSectionHeight = 350;
 const separatorSectionHeight = 300;
+const accessibleAccentButtonSx = {
+  color: '#fff',
+  backgroundColor: '#8a3d00',
+  '&:hover': {
+    backgroundColor: '#6f3100',
+  },
+};
 
 export default function Home() {
   const [episodes, setEpisodes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [homeContent, setHomeContent] = useState(DEFAULT_HOME_CONTENT);
+  const [homeContentReady, setHomeContentReady] = useState(false);
   const [sponsorTiers, setSponsorTiers] = useState(DEFAULT_SPONSORS);
 
   useEffect(() => {
@@ -91,6 +100,8 @@ export default function Home() {
         }
       } catch {
         // Keep the static defaults if managed content is unavailable.
+      } finally {
+        if (alive) setHomeContentReady(true);
       }
     }
 
@@ -261,7 +272,12 @@ export default function Home() {
               <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 760 }}>
                 {homeContent.supportBody}
               </Typography>
-              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.25} sx={{ mt: 2.5 }}>
+              <Stack
+                direction={{ xs: 'column', sm: 'row' }}
+                spacing={1.25}
+                useFlexGap
+                sx={{ mt: 2.5, flexWrap: 'wrap' }}
+              >
                 <Button
                   component={Link}
                   href={homeContent.supportButtonUrl}
@@ -269,21 +285,36 @@ export default function Home() {
                 >
                   {homeContent.supportButtonLabel}
                 </Button>
-                {homeContent.socialEnabled ? (
+                {homeContentReady && homeContent.featuredLinkEnabled ? (
                   <Button
                     component="a"
-                    href={homeContent.instagramUrl}
+                    href={homeContent.featuredLinkUrl}
                     target="_blank"
                     rel="noopener noreferrer"
+                    aria-label={`${homeContent.featuredLinkLabel} (opens in a new tab)`}
                     variant="outlined"
-                    startIcon={<Instagram />}
+                    startIcon={<OpenInNewRoundedIcon />}
                   >
-                    {homeContent.socialButtonLabel}
+                    {homeContent.featuredLinkLabel}
+                  </Button>
+                ) : null}
+                {homeContentReady && homeContent.donateEnabled ? (
+                  <Button
+                    component="a"
+                    href={homeContent.donateButtonUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={`${homeContent.donateButtonLabel} (opens in a new tab)`}
+                    variant="contained"
+                    startIcon={<VolunteerActivismRoundedIcon />}
+                    sx={accessibleAccentButtonSx}
+                  >
+                    {homeContent.donateButtonLabel}
                   </Button>
                 ) : null}
               </Stack>
             </Grid>
-            {homeContent.spotlightEnabled ? (
+            {homeContentReady && homeContent.spotlightEnabled ? (
               <Grid item xs={12} md={5}>
                 <Box
                   sx={{
@@ -315,8 +346,9 @@ export default function Home() {
                     href={homeContent.spotlightButtonUrl}
                     target="_blank"
                     rel="noopener noreferrer"
+                    aria-label={`${homeContent.spotlightButtonLabel} (opens in a new tab)`}
                     variant="contained"
-                    color="secondary"
+                    sx={accessibleAccentButtonSx}
                   >
                     {homeContent.spotlightButtonLabel}
                   </Button>

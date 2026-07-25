@@ -30,7 +30,11 @@ const NAV_ITEMS = [
   { href: '/admin/sponsors', label: 'Sponsors', icon: HandshakeRoundedIcon },
 ];
 
-export default function AdminLayout({ children }) {
+export default function AdminLayout({
+  children,
+  hasUnsavedChanges = false,
+  unsavedChangesMessage = 'You have unsaved changes. Leave this page and discard them?',
+}) {
   const [session, setSession] = useState(null);
   const router = useRouter();
 
@@ -56,10 +60,50 @@ export default function AdminLayout({ children }) {
     };
   }, []);
 
+  useEffect(() => {
+    if (!hasUnsavedChanges) return undefined;
+
+    function warnBeforeUnload(event) {
+      event.preventDefault();
+      event.returnValue = '';
+    }
+
+    window.addEventListener('beforeunload', warnBeforeUnload);
+    router.beforePopState(() => window.confirm(unsavedChangesMessage));
+
+    return () => {
+      window.removeEventListener('beforeunload', warnBeforeUnload);
+      router.beforePopState(() => true);
+    };
+  }, [hasUnsavedChanges, router, unsavedChangesMessage]);
+
+  function confirmInternalNavigation(event, href) {
+    if (
+      !hasUnsavedChanges ||
+      event.defaultPrevented ||
+      event.button !== 0 ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.altKey ||
+      router.asPath.split(/[?#]/)[0] === href
+    ) {
+      return;
+    }
+
+    if (!window.confirm(unsavedChangesMessage)) {
+      event.preventDefault();
+    }
+  }
+
   return (
     <div className={styles.shell}>
       <aside className={styles.sidebar}>
-        <Link href="/admin" className={styles.brand}>
+        <Link
+          href="/admin"
+          className={styles.brand}
+          onClick={(event) => confirmInternalNavigation(event, '/admin')}
+        >
           <span className={styles.brandMark} aria-hidden="true">
             <img src="/images/logo.png" alt="" />
           </span>
@@ -87,6 +131,9 @@ export default function AdminLayout({ children }) {
                     className={`${styles.navLink} ${
                       isActive ? styles.navLinkActive : ''
                     }`}
+                    onClick={(event) =>
+                      confirmInternalNavigation(event, item.href)
+                    }
                   >
                     <Icon className={styles.navIcon} aria-hidden="true" />
                     <span>{item.label}</span>

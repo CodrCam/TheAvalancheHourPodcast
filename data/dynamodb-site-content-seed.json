@@ -16,7 +16,10 @@
   "spotlightBody": "Join us in Whistler, BC for ISSW 2026. Several Avalanche Hour hosts will be part of panels and conversations throughout the week.",
   "spotlightButtonLabel": "Get Tickets",
   "spotlightButtonUrl": "https://www.issw2026.com/registration",
-  "socialEnabled": true,
-  "socialButtonLabel": "Follow on Instagram",
-  "instagramUrl": "https://www.instagram.com/theavalanchehourpodcast/"
+  "featuredLinkEnabled": false,
+  "featuredLinkLabel": "Follow on Instagram",
+  "featuredLinkUrl": "https://www.instagram.com/theavalanchehourpodcast/",
+  "donateEnabled": true,
+  "donateButtonLabel": "Donate to the Podcast",
+  "donateButtonUrl": "https://www.paypal.com/donate?hosted_button_id=4UMMRC9CCBQ3A"
 }

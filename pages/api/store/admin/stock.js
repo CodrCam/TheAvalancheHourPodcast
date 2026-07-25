@@ -2,7 +2,10 @@ import {
   ADMIN_PERMISSIONS,
   requirePermissionAsync,
 } from '../../../../lib/adminAuth';
-import { listInventory } from '../../../../lib/inventoryStore';
+import {
+  isDynamoInventoryConfigured,
+  listInventory,
+} from '../../../../lib/inventoryStore';
 
 export const config = {
   api: { bodyParser: true },
@@ -14,14 +17,25 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  if (!(await requirePermissionAsync(req, res, ADMIN_PERMISSIONS.INVENTORY_READ))) {
+  const principal = await requirePermissionAsync(
+    req,
+    res,
+    ADMIN_PERMISSIONS.INVENTORY_READ
+  );
+  if (!principal) {
     return;
   }
 
   try {
-    const inventory = await listInventory();
+    const configured = isDynamoInventoryConfigured();
+    const inventory = configured ? await listInventory() : [];
     return res.status(200).json({
+      ok: true,
       inventory,
+      configured,
+      canUpdate: principal.permissions.includes(
+        ADMIN_PERMISSIONS.INVENTORY_UPDATE
+      ),
     });
   } catch (err) {
     console.error('admin stock GET error:', err);

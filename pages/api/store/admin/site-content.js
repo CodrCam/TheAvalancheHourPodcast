@@ -29,7 +29,13 @@ export default async function handler(req, res) {
   try {
     if (req.method === 'GET') {
       const result = await getHomeContent({ allowDefault: true });
-      return res.status(200).json({ ok: true, ...result });
+      return res.status(200).json({
+        ok: true,
+        ...result,
+        canUpdate: principal.permissions.includes(
+          ADMIN_PERMISSIONS.BANNERS_UPDATE
+        ),
+      });
     }
 
     if (!req.headers['content-type']?.includes('application/json')) {
@@ -38,18 +44,34 @@ export default async function handler(req, res) {
         .json({ ok: false, error: 'Content-Type must be application/json' });
     }
 
-    const result = await saveHomeContent(req.body?.content || {});
+    const saveOptions = Object.prototype.hasOwnProperty.call(
+      req.body || {},
+      'expected_updated_at'
+    )
+      ? { expectedUpdatedAt: req.body.expected_updated_at }
+      : {};
+    const result = await saveHomeContent(
+      req.body?.content || {},
+      saveOptions
+    );
     logAdminAction(req, principal, 'site_content.save', {
-      content_key: result.content?.content_key || 'homepage_cta',
-      spotlight_enabled: result.content?.spotlight_enabled,
-      instagram_enabled: result.content?.instagram_enabled,
+      content_key: 'homepage_cta',
+      spotlight_enabled: result.content?.spotlightEnabled,
+      featured_link_enabled: result.content?.featuredLinkEnabled,
+      donate_enabled: result.content?.donateEnabled,
     });
     return res.status(200).json({ ok: true, ...result });
   } catch (err) {
     console.error('admin site content error:', err);
-    return res.status(500).json({
+    const isConflict = /conditional|changed/i.test(String(err.message || ''));
+    const isValidation = String(err.message || '').startsWith('Site content:');
+    return res.status(isConflict ? 409 : isValidation ? 400 : 500).json({
       ok: false,
-      error: 'Failed to load or save site content',
+      error: isConflict
+        ? 'This content changed in another session. Refresh before saving again.'
+        : isValidation
+          ? err.message
+          : 'Failed to load or save site content',
     });
   }
 }
