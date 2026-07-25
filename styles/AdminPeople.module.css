@@ -485,7 +485,8 @@
 .activeStatus,
 .hiddenStatus,
 .unsavedBadge,
-.savedBadge {
+.savedBadge,
+.previewBadge {
   width: fit-content;
   display: inline-flex;
   align-items: center;
@@ -639,6 +640,7 @@
 .drawerPaper {
   width: min(660px, 100vw);
   max-width: 100vw;
+  overflow: hidden;
   background: #f4f7fb !important;
   font-family:
     Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI",
@@ -652,17 +654,19 @@
   --blue: #1463df;
   --blue-dark: #0f4fb9;
   --border: #dce4ee;
-  min-height: 100%;
+  height: 100dvh;
+  min-height: 0;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
   color: var(--ink);
   background: #f4f7fb;
 }
 
 .editorHeader {
-  position: sticky;
-  top: 0;
+  position: relative;
   z-index: 4;
+  flex: 0 0 auto;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -697,6 +701,12 @@
   background: #effaf3;
 }
 
+.previewBadge {
+  border-color: #e7cd91;
+  color: #795516;
+  background: #fff8e8;
+}
+
 .closeButton {
   width: 42px;
   height: 42px;
@@ -729,7 +739,10 @@
 
 .editorBody {
   flex: 1;
+  min-height: 0;
+  overflow-y: auto;
   padding: 18px 24px 28px;
+  scroll-padding-block: 18px;
 }
 
 .formSections {
@@ -864,6 +877,13 @@
   cursor: not-allowed;
 }
 
+.editorPreview .input:disabled,
+.editorPreview .textarea:disabled {
+  opacity: 1;
+  color: #405970;
+  background: #f8fafc;
+}
+
 .toggleGrid {
   display: grid;
   gap: 10px;
@@ -896,6 +916,10 @@
 .toggleField:has(input:disabled) {
   opacity: 0.58;
   cursor: not-allowed;
+}
+
+.editorPreview .toggleField:has(input:disabled) {
+  opacity: 0.82;
 }
 
 .toggleControl {
@@ -1366,9 +1390,9 @@
 }
 
 .editorFooter {
-  position: sticky;
-  bottom: 0;
+  position: relative;
   z-index: 4;
+  flex: 0 0 auto;
   min-height: 78px;
   display: flex;
   align-items: center;

@@ -1116,6 +1116,7 @@ export default function AdminPeoplePage() {
       editorBaseline &&
       personFingerprint(editorPerson) !== personFingerprint(editorBaseline)
   );
+  const editorReadOnly = !configured || !canUpdate;
 
   function closeEditor() {
     setEditor(null);
@@ -1335,7 +1336,10 @@ export default function AdminPeoplePage() {
   );
 
   return (
-    <AdminLayout>
+    <AdminLayout
+      hasUnsavedChanges={editorDirty}
+      unsavedChangesMessage="You have unsaved team-profile changes. Leave this page and discard them?"
+    >
       <div className={styles.page}>
         <header className={styles.pageHeader}>
           <div>
@@ -1519,7 +1523,12 @@ export default function AdminPeoplePage() {
         PaperProps={{ className: styles.drawerPaper }}
       >
         {editorPerson ? (
-          <form className={styles.editor} onSubmit={savePerson}>
+          <form
+            className={`${styles.editor} ${
+              editorReadOnly ? styles.editorPreview : ''
+            }`}
+            onSubmit={savePerson}
+          >
             <header className={styles.editorHeader}>
               <div>
                 <span className={styles.eyebrow}>
@@ -1540,7 +1549,11 @@ export default function AdminPeoplePage() {
                   >
                     {getSectionLabel(editorPerson)}
                   </span>
-                  {editorDirty ? (
+                  {editorReadOnly ? (
+                    <span className={styles.previewBadge}>
+                      {configured ? 'Read only' : 'Preview'}
+                    </span>
+                  ) : editorDirty ? (
                     <span className={styles.unsavedBadge}>
                       Unsaved changes
                     </span>
@@ -1560,7 +1573,7 @@ export default function AdminPeoplePage() {
               </button>
             </header>
 
-            {!configured || !canUpdate ? (
+            {editorReadOnly ? (
               <div className={styles.editorReadOnly}>
                 {!configured
                   ? 'Preview only — connect the team database to edit this profile.'
@@ -1583,7 +1596,7 @@ export default function AdminPeoplePage() {
                 }
                 onError={setError}
                 onImageBusyChange={setImageBusy}
-                disabled={saving || !configured || !canUpdate}
+                disabled={saving || editorReadOnly}
                 isNew={editor?.mode === 'add'}
                 deleteConfirm={deleteConfirm}
                 onRequestDelete={deletePerson}
@@ -1592,7 +1605,29 @@ export default function AdminPeoplePage() {
             </div>
 
             <footer className={styles.editorFooter}>
-              {closeConfirm ? (
+              {editorReadOnly ? (
+                <>
+                  <div className={styles.saveContext}>
+                    <strong>
+                      {configured ? 'Read-only profile' : 'Preview profile'}
+                    </strong>
+                    <span>
+                      {configured
+                        ? 'Your account can review this profile but cannot publish changes.'
+                        : 'Viewing built-in preview data; no live database record is connected.'}
+                    </span>
+                  </div>
+                  <div className={styles.footerButtons}>
+                    <button
+                      type="button"
+                      className={styles.tertiaryButton}
+                      onClick={requestCloseEditor}
+                    >
+                      Close
+                    </button>
+                  </div>
+                </>
+              ) : closeConfirm ? (
                 <div className={styles.discardPrompt} role="alert">
                   <div>
                     <strong>Discard unsaved changes?</strong>
