@@ -24,7 +24,7 @@ import {
   groupPeopleForDisplay,
 } from '../lib/peoplePresentation.mjs';
 
-const PLACEHOLDER_IMG = '/images/placeholder-person.jpg';
+const PLACEHOLDER_IMG = '/images/placeholder-person.svg';
 
 function getCategoryLabel(role) {
   if (role === 'host') return 'Host';
@@ -205,6 +205,13 @@ export default function AboutPage({ people, aboutContent }) {
 
               <Grid container spacing={{ xs: 2, sm: 3, md: 4 }}>
                 {sectionPeople.map((person) => {
+                  const categoryLabel = getCategoryLabel(person.role);
+                  const displayTitle =
+                    person.title &&
+                    person.title.trim().toLowerCase() !==
+                      categoryLabel.toLowerCase()
+                      ? person.title
+                      : '';
                   const additionalLabels = getAdditionalLabels(person);
 
                   return (
@@ -223,11 +230,17 @@ export default function AboutPage({ people, aboutContent }) {
                         <CardMedia
                           component="img"
                           image={
-                            person.images && person.images.length > 0
+                            !person.needsImages &&
+                            person.images &&
+                            person.images.length > 0
                               ? person.images[0]
                               : PLACEHOLDER_IMG
                           }
-                          alt={person.name}
+                          alt={
+                            person.needsImages
+                              ? `Profile photo coming soon for ${person.name}`
+                              : person.name
+                          }
                           sx={{
                             height: { xs: 240, sm: 270, md: 290 },
                             objectFit: 'cover',
@@ -237,7 +250,7 @@ export default function AboutPage({ people, aboutContent }) {
                         <CardContent sx={{ flexGrow: 1 }}>
                           <Chip
                             size="small"
-                            label={getCategoryLabel(person.role)}
+                            label={categoryLabel}
                             color={person.role === 'host' ? 'primary' : 'default'}
                             variant={person.role === 'host' ? 'filled' : 'outlined'}
                             sx={{ mb: 1.25 }}
@@ -248,18 +261,18 @@ export default function AboutPage({ people, aboutContent }) {
                             sx={{
                               fontWeight: 700,
                               fontSize: { xs: '1.15rem', md: '1.3rem' },
-                              mb: person.title ? 0.25 : 1.25,
+                              mb: displayTitle ? 0.25 : 1.25,
                             }}
                           >
                             {person.name}
                           </Typography>
-                          {person.title ? (
+                          {displayTitle ? (
                             <Typography
                               variant="body2"
                               color="text.secondary"
                               sx={{ fontWeight: 600, mb: 1.25 }}
                             >
-                              {person.title}
+                              {displayTitle}
                             </Typography>
                           ) : null}
                           {additionalLabels.length ? (

@@ -117,8 +117,13 @@ function SponsorSupportCard({ sponsor }) {
         <Box
           sx={{
             height: 104,
-            display: 'grid',
-            placeItems: 'center',
+            minHeight: 104,
+            maxHeight: 104,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+            overflow: 'hidden',
             mb: 2,
             p: 1.5,
             borderRadius: 1.5,
@@ -130,11 +135,14 @@ function SponsorSupportCard({ sponsor }) {
               component="img"
               src={sponsor.logo}
               alt={`${sponsor.name} logo`}
-              sx={{
-                width: '100%',
-                height: '100%',
+              style={{
+                width: 'auto',
+                height: 'auto',
+                maxWidth: '100%',
+                maxHeight: '100%',
                 display: 'block',
                 objectFit: 'contain',
+                objectPosition: 'center',
               }}
             />
           ) : (

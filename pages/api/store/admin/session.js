@@ -16,7 +16,9 @@ export default async function handler(req, res) {
   return res.status(200).json({
     user: {
       username: principal.username,
+      display_name: principal.displayName,
       role: principal.role,
+      groups: principal.groups,
       permissions: principal.permissions,
     },
   });

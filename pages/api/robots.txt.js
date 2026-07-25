@@ -24,6 +24,7 @@ Allow: /api/rss.xml
 Allow: /api/feed.json
 Disallow: /api/
 Disallow: /admin/
+Disallow: /studio/
 Disallow: /store/admin/
 Disallow: /_next/
 Disallow: /private/

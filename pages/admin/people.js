@@ -52,6 +52,7 @@ function createBlankPerson() {
     title: '',
     roles: [],
     roles_entry: '',
+    studioRoles: [],
     images: [],
     image_entry: '',
     bioShort: '',
@@ -157,6 +158,7 @@ function normalizeEditablePerson(value = {}) {
     active: value.active !== false,
     roles: Array.isArray(value.roles) ? value.roles : [],
     roles_entry: Array.isArray(value.roles) ? value.roles.join(', ') : '',
+    studioRoles: Array.isArray(value.studioRoles) ? value.studioRoles : [],
     images: Array.isArray(value.images) ? value.images : [],
     image_entry: '',
   };
@@ -668,6 +670,17 @@ function PersonForm({
   onCancelDelete,
 }) {
   const idPrefix = `person-${slugify(person.person_id || person.slug || 'new')}`;
+  const studioRoles = Array.isArray(person.studioRoles)
+    ? person.studioRoles
+    : [];
+
+  function toggleStudioRole(role, enabled) {
+    onChange({
+      studioRoles: enabled
+        ? [...new Set([...studioRoles, role])]
+        : studioRoles.filter((candidate) => candidate !== role),
+    });
+  }
 
   return (
     <div className={styles.formSections}>
@@ -781,6 +794,33 @@ function PersonForm({
             disabled={disabled}
           />
         </Field>
+
+        <div className={styles.toggleGrid}>
+          <ToggleField
+            id={`${idPrefix}-studio-host`}
+            label="Available as an Episode Studio host"
+            hint="Internal assignment access; this does not move the public profile into Hosts."
+            checked={
+              person.role === 'host' || studioRoles.includes('host')
+            }
+            onChange={(event) =>
+              toggleStudioRole('host', event.target.checked)
+            }
+            disabled={disabled || person.role === 'host'}
+          />
+          <ToggleField
+            id={`${idPrefix}-studio-producer`}
+            label="Available as an Episode Studio producer"
+            hint="Adds this person to the producer picker without changing their public role."
+            checked={
+              person.role === 'producer' || studioRoles.includes('producer')
+            }
+            onChange={(event) =>
+              toggleStudioRole('producer', event.target.checked)
+            }
+            disabled={disabled || person.role === 'producer'}
+          />
+        </div>
       </section>
 
       <section className={styles.formSection}>

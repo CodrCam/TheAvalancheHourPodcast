@@ -1,0 +1,183 @@
+.header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.header > div > span {
+  color: #52758a;
+  font-size: 0.68rem;
+  font-weight: 820;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.header h1 {
+  margin: 4px 0 7px;
+  color: #142638;
+  font-size: clamp(2.2rem, 4vw, 3.8rem);
+  letter-spacing: -0.055em;
+}
+
+.header p {
+  max-width: 720px;
+  margin: 0;
+  color: #687781;
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.header button {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 13px;
+  color: #fff;
+  font: inherit;
+  font-size: 0.74rem;
+  font-weight: 760;
+  border: 1px solid #315f74;
+  border-radius: 10px;
+  background: linear-gradient(145deg, #3d758c, #28586d);
+  cursor: pointer;
+}
+
+.header button svg {
+  width: 18px;
+  height: 18px;
+}
+
+.header button:disabled {
+  opacity: 0.5;
+}
+
+.overall {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 15px;
+  align-items: center;
+  margin-bottom: 18px;
+  padding: 20px;
+  border: 1px solid #d7e0e4;
+  border-radius: 17px;
+  background: #fff;
+  box-shadow: 0 12px 36px rgba(25, 48, 60, 0.06);
+}
+
+.overall > svg {
+  width: 38px;
+  height: 38px;
+}
+
+.overall span,
+.overall strong {
+  display: block;
+}
+
+.overall span {
+  color: #6d7d85;
+  font-size: 0.68rem;
+}
+
+.overall strong {
+  margin-top: 2px;
+  color: #142638;
+  font-size: 1.25rem;
+}
+
+.overall p {
+  margin: 3px 0 0;
+  color: #738188;
+  font-size: 0.72rem;
+}
+
+.checkGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.checkCard {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 13px;
+  padding: 17px;
+  border: 1px solid #dce3e6;
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.86);
+}
+
+.checkIcon {
+  display: grid;
+  width: 39px;
+  height: 39px;
+  place-items: center;
+  border-radius: 11px;
+  background: #eff4f4;
+}
+
+.checkIcon svg {
+  width: 21px;
+  height: 21px;
+}
+
+.checkCard span {
+  color: #687981;
+  font-size: 0.67rem;
+  font-weight: 730;
+}
+
+.checkCard h2 {
+  margin: 4px 0;
+  color: #1d3445;
+  font-size: 0.93rem;
+}
+
+.checkCard p {
+  margin: 0;
+  color: #6a7880;
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
+.tone_good > svg,
+.tone_good .checkIcon {
+  color: #34775a;
+}
+
+.tone_warn > svg,
+.tone_warn .checkIcon {
+  color: #967023;
+}
+
+.tone_bad > svg,
+.tone_bad .checkIcon {
+  color: #a34545;
+}
+
+.tone_neutral > svg,
+.tone_neutral .checkIcon {
+  color: #627984;
+}
+
+.error {
+  padding: 13px 15px;
+  color: #8b3030;
+  border: 1px solid #e4bbbb;
+  border-radius: 11px;
+  background: #fff3f2;
+}
+
+@media (max-width: 720px) {
+  .header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .checkGrid {
+    grid-template-columns: 1fr;
+  }
+}

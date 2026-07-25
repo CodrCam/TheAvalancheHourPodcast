@@ -52,7 +52,7 @@ export const sponsorsById = {
     name: 'PeakVisor',
     tier: 'friend',
     url: 'https://peakvisor.com/',
-    logo: '/images/sponsors/peakvisor.png',
+    logo: '/images/sponsors/PeakVisor.png',
   },
   'propagation-labs': {
     id: 'propagation-labs',

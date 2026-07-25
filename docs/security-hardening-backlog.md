@@ -1,6 +1,6 @@
 # Security Hardening Backlog
 
-Last updated: July 9, 2026
+Last updated: July 24, 2026
 
 This document tracks the next security and reliability improvements for The
 Avalanche Hour website. These items are not launch blockers right now, but they
@@ -16,8 +16,14 @@ as more people start using the backend.
 - Stripe webhooks verify signatures before order and inventory work.
 - Browser-side order recording verifies the Stripe PaymentIntent before writing
   to DynamoDB.
-- Orders, inventory, homepage content, and sponsors now live in DynamoDB-backed
-  admin flows.
+- Orders, inventory, homepage content, sponsors, Host Studio resources, and
+  host account-to-profile bindings now live in DynamoDB-backed admin flows.
+- Episode Studios enforce assignment-based access, multi-host collaboration,
+  required deliverables, and explicit acknowledgement of incomplete handoffs.
+- Episode discussions derive the author and host/producer role from the signed-in
+  account; the browser cannot post under an arbitrary profile name.
+- Host self-service profile writes derive the target profile from the signed-in
+  Cognito `sub`; the browser cannot choose another person's profile ID.
 
 ## Priority 1: Rate Limiting
 
@@ -56,6 +62,11 @@ Recommended targets:
 - `/api/store/admin/orders`
 - `/api/store/admin/site-content`
 - `/api/store/admin/sponsors`
+- `/api/studio/manage/resources`
+- `/api/studio/manage/access`
+- `/api/studio/profile`
+- `/api/studio/episodes`
+- `/api/studio/episodes/<episode-id>`
 - Any future admin `POST`, `PATCH`, `PUT`, or `DELETE` endpoint.
 
 Suggested approach:
@@ -87,6 +98,10 @@ Recommended events:
 - Order deletes.
 - Homepage CTA updates.
 - Sponsor creates, edits, deletes, and episode-placement changes.
+- Host Studio guide publishes and account-to-profile binding changes.
+- Host self-service biography and photo changes.
+- Episode Studio creation, assignment and schedule changes, host submissions,
+  discussion posts, producer change requests, and producer acceptance.
 - Admin login/logout events if available from the app side.
 
 Suggested table shape:
@@ -129,7 +144,8 @@ Recommended alert cases:
 - DynamoDB credential/configuration errors.
 - Order notification email failure.
 - Store inventory API returning repeated `500` responses.
-- Admin health panel detects store, orders, sponsor, or content data failures.
+- Admin-only System Health detects store, orders, content, or Episode Studio
+  data failures.
 
 Suggested approach:
 
@@ -172,7 +188,10 @@ Recommended checks:
 - Prefer short-lived access tokens with refresh handled through Cognito.
 - Keep admin cookies `HttpOnly`, `Secure` in production, and `SameSite=Lax` or
   stricter where practical.
-- Keep Cognito groups minimal: `admin` and `logistics`.
+- Keep Cognito groups limited to the defined access bundles: `admin`,
+  `logistics`, `studio_manager`, and `host`.
+- Review multi-group users periodically, especially people who combine
+  `logistics` and `studio_manager`.
 - Review group membership after role changes.
 
 ## Not Planned Right Now
@@ -192,4 +211,3 @@ Recommended checks:
 4. Add failure alert emails for webhook, DynamoDB, and notification failures.
 5. Rotate AWS keys and remove old Netlify admin env variables.
 6. Revisit MFA enforcement and Cognito session settings.
-

@@ -12,9 +12,10 @@ function clearCookie(req, name) {
 }
 
 export default function handler(req, res) {
-  if (!['GET', 'POST'].includes(req.method)) {
-    res.setHeader('Allow', 'GET,POST');
-    return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST') {
+    res.setHeader('Allow', 'POST');
+    res.status(405).json({ error: 'Method not allowed' });
+    return;
   }
 
   const oauthCookies = getOAuthCookieNames();
@@ -29,5 +30,5 @@ export default function handler(req, res) {
     clearCookie(req, oauthCookies.verifier),
   ]);
 
-  return res.redirect(302, redirectTo);
+  res.redirect(302, redirectTo);
 }

@@ -5,8 +5,10 @@ import { Container, Box, Typography, Grid, CardMedia, Breadcrumbs, Link as MLink
 import Navbar from '../../components/Navbar';
 import SEO from '../../components/SEO';
 import { getPersonBySlug, getStaticPeopleSeed } from '../../lib/peopleStore';
+import { profileBioToPlainText } from '../../lib/peoplePresentation.mjs';
+import { safeJsonLdStringify } from '../../lib/structuredData.mjs';
 
-const PLACEHOLDER_IMG = '/images/placeholder-person.jpg';
+const PLACEHOLDER_IMG = '/images/placeholder-person.svg';
 const SITE_ORIGIN = 'https://www.theavalanchehour.com';
 
 function getPublicImageUrl(value) {
@@ -24,6 +26,22 @@ function getCategoryLabel(role) {
   if (role === 'social_media_manager') return 'Social Media Manager';
   if (role === 'team') return 'Team';
   return 'Producer';
+}
+
+function getAdditionalLabels(roles = [], reservedLabels = []) {
+  const reserved = new Set(
+    reservedLabels
+      .map((label) => String(label || '').trim().toLowerCase())
+      .filter(Boolean)
+  );
+  const seen = new Set();
+
+  return roles.filter((label) => {
+    const key = String(label || '').trim().toLowerCase();
+    if (!key || reserved.has(key) || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 export default function HostProfile({ person }) {
@@ -44,25 +62,35 @@ export default function HostProfile({ person }) {
     role,
     images = [],
     roles = [],
+    title = '',
     bioShort = '',
     bioFull = '',
-    needsBio,
-    needsImages,
     slug,
+    needsImages = false,
   } = person;
 
-  const imgList = images.length ? images : [PLACEHOLDER_IMG];
+  const usesPlaceholder = needsImages || images.length === 0;
+  const imgList = usesPlaceholder ? [PLACEHOLDER_IMG] : images;
   const roleLabel = getCategoryLabel(role);
+  const displayTitle =
+    title.trim().toLowerCase() === roleLabel.toLowerCase()
+      ? ''
+      : title.trim();
+  const additionalLabels = getAdditionalLabels(roles, [
+    roleLabel,
+    displayTitle,
+  ]);
+  const plainBioFull = profileBioToPlainText(bioFull);
 
   // Simple JSON-LD for Person (SEO)
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Person',
     name,
-    description: bioShort || bioFull?.replace(/<[^>]+>/g, '')?.slice(0, 260),
+    description: bioShort || plainBioFull.slice(0, 260),
     url: `${SITE_ORIGIN}/hosts/${slug}`,
     image: imgList.map(getPublicImageUrl).filter(Boolean),
-    jobTitle: roleLabel,
+    jobTitle: displayTitle || roleLabel,
   };
 
   return (
@@ -73,7 +101,10 @@ export default function HostProfile({ person }) {
         url={`/hosts/${slug}`}
       />
       <Head>
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(jsonLd) }}
+        />
       </Head>
       <Navbar />
       <Container maxWidth="lg" sx={{ mt: 4, mb: 8 }}>
@@ -85,12 +116,20 @@ export default function HostProfile({ person }) {
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1, flexWrap: 'wrap' }}>
           <Typography variant="h3" sx={{ fontWeight: 700, lineHeight: 1.2 }}>{name}</Typography>
           <Chip label={roleLabel} />
-          {roles.map((roleName) => (
+          {additionalLabels.map((roleName) => (
             <Chip key={roleName} label={roleName} variant="outlined" />
           ))}
-          {needsBio && <Chip label="Bio coming soon" color="warning" variant="outlined" />}
-          {needsImages && <Chip label="Images needed" color="warning" variant="outlined" />}
         </Box>
+
+        {displayTitle ? (
+          <Typography
+            variant="h6"
+            color="text.secondary"
+            sx={{ mb: 1.5, fontWeight: 600 }}
+          >
+            {displayTitle}
+          </Typography>
+        ) : null}
 
         {bioShort && (
           <Typography variant="subtitle1" color="text.secondary" sx={{ mb: 3 }}>
@@ -106,7 +145,11 @@ export default function HostProfile({ person }) {
                 <CardMedia
                   component="img"
                   image={src}
-                  alt={`${name} ${i + 1}`}
+                  alt={
+                    usesPlaceholder
+                      ? `Profile photo coming soon for ${name}`
+                      : `${name} ${i + 1}`
+                  }
                   sx={{ height: 260, objectFit: 'cover', borderRadius: 2 }}
                 />
               </Grid>
@@ -114,13 +157,13 @@ export default function HostProfile({ person }) {
           </Grid>
         )}
 
-        {/* Full bio (HTML allowed) */}
-        {bioFull ? (
+        {plainBioFull ? (
           <Typography
             variant="body1"
-            sx={{ lineHeight: 1.7 }}
-            dangerouslySetInnerHTML={{ __html: bioFull }}
-          />
+            sx={{ lineHeight: 1.7, whiteSpace: 'pre-line' }}
+          >
+            {plainBioFull}
+          </Typography>
         ) : (
           <Typography variant="body1">Bio coming soon.</Typography>
         )}

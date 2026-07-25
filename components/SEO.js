@@ -12,6 +12,7 @@ import {
   WEBSITE_ID,
   absoluteUrl,
 } from '../lib/siteMetadata';
+import { safeJsonLdStringify } from '../lib/structuredData.mjs';
 
 export default function SEO({
   title = SITE_NAME,
@@ -77,7 +78,7 @@ export default function SEO({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
+            __html: safeJsonLdStringify({
               "@context": "https://schema.org",
               "@type": "PodcastEpisode",
               "url": canonicalUrl,
@@ -106,7 +107,7 @@ export default function SEO({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
+            __html: safeJsonLdStringify({
               "@context": "https://schema.org",
               "@type": "WebSite",
               "@id": WEBSITE_ID,

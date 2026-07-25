@@ -27,6 +27,11 @@ function readEnv(name) {
   return String(process.env[name] || '').trim();
 }
 
+function readArgument(name) {
+  const index = process.argv.indexOf(name);
+  return index >= 0 ? String(process.argv[index + 1] || '').trim() : '';
+}
+
 function getAwsConfig() {
   const dynamoAccessKeyId = readEnv('DYNAMODB_ACCESS_KEY_ID');
   const dynamoSecretAccessKey = readEnv('DYNAMODB_SECRET_ACCESS_KEY');
@@ -148,10 +153,11 @@ function normalizePerson(person, index) {
     name: person.name || '',
     title: person.title || '',
     roles: Array.isArray(person.roles) ? person.roles : [],
+    studioRoles: Array.isArray(person.studioRoles) ? person.studioRoles : [],
     images: Array.isArray(person.images) ? person.images : [],
     bioShort: person.bioShort || '',
     bioFull: person.bioFull || '',
-    active: true,
+    active: person.active !== false,
     needsBio: person.needsBio === true,
     needsImages: person.needsImages === true,
     sort_order: index,
@@ -167,6 +173,7 @@ function toDynamoItem(person) {
     name: { S: person.name },
     title: { S: person.title },
     roles_json: { S: JSON.stringify(person.roles || []) },
+    studio_roles_json: { S: JSON.stringify(person.studioRoles || []) },
     images_json: { S: JSON.stringify(person.images || []) },
     bio_short: { S: person.bioShort },
     bio_full: { S: person.bioFull },
@@ -185,6 +192,210 @@ async function main() {
   if (!tableName) {
     console.error('Missing DYNAMODB_PEOPLE_TABLE in .env.local');
     process.exit(1);
+  }
+
+  const lookupName = readArgument('--lookup-name');
+  if (lookupName) {
+    const response = await dynamoDbRequest('Scan', {
+      TableName: tableName,
+      ProjectionExpression:
+        '#person_id, #name, #role, #studio_roles_json, #active',
+      ExpressionAttributeNames: {
+        '#person_id': 'person_id',
+        '#name': 'name',
+        '#role': 'role',
+        '#studio_roles_json': 'studio_roles_json',
+        '#active': 'active',
+      },
+    });
+    const normalizedLookup = lookupName.toLowerCase();
+    const matches = (response.Items || [])
+      .map((item) => ({
+        person_id: item.person_id?.S || '',
+        name: item.name?.S || '',
+        role: item.role?.S || '',
+        studioRoles: JSON.parse(item.studio_roles_json?.S || '[]'),
+        active: item.active?.BOOL !== false,
+      }))
+      .filter(
+        (person) =>
+          person.person_id.toLowerCase().includes(normalizedLookup) ||
+          person.name.toLowerCase().includes(normalizedLookup)
+      );
+    console.log(`DynamoDB table: ${tableName}`);
+    console.log(`Matching people: ${matches.length}`);
+    matches.forEach((person) =>
+      console.log(
+        `${person.person_id}: ${person.name} (${person.role}; ${person.studioRoles.join(', ') || 'no Studio roles'}; ${person.active ? 'active' : 'inactive'})`
+      )
+    );
+    return;
+  }
+
+  const upsertStaticPersonId = readArgument('--upsert-static-person');
+  if (upsertStaticPersonId) {
+    const { people } = await import('../src/data/people.js');
+    const sourceIndex = people.findIndex(
+      (person) => person.slug === upsertStaticPersonId
+    );
+    if (sourceIndex < 0) {
+      throw new Error(
+        `No static People record found for "${upsertStaticPersonId}".`
+      );
+    }
+    const row = normalizePerson(people[sourceIndex], sourceIndex);
+
+    console.log(`DynamoDB table: ${tableName}`);
+    console.log(`Region: ${region}`);
+    console.log(
+      `Targeted person: ${row.name} (${row.person_id}) -> ${row.studioRoles.join(', ')}`
+    );
+    if (!apply) {
+      console.log(
+        'Dry run only. Re-run with --apply to create this one person if missing.'
+      );
+      return;
+    }
+
+    const existing = await dynamoDbRequest('GetItem', {
+      TableName: tableName,
+      Key: { person_id: { S: row.person_id } },
+      ConsistentRead: true,
+    });
+    if (existing.Item) {
+      console.log(`${row.person_id} already exists; no changes made.`);
+      return;
+    }
+
+    await dynamoDbRequest('PutItem', {
+      TableName: tableName,
+      Item: toDynamoItem(row),
+      ConditionExpression: 'attribute_not_exists(#person_id)',
+      ExpressionAttributeNames: { '#person_id': 'person_id' },
+    });
+    console.log(`Created ${row.name}`);
+    return;
+  }
+
+  const syncStaticPersonId = readArgument('--sync-static-person');
+  if (syncStaticPersonId) {
+    const { people } = await import('../src/data/people.js');
+    const sourceIndex = people.findIndex(
+      (person) => person.slug === syncStaticPersonId
+    );
+    if (sourceIndex < 0) {
+      throw new Error(
+        `No static People record found for "${syncStaticPersonId}".`
+      );
+    }
+    const row = normalizePerson(people[sourceIndex], sourceIndex);
+
+    console.log(`DynamoDB table: ${tableName}`);
+    console.log(`Region: ${region}`);
+    console.log(
+      `Targeted static sync: ${row.name} (${row.person_id}) -> ${
+        row.active ? 'active' : 'inactive'
+      }; ${row.studioRoles.join(', ') || 'no Studio roles'}`
+    );
+    if (!apply) {
+      console.log(
+        'Dry run only. Re-run with --apply to replace this existing person with the static record.'
+      );
+      return;
+    }
+
+    await dynamoDbRequest('PutItem', {
+      TableName: tableName,
+      Item: toDynamoItem(row),
+      ConditionExpression: 'attribute_exists(#person_id)',
+      ExpressionAttributeNames: { '#person_id': 'person_id' },
+    });
+    console.log(`Synced ${row.name}`);
+    return;
+  }
+
+  const targetPersonId = readArgument('--person');
+  const activeArgument = readArgument('--active');
+  const studioRolesArgument = readArgument('--studio-roles');
+  if (targetPersonId || studioRolesArgument || activeArgument) {
+    if (!targetPersonId || (!studioRolesArgument && !activeArgument)) {
+      throw new Error(
+        'Use --person <person-id> with --studio-roles <host,producer>, --active <true|false>, or both.'
+      );
+    }
+    let studioRoles = null;
+    if (studioRolesArgument) {
+      const supportedRoles = new Set(['host', 'producer']);
+      studioRoles = [
+        ...new Set(
+          studioRolesArgument
+            .split(',')
+            .map((role) => role.trim().toLowerCase())
+            .filter(Boolean)
+        ),
+      ];
+      if (
+        !studioRoles.length ||
+        studioRoles.some((role) => !supportedRoles.has(role))
+      ) {
+        throw new Error('Studio roles must be host, producer, or both.');
+      }
+    }
+    let active = null;
+    if (activeArgument) {
+      if (!['true', 'false'].includes(activeArgument.toLowerCase())) {
+        throw new Error('Active must be true or false.');
+      }
+      active = activeArgument.toLowerCase() === 'true';
+    }
+
+    console.log(`DynamoDB table: ${tableName}`);
+    console.log(`Region: ${region}`);
+    if (studioRoles) {
+      console.log(
+        `Targeted Studio roles: ${targetPersonId} -> ${studioRoles.join(', ')}`
+      );
+    }
+    if (active !== null) {
+      console.log(
+        `Targeted website visibility: ${targetPersonId} -> ${active ? 'active' : 'inactive'}`
+      );
+    }
+    if (!apply) {
+      console.log('Dry run only. Re-run with --apply to update this one person.');
+      return;
+    }
+
+    const updates = [];
+    const names = {
+      '#person_id': 'person_id',
+      '#updated_at': 'updated_at',
+    };
+    const values = {
+      ':updated_at': { S: new Date().toISOString() },
+    };
+    if (studioRoles) {
+      updates.push('#studio_roles_json = :studio_roles_json');
+      names['#studio_roles_json'] = 'studio_roles_json';
+      values[':studio_roles_json'] = { S: JSON.stringify(studioRoles) };
+    }
+    if (active !== null) {
+      updates.push('#active = :active');
+      names['#active'] = 'active';
+      values[':active'] = { BOOL: active };
+    }
+    updates.push('#updated_at = :updated_at');
+
+    await dynamoDbRequest('UpdateItem', {
+      TableName: tableName,
+      Key: { person_id: { S: targetPersonId } },
+      UpdateExpression: `SET ${updates.join(', ')}`,
+      ConditionExpression: 'attribute_exists(#person_id)',
+      ExpressionAttributeNames: names,
+      ExpressionAttributeValues: values,
+    });
+    console.log(`Updated ${targetPersonId}`);
+    return;
   }
 
   const { people } = await import('../src/data/people.js');

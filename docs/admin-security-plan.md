@@ -5,10 +5,12 @@ auth toward named users, roles, and MFA.
 
 ## Current state
 
-The app supports two admin roles:
+The app uses additive access groups:
 
 - `admin`: full access.
 - `logistics`: order workflow, shipping exports, and inventory updates.
+- `studio_manager`: Host Studio content, access, and profile management.
+- `host`: published Studio resources and the signed-in host's own profile.
 
 Normal human login uses Amazon Cognito named users and groups. Legacy
 environment-variable credentials have been removed from the runtime. Production
@@ -20,11 +22,11 @@ Use Amazon Cognito User Pools for named admin users.
 
 Recommended setup:
 
-- Require MFA for both `admin` and `logistics`.
+- Require MFA for every internal user group.
 - Prefer authenticator-app MFA/TOTP over SMS.
-- Use Cognito groups named `admin` and `logistics`.
-- Map Cognito group claims to the same permission names already used in
-  `lib/adminAuth.js`.
+- Use Cognito groups named `admin`, `logistics`, `studio_manager`, and `host`.
+- Combine permissions when a user belongs to multiple groups.
+- Map Cognito group claims to the permission names used by the application.
 - Do not give website admins AWS Console access.
 
 Authenticator-app MFA is the preferred default because it avoids SMS delivery
@@ -66,6 +68,26 @@ Logistics:
 - `products:read`
 - `sponsors:read`
 - `banners:read`
+
+Studio manager:
+
+- `studio:read`
+- `resources:read`
+- `resources:update`
+- `resources:publish`
+- `announcements:update`
+- `profile:self:read`
+- `profile:self:update`
+- `profiles:read`
+- `profiles:update`
+- `studio_access:manage`
+
+Host:
+
+- `studio:read`
+- `resources:read`
+- `profile:self:read`
+- `profile:self:update`
 
 ## Next implementation steps
 

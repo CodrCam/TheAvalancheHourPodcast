@@ -18,6 +18,7 @@ export const people = [
     slug: 'caleb-merrill',
     role: 'host',
     name: 'Caleb Merrill',
+    studioRoles: ['producer'],
     images: [
       '/images/hosts/caleb1.jpg',
       '/images/hosts/caleb2.jpg',
@@ -200,9 +201,7 @@ export const people = [
     slug: 'bruce-jamieson',
     role: 'host',
     name: 'Bruce Jamieson',
-    images: [
-      '/images/hosts/bruce1.jpg',
-    ],
+    images: [],
     needsBio: true,
     needsImages: true,
     bioShort: 'Bio coming soon.',
@@ -231,6 +230,7 @@ export const people = [
     slug: 'cam-griffin',
     role: 'webmaster',
     name: 'Cam Griffin',
+    studioRoles: ['host', 'producer'],
     images: [
       '/images/hosts/cam1.jpg',
       '/images/hosts/cam2.jpeg',
@@ -243,12 +243,23 @@ export const people = [
   },
 
   {
+    slug: 'angie-link',
+    role: 'producer',
+    name: 'Angie Link',
+    studioRoles: ['host', 'producer'],
+    images: [],
+    active: true,
+    needsBio: true,
+    needsImages: true,
+    bioShort: 'Producer for The Avalanche Hour.',
+    bioFull: 'Bio coming soon.',
+  },
+
+  {
     slug: 'bob-keating',
     role: 'producer',
     name: 'Bob Keating',
-    images: [
-      '/images/hosts/bob1.jpg',
-    ],
+    images: [],
     needsBio: true,
     needsImages: true,
     bioShort: 'Team member — bio coming soon.',

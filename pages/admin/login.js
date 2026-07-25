@@ -14,7 +14,7 @@ export default function AdminLogin({ configured, errorMessage }) {
   return (
     <>
       <Head>
-        <title>Admin Login - The Avalanche Hour</title>
+        <title>Team Sign In - The Avalanche Hour</title>
       </Head>
 
       <main
@@ -37,9 +37,9 @@ export default function AdminLogin({ configured, errorMessage }) {
             background: '#fff',
           }}
         >
-          <h1 style={{ marginTop: 0, marginBottom: 8 }}>Admin Login</h1>
+          <h1 style={{ marginTop: 0, marginBottom: 8 }}>Team Sign In</h1>
           <p style={{ color: '#475467', lineHeight: 1.5 }}>
-            Sign in with your Avalanche Hour admin account.
+            Sign in with your Avalanche Hour team account.
           </p>
 
           {errorMessage && (

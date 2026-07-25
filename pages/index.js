@@ -21,6 +21,7 @@ import {
   SITE_URL,
   SOCIAL_PROFILES,
 } from '../lib/siteMetadata';
+import { safeJsonLdStringify } from '../lib/structuredData.mjs';
 import { sponsors as DEFAULT_SPONSORS } from '../src/data/sponsors';
 
 const topSectionHeight = 350;
@@ -385,11 +386,34 @@ export default function Home() {
         </Container>
       </Box>
 
+      <Box
+        component="footer"
+        sx={{
+          backgroundColor: 'white',
+          borderTop: '1px solid',
+          borderColor: 'grey.200',
+          py: 2,
+          textAlign: 'center',
+        }}
+      >
+        <Container maxWidth="lg">
+          <Button
+            component={Link}
+            href="/admin/login"
+            variant="text"
+            size="small"
+            sx={{ color: 'text.secondary', textTransform: 'none' }}
+          >
+            Team sign in
+          </Button>
+        </Container>
+      </Box>
+
       {/* Structured Data for Podcast */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
+          __html: safeJsonLdStringify({
             "@context": "https://schema.org",
             "@type": "PodcastSeries",
             "@id": PODCAST_ID,

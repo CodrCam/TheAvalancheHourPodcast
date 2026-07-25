@@ -9,7 +9,8 @@ import {
 export default function handler(req, res) {
   if (req.method !== 'GET') {
     res.setHeader('Allow', 'GET');
-    return res.status(405).json({ error: 'Method not allowed' });
+    res.status(405).json({ error: 'Method not allowed' });
+    return;
   }
 
   try {
@@ -22,9 +23,9 @@ export default function handler(req, res) {
       serializeCookie(names.verifier, verifier, cookieOptions),
     ]);
 
-    return res.redirect(302, url);
+    res.redirect(302, url);
   } catch (err) {
-    return res.status(500).json({
+    res.status(500).json({
       error: err.message || 'Failed to start Cognito login',
     });
   }

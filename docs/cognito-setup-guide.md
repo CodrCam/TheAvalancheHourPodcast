@@ -1,13 +1,14 @@
 # Cognito Setup Guide
 
-This guide creates named admin users with authenticator-app MFA while the site
-continues to support the current environment-variable login during migration.
+This guide creates named internal users with authenticator-app MFA and
+permission groups for the website administration and Host Studio.
 
 ## Goal
 
-- Use Amazon Cognito User Pools for `/admin` users.
+- Use Amazon Cognito User Pools for website administrators, operations staff,
+  Studio managers, and hosts.
 - Require authenticator-app MFA/TOTP.
-- Use two groups: `admin` and `logistics`.
+- Use additive groups so one person can belong to multiple areas.
 - Keep all website users out of the AWS Console.
 - Avoid SMS MFA unless there is a specific need for it.
 
@@ -40,12 +41,22 @@ Passwords, and Microsoft Authenticator.
 
 ## 3. Create groups
 
-Create these Cognito groups:
+Create these Cognito groups exactly as written:
 
-- `admin`
-- `logistics`
+| Group name | Description | Precedence | IAM role |
+| --- | --- | --- | --- |
+| `admin` | Full website administration, Store Admin, and Host Studio access. | Leave blank | Do not assign |
+| `logistics` | Order fulfillment, shipping exports, inventory updates, and read-only operational access. | Leave blank | Do not assign |
+| `studio_manager` | Manage the episode calendar, host handoffs, resources, announcements, access, and host profiles without Store Admin access. | Leave blank | Do not assign |
+| `host` | Read Host Studio resources, complete only assigned episode forms, and update only the signed-in host's connected public profile. | Leave blank | Do not assign |
 
-The site maps these group names to the permission model in `lib/adminAuth.js`.
+The website reads the complete `cognito:groups` array and combines the
+permissions from every matching group. For example, Sierra can belong to both
+`logistics` and `studio_manager`; no combined group is needed.
+
+Group precedence and IAM role assignment are intentionally unused. The website
+authorizes requests through its own server-side permission checks and does not
+give internal users AWS credentials.
 
 ## 4. Create an app client
 
@@ -80,10 +91,18 @@ Create one user per person. Do not share logins.
 
 Suggested first users:
 
-- Site owner or developer: group `admin`
-- Fulfillment helper: group `logistics`
+- Cameron: group `admin`
+- Caleb: group `admin`
+- Sierra: groups `logistics` and `studio_manager`
+- Selected production-team members: group `studio_manager`
+- Regular hosts: group `host`
 
 Each user should complete their own MFA setup on first login.
+
+After the Host Studio release is deployed, connect every host account to the
+correct public profile before sending their invitation. Follow
+`docs/host-studio-setup-guide.md`; the permanent Cognito `sub` attribute is the
+security link, not the person's editable email address or display name.
 
 ## 6. Add environment variables
 
@@ -99,8 +118,10 @@ COGNITO_LOGOUT_URI=http://localhost:3000/admin/login
 
 COGNITO_ADMIN_GROUP=admin
 COGNITO_LOGISTICS_GROUP=logistics
+COGNITO_STUDIO_MANAGER_GROUP=studio_manager
+COGNITO_HOST_GROUP=host
 COGNITO_COOKIE_NAME=ah_admin_token
-COGNITO_OAUTH_SCOPES="openid email"
+COGNITO_OAUTH_SCOPES="openid"
 ```
 
 `COGNITO_DOMAIN` is the hosted UI domain from Cognito. You can paste either the
@@ -156,7 +177,12 @@ The local login flow is:
 4. Cognito redirects to `/admin/auth/callback`.
 5. The app exchanges the code for tokens and stores the access token in an
    HTTP-only cookie.
-6. The app redirects to `/admin`.
+6. The app sends website admins and logistics users to `/admin`. Host-only and
+   Studio-manager-only users go to `/studio`.
+
+Inside the Studio, hosts see only **My Episodes** assignments tied to their
+connected public profile. Studio managers also see the production calendar and
+producer tools. Store/System Health remains restricted to the `admin` group.
 
 The local logout flow is:
 
@@ -165,14 +191,19 @@ The local logout flow is:
 3. Cognito clears the hosted UI session.
 4. The browser returns to `/admin/login`.
 
-The app requests these OAuth scopes by default:
+The app requests this OAuth scope by default:
 
 ```bash
-openid email
+openid
 ```
 
-If you add scopes in AWS later, set `COGNITO_OAUTH_SCOPES` to match. Do not ask
-Cognito for a scope that is not enabled on the app client.
+When `openid` is requested by itself, Cognito includes every standard identity
+attribute the app client is permitted to read in the verified ID token. Keep
+`given_name`, `family_name`, and `name` readable on the app client so the Studio
+can show a human-friendly display name. Requesting only `openid` also avoids
+requiring separate `email` or `profile` OAuth-scope enablement on the app client.
+Users must sign out and sign in again after a scope or readable-attribute change
+so Cognito can issue a new token containing those attributes.
 
 ## 8. Migration notes
 

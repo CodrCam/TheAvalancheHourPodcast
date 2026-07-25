@@ -77,6 +77,28 @@ The first item is seeded with `content_key` set to `homepage_cta`. It stores the
 editable About page program story, homepage support message, community
 spotlight, flexible featured link, and donation action.
 
+The Host Studio intentionally reuses this table instead of adding another AWS
+table:
+
+- `host_studio_guide` stores the producer-authored guide, announcement, section
+  order, links, and private manager notes. Published content and the saved
+  manager draft are separate attributes on this same item, so draft work never
+  changes what hosts can read.
+- `studio_profile_binding#<person_id>` stores the one-to-one connection between
+  a public host profile and the permanent Cognito user `sub`.
+- `episode_studio#<episode_id>` stores an episode's release and due dates,
+  multi-host assignments, producer, creator profile, checklist values,
+  known-gap acknowledgements, review feedback, and handoff status.
+
+The resource editor shows a safe built-in Season 11 guide until a Studio
+manager or admin saves or publishes for the first time. A draft save creates
+or updates `host_studio_guide` without changing the host-facing content. A
+publish atomically updates the published guide and synchronizes the saved
+draft.
+Profile bindings are created from the Studio's **Host Access** page, and
+Episode Studio records are created from the production calendar. Do not edit
+these record shapes directly in DynamoDB during normal operation.
+
 Sponsors use a fourth table:
 
 ```txt
@@ -144,6 +166,7 @@ Each team member item includes:
   "name": "Caleb Merrill",
   "title": "",
   "roles_json": "[]",
+  "studio_roles_json": "[\"host\",\"producer\"]",
   "images_json": "[\"/images/hosts/caleb1.JPG\"]",
   "bio_short": "Founder/host of The Avalanche Hour...",
   "bio_full": "Full profile text...",
@@ -160,6 +183,10 @@ Valid roles are `host`, `webmaster`, `social_media_manager`, `team`, and
 public About page and profile routes. Images can be site-relative paths, public
 HTTPS URLs, or uploaded data URLs. The admin uploader resizes photos before
 saving them, and the database rejects stored image values over 300 KB.
+
+`studio_roles_json` is an internal allowlisted array containing `host`,
+`producer`, or both. It controls Episode Studio assignment pickers without
+changing the person's primary public role or moving their About-page card.
 
 ## Create the Tables
 
@@ -415,6 +442,9 @@ npm run seed:dynamo-orders -- --apply --overwrite
 - Site content uses DynamoDB when `DYNAMODB_SITE_CONTENT_TABLE` is set. The
   public homepage and About page keep static defaults if managed content is
   unavailable.
+- Host resources, host-profile bindings, and Episode Studios use that same
+  site-content table. Episode Studio writes fail safely when it is not
+  configured rather than falling back to browser storage.
 - Sponsors use DynamoDB when `DYNAMODB_SPONSORS_TABLE` is set. Public sponsor
   sections keep the static sponsor list as a fallback if managed sponsors are
   unavailable.

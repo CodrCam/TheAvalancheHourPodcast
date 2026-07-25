@@ -11,6 +11,7 @@ import {
   SITE_URL,
   SOCIAL_PROFILES,
 } from '../lib/siteMetadata';
+import { safeJsonLdStringify } from '../lib/structuredData.mjs';
 
 class MyDocument extends Document {
   render() {
@@ -105,7 +106,7 @@ class MyDocument extends Document {
           <script
             type="application/ld+json"
             dangerouslySetInnerHTML={{
-              __html: JSON.stringify({
+              __html: safeJsonLdStringify({
                 "@context": "https://schema.org",
                 "@type": "Organization",
                 "@id": ORGANIZATION_ID,

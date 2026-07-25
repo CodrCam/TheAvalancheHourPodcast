@@ -105,80 +105,73 @@ function ActionList({ rows, kind }) {
   );
 }
 
-function AdminSectionCard({ href, title, description, meta }) {
-  return (
-    <Link
-      href={href}
-      style={{
-        ...card,
-        display: 'block',
-        color: 'inherit',
-        textDecoration: 'none',
-      }}
-    >
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
-        <h2 style={{ margin: 0, fontSize: 18 }}>{title}</h2>
-        {meta ? <StatusPill tone={meta.tone}>{meta.label}</StatusPill> : null}
-      </div>
-      <p style={{ ...muted, margin: '10px 0 0' }}>{description}</p>
-    </Link>
-  );
-}
-
-function HealthPanel({ health }) {
-  const checks = Array.isArray(health?.checks) ? health.checks : [];
+function EpisodeActionList({ rows = [] }) {
+  if (!rows.length) {
+    return (
+      <EmptyLine>
+        No episodes are scheduled yet. Create the first one from Episode
+        Studios.
+      </EmptyLine>
+    );
+  }
 
   return (
-    <div style={card}>
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          gap: 12,
-          alignItems: 'baseline',
-        }}
-      >
-        <h2 style={{ margin: 0, fontSize: 18 }}>Store Health</h2>
-        <StatusPill tone={health?.tone || 'neutral'}>
-          {health?.overall || 'Unknown'}
-        </StatusPill>
-      </div>
-      <p style={{ ...muted, margin: '8px 0 0' }}>
-        Quick checks for the store systems that process inventory, orders, and
-        notifications.
-      </p>
-      <div style={{ display: 'grid', gap: 10, marginTop: 12 }}>
-        {checks.map((check) => (
-          <div
-            key={check.id}
-            style={{
-              borderTop: '1px solid #f1f5f9',
-              paddingTop: 10,
-              display: 'grid',
-              gap: 3,
-            }}
-          >
-            <div
-              style={{
-                display: 'flex',
-                flexWrap: 'wrap',
-                justifyContent: 'space-between',
-                gap: 8,
-              }}
-            >
-              <strong>{check.label}</strong>
-              <StatusPill tone={check.tone || (check.ok ? 'good' : 'bad')}>
-                {check.id === 'last_order' || check.id === 'last_inventory_update'
-                  ? formatDate(check.status) !== '-'
-                    ? formatDate(check.status)
-                    : check.status
-                  : check.status}
-              </StatusPill>
-            </div>
-            <span style={muted}>{check.detail}</span>
+    <div style={{ display: 'grid', gap: 10, marginTop: 10 }}>
+      {rows.map((episode) => (
+        <Link
+          key={episode.episode_id}
+          href={`/admin/studios/${episode.episode_id}`}
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'minmax(0, 1fr) auto',
+            gap: 12,
+            padding: episode.delivery_health === 'off_track' ? 10 : '10px 0 0',
+            color: 'inherit',
+            textDecoration: 'none',
+            border:
+              episode.delivery_health === 'off_track'
+                ? '1px solid #fed7c5'
+                : 0,
+            borderTop:
+              episode.delivery_health === 'off_track'
+                ? '1px solid #fed7c5'
+                : '1px solid #f1f5f9',
+            borderRadius: episode.delivery_health === 'off_track' ? 10 : 0,
+            background:
+              episode.delivery_health === 'off_track'
+                ? '#fff7f1'
+                : 'transparent',
+          }}
+        >
+          <div style={{ minWidth: 0 }}>
+            <strong>{episode.title}</strong>
+            <span style={{ ...muted, display: 'block', marginTop: 3 }}>
+              {episode.host_names.join(' + ') || 'Host assignment pending'}
+            </span>
+            <span style={{ ...muted, display: 'block', marginTop: 2 }}>
+              {episode.completion.percent}% assembled
+            </span>
+            {episode.delivery_health === 'off_track' ? (
+              <StatusPill tone="bad">Off track</StatusPill>
+            ) : null}
           </div>
-        ))}
-      </div>
+          <div style={{ textAlign: 'right' }}>
+            <strong style={{ fontSize: 13 }}>
+              {episode.target_release_date
+                ? new Date(
+                    `${episode.target_release_date}T12:00:00`
+                  ).toLocaleDateString(undefined, {
+                    month: 'short',
+                    day: 'numeric',
+                  })
+                : 'Unscheduled'}
+            </strong>
+            <span style={{ ...muted, display: 'block', marginTop: 3 }}>
+              release
+            </span>
+          </div>
+        </Link>
+      ))}
     </div>
   );
 }
@@ -238,7 +231,7 @@ export default function AdminHome() {
           <div style={muted}>
             {overview?.generated_at
               ? `Updated ${formatDate(overview.generated_at)}`
-              : 'Store operations'}
+              : 'Team operations'}
           </div>
         </div>
         <button
@@ -264,8 +257,6 @@ export default function AdminHome() {
       ) : overview ? (
         <>
           <section style={sectionGrid}>
-            <HealthPanel health={overview.health} />
-
             <div style={card}>
               <div
                 style={{
@@ -323,62 +314,48 @@ export default function AdminHome() {
                 <Link href="/admin/inventory">Open inventory</Link>
               </div>
             </div>
-          </section>
 
-          <section style={sectionGrid}>
-            <AdminSectionCard
-              href="/admin/orders"
-              title="Orders"
-              description="Review fulfillment, update shipping status, and download the order sheet."
-              meta={{
-                tone: attentionSummary.ordersTone,
-                label: overview.orders.unshipped
-                  ? `${overview.orders.new} new`
-                  : 'Ready',
-              }}
-            />
-
-            <AdminSectionCard
-              href="/admin/inventory"
-              title="Inventory"
-              description="Adjust stock, add products, and move unavailable items into standby."
-              meta={{
-                tone: attentionSummary.inventoryTone,
-                label: overview.inventory.low_stock
-                  ? `${overview.inventory.low_stock} low`
-                  : 'Ready',
-              }}
-            />
-
-            <AdminSectionCard
-              href="/admin/site-content"
-              title="Site Content"
-              description="Update the About story, support message, community spotlight, featured link, and donation action."
-              meta={{
-                tone: 'good',
-                label: 'Editable',
-              }}
-            />
-
-            <AdminSectionCard
-              href="/admin/people"
-              title="Team"
-              description="Edit host and team bios, photos, profile pages, roles, and visibility."
-              meta={{
-                tone: 'good',
-                label: 'Editable',
-              }}
-            />
-
-            <AdminSectionCard
-              href="/admin/sponsors"
-              title="Sponsors"
-              description="Add sponsors, update logo paths, change tiers, and turn sponsors on or off."
-              meta={{
-                tone: 'good',
-                label: 'Editable',
-              }}
-            />
+            {overview.capabilities?.can_manage_episodes ? (
+              <div style={{ ...card, gridColumn: '1 / -1' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    gap: 12,
+                    alignItems: 'baseline',
+                  }}
+                >
+                  <h2 style={{ margin: 0, fontSize: 18 }}>
+                    Episode Production
+                  </h2>
+                  <StatusPill
+                    tone={
+                      overview.episode_studios?.off_track
+                        ? 'bad'
+                        : overview.episode_studios?.producer_queue
+                          ? 'warn'
+                          : 'good'
+                    }
+                  >
+                    {overview.episode_studios?.off_track
+                      ? `${overview.episode_studios.off_track} off track`
+                      : overview.episode_studios?.producer_queue
+                        ? `${overview.episode_studios.producer_queue} ready`
+                        : 'On track'}
+                  </StatusPill>
+                </div>
+                <p style={{ ...muted, margin: '8px 0 0' }}>
+                  Upcoming releases, assigned hosts, and packages ready for the
+                  producer.
+                </p>
+                <EpisodeActionList
+                  rows={overview.episode_studios?.upcoming || []}
+                />
+                <div style={{ marginTop: 12 }}>
+                  <Link href="/admin/studios">Open production calendar</Link>
+                </div>
+              </div>
+            ) : null}
           </section>
         </>
       ) : null}

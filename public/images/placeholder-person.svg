@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" role="img" aria-labelledby="title description">
+  <title id="title">Profile photo coming soon</title>
+  <desc id="description">A calm mountain landscape with a simple profile silhouette in Avalanche Hour colors.</desc>
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#eef5f7"/>
+      <stop offset="0.55" stop-color="#d7e7ec"/>
+      <stop offset="1" stop-color="#b9d2dc"/>
+    </linearGradient>
+    <linearGradient id="ridge" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5e8798"/>
+      <stop offset="1" stop-color="#355b6c"/>
+    </linearGradient>
+    <radialGradient id="portrait" cx="50%" cy="35%" r="68%">
+      <stop offset="0" stop-color="#29495a"/>
+      <stop offset="1" stop-color="#162f3d"/>
+    </radialGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="180%">
+      <feDropShadow dx="0" dy="24" stdDeviation="22" flood-color="#102b38" flood-opacity="0.24"/>
+    </filter>
+  </defs>
+
+  <rect width="1200" height="900" fill="url(#sky)"/>
+  <circle cx="980" cy="150" r="76" fill="#fff" opacity="0.48"/>
+  <path d="M0 555 205 365l125 117 178-244 188 252 104-106 400 277v239H0Z" fill="#86aab7" opacity="0.58"/>
+  <path d="m0 650 260-214 137 122 148-190 166 210 127-121 362 270v173H0Z" fill="url(#ridge)"/>
+  <path d="m228 434 32 2 34 30 36 16-42 12-31-25-31 5-25 27-42 9 46-54Z" fill="#f7fbfc" opacity="0.88"/>
+  <path d="m507 286 38-48 41 55 35 47-47-19-29 25-29-26-45 19Z" fill="#f7fbfc" opacity="0.94"/>
+
+  <g filter="url(#shadow)">
+    <circle cx="600" cy="414" r="205" fill="#f8fbfc" opacity="0.96"/>
+    <circle cx="600" cy="371" r="83" fill="url(#portrait)"/>
+    <path d="M435 584c16-105 75-161 165-161s149 56 165 161c-43 47-99 71-165 71s-122-24-165-71Z" fill="url(#portrait)"/>
+  </g>
+
+  <g fill="#f8fbfc" text-anchor="middle" font-family="Arial, Helvetica, sans-serif">
+    <text x="600" y="780" font-size="32" font-weight="700" letter-spacing="7">THE AVALANCHE HOUR</text>
+    <text x="600" y="824" font-size="21" letter-spacing="4" opacity="0.82">PROFILE PHOTO COMING SOON</text>
+  </g>
+</svg>

@@ -3,7 +3,9 @@ import assert from 'node:assert/strict';
 import {
   MAX_PERSON_IMAGES,
   groupPeopleForDisplay,
+  isAllowedSelfProfileImage,
   moveImageAtIndex,
+  profileBioToPlainText,
   removeImageAtIndex,
   restoreImageAtIndex,
 } from '../lib/peoplePresentation.mjs';
@@ -98,4 +100,31 @@ test('groups all non-host roles together and sorts by display order', () => {
     grouped.team.map((person) => person.name),
     ['Webmaster', 'Social', 'Producer']
   );
+});
+
+test('converts legacy biography markup to safe plain text', () => {
+  const bio =
+    'Visit <a href="https://example.com">our site</a>.<br><img src=x onerror=alert(1)>';
+
+  assert.equal(profileBioToPlainText(bio), 'Visit our site.');
+});
+
+test('limits self-service profile images to uploads and the public image tree', () => {
+  assert.equal(
+    isAllowedSelfProfileImage('data:image/jpeg;base64,ZmFrZQ=='),
+    true
+  );
+  assert.equal(
+    isAllowedSelfProfileImage('/images/hosts/example portrait.jpg'),
+    true
+  );
+  assert.equal(
+    isAllowedSelfProfileImage('/images/../api/store/admin/auth/logout'),
+    false
+  );
+  assert.equal(
+    isAllowedSelfProfileImage('/api/store/admin/auth/logout'),
+    false
+  );
+  assert.equal(isAllowedSelfProfileImage('https://tracker.example/pixel'), false);
 });

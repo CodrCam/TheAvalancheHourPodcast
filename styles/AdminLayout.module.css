@@ -89,14 +89,18 @@
   min-width: 0;
 }
 
-.navLabel {
+.navSectionLabel {
   display: block;
-  margin: 2px 10px 9px;
+  margin: 15px 10px 5px;
   color: #7898b8;
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.14em;
   text-transform: uppercase;
+}
+
+.navSectionLabel:first-child {
+  margin-top: 2px;
 }
 
 .navList {
@@ -276,7 +280,7 @@
     height: 35px;
   }
 
-  .navLabel {
+  .navSectionLabel {
     position: absolute;
     width: 1px;
     height: 1px;

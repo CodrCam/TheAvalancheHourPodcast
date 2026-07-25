@@ -8,6 +8,11 @@ import ReceiptLongRoundedIcon from '@mui/icons-material/ReceiptLongRounded';
 import ArticleRoundedIcon from '@mui/icons-material/ArticleRounded';
 import GroupsRoundedIcon from '@mui/icons-material/GroupsRounded';
 import HandshakeRoundedIcon from '@mui/icons-material/HandshakeRounded';
+import CalendarMonthRoundedIcon from '@mui/icons-material/CalendarMonthRounded';
+import PodcastsRoundedIcon from '@mui/icons-material/PodcastsRounded';
+import AccountCircleRoundedIcon from '@mui/icons-material/AccountCircleRounded';
+import MenuBookRoundedIcon from '@mui/icons-material/MenuBookRounded';
+import HealthAndSafetyRoundedIcon from '@mui/icons-material/HealthAndSafetyRounded';
 import OpenInNewRoundedIcon from '@mui/icons-material/OpenInNewRounded';
 import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
 import styles from '../styles/AdminLayout.module.css';
@@ -21,13 +26,76 @@ function formatRole(role) {
     .join(' ');
 }
 
-const NAV_ITEMS = [
-  { href: '/admin', label: 'Overview', icon: DashboardRoundedIcon },
-  { href: '/admin/inventory', label: 'Inventory', icon: Inventory2RoundedIcon },
-  { href: '/admin/orders', label: 'Orders', icon: ReceiptLongRoundedIcon },
-  { href: '/admin/site-content', label: 'Site Content', icon: ArticleRoundedIcon },
-  { href: '/admin/people', label: 'Hosts & Team', icon: GroupsRoundedIcon },
-  { href: '/admin/sponsors', label: 'Sponsors', icon: HandshakeRoundedIcon },
+function formatGroups(groups, fallbackRole) {
+  const values = Array.isArray(groups) && groups.length ? groups : [fallbackRole];
+  return values.filter(Boolean).map(formatRole).join(' + ') || 'Checking access';
+}
+
+const NAV_SECTIONS = [
+  {
+    label: 'Workspace',
+    items: [
+      { href: '/admin', label: 'Overview', icon: DashboardRoundedIcon },
+      {
+        href: '/admin/inventory',
+        label: 'Inventory',
+        icon: Inventory2RoundedIcon,
+      },
+      { href: '/admin/orders', label: 'Orders', icon: ReceiptLongRoundedIcon },
+      {
+        href: '/admin/site-content',
+        label: 'Site Content',
+        icon: ArticleRoundedIcon,
+      },
+      {
+        href: '/admin/people',
+        label: 'Hosts & Team',
+        icon: GroupsRoundedIcon,
+      },
+      { href: '/admin/sponsors', label: 'Sponsors', icon: HandshakeRoundedIcon },
+      {
+        href: '/admin/system-health',
+        label: 'System Health',
+        icon: HealthAndSafetyRoundedIcon,
+        permission: 'audit:read',
+      },
+    ],
+  },
+  {
+    label: 'My Work',
+    items: [
+      {
+        href: '/studio/episodes',
+        label: 'My Episodes',
+        icon: PodcastsRoundedIcon,
+        permission: 'episodes:read',
+      },
+      {
+        href: '/studio/profile',
+        label: 'My Profile',
+        icon: AccountCircleRoundedIcon,
+        permission: 'profile:self:read',
+      },
+    ],
+  },
+  {
+    label: 'Studio',
+    items: [
+      {
+        href: '/admin/studios',
+        label: 'Episode Calendar',
+        icon: CalendarMonthRoundedIcon,
+        permission: 'episodes:manage',
+      },
+      {
+        href: '/studio/resources',
+        label: 'Host Resources',
+        icon: MenuBookRoundedIcon,
+        permission: 'resources:read',
+        activePaths: ['/studio/resources', '/studio/manage/resources'],
+      },
+    ],
+  },
 ];
 
 export default function AdminLayout({
@@ -36,6 +104,7 @@ export default function AdminLayout({
   unsavedChangesMessage = 'You have unsaved changes. Leave this page and discard them?',
 }) {
   const [session, setSession] = useState(null);
+  const [sessionState, setSessionState] = useState('loading');
   const router = useRouter();
 
   useEffect(() => {
@@ -47,9 +116,19 @@ export default function AdminLayout({
           credentials: 'same-origin',
         });
         const data = await res.json();
-        if (alive && res.ok) setSession(data.user || null);
+        if (!alive) return;
+        if (res.ok && data.user) {
+          setSession(data.user);
+          setSessionState('ready');
+        } else {
+          setSessionState('denied');
+          router.replace('/studio');
+        }
       } catch {
-        if (alive) setSession(null);
+        if (alive) {
+          setSessionState('denied');
+          router.replace('/studio');
+        }
       }
     }
 
@@ -58,7 +137,7 @@ export default function AdminLayout({
     return () => {
       alive = false;
     };
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     if (!hasUnsavedChanges) return undefined;
@@ -96,6 +175,41 @@ export default function AdminLayout({
     }
   }
 
+  if (sessionState !== 'ready') {
+    return (
+      <main
+        style={{
+          minHeight: '100vh',
+          display: 'grid',
+          placeContent: 'center',
+          justifyItems: 'center',
+          gap: 12,
+          background: '#f6f7f9',
+          color: '#475467',
+        }}
+      >
+        <img
+          src="/images/logo.png"
+          alt=""
+          style={{ width: 72, height: 72, objectFit: 'contain' }}
+        />
+        <p>
+          {sessionState === 'loading'
+            ? 'Opening Admin Studio…'
+            : 'Redirecting to Host Studio…'}
+        </p>
+      </main>
+    );
+  }
+
+  const visibleNavSections = NAV_SECTIONS.map((section) => ({
+    ...section,
+    items: section.items.filter(
+      (item) =>
+        !item.permission || session?.permissions?.includes(item.permission)
+    ),
+  })).filter((section) => section.items.length > 0);
+
   return (
     <div className={styles.shell}>
       <aside className={styles.sidebar}>
@@ -114,41 +228,55 @@ export default function AdminLayout({
         </Link>
 
         <nav className={styles.nav} aria-label="Admin navigation">
-          <span className={styles.navLabel}>Workspace</span>
           <ul className={styles.navList}>
-            {NAV_ITEMS.map((item) => {
-              const isActive =
-                item.href === '/admin'
-                  ? router.pathname === item.href
-                  : router.pathname.startsWith(item.href);
-              const Icon = item.icon;
+            {visibleNavSections.flatMap((section) => [
+              <li
+                key={`${section.label}-label`}
+                className={styles.navSectionLabel}
+              >
+                {section.label}
+              </li>,
+              ...section.items.map((item) => {
+                const isActive =
+                  item.activePaths?.some((path) =>
+                    router.pathname.startsWith(path)
+                  ) ||
+                  (item.href === '/admin'
+                    ? router.pathname === item.href
+                    : router.pathname.startsWith(item.href));
+                const Icon = item.icon;
 
-              return (
-                <li key={item.href}>
-                  <Link
-                    href={item.href}
-                    aria-current={isActive ? 'page' : undefined}
-                    className={`${styles.navLink} ${
-                      isActive ? styles.navLinkActive : ''
-                    }`}
-                    onClick={(event) =>
-                      confirmInternalNavigation(event, item.href)
-                    }
-                  >
-                    <Icon className={styles.navIcon} aria-hidden="true" />
-                    <span>{item.label}</span>
-                  </Link>
-                </li>
-              );
-            })}
+                return (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      aria-current={isActive ? 'page' : undefined}
+                      className={`${styles.navLink} ${
+                        isActive ? styles.navLinkActive : ''
+                      }`}
+                      onClick={(event) =>
+                        confirmInternalNavigation(event, item.href)
+                      }
+                    >
+                      <Icon className={styles.navIcon} aria-hidden="true" />
+                      <span>{item.label}</span>
+                    </Link>
+                  </li>
+                );
+              }),
+            ])}
           </ul>
         </nav>
 
         <div className={styles.sidebarFooter}>
           <div className={styles.account}>
-            <span className={styles.accountRole}>{formatRole(session?.role)}</span>
+            <span className={styles.accountRole}>
+              {formatGroups(session?.groups, session?.role)}
+            </span>
             <span className={styles.accountName}>
-              {session?.username || 'Secure admin session'}
+              {session?.display_name ||
+                session?.username ||
+                'Secure admin session'}
             </span>
           </div>
           <div className={styles.footerActions}>

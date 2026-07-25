@@ -35,7 +35,11 @@ export function proxy(req) {
   const url = req.nextUrl;
   const isAdminPage = url.pathname.startsWith('/admin');
   const isAdminApi = url.pathname.startsWith('/api/store/admin');
-  if (!isAdminPage && !isAdminApi) return NextResponse.next();
+  const isStudioPage = url.pathname.startsWith('/studio');
+  const isStudioApi = url.pathname.startsWith('/api/studio');
+  if (!isAdminPage && !isAdminApi && !isStudioPage && !isStudioApi) {
+    return NextResponse.next();
+  }
 
   if (isPublicAuthPath(url.pathname)) {
     return NextResponse.next();
@@ -51,7 +55,7 @@ export function proxy(req) {
     return NextResponse.next();
   }
 
-  if (isAdminPage) {
+  if (isAdminPage || isStudioPage) {
     const loginUrl = url.clone();
     loginUrl.pathname = '/admin/login';
     loginUrl.search = '';
@@ -62,5 +66,10 @@ export function proxy(req) {
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/api/store/admin/:path*'],
+  matcher: [
+    '/admin/:path*',
+    '/api/store/admin/:path*',
+    '/studio/:path*',
+    '/api/studio/:path*',
+  ],
 };

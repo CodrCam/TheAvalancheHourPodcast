@@ -50,7 +50,7 @@ request host. Setting them explicitly in production removes ambiguity.
 ```txt
 COGNITO_REDIRECT_URI=https://www.theavalanchehour.com/admin/auth/callback
 COGNITO_LOGOUT_URI=https://www.theavalanchehour.com/admin/login
-COGNITO_OAUTH_SCOPES=openid email
+COGNITO_OAUTH_SCOPES=openid
 ```
 
 ## Optional Site Integrations
