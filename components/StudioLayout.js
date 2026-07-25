@@ -7,27 +7,45 @@ import PodcastsRoundedIcon from '@mui/icons-material/PodcastsRounded';
 import AccountCircleRoundedIcon from '@mui/icons-material/AccountCircleRounded';
 import ManageAccountsRoundedIcon from '@mui/icons-material/ManageAccountsRounded';
 import CalendarMonthRoundedIcon from '@mui/icons-material/CalendarMonthRounded';
+import HeadsetMicRoundedIcon from '@mui/icons-material/HeadsetMicRounded';
 import OpenInNewRoundedIcon from '@mui/icons-material/OpenInNewRounded';
 import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
 import styles from '../styles/Studio.module.css';
 
 const BASE_NAV_ITEMS = [
-  { href: '/studio', label: 'Home', icon: HomeRoundedIcon },
+  {
+    href: '/studio',
+    label: 'Home',
+    icon: HomeRoundedIcon,
+    permission: 'studio:read',
+  },
   {
     href: '/studio/resources',
     label: 'Resources',
     icon: MenuBookRoundedIcon,
+    permission: 'resources:read',
     activePaths: ['/studio/resources', '/studio/manage/resources'],
   },
   {
     href: '/studio/episodes',
     label: 'My Episodes',
     icon: PodcastsRoundedIcon,
+    permission: 'episodes:read',
+    section: 'my_work',
   },
   {
     href: '/studio/profile',
     label: 'My Profile',
     icon: AccountCircleRoundedIcon,
+    permission: 'profile:self:read',
+    section: 'my_work',
+  },
+  {
+    href: '/studio/mic-kits',
+    label: 'Mic Kits',
+    icon: HeadsetMicRoundedIcon,
+    permission: 'mic_kits:read',
+    section: 'my_work',
   },
 ];
 
@@ -128,12 +146,17 @@ export default function StudioLayout({
   const navItems = useMemo(() => {
     const permissions = new Set(session?.permissions || []);
     return [
-      ...BASE_NAV_ITEMS,
+      ...BASE_NAV_ITEMS.filter(
+        (item) => !item.permission || permissions.has(item.permission)
+      ),
       ...MANAGER_NAV_ITEMS.filter((item) =>
         permissions.has(item.permission)
       ),
     ];
   }, [session]);
+  const studioHomeHref = session?.permissions?.includes('studio:read')
+    ? '/studio'
+    : '/studio/mic-kits';
 
   function confirmNavigation(event, href) {
     if (
@@ -167,9 +190,9 @@ export default function StudioLayout({
     <div className={styles.shell}>
       <aside className={styles.sidebar}>
         <Link
-          href="/studio"
+          href={studioHomeHref}
           className={styles.brand}
-          onClick={(event) => confirmNavigation(event, '/studio')}
+          onClick={(event) => confirmNavigation(event, studioHomeHref)}
         >
           <span className={styles.brandMark}>
             <img src="/images/logo.png" alt="" />
@@ -192,6 +215,9 @@ export default function StudioLayout({
                 : router.pathname.startsWith(item.href));
             const beginsManagerSection =
               item.manager && !navItems[index - 1]?.manager;
+            const beginsMyWorkSection =
+              item.section === 'my_work' &&
+              navItems[index - 1]?.section !== 'my_work';
             const Icon = item.icon;
 
             return (
@@ -201,6 +227,9 @@ export default function StudioLayout({
                   item.manager ? styles.navItemManager : styles.navItemBase
                 }
               >
+                {beginsMyWorkSection ? (
+                  <span className={styles.navLabelSecondary}>My Work</span>
+                ) : null}
                 {beginsManagerSection ? (
                   <span className={styles.navLabelSecondary}>Manage</span>
                 ) : null}

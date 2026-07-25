@@ -10,8 +10,8 @@ DynamoDB tables are already configured.
 | --- | --- |
 | `admin` | Everything in the Host Studio plus the existing website and Store Admin. |
 | `studio_manager` | Manage the episode calendar and handoffs, publish resources and announcements, connect host accounts, and use a connected personal profile. |
-| `host` | Read published resources, complete assigned episode forms, and update only the public profile connected to the signed-in account. |
-| `logistics` | Existing store and fulfillment tools. It does not add Host Studio access by itself. |
+| `host` | Read published resources, complete assigned episode forms, update only the public profile connected to the signed-in account, and request or view mic kits. |
+| `logistics` | Existing store and merchandise-fulfillment tools plus read/request access to the shared mic-kit catalog. |
 
 Group permissions are additive. Sierra can stay in both `logistics` and
 `studio_manager`; Cameron and Caleb can stay in `admin`.
@@ -52,6 +52,35 @@ final audio file. Her People record carries both the internal `host` and
 
 The host-facing guide at `/studio/resources` includes only published sections
 and active links. It never includes manager notes or inactive links.
+
+## Launch the mic-kit board
+
+1. Hosts and every other signed-in role open **Mic Kits** in Host Studio to see
+   current availability and submit a request.
+2. Caleb and Cameron open **Mic Kit Checkout** in Admin Studio to manage the
+   circulation desk.
+3. The starter board shows four reported kits and one possible newer kit. The
+   Season 11 guide describes the handoff process but does not state a physical
+   inventory count.
+4. Find each physical case and update its label, home country, current holder,
+   current city or region, and status.
+5. If the possible fifth kit does not exist, set it to **Not in circulation**.
+   If another kit exists, add it with its case label.
+6. Choose **Confirm final count** only after the physical inventory matches the
+   board.
+7. Ask hosts to choose **I need a mic kit** rather than emailing the team. The
+   shared queue shows their general location and need-by date; their street
+   address is visible only to them and admins.
+8. Caleb or Cameron approves, waitlists, or declines the request with a direct
+   response the host can read in Studio.
+9. Assign the closest practical kit, enter its ship-by date, carrier, tracking
+   details, and due-back date, then choose **Check out** when custody transfers.
+10. Choose **Check in** when the kit returns or is ready for the next host. The
+    kit immediately becomes available in the shared catalog.
+
+All four Cognito roles can read the board and create requests regardless of
+current availability. Only `admin` can respond, change inventory, assign
+shipments, or check kits out and in.
 
 ## Launch the episode workflow
 

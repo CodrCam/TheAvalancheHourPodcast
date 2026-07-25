@@ -12,7 +12,7 @@ export default async function handler(req, res) {
   const principal = await requirePermissionAsync(
     req,
     res,
-    ADMIN_PERMISSIONS.STUDIO_READ
+    ADMIN_PERMISSIONS.MIC_KITS_READ
   );
   if (!principal) return;
 

@@ -22,3 +22,6 @@ yarn-error.log*
 # Local migration exports with customer/order data
 data/dynamodb-orders-seed.json
 data/dynamodb-orders-seed.csv
+
+# Local Netlify folder
+.netlify

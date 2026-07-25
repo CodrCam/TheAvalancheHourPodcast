@@ -20,6 +20,8 @@ test('keeps host access limited to the Studio and the host own profile', () => {
     ACCESS_PERMISSIONS.EPISODES_SUBMIT,
     ACCESS_PERMISSIONS.PROFILE_SELF_READ,
     ACCESS_PERMISSIONS.PROFILE_SELF_UPDATE,
+    ACCESS_PERMISSIONS.MIC_KITS_READ,
+    ACCESS_PERMISSIONS.MIC_KITS_REQUEST,
   ]);
   assert.equal(
     permissions.includes(ACCESS_PERMISSIONS.PROFILES_UPDATE),
@@ -92,6 +94,48 @@ test('treats admin as the all-permissions group', () => {
     new Set(permissions),
     new Set(Object.values(ACCESS_PERMISSIONS))
   );
+});
+
+test('makes the mic kit board visible to every role while limiting logistics controls', () => {
+  for (const group of Object.values(ACCESS_GROUPS)) {
+    const permissions = getPermissionsForGroups([group]);
+    assert.equal(
+      permissions.includes(ACCESS_PERMISSIONS.MIC_KITS_READ),
+      true,
+      `${group} should be able to read the mic kit board`
+    );
+    assert.equal(
+      permissions.includes(ACCESS_PERMISSIONS.MIC_KITS_REQUEST),
+      true,
+      `${group} should be able to request a mic kit`
+    );
+  }
+
+  assert.equal(
+    getPermissionsForGroups([ACCESS_GROUPS.HOST]).includes(
+      ACCESS_PERMISSIONS.MIC_KITS_MANAGE
+    ),
+    false
+  );
+  assert.equal(
+    getPermissionsForGroups([ACCESS_GROUPS.ADMIN]).includes(
+      ACCESS_PERMISSIONS.MIC_KITS_MANAGE
+    ),
+    true
+  );
+  for (const group of [
+    ACCESS_GROUPS.STUDIO_MANAGER,
+    ACCESS_GROUPS.LOGISTICS,
+    ACCESS_GROUPS.HOST,
+  ]) {
+    assert.equal(
+      getPermissionsForGroups([group]).includes(
+        ACCESS_PERMISSIONS.MIC_KITS_MANAGE
+      ),
+      false,
+      `${group} should not be able to operate the admin checkout desk`
+    );
+  }
 });
 
 test('normalizes duplicate and unknown group names', () => {

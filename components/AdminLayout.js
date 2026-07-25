@@ -12,6 +12,7 @@ import CalendarMonthRoundedIcon from '@mui/icons-material/CalendarMonthRounded';
 import PodcastsRoundedIcon from '@mui/icons-material/PodcastsRounded';
 import AccountCircleRoundedIcon from '@mui/icons-material/AccountCircleRounded';
 import MenuBookRoundedIcon from '@mui/icons-material/MenuBookRounded';
+import HeadsetMicRoundedIcon from '@mui/icons-material/HeadsetMicRounded';
 import HealthAndSafetyRoundedIcon from '@mui/icons-material/HealthAndSafetyRounded';
 import OpenInNewRoundedIcon from '@mui/icons-material/OpenInNewRounded';
 import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
@@ -76,6 +77,12 @@ const NAV_SECTIONS = [
         icon: AccountCircleRoundedIcon,
         permission: 'profile:self:read',
       },
+      {
+        href: '/admin/mic-kits',
+        label: 'Mic Kit Checkout',
+        icon: HeadsetMicRoundedIcon,
+        permission: 'mic_kits:manage',
+      },
     ],
   },
   {
@@ -102,6 +109,8 @@ export default function AdminLayout({
   children,
   hasUnsavedChanges = false,
   unsavedChangesMessage = 'You have unsaved changes. Leave this page and discard them?',
+  requiredPermission = '',
+  accessDeniedRedirect = '/admin',
 }) {
   const [session, setSession] = useState(null);
   const [sessionState, setSessionState] = useState('loading');
@@ -117,12 +126,19 @@ export default function AdminLayout({
         });
         const data = await res.json();
         if (!alive) return;
-        if (res.ok && data.user) {
+        if (
+          res.ok &&
+          data.user &&
+          (!requiredPermission ||
+            data.user.permissions?.includes(requiredPermission))
+        ) {
           setSession(data.user);
           setSessionState('ready');
         } else {
           setSessionState('denied');
-          router.replace('/studio');
+          router.replace(
+            res.ok && data.user ? accessDeniedRedirect : '/studio'
+          );
         }
       } catch {
         if (alive) {
@@ -137,7 +153,7 @@ export default function AdminLayout({
     return () => {
       alive = false;
     };
-  }, [router]);
+  }, [accessDeniedRedirect, requiredPermission, router]);
 
   useEffect(() => {
     if (!hasUnsavedChanges) return undefined;

@@ -5,6 +5,7 @@ import AccountCircleRoundedIcon from '@mui/icons-material/AccountCircleRounded';
 import GroupsRoundedIcon from '@mui/icons-material/GroupsRounded';
 import CampaignRoundedIcon from '@mui/icons-material/CampaignRounded';
 import PodcastsRoundedIcon from '@mui/icons-material/PodcastsRounded';
+import HeadsetMicRoundedIcon from '@mui/icons-material/HeadsetMicRounded';
 import StudioLayout from '../../components/StudioLayout';
 import styles from '../../styles/Studio.module.css';
 
@@ -33,7 +34,7 @@ export default function StudioHomePage() {
   }, []);
 
   return (
-    <StudioLayout>
+    <StudioLayout requiredPermission="studio:read">
       <section className={styles.hero}>
         <span className={styles.eyebrow}>Private team workspace</span>
         <h1>{guide?.title || 'Host Studio'}</h1>
@@ -89,6 +90,16 @@ export default function StudioHomePage() {
           <p>
             Control the biography and photography that appear on your public
             Avalanche Hour profile.
+          </p>
+        </Link>
+        <Link href="/studio/mic-kits" className={styles.actionCard}>
+          <span className={styles.actionCardIcon}>
+            <HeadsetMicRoundedIcon aria-hidden="true" />
+          </span>
+          <h2>Find a Mic Kit</h2>
+          <p>
+            Request a mobile kit, see where each case is, and follow the next
+            handoff without a group email.
           </p>
         </Link>
         <Link href="/studio/resources?category=Getting+started" className={styles.actionCard}>

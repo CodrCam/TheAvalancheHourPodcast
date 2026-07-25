@@ -51,6 +51,7 @@ test('a host cannot manage assignments, access bindings, or published resources'
     ACCESS_PERMISSIONS.RESOURCES_PUBLISH,
     ACCESS_PERMISSIONS.PROFILES_READ,
     ACCESS_PERMISSIONS.PROFILES_UPDATE,
+    ACCESS_PERMISSIONS.MIC_KITS_MANAGE,
   ];
 
   assert.deepEqual(

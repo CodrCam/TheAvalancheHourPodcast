@@ -188,6 +188,24 @@ saving them, and the database rejects stored image values over 300 KB.
 `producer`, or both. It controls Episode Studio assignment pickers without
 changing the person's primary public role or moving their About-page card.
 
+Mic-kit circulation uses a dedicated sixth table:
+
+```txt
+Table name: AvalancheHourMicKits
+Partition key: tracker_id
+Partition key type: String
+Sort key: none
+Capacity mode: On-demand
+```
+
+The `studio_mic_kit_tracker` item stores the shared inventory, requests,
+admin responses, assignments, shipping details, checkouts, returns, and
+optimistic-update timestamp. Every signed-in role can see current availability
+and submit a request even when no kit is free. Only the `admin` role can open
+the checkout desk, read all private mailing details, respond to requests, or
+check kits out and in. The requesting host can see their own private address,
+tracking, and admin response.
+
 ## Create the Tables
 
 1. Open AWS Console.
@@ -224,6 +242,20 @@ changing the person's primary public role or moving their About-page card.
 32. Capacity: choose On-demand.
 33. Leave the rest as the defaults.
 34. Create the table.
+35. Create a sixth table named `AvalancheHourMicKits`.
+36. Use partition key `tracker_id` as a String.
+37. Do not add a sort key.
+38. Capacity: choose On-demand.
+39. Leave the rest as the defaults.
+40. Create the table.
+
+The repository also includes a safe setup command. It previews by default and
+creates/seeds the table only when `--apply` is provided:
+
+```bash
+npm run create:dynamo-mic-kits
+npm run create:dynamo-mic-kits -- --apply
+```
 
 ## Create the App Access Key
 
@@ -251,7 +283,8 @@ Create a policy with this permission scope:
         "arn:aws:dynamodb:us-east-2:426018612622:table/AvalancheHourOrders",
         "arn:aws:dynamodb:us-east-2:426018612622:table/AvalancheHourSiteContent",
         "arn:aws:dynamodb:us-east-2:426018612622:table/AvalancheHourSponsors",
-        "arn:aws:dynamodb:us-east-2:426018612622:table/AvalancheHourPeople"
+        "arn:aws:dynamodb:us-east-2:426018612622:table/AvalancheHourPeople",
+        "arn:aws:dynamodb:us-east-2:426018612622:table/AvalancheHourMicKits"
       ]
     }
   ]
@@ -273,6 +306,7 @@ DYNAMODB_ORDERS_TABLE=AvalancheHourOrders
 DYNAMODB_SITE_CONTENT_TABLE=AvalancheHourSiteContent
 DYNAMODB_SPONSORS_TABLE=AvalancheHourSponsors
 DYNAMODB_PEOPLE_TABLE=AvalancheHourPeople
+DYNAMODB_MIC_KITS_TABLE=AvalancheHourMicKits
 ```
 
 For local testing, put them in `.env.local`. For deployment, add them in the
@@ -451,9 +485,14 @@ npm run seed:dynamo-orders -- --apply --overwrite
 - Team members use DynamoDB when `DYNAMODB_PEOPLE_TABLE` is set. Public team
   pages keep the built-in people list as a fallback if managed people are
   unavailable.
+- Mic-kit inventory and requests use their dedicated table when
+  `DYNAMODB_MIC_KITS_TABLE` is set. Reads show a clearly provisional inventory
+  if it is unavailable; writes fail safely instead of storing operational data
+  in browser state or the general site-content table.
 - If an inventory or orders DynamoDB table variable is missing, the server fails
   loudly instead of silently writing to Supabase.
 
-For production, set all five table variables so DynamoDB is the live store
-backend. Old Supabase export scripts may still use `SUPABASE_DB_URL` locally for
+For production, set all six table variables so DynamoDB is the live
+operational backend. Old Supabase export scripts may still use
+`SUPABASE_DB_URL` locally for
 one-off migration work, but it is not part of normal Netlify runtime config.

@@ -27,6 +27,7 @@ DYNAMODB_ORDERS_TABLE=AvalancheHourOrders
 DYNAMODB_SITE_CONTENT_TABLE=AvalancheHourSiteContent
 DYNAMODB_SPONSORS_TABLE=AvalancheHourSponsors
 DYNAMODB_PEOPLE_TABLE=AvalancheHourPeople
+DYNAMODB_MIC_KITS_TABLE=AvalancheHourMicKits
 
 COGNITO_DOMAIN=...
 COGNITO_REGION=us-east-2
@@ -93,12 +94,13 @@ Do not add it to Netlify for the normal production site.
    - `https://theavalanchehour.com/admin/login`
 3. Confirm the Stripe webhook endpoint points to:
    - `https://www.theavalanchehour.com/api/webhook`
-4. Confirm the IAM user policy includes all five tables:
+4. Confirm the IAM user policy includes all six tables:
    - `AvalancheHourInventory`
    - `AvalancheHourOrders`
    - `AvalancheHourSiteContent`
    - `AvalancheHourSponsors`
    - `AvalancheHourPeople`
+   - `AvalancheHourMicKits`
 5. Confirm the IAM user policy allows `dynamodb:UpdateItem`; paid merchandise
    orders use transactional `Update` operations to decrement every line item
    atomically. DynamoDB authorizes those operations through the underlying
