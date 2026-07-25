@@ -1,14 +1,21 @@
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/router';
 import StudioLayout from '../../components/StudioLayout';
 import ResourceModeSwitch from '../../components/ResourceModeSwitch';
 import StudioResourceLibrary from '../../components/StudioResourceLibrary';
+import StudioResourcePathways from '../../components/StudioResourcePathways';
+import CampaignRoundedIcon from '@mui/icons-material/CampaignRounded';
+import styles from '../../styles/Studio.module.css';
 
 export default function StudioResourcesPage() {
+  const router = useRouter();
   const [guide, setGuide] = useState(null);
   const [updatedAt, setUpdatedAt] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [canEdit, setCanEdit] = useState(false);
+  const [resourcePaths, setResourcePaths] = useState([]);
+  const [defaultResourcePath, setDefaultResourcePath] = useState('host');
 
   useEffect(() => {
     let alive = true;
@@ -28,6 +35,8 @@ export default function StudioResourcesPage() {
         setGuide(data.guide || null);
         setUpdatedAt(data.updated_at || '');
         setCanEdit(data.canEdit === true);
+        setResourcePaths(data.resource_paths || []);
+        setDefaultResourcePath(data.default_resource_path || 'host');
       } catch (err) {
         if (alive) setError(err.message || 'Could not load the Host Guide.');
       } finally {
@@ -41,17 +50,78 @@ export default function StudioResourcesPage() {
     };
   }, []);
 
+  const requestedPath =
+    typeof router.query.path === 'string' ? router.query.path : '';
+  const activePath =
+    resourcePaths.find((pathway) => pathway.id === requestedPath) ||
+    resourcePaths.find((pathway) => pathway.id === defaultResourcePath) ||
+    resourcePaths[0];
+  const showHostGuide = activePath?.id === 'host';
+
   return (
     <StudioLayout>
-      <StudioResourceLibrary
-        guide={guide}
-        updatedAt={updatedAt}
-        loading={loading}
-        error={error}
-        headerActions={
+      <header className={styles.pageHeader}>
+        <div>
+          <span className={styles.eyebrow}>The Avalanche Hour team</span>
+          <h1>Resource Center</h1>
+          <p>
+            Choose the responsibility you are working on to see what each
+            workspace does, when to use it, and where the handoff goes next.
+          </p>
+        </div>
+        <div className={styles.resourceHeaderActions}>
           <ResourceModeSwitch activeMode="view" canEdit={canEdit} />
-        }
-      />
+        </div>
+      </header>
+
+      {guide?.announcement?.enabled ? (
+        <section className={styles.announcement}>
+          <span className={styles.announcementIcon}>
+            <CampaignRoundedIcon aria-hidden="true" />
+          </span>
+          <div>
+            <h2>{guide.announcement.title}</h2>
+            <p>{guide.announcement.body}</p>
+          </div>
+        </section>
+      ) : null}
+
+      {error ? <p className={styles.errorMessage}>{error}</p> : null}
+      {loading ? <p className={styles.notice}>Opening team resources…</p> : null}
+
+      {!loading && !error ? (
+        <>
+          <StudioResourcePathways
+            pathways={resourcePaths}
+            activePathId={activePath?.id}
+          />
+          {showHostGuide ? (
+            <section
+              className={styles.hostGuideSection}
+              aria-labelledby="host-guide-heading"
+            >
+              <div className={styles.workflowHeading}>
+                <div>
+                  <span className={styles.eyebrow}>Shared host reference</span>
+                  <h2 id="host-guide-heading">
+                    {guide?.title || 'Host Guide'}
+                  </h2>
+                  <p>
+                    {guide?.intro ||
+                      'Search the guide or browse by production stage.'}
+                  </p>
+                </div>
+              </div>
+              <StudioResourceLibrary
+                guide={guide}
+                updatedAt={updatedAt}
+                showHeader={false}
+                showAnnouncement={false}
+              />
+            </section>
+          ) : null}
+        </>
+      ) : null}
     </StudioLayout>
   );
 }

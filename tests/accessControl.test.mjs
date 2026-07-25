@@ -89,6 +89,19 @@ test('combines logistics and Studio manager permissions for a multi-group user',
   );
 });
 
+test('gives logistics users the operations resource center without Studio management', () => {
+  const permissions = getPermissionsForGroups([ACCESS_GROUPS.LOGISTICS]);
+
+  assert.equal(
+    permissions.includes(ACCESS_PERMISSIONS.RESOURCES_READ),
+    true
+  );
+  assert.equal(
+    permissions.includes(ACCESS_PERMISSIONS.EPISODES_MANAGE),
+    false
+  );
+});
+
 test('treats admin as the all-permissions group', () => {
   const permissions = getPermissionsForGroups([ACCESS_GROUPS.ADMIN]);
 

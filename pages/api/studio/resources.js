@@ -3,6 +3,10 @@ import {
   requirePermissionAsync,
 } from '../../../lib/adminAuth';
 import { getStudioGuide } from '../../../lib/studioGuideStore';
+import {
+  getDefaultStudioResourcePath,
+  getStudioResourcePathways,
+} from '../../../lib/studioResourcePathways.mjs';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -24,6 +28,10 @@ export default async function handler(req, res) {
       ...result,
       canEdit: principal.permissions.includes(
         ADMIN_PERMISSIONS.RESOURCES_UPDATE
+      ),
+      resource_paths: getStudioResourcePathways(principal.permissions),
+      default_resource_path: getDefaultStudioResourcePath(
+        principal.permissions
       ),
     });
   } catch (err) {

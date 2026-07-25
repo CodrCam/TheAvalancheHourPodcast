@@ -29,6 +29,8 @@ export default function StudioResourceLibrary({
   error = '',
   headerActions = null,
   previewLabel = '',
+  showHeader = true,
+  showAnnouncement = true,
 }) {
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('All');
@@ -73,28 +75,30 @@ export default function StudioResourceLibrary({
 
   return (
     <>
-      <header className={styles.pageHeader}>
-        <div>
-          <div className={styles.eyebrowRow}>
-            <span className={styles.eyebrow}>
-              {guide?.eyebrow || 'Host resources'}
-            </span>
-            {previewLabel ? (
-              <span className={styles.previewBadge}>{previewLabel}</span>
-            ) : null}
+      {showHeader ? (
+        <header className={styles.pageHeader}>
+          <div>
+            <div className={styles.eyebrowRow}>
+              <span className={styles.eyebrow}>
+                {guide?.eyebrow || 'Host resources'}
+              </span>
+              {previewLabel ? (
+                <span className={styles.previewBadge}>{previewLabel}</span>
+              ) : null}
+            </div>
+            <h1>{guide?.title || 'Host Guide'}</h1>
+            <p>
+              {guide?.intro ||
+                'Search the guide or browse by production stage.'}
+            </p>
           </div>
-          <h1>{guide?.title || 'Host Guide'}</h1>
-          <p>
-            {guide?.intro ||
-              'Search the guide or browse by production stage.'}
-          </p>
-        </div>
-        {headerActions ? (
-          <div className={styles.resourceHeaderActions}>{headerActions}</div>
-        ) : null}
-      </header>
+          {headerActions ? (
+            <div className={styles.resourceHeaderActions}>{headerActions}</div>
+          ) : null}
+        </header>
+      ) : null}
 
-      {guide?.announcement?.enabled ? (
+      {showAnnouncement && guide?.announcement?.enabled ? (
         <section className={styles.announcement}>
           <span className={styles.announcementIcon}>
             <CampaignRoundedIcon aria-hidden="true" />

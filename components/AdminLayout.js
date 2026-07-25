@@ -104,7 +104,7 @@ const NAV_SECTIONS = [
       },
       {
         href: '/studio/resources',
-        label: 'Host Resources',
+        label: 'Team Resources',
         icon: MenuBookRoundedIcon,
         permission: 'resources:read',
         activePaths: ['/studio/resources', '/studio/manage/resources'],

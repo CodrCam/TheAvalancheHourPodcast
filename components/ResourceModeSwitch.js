@@ -17,7 +17,7 @@ export default function ResourceModeSwitch({
         aria-current={activeMode === 'view' ? 'page' : undefined}
       >
         <VisibilityRoundedIcon aria-hidden="true" />
-        View
+        Resource center
       </Link>
       {canEdit ? (
         <Link
@@ -28,7 +28,7 @@ export default function ResourceModeSwitch({
           aria-current={activeMode === 'edit' ? 'page' : undefined}
         >
           <EditNoteRoundedIcon aria-hidden="true" />
-          Edit
+          Edit host guide
         </Link>
       ) : null}
     </nav>

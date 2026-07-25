@@ -574,6 +574,273 @@
   line-height: 1.55;
 }
 
+.pathwayPicker {
+  margin-top: 24px;
+  padding: clamp(20px, 3vw, 28px);
+  border: 1px solid rgba(20, 38, 56, 0.1);
+  border-radius: 22px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(237, 244, 245, 0.82));
+  box-shadow: 0 15px 45px rgba(25, 48, 60, 0.07);
+}
+
+.pathwayPickerHeading,
+.workflowHeading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.pathwayPickerHeading h2,
+.workflowHeading h2 {
+  margin: 0;
+  color: var(--studio-ink);
+  font-size: clamp(1.45rem, 2.5vw, 2.15rem);
+  letter-spacing: -0.035em;
+}
+
+.pathwayPickerHeading > p,
+.workflowHeading p {
+  max-width: 640px;
+  margin: 0;
+  color: var(--studio-muted);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.pathwayPickerHeading > p {
+  max-width: 390px;
+}
+
+.pathwayTabs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(245px, 1fr));
+  gap: 12px;
+  margin-top: 22px;
+}
+
+.pathwayTab {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 13px;
+  min-height: 142px;
+  padding: 17px;
+  color: inherit;
+  text-decoration: none;
+  border: 1px solid rgba(20, 38, 56, 0.11);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.82);
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.pathwayTab:hover {
+  border-color: rgba(53, 107, 131, 0.35);
+  box-shadow: 0 13px 30px rgba(25, 48, 60, 0.1);
+  transform: translateY(-2px);
+}
+
+.pathwayTabActive {
+  color: #f7fbfc;
+  border-color: #285b72;
+  background:
+    radial-gradient(circle at 12% 8%, rgba(139, 194, 213, 0.25), transparent 10rem),
+    linear-gradient(145deg, #285f78, #173e52);
+  box-shadow: 0 15px 34px rgba(29, 70, 89, 0.22);
+}
+
+.pathwayTabIcon {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  color: #285b72;
+  border-radius: 12px;
+  background: #e6f0f3;
+}
+
+.pathwayTabActive .pathwayTabIcon {
+  color: #173e52;
+  background: #d7ebf1;
+}
+
+.pathwayTab small,
+.pathwayTab strong,
+.pathwayTab > span > span {
+  display: block;
+}
+
+.pathwayTab small {
+  margin: 1px 0 4px;
+  color: #5c8191;
+  font-size: 0.65rem;
+  font-weight: 820;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.pathwayTabActive small {
+  color: #b8dbe6;
+}
+
+.pathwayTab strong {
+  font-size: 0.98rem;
+}
+
+.pathwayTab > span > span {
+  margin-top: 6px;
+  color: var(--studio-muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.pathwayTabActive > span > span {
+  color: rgba(240, 248, 250, 0.72);
+}
+
+.workflowSection,
+.hostGuideSection {
+  margin-top: 32px;
+}
+
+.workflowHeading {
+  padding: 0 3px 18px;
+  border-bottom: 1px solid var(--studio-line);
+}
+
+.workflowHeading > div {
+  max-width: 750px;
+}
+
+.workflowHeading p {
+  margin-top: 9px;
+}
+
+.workflowCount {
+  flex: 0 0 auto;
+  padding: 7px 11px;
+  color: #456876;
+  font-size: 0.72rem;
+  font-weight: 760;
+  border: 1px solid rgba(53, 107, 131, 0.15);
+  border-radius: 999px;
+  background: #eaf2f4;
+}
+
+.workflowGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.workflowCard {
+  display: flex;
+  min-height: 390px;
+  flex-direction: column;
+  padding: 23px;
+  border: 1px solid var(--studio-line);
+  border-radius: 19px;
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: 0 10px 34px rgba(25, 48, 60, 0.06);
+}
+
+.workflowCardHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.workflowNumber {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  color: #315f73;
+  font-size: 0.7rem;
+  font-weight: 840;
+  border-radius: 11px;
+  background: #e8f1f4;
+}
+
+.workflowLabel {
+  color: #5b8597;
+  font-size: 0.67rem;
+  font-weight: 820;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.workflowCard h3 {
+  margin: 18px 0 8px;
+  font-size: 1.22rem;
+  letter-spacing: -0.025em;
+}
+
+.workflowDescription {
+  margin: 0;
+  color: var(--studio-muted);
+  font-size: 0.88rem;
+  line-height: 1.62;
+}
+
+.workflowDetails {
+  display: grid;
+  gap: 11px;
+  margin: 18px 0 20px;
+}
+
+.workflowDetails > div {
+  padding: 12px 13px;
+  border-left: 3px solid #bad2dc;
+  border-radius: 0 10px 10px 0;
+  background: #f3f7f7;
+}
+
+.workflowDetails dt {
+  margin-bottom: 4px;
+  color: #315f73;
+  font-size: 0.65rem;
+  font-weight: 830;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.workflowDetails dd {
+  margin: 0;
+  color: #536873;
+  font-size: 0.79rem;
+  line-height: 1.5;
+}
+
+.workflowAction {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: 7px;
+  margin-top: auto;
+  color: #285f78;
+  font-size: 0.8rem;
+  font-weight: 780;
+  text-decoration: none;
+}
+
+.workflowAction svg {
+  width: 18px;
+  transition: transform 150ms ease;
+}
+
+.workflowAction:hover svg {
+  transform: translateX(3px);
+}
+
+.hostGuideSection .resourceControls {
+  margin-top: 18px;
+}
+
 .resourceControls {
   position: sticky;
   top: 12px;
@@ -1422,6 +1689,20 @@
   .pageHeader {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .pathwayPickerHeading,
+  .workflowHeading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .workflowGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .workflowCard {
+    min-height: 0;
   }
 
   .resourceHeaderActions {
