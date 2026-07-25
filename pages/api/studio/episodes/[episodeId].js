@@ -4,10 +4,14 @@ import {
 } from '../../../../lib/adminAuth';
 import { logAdminAction } from '../../../../lib/adminAudit';
 import {
-  getEpisodeStudioMembership,
+  getEpisodeRelationshipCapabilities,
   getEpisodeCompletion,
+  configureEpisodeDeliverables,
   mergeEpisodeStudioManagerValues,
   mergeHostDeliverableValues,
+  normalizeEpisodeStudio,
+  isSafeEpisodeMaterialUrl,
+  sanitizeEpisodeStudioForViewer,
 } from '../../../../lib/episodeStudioPresentation.mjs';
 import {
   getEpisodeStudio,
@@ -24,6 +28,16 @@ import {
   pickStudioDisplayName,
   resolveStudioMessageAuthors,
 } from '../../../../lib/studioIdentityPresentation.mjs';
+import {
+  getSponsorReadOperationalState,
+  isSponsorReadAssignable,
+} from '../../../../lib/sponsorReadPresentation.mjs';
+import {
+  getSponsorRead,
+  listSponsorReads,
+} from '../../../../lib/sponsorReadStore';
+import { publishEpisodeNotifications } from '../../../../lib/episodeStudioEvents';
+import { isEpisodeAssetStorageConfigured } from '../../../../lib/episodeAssetStorage';
 import crypto from 'crypto';
 
 const HOST_LOCKED_STATUSES = [
@@ -32,7 +46,6 @@ const HOST_LOCKED_STATUSES = [
   'accepted',
 ];
 const PRODUCER_REVIEW_STATUSES = [
-  'in_progress',
   'needs_changes',
   'accepted',
 ];
@@ -116,6 +129,76 @@ function getDeliveryHealthActorRole(principal, binding, episode) {
   return 'host';
 }
 
+async function sponsorReadResponseData(episode, canManage) {
+  let result;
+  try {
+    result = await listSponsorReads();
+  } catch (error) {
+    console.error('sponsor read library lookup unavailable:', error);
+    return {
+      episode: sanitizeEpisodeStudioForViewer({
+        ...episode,
+        sponsor_read_assignments: (
+          episode.sponsor_read_assignments || []
+        ).map((assignment) => ({
+          ...assignment,
+          library_check_unavailable: true,
+        })),
+      }),
+      available_sponsor_reads: [],
+    };
+  }
+  const readsById = new Map(
+    (result.sponsor_reads || []).map((read) => [
+      read.sponsor_read_id,
+      read,
+    ])
+  );
+  const today = new Date().toISOString().slice(0, 10);
+  return {
+    episode: sanitizeEpisodeStudioForViewer({
+      ...episode,
+      sponsor_read_assignments: (episode.sponsor_read_assignments || []).map(
+        (assignment) => {
+          const current = readsById.get(assignment.sponsor_read_id);
+          const currentState = current
+            ? getSponsorReadOperationalState(current, today)
+            : 'retired';
+          return {
+            ...assignment,
+            library_state: currentState,
+            library_version_number: current?.version_number || 0,
+            script_changed:
+              Boolean(current) &&
+              current.version_number !== assignment.version_number,
+            script_expired:
+              currentState === 'expired' ||
+              Boolean(
+                assignment.expiration_date &&
+                  assignment.expiration_date < today
+              ),
+            script_retired:
+              !current || currentState === 'retired',
+          };
+        }
+      ),
+    }),
+    available_sponsor_reads: canManage
+      ? (result.sponsor_reads || [])
+          .filter((read) => isSponsorReadAssignable(read, today))
+          .map((read) => ({
+            sponsor_read_id: read.sponsor_read_id,
+            sponsor_id: read.sponsor_id,
+            sponsor_name: read.sponsor_name,
+            script_title: read.script_title,
+            version_number: read.version_number,
+            effective_date: read.effective_date,
+            expiration_date: read.expiration_date,
+          }))
+      : [],
+  };
+}
+
 export default async function handler(req, res) {
   if (!['GET', 'PATCH'].includes(req.method)) {
     res.setHeader('Allow', 'GET,PATCH');
@@ -142,17 +225,28 @@ export default async function handler(req, res) {
       ADMIN_PERMISSIONS.EPISODES_MANAGE
     );
     const binding = await getStudioBindingForSubject(principal.subject);
-    const episodeMembership = binding
-      ? getEpisodeStudioMembership(result.episode, {
+    const membershipIdentity = binding
+      ? {
           person_id: binding.person_id,
           username: principal.username,
           subject: principal.subject,
           account_email: binding.account_email,
           identifiers: [binding.user_sub],
-        })
-      : [];
-    const assigned = canManage || episodeMembership.length > 0;
-    if (!assigned) {
+        }
+      : {};
+    const relationship = getEpisodeRelationshipCapabilities(
+      result.episode,
+      membershipIdentity,
+      principal
+    );
+    const {
+      roles: episodeMembership,
+      canHost,
+      canReview,
+      canConfigure,
+      canAdminOverride,
+    } = relationship;
+    if (!relationship.canAccess) {
       return res.status(403).json({
         ok: false,
         error: 'This Episode Studio is not assigned to your account.',
@@ -171,16 +265,27 @@ export default async function handler(req, res) {
     );
 
     if (req.method === 'GET') {
-      return res.status(200).json({
-        ok: true,
-        configured: result.configured,
-        canManage,
-        episode: resolveMessageAuthors(
+      const sponsorData = await sponsorReadResponseData(
+        resolveMessageAuthors(
           result.episode,
           directory,
           principal,
           currentAuthorName
         ),
+        canConfigure
+      );
+      return res.status(200).json({
+        ok: true,
+        configured: result.configured,
+        canManage,
+        canHost,
+        canReview,
+        canConfigure,
+        canAdminOverride,
+        episode_roles: episodeMembership,
+        episode: sponsorData.episode,
+        available_sponsor_reads: sponsorData.available_sponsor_reads,
+        asset_uploads_configured: isEpisodeAssetStorageConfigured(),
         completion: getEpisodeCompletion(result.episode),
         host_names: hostNames,
         people: canManage
@@ -214,7 +319,12 @@ export default async function handler(req, res) {
       'set_delivery_health',
       'message',
       'review',
+      'override_review',
       'update',
+      'assign_sponsor_read',
+      'remove_sponsor_read',
+      'update_sponsor_read_assignment',
+      'configure_checklist',
     ]);
     if (!allowedActions.has(action)) {
       return res.status(400).json({
@@ -270,12 +380,180 @@ export default async function handler(req, res) {
             message_id: `message-${crypto.randomUUID()}`,
             body,
             author_name: currentAuthorName,
-            author_role: canManage ? 'producer' : 'host',
+            author_role: canReview
+              ? 'producer'
+              : canHost
+                ? 'host'
+                : canManage
+                  ? 'studio_manager'
+                  : 'creator',
             created_at: new Date().toISOString(),
           },
         ].slice(-100),
       };
-    } else if (canManage && action === 'review') {
+    } else if (action === 'assign_sponsor_read') {
+      if (!canConfigure) {
+        return res.status(403).json({ ok: false, error: 'Forbidden' });
+      }
+      const readId = String(req.body?.sponsor_read_id || '').trim();
+      const readResult = await getSponsorRead(readId);
+      const read = readResult.sponsor_read;
+      if (!read || !isSponsorReadAssignable(read)) {
+        return res.status(400).json({
+          ok: false,
+          error: 'Choose a current approved sponsor read.',
+        });
+      }
+      const existingAssignment = result.episode.sponsor_read_assignments.find(
+        (assignment) => assignment.sponsor_read_id === read.sponsor_read_id
+      );
+      const snapshot = {
+        assignment_id:
+          existingAssignment?.assignment_id ||
+          `sponsor-read-assignment-${crypto.randomUUID()}`,
+        sponsor_read_id: read.sponsor_read_id,
+        sponsor_id: read.sponsor_id,
+        sponsor_name: read.sponsor_name,
+        script_title: read.script_title,
+        approved_text: read.approved_text,
+        pronunciation_guidance: read.pronunciation_guidance,
+        host_instructions: read.host_instructions,
+        effective_date: read.effective_date,
+        expiration_date: read.expiration_date,
+        version_number: read.version_number,
+        source_state: read.state,
+        requires_audio: req.body?.requires_audio === true,
+        recording_mode:
+          req.body?.recording_mode === 'included_in_voice_file'
+            ? 'included_in_voice_file'
+            : 'separate_upload',
+        audio_asset_id: existingAssignment?.audio_asset_id || '',
+        audio_url: existingAssignment?.audio_url || '',
+        completed:
+          req.body?.requires_audio === true
+            ? existingAssignment?.completed === true
+            : true,
+        assigned_at: new Date().toISOString(),
+        assigned_by_person_id: binding?.person_id || '',
+        assigned_by_name: currentAuthorName,
+        completed_at: existingAssignment?.completed_at || '',
+        completed_by_person_id:
+          existingAssignment?.completed_by_person_id || '',
+        completed_by_name: existingAssignment?.completed_by_name || '',
+      };
+      nextEpisode = normalizeEpisodeStudio({
+        ...result.episode,
+        sponsor_read_assignments: [
+          ...result.episode.sponsor_read_assignments.filter(
+            (assignment) =>
+              assignment.sponsor_read_id !== read.sponsor_read_id
+          ),
+          snapshot,
+        ],
+      });
+    } else if (action === 'remove_sponsor_read') {
+      if (!canConfigure) {
+        return res.status(403).json({ ok: false, error: 'Forbidden' });
+      }
+      const assignmentId = String(req.body?.assignment_id || '').trim();
+      nextEpisode = normalizeEpisodeStudio({
+        ...result.episode,
+        sponsor_read_assignments:
+          result.episode.sponsor_read_assignments.filter(
+            (assignment) => assignment.assignment_id !== assignmentId
+          ),
+      });
+    } else if (action === 'update_sponsor_read_assignment') {
+      if (!canHost && !canManage) {
+        return res.status(403).json({ ok: false, error: 'Forbidden' });
+      }
+      if (
+        !canManage &&
+        HOST_LOCKED_STATUSES.includes(result.episode.status)
+      ) {
+        return res.status(409).json({
+          ok: false,
+          error:
+            'This sponsor read is locked while the package is with the producer.',
+        });
+      }
+      const assignmentId = String(req.body?.assignment_id || '').trim();
+      const assignment = result.episode.sponsor_read_assignments.find(
+        (candidate) => candidate.assignment_id === assignmentId
+      );
+      if (!assignment) {
+        return res.status(404).json({
+          ok: false,
+          error: 'Sponsor read assignment not found.',
+        });
+      }
+      const audioUrl = String(req.body?.audio_url || '').trim();
+      const audioAssetId = String(req.body?.audio_asset_id || '').trim();
+      const completed = req.body?.completed === true;
+      const audioAsset = result.episode.assets.find(
+        (candidate) =>
+          candidate.asset_id === audioAssetId &&
+          candidate.content_type.startsWith('audio/')
+      );
+      if (
+        assignment.requires_audio &&
+        completed &&
+        !audioAsset &&
+        !isSafeEpisodeMaterialUrl(audioUrl)
+      ) {
+        return res.status(400).json({
+          ok: false,
+          error:
+            'Add a secure HTTPS sponsor-audio link before marking this read complete.',
+        });
+      }
+      nextEpisode = normalizeEpisodeStudio({
+        ...result.episode,
+        sponsor_read_assignments:
+          result.episode.sponsor_read_assignments.map((candidate) =>
+            candidate.assignment_id === assignmentId
+              ? {
+                  ...candidate,
+                  audio_asset_id: audioAsset?.asset_id || '',
+                  audio_url: audioUrl,
+                  completed,
+                  completed_at: completed ? new Date().toISOString() : '',
+                  completed_by_person_id: completed
+                    ? binding?.person_id || ''
+                    : '',
+                  completed_by_name: completed ? currentAuthorName : '',
+                }
+              : candidate
+          ),
+      });
+    } else if (action === 'configure_checklist') {
+      if (!canConfigure) {
+        return res.status(403).json({ ok: false, error: 'Forbidden' });
+      }
+      if (
+        ['submitted', 'submitted_with_gaps', 'accepted'].includes(
+          result.episode.status
+        )
+      ) {
+        return res.status(409).json({
+          ok: false,
+          error:
+            'Reopen the host package before changing its checklist structure.',
+        });
+      }
+      nextEpisode = configureEpisodeDeliverables(
+        result.episode,
+        req.body?.deliverables
+      );
+      nextEpisode = normalizeEpisodeStudio({
+        ...nextEpisode,
+        canonical_assets_required:
+          req.body?.canonical_assets_required === true,
+      });
+    } else if (
+      (canReview && action === 'review') ||
+      (canAdminOverride && action === 'override_review')
+    ) {
       const status = String(req.body?.status || '');
       if (!PRODUCER_REVIEW_STATUSES.includes(status)) {
         return res
@@ -293,6 +571,18 @@ export default async function handler(req, res) {
       }
       if (
         status === 'needs_changes' &&
+        !['submitted', 'submitted_with_gaps', 'accepted'].includes(
+          result.episode.status
+        )
+      ) {
+        return res.status(409).json({
+          ok: false,
+          error:
+            'Changes can be requested only after the host package is submitted.',
+        });
+      }
+      if (
+        status === 'needs_changes' &&
         !String(req.body?.producer_feedback || '').trim()
       ) {
         return res.status(400).json({
@@ -300,15 +590,37 @@ export default async function handler(req, res) {
           error: 'Add a producer note before requesting changes.',
         });
       }
+      const overrideReason = String(req.body?.override_reason || '')
+        .trim()
+        .slice(0, 1000);
+      if (action === 'override_review' && overrideReason.length < 8) {
+        return res.status(400).json({
+          ok: false,
+          error: 'Add an audit reason for the administrator override.',
+        });
+      }
       nextEpisode = {
         ...result.episode,
         status,
         producer_feedback: req.body?.producer_feedback || '',
         reviewed_at: new Date().toISOString(),
+        reviewed_by_person_id: binding?.person_id || '',
+        reviewed_by_name: currentAuthorName,
+        review_override: action === 'override_review',
+        review_override_reason:
+          action === 'override_review' ? overrideReason : '',
       };
     } else if (canManage && action === 'update') {
+      const configuredEpisode = Array.isArray(
+        req.body?.episode?.deliverables
+      )
+        ? configureEpisodeDeliverables(
+            result.episode,
+            req.body.episode.deliverables
+          )
+        : result.episode;
       const proposed = mergeEpisodeStudioManagerValues(
-        result.episode,
+        configuredEpisode,
         req.body?.episode
       );
       if (
@@ -335,9 +647,15 @@ export default async function handler(req, res) {
       if (!proposed.producer_email && selectedProducer?.account_email) {
         proposed.producer_email = selectedProducer.account_email;
       }
-      nextEpisode = proposed;
+      nextEpisode =
+        canHost && !HOST_LOCKED_STATUSES.includes(result.episode.status)
+        ? mergeHostDeliverableValues(proposed, req.body?.episode?.deliverables)
+        : proposed;
     } else {
-      if (!principal.permissions.includes(ADMIN_PERMISSIONS.EPISODES_UPDATE)) {
+      if (
+        !canHost ||
+        !principal.permissions.includes(ADMIN_PERMISSIONS.EPISODES_UPDATE)
+      ) {
         return res.status(403).json({ ok: false, error: 'Forbidden' });
       }
       if (
@@ -425,6 +743,21 @@ export default async function handler(req, res) {
       }
     }
 
+    try {
+      await publishEpisodeNotifications({
+        previousEpisode: result.episode,
+        episode: saved.episode,
+        action,
+        actorPersonId: binding?.person_id || '',
+        actorName: currentAuthorName,
+      });
+    } catch (notificationError) {
+      console.error(
+        'episode studio in-app notification generation failed:',
+        notificationError
+      );
+    }
+
     logAdminAction(req, principal, `episode_studio.${action}`, {
       episode_id: saved.episode.episode_id,
       status: saved.episode.status,
@@ -441,19 +774,31 @@ export default async function handler(req, res) {
         : {}),
     });
 
+    const responseEpisode = resolveMessageAuthors(
+      saved.episode,
+      directory,
+      principal,
+      currentAuthorName
+    );
+    const sponsorData = await sponsorReadResponseData(
+      responseEpisode,
+      canConfigure
+    );
     return res.status(200).json({
       ok: true,
-      episode: resolveMessageAuthors(
-        saved.episode,
-        directory,
-        principal,
-        currentAuthorName
-      ),
+      episode: sponsorData.episode,
+      available_sponsor_reads: sponsorData.available_sponsor_reads,
+      asset_uploads_configured: isEpisodeAssetStorageConfigured(),
       completion: getEpisodeCompletion(saved.episode),
       host_names: saved.episode.host_person_ids.map(
         (personId) => peopleById.get(personId)?.name || personId
       ),
       canManage,
+      canHost,
+      canReview,
+      canConfigure,
+      canAdminOverride,
+      episode_roles: episodeMembership,
       notification,
     });
   } catch (err) {

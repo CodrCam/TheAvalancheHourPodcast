@@ -87,6 +87,38 @@
   display: block;
 }
 
+.notificationBell {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 16px 2px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(243, 249, 250, 0.9);
+  font-size: 0.88rem;
+  font-weight: 720;
+  text-decoration: none;
+}
+
+.notificationBell svg {
+  font-size: 1.2rem;
+}
+
+.notificationBell strong {
+  margin-left: auto;
+  min-width: 22px;
+  border-radius: 999px;
+  background: #e38b55;
+  color: #152b37;
+  padding: 2px 6px;
+  font-size: 0.7rem;
+  text-align: center;
+}
+
 .brandEyebrow {
   margin-bottom: 2px;
   color: rgba(239, 247, 249, 0.68);

@@ -1,5 +1,9 @@
 # Netlify Environment Variable Checklist
 
+For the complete AWS Console walkthrough, IAM policy, CORS rule, lifecycle
+settings, and verification steps, see
+[`s3-episode-assets-setup.md`](./s3-episode-assets-setup.md).
+
 Use this checklist when deploying through Netlify. Add these under:
 
 `Site configuration` -> `Environment variables`
@@ -41,6 +45,19 @@ COGNITO_COOKIE_NAME=ah_admin_token
 EMAIL_USER=...
 EMAIL_PASS=...
 CONTACT_EMAIL=theavalanchehourpodcast@gmail.com
+
+# Canonical Episode Studio asset package
+EPISODE_ASSETS_S3_BUCKET=...
+EPISODE_ASSETS_S3_REGION=us-east-2
+EPISODE_ASSETS_ACCESS_KEY_ID=...
+EPISODE_ASSETS_SECRET_ACCESS_KEY=...
+# Only set when using temporary AWS credentials; leave empty for an IAM user.
+EPISODE_ASSETS_SESSION_TOKEN=
+EPISODE_ASSETS_UPLOAD_TOKEN_SECRET=...
+
+# Authenticates the scheduled reminder runner
+STUDIO_REMINDER_RUN_SECRET=...
+STUDIO_MIC_KIT_MANAGER_PERSON_IDS=caleb-merrill,cam-griffin
 ```
 
 ## Recommended Cognito URL Values
@@ -105,3 +122,13 @@ Do not add it to Netlify for the normal production site.
    orders use transactional `Update` operations to decrement every line item
    atomically. DynamoDB authorizes those operations through the underlying
    `UpdateItem` permission.
+6. Keep the episode-assets bucket private, enable default encryption, block all
+   public access, and grant its dedicated runtime identity only the required
+   `s3:PutObject` and `s3:GetObject` access under `episodes/*` (`HeadObject`
+   authorization uses `s3:GetObject`).
+7. Add an S3 CORS rule allowing `PUT` from the production site origin with the
+   `Content-Type` header. Do not allow wildcard origins in production.
+8. Configure a Netlify Scheduled Function or another trusted scheduler to POST
+   `/api/studio/reminders/run` with
+   `Authorization: Bearer $STUDIO_REMINDER_RUN_SECRET`. The generator is
+   idempotent, so retries are safe.

@@ -13,9 +13,11 @@ import PodcastsRoundedIcon from '@mui/icons-material/PodcastsRounded';
 import AccountCircleRoundedIcon from '@mui/icons-material/AccountCircleRounded';
 import MenuBookRoundedIcon from '@mui/icons-material/MenuBookRounded';
 import HeadsetMicRoundedIcon from '@mui/icons-material/HeadsetMicRounded';
+import CampaignRoundedIcon from '@mui/icons-material/CampaignRounded';
 import HealthAndSafetyRoundedIcon from '@mui/icons-material/HealthAndSafetyRounded';
 import OpenInNewRoundedIcon from '@mui/icons-material/OpenInNewRounded';
 import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
+import NotificationBell from './NotificationBell';
 import styles from '../styles/AdminLayout.module.css';
 
 function formatRole(role) {
@@ -93,6 +95,12 @@ const NAV_SECTIONS = [
         label: 'Episode Calendar',
         icon: CalendarMonthRoundedIcon,
         permission: 'episodes:manage',
+      },
+      {
+        href: '/admin/sponsor-reads',
+        label: 'Sponsor Reads',
+        icon: CampaignRoundedIcon,
+        permission: 'sponsor_reads:read',
       },
       {
         href: '/studio/resources',
@@ -242,6 +250,13 @@ export default function AdminLayout({
             <span className={styles.brandTitle}>Admin Studio</span>
           </span>
         </Link>
+
+        {session?.permissions?.includes('notifications:read') ? (
+          <NotificationBell
+            href="/admin/notifications"
+            className={styles.notificationBell}
+          />
+        ) : null}
 
         <nav className={styles.nav} aria-label="Admin navigation">
           <ul className={styles.navList}>

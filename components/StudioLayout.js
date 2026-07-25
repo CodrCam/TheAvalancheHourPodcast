@@ -8,8 +8,10 @@ import AccountCircleRoundedIcon from '@mui/icons-material/AccountCircleRounded';
 import ManageAccountsRoundedIcon from '@mui/icons-material/ManageAccountsRounded';
 import CalendarMonthRoundedIcon from '@mui/icons-material/CalendarMonthRounded';
 import HeadsetMicRoundedIcon from '@mui/icons-material/HeadsetMicRounded';
+import CampaignRoundedIcon from '@mui/icons-material/CampaignRounded';
 import OpenInNewRoundedIcon from '@mui/icons-material/OpenInNewRounded';
 import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
+import NotificationBell from './NotificationBell';
 import styles from '../styles/Studio.module.css';
 
 const BASE_NAV_ITEMS = [
@@ -62,6 +64,13 @@ const MANAGER_NAV_ITEMS = [
     label: 'Host Access',
     icon: ManageAccountsRoundedIcon,
     permission: 'studio_access:manage',
+    manager: true,
+  },
+  {
+    href: '/studio/manage/sponsor-reads',
+    label: 'Sponsor Reads',
+    icon: CampaignRoundedIcon,
+    permission: 'sponsor_reads:read',
     manager: true,
   },
 ];
@@ -202,6 +211,13 @@ export default function StudioLayout({
             <span className={styles.brandTitle}>Host Studio</span>
           </span>
         </Link>
+
+        {session.permissions?.includes('notifications:read') ? (
+          <NotificationBell
+            href="/studio/notifications"
+            className={styles.notificationBell}
+          />
+        ) : null}
 
         <nav aria-label="Host Studio navigation" className={styles.nav}>
           <span className={styles.navLabel}>Studio</span>

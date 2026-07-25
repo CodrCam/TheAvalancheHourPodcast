@@ -17,6 +17,7 @@ import {
 } from '../../../lib/micKitStore';
 import { listEpisodeStudios } from '../../../lib/episodeStudioStore';
 import { getStudioBindingForSubject } from '../../../lib/studioAccessStore';
+import { publishMicKitNotifications } from '../../../lib/micKitEvents';
 
 function cleanText(value, maxLength = 240) {
   return String(value || '').trim().slice(0, maxLength);
@@ -741,6 +742,25 @@ export default async function handler(req, res) {
       expectedUpdatedAt,
       updatedBy: actorLabel(principal),
     });
+    try {
+      await publishMicKitNotifications({
+        previousTracker: result.tracker,
+        tracker: saved.tracker,
+        action,
+        actorName: actorLabel(principal),
+        managerPersonIds: String(
+          process.env.STUDIO_MIC_KIT_MANAGER_PERSON_IDS || ''
+        )
+          .split(',')
+          .map((personId) => personId.trim())
+          .filter(Boolean),
+      });
+    } catch (notificationError) {
+      console.error(
+        'mic kit notification generation failed:',
+        notificationError
+      );
+    }
     return res
       .status(req.method === 'POST' ? 201 : 200)
       .json(

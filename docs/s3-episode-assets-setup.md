@@ -1,0 +1,341 @@
+# Episode Assets S3 Setup Checklist
+
+The current application needs **one** S3 bucket:
+
+- **Episode Assets** — final voice tracks, episode audio, separate sponsor
+  spots, artwork, and production documents.
+
+The application organizes that bucket automatically:
+
+```text
+episodes/<episode-id>/recording/
+episodes/<episode-id>/sponsor_audio/
+episodes/<episode-id>/image/
+episodes/<episode-id>/document/
+episodes/<episode-id>/other/
+```
+
+Do not create separate audio, image, or sponsor buckets. One private bucket
+keeps the permission and CORS surface smaller.
+
+## Before you begin
+
+- [ ] Sign in to the correct AWS account.
+- [ ] Confirm the AWS Region is **US East (Ohio) `us-east-2`**.
+- [ ] Choose a globally unique bucket name. A good pattern is
+  `the-avalanche-hour-episode-assets-prod-<account-suffix>`.
+- [ ] Do not put private information in the bucket name. Bucket names appear
+  in S3 request URLs.
+- [ ] Keep this setup open alongside the Netlify environment-variable page.
+
+AWS reference:
+[Creating a general purpose bucket](https://docs.aws.amazon.com/AmazonS3/latest/userguide/create-bucket-overview.html)
+
+## 1. Create the bucket
+
+1. Open the **AWS Console**.
+2. Search for and open **S3**.
+3. In the left navigation, select **General purpose buckets**.
+4. Select **Create bucket**.
+5. Under **General configuration**:
+   - **AWS Region:** `US East (Ohio) us-east-2`
+   - **Bucket type:** General purpose
+   - **Bucket name:** your globally unique name
+   - Do not copy settings from a public or website-hosting bucket.
+6. Under **Object Ownership**:
+   - Select **ACLs disabled**
+   - Confirm **Bucket owner enforced**
+7. Under **Block Public Access settings**:
+   - Keep **Block all public access** enabled.
+   - Leave all four individual public-access blocks checked.
+8. Under **Bucket Versioning**:
+   - Select **Enable**.
+9. Add optional cost-allocation tags:
+   - `Project` = `TheAvalancheHour`
+   - `Environment` = `production`
+   - `DataClassification` = `private-production-assets`
+10. Under **Default encryption**:
+    - Select **Server-side encryption with Amazon S3 managed keys
+      (SSE-S3)**.
+    - Do not choose SSE-C.
+11. Leave **Object Lock** disabled.
+12. Select **Create bucket**.
+13. Open the new bucket and verify:
+    - [ ] Region is `us-east-2`.
+    - [ ] Block Public Access says **On**.
+    - [ ] Object Ownership says **Bucket owner enforced**.
+    - [ ] Bucket Versioning says **Enabled**.
+    - [ ] Default encryption says **SSE-S3**.
+
+AWS references:
+[Block Public Access](https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-control-block-public-access.html),
+[Object Ownership](https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-ownership-new-bucket.html),
+[Default encryption](https://docs.aws.amazon.com/AmazonS3/latest/userguide/default-bucket-encryption.html)
+
+## 2. Add the browser-upload CORS rule
+
+The bucket stays private. CORS only permits the signed `PUT` requests generated
+by the Episode Studio; it does not make objects public.
+
+1. In the bucket, open **Permissions**.
+2. Scroll to **Cross-origin resource sharing (CORS)**.
+3. Select **Edit**.
+4. Paste this JSON:
+
+```json
+[
+  {
+    "AllowedHeaders": [
+      "content-type"
+    ],
+    "AllowedMethods": [
+      "PUT"
+    ],
+    "AllowedOrigins": [
+      "http://localhost:3000",
+      "http://127.0.0.1:3000",
+      "https://www.theavalanchehour.com",
+      "https://theavalanchehour.com"
+    ],
+    "ExposeHeaders": [
+      "ETag"
+    ],
+    "MaxAgeSeconds": 300
+  }
+]
+```
+
+5. Select **Save changes**.
+6. Verify there is no wildcard (`*`) origin.
+7. Do not add public `GET`, `POST`, or `DELETE` access. Downloads use
+   short-lived, server-authorized signed URLs.
+
+AWS references:
+[Using CORS](https://docs.aws.amazon.com/AmazonS3/latest/userguide/cors.html),
+[CORS configuration elements](https://docs.aws.amazon.com/AmazonS3/latest/userguide/ManageCorsUsing.html)
+
+## 3. Add the HTTPS-only bucket policy
+
+1. Stay on the bucket's **Permissions** tab.
+2. Under **Bucket policy**, select **Edit**.
+3. Confirm the bucket name in both resource entries below is
+   `theavalanchehourepisodeassetsprod`.
+4. Add this policy:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "DenyInsecureTransport",
+      "Effect": "Deny",
+      "Principal": "*",
+      "Action": "s3:*",
+      "Resource": [
+        "arn:aws:s3:::theavalanchehourepisodeassetsprod",
+        "arn:aws:s3:::theavalanchehourepisodeassetsprod/*"
+      ],
+      "Condition": {
+        "Bool": {
+          "aws:SecureTransport": "false"
+        }
+      }
+    }
+  ]
+}
+```
+
+5. Select **Save changes**.
+6. Confirm the bucket still reports **not public**.
+
+Do not add an `Allow` statement for anonymous users. The IAM policy in the next
+section grants the application its private access.
+
+AWS reference:
+[Restricting S3 access to HTTPS](https://docs.aws.amazon.com/AmazonS3/latest/userguide/example-bucket-policies.html#example-bucket-policies-use-case-4)
+
+## 4. Create a least-privilege IAM policy
+
+1. Open **IAM** in the AWS Console.
+2. In the left navigation, open **Policies**.
+3. Select **Create policy**.
+4. Choose the **JSON** editor.
+5. Paste the policy below. The resource is already scoped to this production
+   bucket and its `episodes/` folder:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "EpisodeAssetObjectsOnly",
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:PutObject"
+      ],
+      "Resource": "arn:aws:s3:::theavalanchehourepisodeassetsprod/episodes/*"
+    }
+  ]
+}
+```
+
+6. Select **Next**.
+7. Name the policy
+   `AvalancheHourEpisodeAssetsRuntimePolicy`.
+8. Add a description stating that it permits only Episode Studio uploads,
+   verification, and downloads under `episodes/*`.
+9. Select **Create policy**.
+
+Do not grant `s3:*`, `AmazonS3FullAccess`, `s3:DeleteObject`, bucket listing, or
+access to other buckets. S3 `HEAD` verification is authorized by
+`s3:GetObject`.
+
+## 5. Create the application IAM user and access key
+
+Netlify cannot currently assume an AWS workload role in this application, so
+this integration uses a dedicated programmatic IAM user.
+
+1. In **IAM**, open **Users**.
+2. Select **Create user**.
+3. Name it `avalanche-hour-episode-assets-runtime`.
+4. Do not enable AWS Console access.
+5. Complete user creation.
+6. Open the new user and choose **Add permissions**.
+7. Choose **Attach policies directly**.
+8. Attach only `AvalancheHourEpisodeAssetsRuntimePolicy`.
+9. Open the user's **Security credentials** tab.
+10. Under **Access keys**, select **Create access key**.
+11. Choose the use case for an application running outside AWS or a
+    third-party service.
+12. Acknowledge AWS's long-lived credential warning.
+13. Create the key.
+14. Copy both values immediately:
+    - **Access key ID**
+    - **Secret access key**
+15. Store them in a password manager until they are entered locally and in
+    Netlify.
+16. Never commit them to Git and never reuse the DynamoDB credentials.
+
+AWS reference:
+[IAM user for a workload that cannot use roles](https://docs.aws.amazon.com/IAM/latest/UserGuide/getting-started-workloads.html)
+
+## 6. Fill the local environment values
+
+The variable names are already present in `.env.local`. Fill in:
+
+```dotenv
+EPISODE_ASSETS_S3_BUCKET=theavalanchehourepisodeassetsprod
+EPISODE_ASSETS_S3_REGION=us-east-2
+EPISODE_ASSETS_ACCESS_KEY_ID=YOUR_DEDICATED_ACCESS_KEY_ID
+EPISODE_ASSETS_SECRET_ACCESS_KEY=YOUR_DEDICATED_SECRET_ACCESS_KEY
+EPISODE_ASSETS_SESSION_TOKEN=
+```
+
+Leave `EPISODE_ASSETS_SESSION_TOKEN` empty when using the dedicated IAM user.
+It is only for temporary AWS credentials.
+
+The following application secrets have already been generated locally and
+should not be replaced with the S3 secret key:
+
+```dotenv
+EPISODE_ASSETS_UPLOAD_TOKEN_SECRET=<generated application secret>
+STUDIO_REMINDER_RUN_SECRET=<generated application secret>
+```
+
+After editing `.env.local`, fully restart `npm run dev`; Next.js will not
+reliably apply every server-side environment change without a restart.
+
+## 7. Fill the Netlify production values
+
+Open the linked Netlify project:
+[theavalanchehourpodcast](https://app.netlify.com/projects/theavalanchehourpodcast)
+
+Go to **Project configuration → Environment variables** and fill the production
+values for:
+
+| Variable | Value | Secret? |
+| --- | --- | --- |
+| `EPISODE_ASSETS_S3_BUCKET` | Exact bucket name | No |
+| `EPISODE_ASSETS_S3_REGION` | `us-east-2` | No |
+| `EPISODE_ASSETS_ACCESS_KEY_ID` | Dedicated IAM access key ID | Yes |
+| `EPISODE_ASSETS_SECRET_ACCESS_KEY` | Dedicated IAM secret | Yes |
+| `EPISODE_ASSETS_SESSION_TOKEN` | Leave unset for an IAM user | Yes |
+| `EPISODE_ASSETS_UPLOAD_TOKEN_SECRET` | Generated app secret | Yes |
+| `STUDIO_REMINDER_RUN_SECRET` | Generated reminder secret | Yes |
+| `STUDIO_MIC_KIT_MANAGER_PERSON_IDS` | `caleb-merrill,cam-griffin` | No |
+
+Use the **Production** deploy context for the S3 credentials. Do not give
+deploy previews production-bucket credentials.
+
+## 8. Add lifecycle cost protection
+
+Create two lifecycle rules so current files leave active storage after 180 days
+and versioning does not continue charging for hidden noncurrent copies.
+
+### Rule 1: expire episode assets
+
+1. Return to the S3 bucket.
+2. Open **Management**.
+3. Select **Create lifecycle rule**.
+4. Name it `RetainEpisodeAssetsFor180Days`.
+5. Limit the rule to the prefix `episodes/`.
+6. Enable:
+   - **Expire current versions after 180 days**
+   - **Permanently delete noncurrent versions after 7 days**
+   - **Delete incomplete multipart uploads after 7 days**
+7. Create the rule.
+
+### Rule 2: remove empty delete markers
+
+1. Select **Create lifecycle rule** again.
+2. Name it `RemoveExpiredEpisodeAssetDeleteMarkers`.
+3. Limit the rule to the prefix `episodes/`.
+4. Enable **Delete expired object delete markers**.
+5. Create the rule.
+
+The application currently uses single-request uploads, but the incomplete
+multipart cleanup is harmless cost protection for future upload changes. The
+180-day clock starts when each object is uploaded, not when its episode is
+accepted. The Episode Studio records and displays the corresponding date,
+stops offering downloads after that date, and generates a participant reminder
+when the date is within 30 days. The noncurrent-version rule leaves a short
+seven-day recovery buffer before S3 permanently removes the underlying version.
+
+AWS references:
+[Lifecycle configuration elements](https://docs.aws.amazon.com/AmazonS3/latest/userguide/intro-lifecycle-rules.html),
+[Abort incomplete multipart uploads](https://docs.aws.amazon.com/AmazonS3/latest/userguide/mpu-abort-incomplete-mpu-lifecycle-config.html)
+
+## 9. Test locally before enabling a live episode requirement
+
+1. Restart the local application.
+2. Sign in as a host assigned to a test episode.
+3. Confirm the Final Delivery Package shows **Choose final files**, not the
+   inactive-storage message.
+4. Upload one small test audio file under **Final voice and episode audio**.
+5. Upload one small JPG under **Episode images and artwork**.
+6. Confirm both appear in the Episode Studio.
+7. In S3, confirm their keys begin with:
+   `episodes/<episode-id>/`.
+8. Use the Episode Studio **Download** link and confirm the file opens.
+9. Copy the S3 object URL without its signed query string into a private browser
+   window. Confirm S3 returns **Access Denied**.
+10. Confirm an unrelated Studio user cannot open the episode or asset route.
+11. Delete only the disposable test objects from S3 after testing.
+
+## 10. Final production check
+
+- [ ] Bucket is private and Block Public Access is fully enabled.
+- [ ] ACLs are disabled.
+- [ ] Default encryption is SSE-S3.
+- [ ] CORS has only the four explicit application origins.
+- [ ] IAM user has only `GetObject` and `PutObject` under `episodes/*`.
+- [ ] Current versions expire after 180 days under the `episodes/` prefix.
+- [ ] Noncurrent versions are permanently removed after 7 days.
+- [ ] Expired delete markers are removed by the second lifecycle rule.
+- [ ] Local upload and authorized download work.
+- [ ] Direct unsigned S3 access fails.
+- [ ] Netlify production variables contain the same bucket and IAM values.
+- [ ] A fresh production deploy completes successfully.
+- [ ] A production test upload works before canonical Studio packages are
+      required on real episodes.

@@ -16,7 +16,8 @@
     "seed:dynamo-sponsors": "node scripts/seedDynamoSponsors.js",
     "seed:dynamo-people": "node scripts/seedDynamoPeople.js",
     "update:dynamo-person-studio-roles": "node scripts/seedDynamoPeople.js",
-    "create:dynamo-mic-kits": "node scripts/createDynamoMicKitsTable.js"
+    "create:dynamo-mic-kits": "node scripts/createDynamoMicKitsTable.js",
+    "studio:reminders": "node scripts/runStudioReminders.mjs"
   },
   "engines": {
     "node": ">=22.13.0"

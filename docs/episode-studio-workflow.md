@@ -25,29 +25,68 @@ page.
 3. Select the producer and one or more hosts. Every selected host can work in
    the same episode form.
 4. Create the Episode Studio.
-5. Open the episode and adjust requirements before sending the assignment to
-   hosts. A producer can mark a standard item optional but a host cannot change
-   the requirement.
+5. Open the episode and tailor its checklist before sending the assignment to
+   hosts. The assigned producer or a Studio manager can add, remove, reorder,
+   rename, and mark items required or optional. A host cannot change the
+   episode's requirements unless that same person is also its producer.
 
 The default due date is seven days before release. It can be changed per
 episode.
 
-## Standard host checklist
+## Flexible host checklist
 
-Every new Episode Studio begins with these deliverables:
+Every new Episode Studio begins with a suggested backbone:
 
 1. Episode pitch and listener takeaway.
-2. Guest details.
-3. Episode Google Drive folder.
-4. Riverside or recording files.
+2. Guest details, including clearly labeled public social profiles or handles.
+3. Episode source-file uploads.
+4. Required raw recording-track uploads.
 5. First-cut and edit notes.
 6. Show notes and relevant links.
-7. Intro or sponsor-read audio.
+7. Required intro or sponsor-read audio uploads.
 8. Social media copy.
-9. Photos and artwork.
+9. Required photo and artwork uploads.
 10. Credits and permissions.
 
-Links must use HTTPS. Hosts can save drafts without completing the form.
+These are starting points, not a hard-coded production order. The assigned
+producer can add episode-specific interview notes, fact checks, ad obligations,
+or other items and can choose a written response, file upload, or optional
+working-source link. Every step can also hold supporting files. Links must use
+HTTPS. Hosts can save drafts without completing the form.
+
+## Sponsor and ad reads
+
+Approved scripts live in the versioned Sponsor Read Library. A producer or
+Studio manager assigns a current approved version to an episode; the episode
+keeps a frozen snapshot so later library edits do not rewrite an existing
+handoff.
+
+Each assigned spot can require either a separate ad-audio upload or confirmation
+that the read is present in the main voice file. Host readiness includes every
+required spot and its selected uploaded evidence. The episode shows
+pronunciation notes, instructions, assignment attribution, expiration, and
+whether a newer library version exists.
+
+## Final delivery package
+
+Google Drive and Riverside can remain rough working spaces. When direct uploads
+are active, hosts upload final voice audio, separate ad spots, images, and
+documents inside the checklist step they satisfy. Each object records that
+step's ID, and the bottom of the workspace automatically rebuilds the complete
+producer package in checklist order. Only metadata is stored in DynamoDB.
+Assigned participants download through an authorized server route that creates
+a short-lived S3 URL.
+
+Older episodes are upgraded when read: the prior Drive, Riverside, intro-audio,
+and image-folder link steps become upload-based steps. Existing external URLs
+are retained as labeled historical references instead of being discarded.
+
+Episode assets are temporary production storage, not the permanent archive.
+Each upload records a 180-day retention deadline. The workspace shows that
+deadline next to the file, stops issuing download links after it passes, and
+the reminder generator warns episode participants during the final 30 days.
+The S3 bucket lifecycle expires the active object at 180 days and permanently
+removes its noncurrent version after the configured recovery buffer.
 
 ## Producer directions and file labeling
 
@@ -159,8 +198,12 @@ Permissions are enforced by the server, not only hidden in the interface.
   profile as a host, producer, or creator are returned.
 - Hosts can edit deliverable values and gap acknowledgements but cannot change
   assignments, dates, labels, field types, or required/optional settings.
-- Studio managers and admins can create, schedule, assign, review, and accept
-  Episode Studios.
+- The assigned producer can configure the episode checklist and sponsor reads,
+  leave notes, request changes, and accept the submitted package regardless of
+  any additional account groups.
+- Studio managers and admins can create, schedule, and assign episodes. Review
+  controls come from being the assigned producer; an administrator has a
+  separately attributed override that requires an audit reason.
 - System Health remains restricted to the `admin` group.
 
 ## Storage and email
@@ -175,10 +218,11 @@ creator profile, checklist, producer state, and discussion without changing a
 rigid SQL schema for every new field. The browser never writes that DynamoDB
 record directly.
 
-Do not place uploaded audio, video, or full-resolution artwork inside the
-episode document. If direct Studio uploads are added later, keep the actual
-bytes in private object storage and save only attachment metadata and
-authorized links with the episode.
+Uploaded audio and full-resolution artwork never enter the episode JSON. The
+bytes live in a private S3 bucket. The episode stores only verified attachment
+metadata and object keys. Upload authorization is short-lived, completion
+verifies the S3 object, and downloads require current server-side episode
+access.
 
 The producer email saved on the episode is the primary notification recipient.
 If it is empty, the server falls back to optional

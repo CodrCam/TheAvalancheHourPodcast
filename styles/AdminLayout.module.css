@@ -85,6 +85,32 @@
   white-space: nowrap;
 }
 
+.notificationBell {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: -5px 0 8px;
+  padding: 9px 11px;
+  border: 1px solid rgba(147, 197, 253, 0.2);
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.055);
+  color: #d8e6f4;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.notificationBell strong {
+  margin-left: auto;
+  min-width: 22px;
+  border-radius: 999px;
+  background: #f5a15f;
+  color: #14243a;
+  padding: 2px 6px;
+  font-size: 10px;
+  text-align: center;
+}
+
 .nav {
   min-width: 0;
 }

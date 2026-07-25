@@ -203,10 +203,17 @@ export default function HostEpisodesPage() {
                   <span>Status</span>
                 </div>
                 <div className={styles.rowProgress}>
-                  <strong>{episode.completion.percent}% assembled</strong>
+                  <strong>
+                    {episode.completion.host_percent}% host-ready ·{' '}
+                    {episode.completion.producer_approved
+                      ? 'producer approved'
+                      : 'approval pending'}
+                  </strong>
                   <span className={styles.progressTrack}>
                     <span
-                      style={{ width: `${episode.completion.percent}%` }}
+                      style={{
+                        width: `${episode.completion.host_percent}%`,
+                      }}
                     />
                   </span>
                 </div>

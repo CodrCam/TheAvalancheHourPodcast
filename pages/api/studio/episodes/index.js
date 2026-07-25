@@ -20,6 +20,8 @@ import {
   getStudioBindingForSubject,
   listStudioBindings,
 } from '../../../../lib/studioAccessStore';
+import { publishEpisodeNotifications } from '../../../../lib/episodeStudioEvents';
+import { isEpisodeAssetStorageConfigured } from '../../../../lib/episodeAssetStorage';
 
 function dateDaysBefore(value, days = 7) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(String(value || ''))) return '';
@@ -201,6 +203,7 @@ export default async function handler(req, res) {
         producer_email: producerEmail,
         producer_feedback: '',
         producer_directions: '',
+        canonical_assets_required: isEpisodeAssetStorageConfigured(),
         status: 'planning',
         delivery_health: 'on_track',
         delivery_health_updated_at: '',
@@ -215,6 +218,28 @@ export default async function handler(req, res) {
       },
       { create: true }
     );
+
+    const creator = directory.peopleById.get(
+      creatorBinding?.person_id || ''
+    );
+    try {
+      await publishEpisodeNotifications({
+        previousEpisode: null,
+        episode: result.episode,
+        action: 'create',
+        actorPersonId: creatorBinding?.person_id || '',
+        actorName:
+          creator?.name ||
+          principal.displayName ||
+          principal.username ||
+          'Studio team',
+      });
+    } catch (notificationError) {
+      console.error(
+        'episode assignment notification generation failed:',
+        notificationError
+      );
+    }
 
     logAdminAction(req, principal, 'episode_studio.create', {
       episode_id: result.episode.episode_id,

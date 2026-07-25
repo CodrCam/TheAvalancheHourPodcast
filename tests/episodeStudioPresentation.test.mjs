@@ -2,10 +2,15 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   areProducerDirectionsComplete,
+  configureEpisodeDeliverables,
   createDefaultEpisodeDeliverables,
+  EPISODE_ASSET_RETENTION_DAYS,
   episodeStudioSummary,
+  getEpisodeAssetRetentionExpiresAt,
   getEpisodeCompletion,
   getEpisodeStudioMembership,
+  isEpisodeAssetExpired,
+  isDeliverableComplete,
   mergeEpisodeStudioManagerValues,
   mergeEpisodeStudioServerFields,
   mergeHostDeliverableValues,
@@ -55,7 +60,28 @@ test('does not allow submission until every required deliverable is complete', (
   });
   assert.equal(complete.can_submit, true);
   assert.equal(complete.can_submit_with_gaps, false);
-  assert.equal(complete.percent, 100);
+  assert.equal(complete.host_percent, 100);
+  assert.equal(complete.percent, 80);
+  assert.equal(complete.producer_approved, false);
+
+  const approved = getEpisodeCompletion({
+    ...sampleEpisode(),
+    status: 'accepted',
+    producer_directions: clearProducerBrief,
+    deliverables: complete.missing.length
+      ? []
+      : [
+          {
+            id: 'notes',
+            label: 'Notes',
+            type: 'textarea',
+            required: true,
+            value: 'Ready',
+          },
+        ],
+  });
+  assert.equal(approved.percent, 100);
+  assert.equal(approved.producer_approved, true);
 });
 
 test('allows a provisional handoff only when every gap is acknowledged', () => {
@@ -139,6 +165,225 @@ test('host deliverable updates cannot change requirements or labels', () => {
     episode.deliverables[0].label
   );
   assert.equal(updated.deliverables[0].missing_acknowledged, true);
+});
+
+test('producer checklist configuration persists requirements and preserves host work', () => {
+  const episode = {
+    ...sampleEpisode(),
+    deliverables: [
+      {
+        id: 'notes',
+        label: 'Notes',
+        description: 'Original',
+        type: 'textarea',
+        required: true,
+        value: 'Host response',
+      },
+    ],
+  };
+  const configured = configureEpisodeDeliverables(episode, [
+    {
+      id: 'ad-confirmation',
+      label: 'Confirm the ad spot recording',
+      description: 'Select the uploaded evidence.',
+      type: 'textarea',
+      required: true,
+    },
+    {
+      id: 'notes',
+      label: 'Edited notes',
+      description: 'Updated producer instruction',
+      type: 'textarea',
+      required: false,
+    },
+  ]);
+
+  assert.deepEqual(
+    configured.deliverables.map((item) => item.id),
+    ['ad-confirmation', 'notes']
+  );
+  assert.equal(configured.deliverables[0].required, true);
+  assert.equal(configured.deliverables[1].required, false);
+  assert.equal(configured.deliverables[1].value, 'Host response');
+});
+
+test('manager required versus optional changes survive the manager merge', () => {
+  const episode = sampleEpisode();
+  const updated = mergeEpisodeStudioManagerValues(episode, {
+    deliverables: episode.deliverables.map((deliverable, index) => ({
+      ...deliverable,
+      required: index !== 0,
+    })),
+  });
+
+  assert.equal(updated.deliverables[0].required, false);
+  assert.equal(updated.deliverables[1].required, true);
+});
+
+test('canonical asset requirements block readiness until audio and images are attached', () => {
+  const base = {
+    ...sampleEpisode(),
+    canonical_assets_required: true,
+    producer_directions: clearProducerBrief,
+    deliverables: [],
+  };
+  const missing = getEpisodeCompletion(base);
+  assert.deepEqual(
+    missing.missing.map((item) => item.id),
+    ['canonical-recording', 'canonical-images']
+  );
+
+  const ready = getEpisodeCompletion({
+    ...base,
+    assets: [
+      {
+        asset_id: 'asset-audio',
+        object_key: 'episodes/episode-one/recording/audio.wav',
+        file_name: 'audio.wav',
+        content_type: 'audio/wav',
+        size: 100,
+        category: 'recording',
+      },
+      {
+        asset_id: 'asset-image',
+        object_key: 'episodes/episode-one/image/photo.jpg',
+        file_name: 'photo.jpg',
+        content_type: 'image/jpeg',
+        size: 100,
+        category: 'image',
+      },
+    ],
+  });
+  assert.equal(ready.host_ready, true);
+});
+
+test('episode assets carry a visible 180-day retention deadline', () => {
+  const uploadedAt = '2026-07-25T12:00:00.000Z';
+  const expiresAt = getEpisodeAssetRetentionExpiresAt(uploadedAt);
+  assert.equal(EPISODE_ASSET_RETENTION_DAYS, 180);
+  assert.equal(expiresAt, '2027-01-21T12:00:00.000Z');
+
+  const episode = normalizeEpisodeStudio({
+    ...sampleEpisode(),
+    assets: [
+      {
+        asset_id: 'asset-retention',
+        object_key: 'episodes/episode-one/document/notes.txt',
+        file_name: 'notes.txt',
+        content_type: 'text/plain',
+        size: 100,
+        category: 'document',
+        uploaded_at: uploadedAt,
+      },
+    ],
+  });
+  const asset = episode.assets[0];
+  assert.equal(asset.retention_days, 180);
+  assert.equal(asset.retention_expires_at, expiresAt);
+  assert.equal(
+    isEpisodeAssetExpired(asset, '2027-01-21T11:59:59.000Z'),
+    false
+  );
+  assert.equal(
+    isEpisodeAssetExpired(asset, '2027-01-21T12:00:00.000Z'),
+    true
+  );
+});
+
+test('legacy link-based episode steps migrate to step-owned uploads without losing links', () => {
+  const episode = normalizeEpisodeStudio({
+    ...sampleEpisode(),
+    deliverables: [
+      {
+        id: 'episode-folder',
+        label: 'Episode Drive folder',
+        description: 'Old instructions',
+        type: 'url',
+        required: false,
+        value: 'https://drive.google.com/example',
+        sort_order: 30,
+      },
+      {
+        id: 'recording-files',
+        label: 'Recording files',
+        description: 'Old recording instructions',
+        type: 'url',
+        required: false,
+        value: 'https://riverside.fm/studio/example',
+        sort_order: 40,
+      },
+    ],
+    assets: [
+      {
+        asset_id: 'legacy-recording',
+        object_key: 'episodes/episode-one/recording/voice.wav',
+        file_name: 'voice.wav',
+        content_type: 'audio/wav',
+        size: 400,
+        category: 'recording',
+      },
+    ],
+  });
+
+  assert.equal(episode.schema_version, 2);
+  assert.equal(episode.deliverables[0].label, 'Episode source files');
+  assert.equal(episode.deliverables[0].type, 'asset');
+  assert.equal(
+    episode.deliverables[0].legacy_source_url,
+    'https://drive.google.com/example'
+  );
+  assert.equal(episode.deliverables[1].label, 'Raw recording tracks');
+  assert.equal(episode.deliverables[1].type, 'asset');
+  assert.equal(
+    episode.deliverables[1].legacy_source_url,
+    'https://riverside.fm/studio/example'
+  );
+  assert.equal(
+    episode.assets[0].deliverable_id,
+    'recording-files'
+  );
+});
+
+test('guest details require labeled social profiles and asset steps complete only from their own files', () => {
+  const guest = normalizeEpisodeStudio({
+    ...sampleEpisode(),
+    schema_version: 2,
+    deliverables: [
+      {
+        id: 'guest-details',
+        label: 'Guest details',
+        description: 'Guest information',
+        type: 'textarea',
+        required: true,
+        value: 'Jordan Lee, avalanche educator and guide.',
+      },
+    ],
+  }).deliverables[0];
+  assert.equal(isDeliverableComplete(guest), false);
+  assert.equal(
+    isDeliverableComplete({
+      ...guest,
+      social_profiles: 'Instagram: @jordanlee',
+    }),
+    true
+  );
+
+  const recordingStep = {
+    id: 'recording-files',
+    type: 'asset',
+  };
+  const wrongStepAsset = {
+    asset_id: 'asset-wrong-step',
+    deliverable_id: 'photos',
+    status: 'uploaded',
+  };
+  const matchingAsset = {
+    ...wrongStepAsset,
+    asset_id: 'asset-matching-step',
+    deliverable_id: 'recording-files',
+  };
+  assert.equal(isDeliverableComplete(recordingStep, [wrongStepAsset]), false);
+  assert.equal(isDeliverableComplete(recordingStep, [matchingAsset]), true);
 });
 
 test('rejects unsafe material links', () => {

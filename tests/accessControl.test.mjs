@@ -22,6 +22,8 @@ test('keeps host access limited to the Studio and the host own profile', () => {
     ACCESS_PERMISSIONS.PROFILE_SELF_UPDATE,
     ACCESS_PERMISSIONS.MIC_KITS_READ,
     ACCESS_PERMISSIONS.MIC_KITS_REQUEST,
+    ACCESS_PERMISSIONS.NOTIFICATIONS_READ,
+    ACCESS_PERMISSIONS.NOTIFICATIONS_UPDATE,
   ]);
   assert.equal(
     permissions.includes(ACCESS_PERMISSIONS.PROFILES_UPDATE),

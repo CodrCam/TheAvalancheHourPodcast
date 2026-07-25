@@ -149,7 +149,10 @@ function EpisodeActionList({ rows = [] }) {
               {episode.host_names.join(' + ') || 'Host assignment pending'}
             </span>
             <span style={{ ...muted, display: 'block', marginTop: 2 }}>
-              {episode.completion.percent}% assembled
+              {episode.completion.host_percent}% host-ready ·{' '}
+              {episode.completion.producer_approved
+                ? 'producer approved'
+                : 'approval pending'}
             </span>
             {episode.delivery_health === 'off_track' ? (
               <StatusPill tone="bad">Off track</StatusPill>
