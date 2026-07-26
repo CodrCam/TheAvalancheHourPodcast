@@ -21,7 +21,17 @@ export default async function handler(req, res) {
       ? await getInventoryForSkus(list)
       : await listInventory();
 
-    return res.status(200).json({ ok: true, data: rows });
+    return res.status(200).json({
+      ok: true,
+      data: rows.map((row) => ({
+        sku: row.sku,
+        sku_key: row.sku_key,
+        name: row.name,
+        hidden: row.hidden,
+        quantity: row.quantity,
+        updated_at: row.updated_at,
+      })),
+    });
   } catch (err) {
     // If the table doesn't exist yet, tell us plainly.
     if (String(err.message).includes('relation "inventory" does not exist')) {

@@ -3,6 +3,7 @@ import {
   getAdminPrincipalAsync,
 } from '../../../../lib/adminAuth';
 import { listInventory } from '../../../../lib/inventoryStore';
+import { isInventoryAttentionMuted } from '../../../../lib/inventoryAttention.mjs';
 import { listOrders } from '../../../../lib/orderStore';
 import { getAllCatalogSkuEntries, getSkuCatalog } from '../../../../lib/productCatalog';
 import { listEpisodeStudios } from '../../../../lib/episodeStudioStore';
@@ -34,6 +35,10 @@ function normalizeInventoryRow(row = {}) {
     hidden: row.hidden === true || row.hidden === 'true',
     quantity: Math.max(0, Number(row.quantity) || 0),
     updated_at: row.updated_at || '',
+    attention_muted: row.attention_muted === true,
+    attention_muted_at: row.attention_muted_at || '',
+    attention_muted_for_updated_at:
+      row.attention_muted_for_updated_at ?? null,
   };
 }
 
@@ -103,6 +108,11 @@ export default async function handler(req, res) {
         quantity: row ? row.quantity : 0,
         hidden: row ? row.hidden : false,
         updated_at: row?.updated_at || '',
+        attention_muted: row
+          ? isInventoryAttentionMuted(row)
+          : false,
+        attention_muted_at: row?.attention_muted_at || '',
+        missing_inventory_row: !row,
       };
     });
     const unusedRows = inventory.filter((row) => !catalogMap.has(row.sku));
@@ -114,7 +124,7 @@ export default async function handler(req, res) {
     const unshippedOrders = orders.filter(
       (order) => order.fulfillment_status !== 'shipped'
     );
-    const lowStock = catalogRows
+    const allLowStock = catalogRows
       .filter(
         (row) =>
           !row.hidden &&
@@ -122,9 +132,19 @@ export default async function handler(req, res) {
           row.quantity <= LOW_STOCK_THRESHOLD
       )
       .sort((a, b) => a.quantity - b.quantity || a.sku.localeCompare(b.sku));
-    const soldOut = catalogRows
+    const allSoldOut = catalogRows
       .filter((row) => !row.hidden && row.quantity <= 0)
       .sort((a, b) => a.sku.localeCompare(b.sku));
+    const lowStock = allLowStock.filter((row) => !row.attention_muted);
+    const soldOut = allSoldOut.filter((row) => !row.attention_muted);
+    const mutedAttention = [
+      ...allSoldOut
+        .filter((row) => row.attention_muted)
+        .map((row) => ({ ...row, attention_status: 'sold_out' })),
+      ...allLowStock
+        .filter((row) => row.attention_muted)
+        .map((row) => ({ ...row, attention_status: 'low_stock' })),
+    ];
     const standby = catalogRows
       .filter((row) => row.hidden)
       .sort((a, b) => a.sku.localeCompare(b.sku));
@@ -142,9 +162,17 @@ export default async function handler(req, res) {
         unused_skus: unusedRows.length,
         low_stock: lowStock.length,
         sold_out: soldOut.length,
+        low_stock_total: allLowStock.length,
+        sold_out_total: allSoldOut.length,
+        muted_attention: mutedAttention.length,
         standby: standby.length,
-        low_stock_rows: lowStock.slice(0, 8),
-        sold_out_rows: soldOut.slice(0, 8),
+        low_stock_rows: lowStock
+          .slice(0, 8)
+          .map((row) => ({ ...row, attention_status: 'low_stock' })),
+        sold_out_rows: soldOut
+          .slice(0, 8)
+          .map((row) => ({ ...row, attention_status: 'sold_out' })),
+        muted_rows: mutedAttention.slice(0, 25),
         standby_rows: standby.slice(0, 8),
       },
       operations: {

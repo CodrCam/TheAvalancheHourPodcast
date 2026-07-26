@@ -6,6 +6,7 @@ import { logAdminAction } from '../../../../lib/adminAudit';
 import {
   applyInventoryDelta,
   deleteInventorySku,
+  setInventoryAttentionMuted,
   setInventoryHidden,
   setInventoryQuantity,
 } from '../../../../lib/inventoryStore';
@@ -111,21 +112,42 @@ export default async function handler(req, res) {
   if (req.method === 'POST') {
     const action = String(req.body?.action || '').trim();
     const sku = String(req.body?.sku || '').trim();
-    if (action !== 'visibility' || !sku) {
+    if (!['visibility', 'attention_mute'].includes(action) || !sku) {
       return res.status(400).json({ ok: false, error: 'Invalid action' });
     }
 
     try {
-      const visibilityOptions = Object.prototype.hasOwnProperty.call(
+      const hasExpectedUpdatedAt = Object.prototype.hasOwnProperty.call(
         req.body || {},
         'expected_updated_at'
-      )
+      );
+      const updateOptions = hasExpectedUpdatedAt
         ? { expectedUpdatedAt: req.body.expected_updated_at }
         : {};
+
+      if (action === 'attention_mute') {
+        if (!hasExpectedUpdatedAt) {
+          return res.status(400).json({
+            ok: false,
+            error: 'Refresh the inventory item before changing its alert.',
+          });
+        }
+        const updated = await setInventoryAttentionMuted(
+          sku,
+          req.body?.muted === true,
+          updateOptions
+        );
+        logAdminAction(req, principal, 'inventory.attention_mute', {
+          sku,
+          muted: updated.attention_muted === true,
+        });
+        return res.status(200).json({ ok: true, updated });
+      }
+
       const updated = await setInventoryHidden(
         sku,
         !!req.body?.hidden,
-        visibilityOptions
+        updateOptions
       );
       logAdminAction(req, principal, 'inventory.visibility', {
         sku,
@@ -133,13 +155,15 @@ export default async function handler(req, res) {
       });
       return res.status(200).json({ ok: true, updated });
     } catch (err) {
-      console.error('admin stock visibility error:', err);
+      console.error('admin stock action error:', err);
       const isConflict = /conditional/i.test(String(err.message || ''));
       return res.status(isConflict ? 409 : 500).json({
         ok: false,
         error: isConflict
-          ? 'This inventory row changed. Refresh before updating availability.'
-          : 'Visibility update failed',
+          ? 'This inventory item changed. Refresh before updating it.'
+          : action === 'attention_mute'
+            ? 'Alert update failed'
+            : 'Visibility update failed',
       });
     }
   }

@@ -98,6 +98,23 @@ function titleDate() {
   });
 }
 
+function inventoryItemName(item = {}) {
+  return (
+    [item.productName, item.label].filter(Boolean).join(' · ') ||
+    item.name ||
+    item.sku ||
+    'Inventory item'
+  );
+}
+
+function inventoryItemStatus(item = {}) {
+  if (item.attention_status === 'sold_out' || Number(item.quantity) <= 0) {
+    return 'Sold out';
+  }
+  const quantity = Math.max(0, Number(item.quantity) || 0);
+  return `${quantity} ${quantity === 1 ? 'unit' : 'units'} left`;
+}
+
 export function TodayWorkspace({
   previewSession = null,
   previewWorkspace = null,
@@ -111,6 +128,7 @@ export function TodayWorkspace({
   const canManageEpisodes = permissions.has('episodes:manage');
   const canManageMicKits = permissions.has('mic_kits:manage');
   const canManageIntake = permissions.has('intake:manage');
+  const canUpdateInventory = permissions.has('inventory:update');
   const canViewOperations =
     permissions.has('orders:read') && permissions.has('inventory:read');
   const [workspace, setWorkspace] = useState(
@@ -125,6 +143,8 @@ export function TodayWorkspace({
   const [loading, setLoading] = useState(!previewWorkspace);
   const [error, setError] = useState('');
   const [profileNotConnected, setProfileNotConnected] = useState(false);
+  const [inventoryAlertSku, setInventoryAlertSku] = useState('');
+  const [inventoryNotice, setInventoryNotice] = useState('');
 
   useEffect(() => {
     if (previewWorkspace) return undefined;
@@ -272,6 +292,52 @@ export function TodayWorkspace({
       (Number(workspace.operations.inventory?.low_stock) || 0) +
       (Number(workspace.operations.inventory?.sold_out) || 0)
     : null;
+  const mutedInventoryRows =
+    workspace.operations?.inventory?.muted_rows || [];
+
+  async function updateInventoryAlert(item, muted) {
+    if (!canUpdateInventory || inventoryAlertSku) return;
+
+    setInventoryAlertSku(item.sku);
+    setInventoryNotice('');
+    setError('');
+    let alertUpdated = false;
+
+    try {
+      const response = await fetch('/api/store/admin/update-stock', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'attention_mute',
+          sku: item.sku,
+          muted,
+          expected_updated_at: item.updated_at || '',
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok || data.ok === false) {
+        throw new Error(data.error || 'Could not update this inventory alert.');
+      }
+      alertUpdated = true;
+
+      const operations = await fetchStudioData('/api/store/admin/overview');
+      setWorkspace((current) => ({ ...current, operations }));
+      setInventoryNotice(
+        muted
+          ? `${inventoryItemName(item)} is muted until its stock changes.`
+          : `${inventoryItemName(item)} is back in the priority queue.`
+      );
+    } catch (err) {
+      setError(
+        alertUpdated
+          ? 'The alert was updated, but the priority queue could not refresh. Reload the page to see the change.'
+          : err.message || 'Could not update this inventory alert.'
+      );
+    } finally {
+      setInventoryAlertSku('');
+    }
+  }
 
   return (
     <>
@@ -336,6 +402,11 @@ export function TodayWorkspace({
           {error}
         </p>
       ) : null}
+      {inventoryNotice ? (
+        <p className={styles.todayNotice} role="status">
+          {inventoryNotice}
+        </p>
+      ) : null}
 
       <div className={styles.todayLayout}>
         <section className={styles.todayPanel}>
@@ -375,34 +446,103 @@ export function TodayWorkspace({
             </div>
           ) : today.actions.length ? (
             <div className={styles.todayActionList}>
-              {today.actions.map((action) => (
-                <Link
-                  key={action.id}
-                  href={action.href}
-                  className={`${styles.todayAction} ${
-                    action.urgency === 'urgent'
-                      ? styles.todayActionUrgent
-                      : action.urgency === 'high'
-                        ? styles.todayActionHigh
-                        : ''
-                  }`}
-                >
-                  <span className={styles.todayActionStatus} aria-hidden="true" />
-                  <span className={styles.todayActionCopy}>
-                    <strong>{action.title}</strong>
-                    <small>{action.detail}</small>
-                    <span className={styles.todayActionMeta}>
-                      <em>{action.badge}</em>
-                      {action.date ? (
-                        <time dateTime={action.date}>
-                          {formatDate(action.date)}
-                        </time>
-                      ) : null}
+              {today.actions.map((action) => {
+                const actionClassName = `${styles.todayAction} ${
+                  action.urgency === 'urgent'
+                    ? styles.todayActionUrgent
+                    : action.urgency === 'high'
+                      ? styles.todayActionHigh
+                      : ''
+                }`;
+
+                if (action.id === 'operations:inventory') {
+                  return (
+                    <article
+                      key={action.id}
+                      className={`${actionClassName} ${styles.todayInventoryAction}`}
+                    >
+                      <span
+                        className={styles.todayActionStatus}
+                        aria-hidden="true"
+                      />
+                      <div className={styles.todayActionCopy}>
+                        <strong>{action.title}</strong>
+                        <small>{action.detail}</small>
+                        <span className={styles.todayActionMeta}>
+                          <em>{action.badge}</em>
+                        </span>
+                        {canUpdateInventory &&
+                        (action.inventory_items || []).length ? (
+                          <details className={styles.todayInventoryManager}>
+                            <summary>Manage individual alerts</summary>
+                            <div className={styles.todayInventoryItems}>
+                              {action.inventory_items.map((item) => (
+                                <div
+                                  className={styles.todayInventoryItem}
+                                  key={item.sku}
+                                >
+                                  <span>
+                                    <strong>{inventoryItemName(item)}</strong>
+                                    <small>
+                                      {inventoryItemStatus(item)} · {item.sku}
+                                    </small>
+                                  </span>
+                                  {!item.missing_inventory_row ? (
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        updateInventoryAlert(item, true)
+                                      }
+                                      disabled={Boolean(inventoryAlertSku)}
+                                    >
+                                      {inventoryAlertSku === item.sku
+                                        ? 'Muting…'
+                                        : 'Mute alert'}
+                                    </button>
+                                  ) : null}
+                                </div>
+                              ))}
+                            </div>
+                          </details>
+                        ) : null}
+                      </div>
+                      <Link
+                        href={action.href}
+                        className={styles.todayInventoryReview}
+                      >
+                        Review stock
+                        <ArrowForwardRoundedIcon aria-hidden="true" />
+                      </Link>
+                    </article>
+                  );
+                }
+
+                return (
+                  <Link
+                    key={action.id}
+                    href={action.href}
+                    className={actionClassName}
+                  >
+                    <span
+                      className={styles.todayActionStatus}
+                      aria-hidden="true"
+                    />
+                    <span className={styles.todayActionCopy}>
+                      <strong>{action.title}</strong>
+                      <small>{action.detail}</small>
+                      <span className={styles.todayActionMeta}>
+                        <em>{action.badge}</em>
+                        {action.date ? (
+                          <time dateTime={action.date}>
+                            {formatDate(action.date)}
+                          </time>
+                        ) : null}
+                      </span>
                     </span>
-                  </span>
-                  <ArrowForwardRoundedIcon aria-hidden="true" />
-                </Link>
-              ))}
+                    <ArrowForwardRoundedIcon aria-hidden="true" />
+                  </Link>
+                );
+              })}
             </div>
           ) : (
             <div className={styles.todayEmpty}>
@@ -416,6 +556,40 @@ export function TodayWorkspace({
               </div>
             </div>
           )}
+          {!loading && mutedInventoryRows.length ? (
+            <details className={styles.todayMutedAlerts}>
+              <summary>
+                <span>Muted inventory alerts</span>
+                <strong>{mutedInventoryRows.length}</strong>
+              </summary>
+              <p>
+                These stay out of the priority count until their stock changes.
+              </p>
+              <div>
+                {mutedInventoryRows.map((item) => (
+                  <div className={styles.todayMutedAlert} key={item.sku}>
+                    <span>
+                      <strong>{inventoryItemName(item)}</strong>
+                      <small>
+                        {inventoryItemStatus(item)} · {item.sku}
+                      </small>
+                    </span>
+                    {canUpdateInventory ? (
+                      <button
+                        type="button"
+                        onClick={() => updateInventoryAlert(item, false)}
+                        disabled={Boolean(inventoryAlertSku)}
+                      >
+                        {inventoryAlertSku === item.sku
+                          ? 'Restoring…'
+                          : 'Restore alert'}
+                      </button>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            </details>
+          ) : null}
         </section>
 
         <aside className={styles.todaySideStack}>

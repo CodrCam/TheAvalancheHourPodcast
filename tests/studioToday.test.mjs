@@ -84,7 +84,26 @@ test('combines Caleb operations and mic-kit work into the same queue', () => {
       canManageMicKits: true,
       operations: {
         orders: { unshipped: 2 },
-        inventory: { low_stock: 1, sold_out: 1 },
+        inventory: {
+          low_stock: 1,
+          sold_out: 1,
+          low_stock_rows: [
+            {
+              sku: 'field-shirt-blue-m',
+              label: 'Blue / Medium',
+              quantity: 1,
+              attention_status: 'low_stock',
+            },
+          ],
+          sold_out_rows: [
+            {
+              sku: 'beanie-black',
+              label: 'Black',
+              quantity: 0,
+              attention_status: 'sold_out',
+            },
+          ],
+        },
       },
     },
     { today: '2026-07-26' }
@@ -94,6 +113,35 @@ test('combines Caleb operations and mic-kit work into the same queue', () => {
     result.actions.map((action) => action.kind),
     ['mic_kit', 'operations', 'operations']
   );
+  assert.deepEqual(
+    result.operations_actions.find(
+      (action) => action.id === 'operations:inventory'
+    ).inventory_items.map((item) => item.sku),
+    ['beanie-black', 'field-shirt-blue-m']
+  );
+});
+
+test('does not add muted inventory items to the priority queue', () => {
+  const result = buildStudioToday(
+    {
+      operations: {
+        orders: { unshipped: 0 },
+        inventory: {
+          low_stock: 0,
+          sold_out: 0,
+          muted_attention: 2,
+          muted_rows: [
+            { sku: 'beanie-black', attention_status: 'sold_out' },
+            { sku: 'field-shirt-blue-m', attention_status: 'low_stock' },
+          ],
+        },
+      },
+    },
+    { today: '2026-07-26' }
+  );
+
+  assert.equal(result.operations_actions.length, 0);
+  assert.equal(result.metrics.action_count, 0);
 });
 
 test('shows only the signed-in host mic-kit requests', () => {
