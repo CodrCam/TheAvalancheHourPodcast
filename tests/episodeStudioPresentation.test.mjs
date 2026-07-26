@@ -316,6 +316,87 @@ test('canonical asset requirements block readiness until audio and images are at
   assert.equal(ready.host_ready, true);
 });
 
+test('viewer-safe uploaded files satisfy their checklist steps without exposing storage keys', () => {
+  const episode = normalizeEpisodeStudio({
+    ...sampleEpisode(),
+    producer_directions: clearProducerBrief,
+    deliverables: [
+      {
+        id: 'raw-recording-tracks',
+        label: 'Raw recording tracks',
+        type: 'asset',
+        required: true,
+        asset_category: 'recording',
+      },
+      {
+        id: 'introduction-and-sponsor-read',
+        label: 'Introduction and sponsor read',
+        type: 'asset',
+        required: true,
+        asset_category: 'sponsor_audio',
+      },
+      {
+        id: 'photos-and-artwork',
+        label: 'Photos and artwork',
+        type: 'asset',
+        required: true,
+        asset_category: 'image',
+      },
+    ],
+    assets: [
+      {
+        asset_id: 'asset-recording',
+        object_key:
+          'episodes/episode-one/recording/asset-recording-raw.wav',
+        object_version_id: 'version-recording',
+        file_name: 'raw.wav',
+        content_type: 'audio/wav',
+        size: 100,
+        category: 'recording',
+        deliverable_id: 'raw-recording-tracks',
+      },
+      {
+        asset_id: 'asset-sponsor',
+        object_key:
+          'episodes/episode-one/sponsor_audio/asset-sponsor-intro.wav',
+        object_version_id: 'version-sponsor',
+        file_name: 'intro.wav',
+        content_type: 'audio/wav',
+        size: 100,
+        category: 'sponsor_audio',
+        deliverable_id: 'introduction-and-sponsor-read',
+      },
+      {
+        asset_id: 'asset-image',
+        object_key:
+          'episodes/episode-one/image/asset-image-cover.jpg',
+        object_version_id: 'version-image',
+        file_name: 'cover.jpg',
+        content_type: 'image/jpeg',
+        size: 100,
+        category: 'image',
+        deliverable_id: 'photos-and-artwork',
+      },
+    ],
+  });
+  const viewerEpisode = sanitizeEpisodeStudioForViewer(episode);
+
+  assert.equal(
+    viewerEpisode.assets.every(
+      (asset) =>
+        asset.storage_verified === true &&
+        !('object_key' in asset) &&
+        !('object_version_id' in asset)
+    ),
+    true
+  );
+  const completion = getEpisodeCompletion(viewerEpisode);
+  assert.equal(completion.required, 4);
+  assert.equal(completion.completed, 4);
+  assert.deepEqual(completion.missing, []);
+  assert.equal(completion.can_submit, true);
+});
+
 test('episode assets carry a visible 180-day retention deadline', () => {
   const uploadedAt = '2026-07-25T12:00:00.000Z';
   const expiresAt = getEpisodeAssetRetentionExpiresAt(uploadedAt);
@@ -344,6 +425,7 @@ test('episode assets carry a visible 180-day retention deadline', () => {
   const viewerAsset = sanitizeEpisodeStudioForViewer(episode).assets[0];
   assert.equal('object_key' in viewerAsset, false);
   assert.equal('object_version_id' in viewerAsset, false);
+  assert.equal(viewerAsset.storage_verified, true);
   assert.equal(
     isEpisodeAssetExpired(asset, '2027-01-21T11:59:59.000Z'),
     false
