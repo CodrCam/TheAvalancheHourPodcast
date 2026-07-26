@@ -100,23 +100,19 @@ const typography = {
     fontWeight: 600,
     fontSize: '1.5rem',
     lineHeight: 1.4,
-    color: palette.text.primary,
   },
   h6: {
     fontWeight: 600,
     fontSize: '1.25rem',
     lineHeight: 1.4,
-    color: palette.text.primary,
   },
   body1: {
     fontSize: '1rem',
     lineHeight: 1.6,
-    color: palette.text.primary,
   },
   body2: {
     fontSize: '0.875rem',
     lineHeight: 1.5,
-    color: palette.text.secondary,
   },
   button: {
     fontWeight: 600,
@@ -126,7 +122,6 @@ const typography = {
   caption: {
     fontSize: '0.75rem',
     lineHeight: 1.4,
-    color: palette.text.secondary,
   },
 };
 
