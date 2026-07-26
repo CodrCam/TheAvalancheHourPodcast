@@ -32,7 +32,14 @@ export default async function handler(req, res) {
   }
   try {
     res.setHeader('Cache-Control', 'no-store, private');
-    return res.redirect(302, createEpisodeAssetDownloadUrl(asset.object_key));
+    return res.redirect(
+      302,
+      createEpisodeAssetDownloadUrl(asset.object_key, {
+        episodeId,
+        fileName: asset.file_name,
+        versionId: asset.object_version_id,
+      })
+    );
   } catch {
     return res.status(503).json({
       ok: false,

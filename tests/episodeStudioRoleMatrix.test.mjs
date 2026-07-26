@@ -41,6 +41,7 @@ test('regular host receives host work but not producer review', () => {
   assert.equal(result.canAccess, true);
   assert.equal(result.canHost, true);
   assert.equal(result.canReview, false);
+  assert.equal(result.canUploadAssets, true);
   assert.equal(result.canConfigure, false);
 });
 
@@ -58,6 +59,7 @@ test('an assigned producer receives review controls without manager permission',
     }
   );
   assert.equal(result.canReview, true);
+  assert.equal(result.canUploadAssets, true);
   assert.equal(result.canManage, false);
   assert.equal(result.canConfigure, true);
 });
@@ -77,6 +79,7 @@ test('a host who is also producer receives both action sets', () => {
   );
   assert.equal(result.canHost, true);
   assert.equal(result.canReview, true);
+  assert.equal(result.canUploadAssets, true);
 });
 
 test('a Studio manager assigned as host keeps host actions', () => {
@@ -100,4 +103,34 @@ test('an unrelated signed-in host cannot access the episode', () => {
   assert.equal(result.canAccess, false);
   assert.equal(result.canHost, false);
   assert.equal(result.canReview, false);
+  assert.equal(result.canUploadAssets, false);
+});
+
+test('host upload locks follow workflow status while the assigned producer can continue', () => {
+  const submittedEpisode = {
+    ...episode,
+    status: 'submitted',
+    producer_person_id: 'regular-producer',
+  };
+  const host = getEpisodeRelationshipCapabilities(
+    submittedEpisode,
+    { person_id: 'regular-host' },
+    {
+      groups: [ACCESS_GROUPS.HOST],
+      permissions: getPermissionsForGroups([ACCESS_GROUPS.HOST]),
+    }
+  );
+  const producer = getEpisodeRelationshipCapabilities(
+    submittedEpisode,
+    { person_id: 'regular-producer' },
+    {
+      groups: [ACCESS_GROUPS.HOST],
+      permissions: getPermissionsForGroups([ACCESS_GROUPS.HOST]),
+    }
+  );
+
+  assert.equal(host.canHost, true);
+  assert.equal(host.canUploadAssets, false);
+  assert.equal(producer.canReview, true);
+  assert.equal(producer.canUploadAssets, true);
 });

@@ -16,6 +16,7 @@ import {
   mergeHostDeliverableValues,
   normalizeEpisodeStudio,
   PRODUCER_DIRECTIONS_MIN_LENGTH,
+  sanitizeEpisodeStudioForViewer,
   validateEpisodeStudio,
 } from '../lib/episodeStudioPresentation.mjs';
 
@@ -273,6 +274,7 @@ test('episode assets carry a visible 180-day retention deadline', () => {
         content_type: 'text/plain',
         size: 100,
         category: 'document',
+        object_version_id: 'version-123',
         uploaded_at: uploadedAt,
       },
     ],
@@ -280,6 +282,10 @@ test('episode assets carry a visible 180-day retention deadline', () => {
   const asset = episode.assets[0];
   assert.equal(asset.retention_days, 180);
   assert.equal(asset.retention_expires_at, expiresAt);
+  assert.equal(asset.object_version_id, 'version-123');
+  const viewerAsset = sanitizeEpisodeStudioForViewer(episode).assets[0];
+  assert.equal('object_key' in viewerAsset, false);
+  assert.equal('object_version_id' in viewerAsset, false);
   assert.equal(
     isEpisodeAssetExpired(asset, '2027-01-21T11:59:59.000Z'),
     false
@@ -328,6 +334,7 @@ test('legacy link-based episode steps migrate to step-owned uploads without losi
   assert.equal(episode.schema_version, 2);
   assert.equal(episode.deliverables[0].label, 'Episode source files');
   assert.equal(episode.deliverables[0].type, 'asset');
+  assert.equal(episode.deliverables[0].asset_category, 'other');
   assert.equal(
     episode.deliverables[0].legacy_source_url,
     'https://drive.google.com/example'
@@ -342,6 +349,27 @@ test('legacy link-based episode steps migrate to step-owned uploads without losi
     episode.assets[0].deliverable_id,
     'recording-files'
   );
+});
+
+test('keeps the canonical Episode Source Files step on the mixed safe-file policy', () => {
+  for (const assetCategory of ['document', 'image', 'recording']) {
+    const episode = normalizeEpisodeStudio({
+      ...sampleEpisode(),
+      schema_version: 2,
+      deliverables: [
+        {
+          id: 'episode-folder',
+          label: 'Episode source files',
+          description: 'Mixed source material',
+          type: 'asset',
+          asset_category: assetCategory,
+          required: false,
+          sort_order: 10,
+        },
+      ],
+    });
+    assert.equal(episode.deliverables[0].asset_category, 'other');
+  }
 });
 
 test('guest details require labeled social profiles and asset steps complete only from their own files', () => {
@@ -536,6 +564,7 @@ test('merges server-only fields without discarding unsaved episode edits', () =>
     title: 'Unsaved working title',
     updated_at: 'before',
     messages: [],
+    assets: [],
   };
   const merged = mergeEpisodeStudioServerFields(
     dirtyEpisode,
@@ -543,13 +572,15 @@ test('merges server-only fields without discarding unsaved episode edits', () =>
       title: 'Persisted title',
       updated_at: 'after',
       messages: [{ message_id: 'message-1', body: 'A new decision' }],
+      assets: [{ asset_id: 'asset-1', file_name: 'interview.wav' }],
     },
-    ['messages', 'updated_at']
+    ['messages', 'assets', 'updated_at']
   );
 
   assert.equal(merged.title, 'Unsaved working title');
   assert.equal(merged.updated_at, 'after');
   assert.equal(merged.messages[0].body, 'A new decision');
+  assert.equal(merged.assets[0].file_name, 'interview.wav');
 });
 
 test('preserves a selected producer profile independently from email', () => {

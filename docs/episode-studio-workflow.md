@@ -70,12 +70,16 @@ whether a newer library version exists.
 ## Final delivery package
 
 Google Drive and Riverside can remain rough working spaces. When direct uploads
-are active, hosts upload final voice audio, separate ad spots, images, and
-documents inside the checklist step they satisfy. Each object records that
-step's ID, and the bottom of the workspace automatically rebuilds the complete
-producer package in checklist order. Only metadata is stored in DynamoDB.
-Assigned participants download through an authorized server route that creates
-a short-lived S3 URL.
+are active, assigned hosts and producers upload final voice audio, separate ad
+spots, images, documents, transcripts, and other supported production material
+inside the checklist step they satisfy. The mixed **Episode Source Files** step
+accepts the complete safe production allowlist; recording, image, and document
+steps remain specialized. Executables, scripts, SVG, macro-enabled Office
+files, and general archives are not accepted. Each object records its step's
+ID, and the bottom of the workspace automatically rebuilds the complete
+producer package in checklist order. Only verified metadata is stored in
+DynamoDB. Assigned participants download through an authorized server route
+that creates a short-lived, attachment-only S3 URL.
 
 Older episodes are upgraded when read: the prior Drive, Riverside, intro-audio,
 and image-folder link steps become upload-based steps. Existing external URLs
@@ -220,9 +224,10 @@ record directly.
 
 Uploaded audio and full-resolution artwork never enter the episode JSON. The
 bytes live in a private S3 bucket. The episode stores only verified attachment
-metadata and object keys. Upload authorization is short-lived, completion
-verifies the S3 object, and downloads require current server-side episode
-access.
+metadata, object keys, and the verified S3 version. A signed S3 form fixes the
+key, canonical MIME type, and exact authorized byte length before S3 accepts
+the upload. Completion verifies the object, and downloads require current
+server-side episode access and stay pinned to the verified version.
 
 The producer email saved on the episode is the primary notification recipient.
 If it is empty, the server falls back to optional

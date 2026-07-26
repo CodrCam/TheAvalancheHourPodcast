@@ -4,6 +4,11 @@ import {
   verifyEpisodeAssetObject,
   verifyEpisodeAssetUploadToken,
 } from '../../../../../../lib/episodeAssetStorage';
+import {
+  canUploadEpisodeAssets,
+  episodeAssetMatchesUploadAuthorization,
+  MAX_EPISODE_ASSETS,
+} from '../../../../../../lib/episodeAssetPolicy.mjs';
 import { requireEpisodeStudioAccess } from '../../../../../../lib/episodeStudioAccess';
 import {
   EPISODE_ASSET_RETENTION_DAYS,
@@ -13,8 +18,6 @@ import {
 } from '../../../../../../lib/episodeStudioPresentation.mjs';
 import { saveEpisodeStudio } from '../../../../../../lib/episodeStudioStore';
 import { listPeople } from '../../../../../../lib/peopleStore';
-
-const HOST_LOCKED_STATUSES = ['submitted', 'submitted_with_gaps', 'accepted'];
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -34,18 +37,6 @@ export default async function handler(req, res) {
     ADMIN_PERMISSIONS.EPISODES_UPDATE
   );
   if (!access) return;
-  if (!access.roles.includes('host')) {
-    return res.status(403).json({
-      ok: false,
-      error: 'Only an assigned host can complete an episode upload.',
-    });
-  }
-  if (HOST_LOCKED_STATUSES.includes(access.episode.status)) {
-    return res.status(409).json({
-      ok: false,
-      error: 'The final package is locked while it is with the producer.',
-    });
-  }
   try {
     const payload = verifyEpisodeAssetUploadToken(
       req.body?.upload_token,
@@ -57,22 +48,79 @@ export default async function handler(req, res) {
         error: 'This upload authorization belongs to another Studio profile.',
       });
     }
-    const deliverableId = String(
+    const existingAsset = access.episode.assets.find(
+      (candidate) => candidate.asset_id === payload.asset_id
+    );
+    if (existingAsset) {
+      if (
+        !episodeAssetMatchesUploadAuthorization(existingAsset, payload)
+      ) {
+        return res.status(409).json({
+          ok: false,
+          code: 'EPISODE_ASSET_COMPLETION_CONFLICT',
+          error:
+            'This upload authorization conflicts with an existing episode file.',
+        });
+      }
+      const safeEpisode = sanitizeEpisodeStudioForViewer(access.episode);
+      return res.status(200).json({
+        ok: true,
+        already_completed: true,
+        episode: safeEpisode,
+        asset: safeEpisode.assets.find(
+          (candidate) => candidate.asset_id === payload.asset_id
+        ),
+      });
+    }
+    if (
+      !canUploadEpisodeAssets({
+        roles: access.roles,
+        status: access.episode.status,
+      })
+    ) {
+      const assignedUploader = access.roles.some((role) =>
+        ['host', 'producer'].includes(role)
+      );
+      return res.status(assignedUploader ? 409 : 403).json({
+        ok: false,
+        error: assignedUploader
+          ? 'Episode source files are locked at this stage of production.'
+          : 'Only an assigned host or producer can complete an episode upload.',
+      });
+    }
+    if (access.episode.assets.length >= MAX_EPISODE_ASSETS) {
+      return res.status(409).json({
+        ok: false,
+        code: 'EPISODE_ASSET_LIMIT_REACHED',
+        error: `This episode already has the maximum of ${MAX_EPISODE_ASSETS} source files. The uploaded object was not attached.`,
+      });
+    }
+    const requestedDeliverableId = String(
       req.body?.deliverable_id || ''
     ).trim();
+    const deliverable = access.episode.deliverables.find(
+      (candidate) => candidate.id === payload.deliverable_id
+    );
     if (
-      !deliverableId ||
-      !access.episode.deliverables.some(
-        (deliverable) => deliverable.id === deliverableId
-      )
+      !requestedDeliverableId ||
+      requestedDeliverableId !== payload.deliverable_id ||
+      !deliverable
     ) {
       return res.status(400).json({
         ok: false,
         error:
-          'Choose the episode step this file belongs to before attaching it.',
+          'This upload authorization does not match the selected episode step. Start the upload again.',
       });
     }
-    await verifyEpisodeAssetObject(payload);
+    const deliverableCategory = deliverable.asset_category || 'other';
+    if (payload.category !== deliverableCategory) {
+      return res.status(409).json({
+        ok: false,
+        error:
+          'This episode step changed during the upload. Refresh and upload the file again.',
+      });
+    }
+    const verifiedObject = await verifyEpisodeAssetObject(payload);
     const peopleResult = await listPeople({
       allowStaticFallback: true,
       includeInactive: true,
@@ -80,7 +128,7 @@ export default async function handler(req, res) {
     const person = peopleResult.people.find(
       (candidate) => candidate.person_id === access.binding?.person_id
     );
-    const uploadedAt = new Date().toISOString();
+    const uploadedAt = verifiedObject.uploaded_at;
     const asset = {
       asset_id: payload.asset_id,
       object_key: payload.object_key,
@@ -88,16 +136,17 @@ export default async function handler(req, res) {
       content_type: payload.content_type,
       size: payload.size,
       category: payload.category,
-      label: String(req.body?.label || '').trim().slice(0, 220),
+      object_version_id: verifiedObject.object_version_id,
+      label: payload.file_name,
       notes: String(req.body?.notes || '').trim().slice(0, 2000),
-      deliverable_id: deliverableId,
+      deliverable_id: payload.deliverable_id,
       uploaded_at: uploadedAt,
       uploaded_by_person_id: access.binding?.person_id || '',
       uploaded_by_name:
         person?.name ||
         access.principal.displayName ||
         access.principal.username ||
-        'Assigned host',
+        'Studio participant',
       retention_days: EPISODE_ASSET_RETENTION_DAYS,
       retention_expires_at: getEpisodeAssetRetentionExpiresAt(
         uploadedAt,
@@ -114,8 +163,20 @@ export default async function handler(req, res) {
         asset,
       ],
     });
+    if (
+      episode.assets.length > MAX_EPISODE_ASSETS ||
+      !episode.assets.some(
+        (candidate) => candidate.asset_id === asset.asset_id
+      )
+    ) {
+      throw new Error(
+        `Episode asset: this episode cannot hold more than ${MAX_EPISODE_ASSETS} source files.`
+      );
+    }
     const saved = await saveEpisodeStudio(episode, {
-      expectedUpdatedAt: String(req.body?.expected_updated_at || ''),
+      // Bind the write to the episode version read at completion time. A large
+      // upload should not fail merely because its browser snapshot is old.
+      expectedUpdatedAt: access.episode.updated_at,
     });
     logAdminAction(req, access.principal, 'episode_studio.asset_upload', {
       episode_id: episodeId,
@@ -124,10 +185,11 @@ export default async function handler(req, res) {
       content_type: asset.content_type,
       size: asset.size,
     });
+    const safeEpisode = sanitizeEpisodeStudioForViewer(saved.episode);
     return res.status(201).json({
       ok: true,
-      episode: sanitizeEpisodeStudioForViewer(saved.episode),
-      asset: sanitizeEpisodeStudioForViewer(saved.episode).assets.find(
+      episode: safeEpisode,
+      asset: safeEpisode.assets.find(
         (candidate) => candidate.asset_id === asset.asset_id
       ),
     });
@@ -137,6 +199,7 @@ export default async function handler(req, res) {
     const validation = /Episode asset:/i.test(message);
     return res.status(conflict ? 409 : validation ? 400 : 500).json({
       ok: false,
+      ...(conflict ? { code: 'EPISODE_ASSET_COMPLETION_RACE' } : {}),
       error: conflict
         ? 'The Episode Studio changed during the upload. Refresh before attaching the file.'
         : validation

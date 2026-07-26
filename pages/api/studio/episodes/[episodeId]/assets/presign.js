@@ -4,8 +4,10 @@ import {
   createEpisodeAssetUpload,
   isEpisodeAssetStorageConfigured,
 } from '../../../../../../lib/episodeAssetStorage';
-
-const HOST_LOCKED_STATUSES = ['submitted', 'submitted_with_gaps', 'accepted'];
+import {
+  canUploadEpisodeAssets,
+  MAX_EPISODE_ASSETS,
+} from '../../../../../../lib/episodeAssetPolicy.mjs';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -25,17 +27,27 @@ export default async function handler(req, res) {
     ADMIN_PERMISSIONS.EPISODES_UPDATE
   );
   if (!access) return;
-  if (!access.roles.includes('host')) {
-    return res.status(403).json({
+  if (
+    !canUploadEpisodeAssets({
+      roles: access.roles,
+      status: access.episode.status,
+    })
+  ) {
+    const assignedUploader = access.roles.some((role) =>
+      ['host', 'producer'].includes(role)
+    );
+    return res.status(assignedUploader ? 409 : 403).json({
       ok: false,
-      error: 'Only an assigned host can upload the final episode package.',
+      error: assignedUploader
+        ? 'Episode source files are locked at this stage of production.'
+        : 'Only an assigned host or producer can upload episode source files.',
     });
   }
-  if (HOST_LOCKED_STATUSES.includes(access.episode.status)) {
+  if (access.episode.assets.length >= MAX_EPISODE_ASSETS) {
     return res.status(409).json({
       ok: false,
-      error:
-        'The final package is locked while it is with the producer. Request changes before uploading a replacement.',
+      code: 'EPISODE_ASSET_LIMIT_REACHED',
+      error: `This episode already has the maximum of ${MAX_EPISODE_ASSETS} source files.`,
     });
   }
   if (!isEpisodeAssetStorageConfigured()) {
@@ -46,11 +58,30 @@ export default async function handler(req, res) {
         'Direct episode uploads are ready but object storage is not configured for this environment.',
     });
   }
+  const deliverableId = String(req.body?.deliverable_id || '').trim();
+  const deliverable = access.episode.deliverables.find(
+    (candidate) => candidate.id === deliverableId
+  );
+  if (!deliverable) {
+    return res.status(400).json({
+      ok: false,
+      error:
+        'Choose the episode step this file belongs to before starting the upload.',
+    });
+  }
   try {
+    const requestedFile =
+      req.body?.file && typeof req.body.file === 'object'
+        ? req.body.file
+        : {};
     const upload = createEpisodeAssetUpload({
       episodeId,
       uploaderPersonId: access.binding?.person_id,
-      file: req.body?.file,
+      deliverableId: deliverable.id,
+      file: {
+        ...requestedFile,
+        category: deliverable.asset_category || 'other',
+      },
     });
     return res.status(200).json({ ok: true, upload });
   } catch (error) {

@@ -27,6 +27,12 @@ import {
   mergeEpisodeStudioServerFields,
   PRODUCER_DIRECTIONS_MIN_LENGTH,
 } from '../lib/episodeStudioPresentation.mjs';
+import {
+  getEpisodeAssetAccept,
+  getEpisodeAssetTypeLabel,
+  validateEpisodeAssetInput,
+} from '../lib/episodeAssetPolicy.mjs';
+import { completeEpisodeAssetUpload } from '../lib/episodeAssetUploadClient.mjs';
 import styles from '../styles/EpisodeStudio.module.css';
 
 const STATUS_LABELS = {
@@ -138,13 +144,63 @@ function formatBytes(value) {
   return `${bytes} B`;
 }
 
-function assetAcceptValue(category) {
-  if (['recording', 'sponsor_audio'].includes(category)) return 'audio/*';
-  if (category === 'image') return 'image/*';
-  if (category === 'document') {
-    return '.pdf,.txt,.md,.docx,application/pdf,text/plain,text/markdown';
+function assetUploadHelp(category) {
+  if (['recording', 'sponsor_audio'].includes(category)) {
+    return 'WAV, MP3, M4A, AAC, AIFF, FLAC, Ogg, Opus, or CAF audio · up to 750 MB per file';
   }
-  return 'audio/*,image/*,.pdf,.txt,.md,.docx';
+  if (category === 'image') {
+    return 'JPG, PNG, GIF, WebP, AVIF, TIFF, HEIC, HEIF, or BMP · up to 30 MB per file';
+  }
+  if (category === 'document') {
+    return 'PDF, DOCX, text, spreadsheet, presentation, transcript, JSON, or EDL · up to 75 MB per file';
+  }
+  return 'Safe audio and video, common raster images, documents, spreadsheets, presentations, transcripts, and edit lists · images up to 30 MB, documents up to 75 MB, audio/video up to 750 MB';
+}
+
+function readableUploadError(error) {
+  return String(error?.message || error || 'Could not upload this file.')
+    .replace(/^Episode asset:\s*/i, '')
+    .trim();
+}
+
+function canonicalUploadFile(file, upload) {
+  const contentType = String(upload?.content_type || '').trim();
+  if (!contentType || file.type === contentType) return file;
+  return new File([file], upload.file_name || file.name, {
+    type: contentType,
+    lastModified: file.lastModified,
+  });
+}
+
+async function uploadAuthorizedFile(file, upload = {}) {
+  const method = String(
+    upload.upload_method || (upload.upload_fields ? 'POST' : 'PUT')
+  ).toUpperCase();
+  const bodyFile = canonicalUploadFile(file, upload);
+
+  if (method === 'POST') {
+    const body = new FormData();
+    Object.entries(upload.upload_fields || {}).forEach(([name, value]) => {
+      body.append(name, String(value));
+    });
+    body.append('file', bodyFile);
+    return fetch(upload.upload_url, { method: 'POST', body });
+  }
+
+  if (method !== 'PUT') {
+    throw new Error('The upload service returned an unsupported upload method.');
+  }
+
+  return fetch(upload.upload_url, {
+    method: 'PUT',
+    headers: {
+      'Content-Type':
+        String(upload.content_type || '').trim() ||
+        bodyFile.type ||
+        'application/octet-stream',
+    },
+    body: bodyFile,
+  });
 }
 
 export default function EpisodeStudioWorkspace({ admin = false }) {
@@ -166,8 +222,10 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
     'separate_upload'
   );
   const [assetUploadsConfigured, setAssetUploadsConfigured] = useState(false);
+  const [canUploadAssets, setCanUploadAssets] = useState(false);
   const [uploadingAsset, setUploadingAsset] = useState('');
   const [uploadingDeliverableId, setUploadingDeliverableId] = useState('');
+  const [assetUploadFeedback, setAssetUploadFeedback] = useState({});
   const [baseline, setBaseline] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -203,6 +261,7 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
         setCanAdminOverride(data.canAdminOverride === true);
         setAvailableSponsorReads(data.available_sponsor_reads || []);
         setAssetUploadsConfigured(data.asset_uploads_configured === true);
+        setCanUploadAssets(data.canUploadAssets === true);
         setBaseline(JSON.stringify(data.episode));
       } catch (err) {
         if (alive) setError(err.message || 'Could not open this Episode Studio.');
@@ -233,6 +292,10 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
   const dirty = Boolean(episode && JSON.stringify(episode) !== baseline);
   const lockedForHost =
     !canHost || LOCKED_HOST_STATUSES.includes(episode?.status);
+  const canUploadForCurrentStatus =
+    canUploadAssets &&
+    episode?.status !== 'accepted' &&
+    (canReview || !LOCKED_HOST_STATUSES.includes(episode?.status));
   const Layout = admin ? AdminLayout : StudioLayout;
   const listHref = admin
     ? '/admin/studios'
@@ -317,6 +380,9 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
       setHostNames(data.host_names || hostNames);
       if (data.available_sponsor_reads) {
         setAvailableSponsorReads(data.available_sponsor_reads);
+      }
+      if (typeof data.canUploadAssets === 'boolean') {
+        setCanUploadAssets(data.canUploadAssets);
       }
       const notificationNote =
         data.notification && !data.notification.sent
@@ -589,17 +655,78 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
       !files.length ||
       !episode ||
       !deliverable?.id ||
-      uploadingAsset
+      uploadingAsset ||
+      !canUploadForCurrentStatus
     ) {
       return;
     }
+
+    const category = deliverable.asset_category || 'document';
+    const preparedFiles = [];
+    const validationErrors = [];
+    files.forEach((file) => {
+      try {
+        preparedFiles.push({
+          file,
+          input: validateEpisodeAssetInput({
+            file_name: file.name,
+            content_type: file.type,
+            size: file.size,
+            category,
+          }),
+        });
+      } catch (validationError) {
+        validationErrors.push(readableUploadError(validationError));
+      }
+    });
+
+    if (validationErrors.length) {
+      const visibleErrors = validationErrors.slice(0, 3).join(' ');
+      const remainingErrors =
+        validationErrors.length > 3
+          ? ` ${validationErrors.length - 3} more ${
+              validationErrors.length - 3 === 1 ? 'file was' : 'files were'
+            } also rejected.`
+          : '';
+      setAssetUploadFeedback((current) => ({
+        ...current,
+        [deliverable.id]: {
+          tone: 'error',
+          message: `No files were uploaded. ${visibleErrors}${remainingErrors}`,
+        },
+      }));
+      return;
+    }
+
     setError('');
     setMessage('');
     setUploadingDeliverableId(deliverable.id);
+    setAssetUploadFeedback((current) => ({
+      ...current,
+      [deliverable.id]: {
+        tone: 'status',
+        message: `Preparing ${preparedFiles.length} ${
+          preparedFiles.length === 1 ? 'file' : 'files'
+        } for upload…`,
+      },
+    }));
     let currentEpisode = episode;
+    let completedCount = 0;
+    let activeFileName = '';
     try {
-      for (const file of files) {
+      for (const [index, preparedFile] of preparedFiles.entries()) {
+        const { file, input } = preparedFile;
+        activeFileName = file.name;
         setUploadingAsset(file.name);
+        setAssetUploadFeedback((current) => ({
+          ...current,
+          [deliverable.id]: {
+            tone: 'status',
+            message: `Uploading ${index + 1} of ${preparedFiles.length}: ${
+              file.name
+            }`,
+          },
+        }));
         const authorizeResponse = await fetch(
           `/api/studio/episodes/${encodeURIComponent(
             currentEpisode.episode_id
@@ -609,12 +736,8 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
             credentials: 'same-origin',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              file: {
-                file_name: file.name,
-                content_type: file.type,
-                size: file.size,
-                category: deliverable.asset_category || 'document',
-              },
+              deliverable_id: deliverable.id,
+              file: input,
             }),
           }
         );
@@ -624,49 +747,46 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
             authorization.error || `Could not authorize ${file.name}.`
           );
         }
-        const uploadResponse = await fetch(
-          authorization.upload.upload_url,
-          {
-            method: 'PUT',
-            headers: { 'Content-Type': file.type },
-            body: file,
-          }
+        const uploadResponse = await uploadAuthorizedFile(
+          file,
+          authorization.upload
         );
         if (!uploadResponse.ok) {
           throw new Error(
             `The upload for ${file.name} did not finish. Check the object-storage CORS policy and try again.`
           );
         }
-        const completeResponse = await fetch(
-          `/api/studio/episodes/${encodeURIComponent(
-            currentEpisode.episode_id
-          )}/assets/complete`,
-          {
-            method: 'POST',
-            credentials: 'same-origin',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              upload_token: authorization.upload.upload_token,
-              expected_updated_at: currentEpisode.updated_at,
-              label: file.name,
-              deliverable_id: deliverable.id,
-            }),
-          }
-        );
-        const completed = await completeResponse.json();
-        if (!completeResponse.ok) {
-          throw new Error(
-            completed.error || `Could not attach ${file.name} to the episode.`
-          );
-        }
+        const completed = await completeEpisodeAssetUpload({
+          episodeId: currentEpisode.episode_id,
+          upload: authorization.upload,
+          deliverableId: deliverable.id,
+        });
         currentEpisode = completed.episode;
-        replaceEpisode(currentEpisode);
+        mergeServerFields(currentEpisode, ['assets', 'updated_at']);
+        completedCount += 1;
       }
-      setMessage(
-        `${files.length} ${files.length === 1 ? 'file' : 'files'} uploaded to “${deliverable.label}” and added to the producer package.`
-      );
+      setAssetUploadFeedback((current) => ({
+        ...current,
+        [deliverable.id]: {
+          tone: 'success',
+          message: `${completedCount} ${
+            completedCount === 1 ? 'file' : 'files'
+          } uploaded to “${deliverable.label}” and added to the producer package.`,
+        },
+      }));
     } catch (uploadError) {
-      setError(uploadError.message || 'Could not upload the episode asset.');
+      const reason = readableUploadError(uploadError);
+      setAssetUploadFeedback((current) => ({
+        ...current,
+        [deliverable.id]: {
+          tone: 'error',
+          message: completedCount
+            ? `${completedCount} of ${preparedFiles.length} ${
+                preparedFiles.length === 1 ? 'file was' : 'files were'
+              } uploaded. Uploading stopped at “${activeFileName}”: ${reason}`
+            : `“${activeFileName || 'This file'}” was not uploaded. ${reason}`,
+        },
+      }));
     } finally {
       setUploadingAsset('');
       setUploadingDeliverableId('');
@@ -1419,6 +1539,10 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
                   episode.assets
                 );
                 const missingRequired = deliverable.required && !complete;
+                const assetCategory =
+                  deliverable.asset_category || 'document';
+                const uploadFeedback =
+                  assetUploadFeedback[deliverable.id] || null;
                 return (
                   <article
                     key={deliverable.id}
@@ -1495,6 +1619,7 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
                             File group
                             <select
                               value={deliverable.asset_category || 'document'}
+                              disabled={deliverable.id === 'episode-folder'}
                               onChange={(event) =>
                                 updateDeliverable(deliverable.id, {
                                   asset_category: event.target.value,
@@ -1602,7 +1727,12 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
                         </label>
                       ) : null}
 
-                      <div className={styles.stepAssets}>
+                      <div
+                        className={styles.stepAssets}
+                        aria-busy={
+                          uploadingDeliverableId === deliverable.id
+                        }
+                      >
                         <div className={styles.stepAssetsHeading}>
                           <div>
                             <strong>
@@ -1622,39 +1752,76 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
                           </span>
                         </div>
 
-                        {canHost && !lockedForHost ? (
+                        {canUploadForCurrentStatus ? (
                           assetUploadsConfigured ? (
-                            <label className={styles.stepAssetPicker}>
-                              <CloudUploadRoundedIcon aria-hidden="true" />
-                              <span>
-                                {uploadingDeliverableId === deliverable.id
-                                  ? `Uploading ${uploadingAsset}…`
-                                  : deliverable.type === 'asset'
-                                    ? 'Upload files for this step'
-                                    : 'Add a supporting file'}
-                              </span>
-                              <input
-                                type="file"
-                                multiple
-                                accept={assetAcceptValue(
-                                  deliverable.asset_category
-                                )}
-                                disabled={Boolean(uploadingAsset)}
-                                onChange={(event) => {
-                                  uploadEpisodeAssets(
-                                    event.target.files,
-                                    deliverable
-                                  );
-                                  event.target.value = '';
-                                }}
-                              />
-                            </label>
+                            <>
+                              <label
+                                className={`${styles.stepAssetPicker} ${
+                                  uploadingAsset
+                                    ? styles.stepAssetPickerDisabled
+                                    : ''
+                                }`}
+                              >
+                                <CloudUploadRoundedIcon aria-hidden="true" />
+                                <span>
+                                  {uploadingDeliverableId === deliverable.id
+                                    ? `Uploading ${uploadingAsset}…`
+                                    : deliverable.type === 'asset'
+                                      ? 'Upload files for this step'
+                                      : 'Add a supporting file'}
+                                </span>
+                                <input
+                                  type="file"
+                                  multiple
+                                  accept={getEpisodeAssetAccept(assetCategory)}
+                                  disabled={Boolean(uploadingAsset)}
+                                  aria-describedby={`asset-upload-help-${deliverable.id}${
+                                    uploadFeedback
+                                      ? ` asset-upload-feedback-${deliverable.id}`
+                                      : ''
+                                  }`}
+                                  onChange={(event) => {
+                                    uploadEpisodeAssets(
+                                      event.target.files,
+                                      deliverable
+                                    );
+                                    event.target.value = '';
+                                  }}
+                                />
+                              </label>
+                              <p
+                                id={`asset-upload-help-${deliverable.id}`}
+                                className={styles.stepAssetHelp}
+                              >
+                                {assetUploadHelp(assetCategory)}
+                              </p>
+                            </>
                           ) : (
                             <p className={styles.assetStorageNotice}>
                               File uploads are not configured in this
                               environment.
                             </p>
                           )
+                        ) : null}
+
+                        {uploadFeedback ? (
+                          <p
+                            id={`asset-upload-feedback-${deliverable.id}`}
+                            className={`${styles.stepAssetFeedback} ${
+                              uploadFeedback.tone === 'error'
+                                ? styles.stepAssetFeedbackError
+                                : uploadFeedback.tone === 'success'
+                                  ? styles.stepAssetFeedbackSuccess
+                                  : styles.stepAssetFeedbackStatus
+                            }`}
+                            role={
+                              uploadFeedback.tone === 'error'
+                                ? 'alert'
+                                : 'status'
+                            }
+                          >
+                            {uploadFeedback.message}
+                          </p>
                         ) : null}
 
                         {stepAssets.length ? (
@@ -1668,8 +1835,15 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
                                       {asset.label || asset.file_name}
                                     </strong>
                                     <span>
+                                      {asset.label &&
+                                      asset.label !== asset.file_name
+                                        ? `${asset.file_name} · `
+                                        : ''}
+                                      {getEpisodeAssetTypeLabel(asset)} ·{' '}
                                       {formatBytes(asset.size)} ·{' '}
-                                      {ASSET_CATEGORY_LABELS[asset.category]}
+                                      {ASSET_CATEGORY_LABELS[
+                                        asset.category
+                                      ] || 'Production files'}
                                     </span>
                                   </div>
                                   {expired ? (
@@ -1870,13 +2044,16 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
                                   </strong>
                                   <span>
                                     {asset.file_name} ·{' '}
+                                    {getEpisodeAssetTypeLabel(asset)} ·{' '}
                                     {formatBytes(asset.size)} ·{' '}
-                                    {ASSET_CATEGORY_LABELS[asset.category]}
+                                    {ASSET_CATEGORY_LABELS[
+                                      asset.category
+                                    ] || 'Production files'}
                                   </span>
                                   <small>
                                     Uploaded by{' '}
                                     {asset.uploaded_by_name ||
-                                      'assigned host'}
+                                      'assigned uploader'}
                                     {asset.uploaded_at
                                       ? ` · ${formatDateTime(
                                           asset.uploaded_at
@@ -1964,7 +2141,9 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
                     type="button"
                     className={styles.secondaryButton}
                     disabled={
-                      saving || !episode.producer_feedback.trim()
+                      saving ||
+                      Boolean(uploadingAsset) ||
+                      !episode.producer_feedback.trim()
                     }
                     onClick={() => reviewEpisode('needs_changes')}
                   >
@@ -1975,6 +2154,7 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
                     className={styles.primaryButton}
                     disabled={
                       saving ||
+                      Boolean(uploadingAsset) ||
                       !['submitted', 'submitted_with_gaps'].includes(
                         episode.status
                       )
@@ -2008,7 +2188,7 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
                   <button
                     type="button"
                     className={styles.secondaryButton}
-                    disabled={saving || !dirty}
+                    disabled={saving || Boolean(uploadingAsset) || !dirty}
                     onClick={saveDraft}
                   >
                     <SaveRoundedIcon aria-hidden="true" />
@@ -2020,7 +2200,11 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
                     <button
                       type="button"
                       className={styles.gapSubmitButton}
-                      disabled={saving || !completion.can_submit_with_gaps}
+                      disabled={
+                        saving ||
+                        Boolean(uploadingAsset) ||
+                        !completion.can_submit_with_gaps
+                      }
                       onClick={() => submitEpisode('with_gaps')}
                     >
                       <WarningAmberRoundedIcon aria-hidden="true" />
@@ -2029,7 +2213,11 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
                     <button
                       type="button"
                       className={styles.primaryButton}
-                      disabled={saving || !completion.can_submit}
+                      disabled={
+                        saving ||
+                        Boolean(uploadingAsset) ||
+                        !completion.can_submit
+                      }
                       onClick={() => submitEpisode('complete')}
                     >
                       <SendRoundedIcon aria-hidden="true" />

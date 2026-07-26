@@ -243,6 +243,7 @@ export default async function handler(req, res) {
       roles: episodeMembership,
       canHost,
       canReview,
+      canUploadAssets,
       canConfigure,
       canAdminOverride,
     } = relationship;
@@ -280,6 +281,7 @@ export default async function handler(req, res) {
         canManage,
         canHost,
         canReview,
+        canUploadAssets,
         canConfigure,
         canAdminOverride,
         episode_roles: episodeMembership,
@@ -784,6 +786,11 @@ export default async function handler(req, res) {
       responseEpisode,
       canConfigure
     );
+    const responseRelationship = getEpisodeRelationshipCapabilities(
+      saved.episode,
+      membershipIdentity,
+      principal
+    );
     return res.status(200).json({
       ok: true,
       episode: sponsorData.episode,
@@ -793,12 +800,13 @@ export default async function handler(req, res) {
       host_names: saved.episode.host_person_ids.map(
         (personId) => peopleById.get(personId)?.name || personId
       ),
-      canManage,
-      canHost,
-      canReview,
-      canConfigure,
-      canAdminOverride,
-      episode_roles: episodeMembership,
+      canManage: responseRelationship.canManage,
+      canHost: responseRelationship.canHost,
+      canReview: responseRelationship.canReview,
+      canUploadAssets: responseRelationship.canUploadAssets,
+      canConfigure: responseRelationship.canConfigure,
+      canAdminOverride: responseRelationship.canAdminOverride,
+      episode_roles: responseRelationship.roles,
       notification,
     });
   } catch (err) {

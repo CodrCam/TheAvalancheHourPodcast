@@ -446,6 +446,16 @@
   cursor: pointer;
 }
 
+.stepAssetPicker:focus-within {
+  outline: 3px solid rgba(62, 126, 113, 0.2);
+  outline-offset: 2px;
+}
+
+.stepAssetPickerDisabled {
+  cursor: wait;
+  opacity: 0.68;
+}
+
 .stepAssetPicker input {
   position: absolute;
   width: 1px;
@@ -455,6 +465,41 @@
 
 .stepAssetPicker svg {
   font-size: 1.05rem;
+}
+
+.stepAssetHelp {
+  margin: -3px 2px 0;
+  color: #687773;
+  font-size: 0.7rem;
+  line-height: 1.45;
+}
+
+.stepAssetFeedback {
+  margin: 0;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  padding: 9px 11px;
+  font-size: 0.75rem;
+  font-weight: 720;
+  line-height: 1.45;
+}
+
+.stepAssetFeedbackStatus {
+  border-color: #c4d8df;
+  background: #f0f7f9;
+  color: #355e6b;
+}
+
+.stepAssetFeedbackSuccess {
+  border-color: #b8dac8;
+  background: #edf8f2;
+  color: #225f45;
+}
+
+.stepAssetFeedbackError {
+  border-color: #e5bbbb;
+  background: #fff3f2;
+  color: #8b3030;
 }
 
 .stepAssetList {
