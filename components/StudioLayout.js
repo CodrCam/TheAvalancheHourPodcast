@@ -9,71 +9,40 @@ import ManageAccountsRoundedIcon from '@mui/icons-material/ManageAccountsRounded
 import CalendarMonthRoundedIcon from '@mui/icons-material/CalendarMonthRounded';
 import HeadsetMicRoundedIcon from '@mui/icons-material/HeadsetMicRounded';
 import CampaignRoundedIcon from '@mui/icons-material/CampaignRounded';
+import DashboardRoundedIcon from '@mui/icons-material/DashboardRounded';
+import CategoryRoundedIcon from '@mui/icons-material/CategoryRounded';
+import ReceiptLongRoundedIcon from '@mui/icons-material/ReceiptLongRounded';
+import ArticleRoundedIcon from '@mui/icons-material/ArticleRounded';
+import GroupsRoundedIcon from '@mui/icons-material/GroupsRounded';
+import HandshakeRoundedIcon from '@mui/icons-material/HandshakeRounded';
+import HealthAndSafetyRoundedIcon from '@mui/icons-material/HealthAndSafetyRounded';
 import OpenInNewRoundedIcon from '@mui/icons-material/OpenInNewRounded';
 import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
 import NotificationBell from './NotificationBell';
+import {
+  getVisibleStudioNavigationItems,
+  STUDIO_NAV_SECTIONS,
+} from '../lib/studioNavigation.mjs';
 import styles from '../styles/Studio.module.css';
 
-const BASE_NAV_ITEMS = [
-  {
-    href: '/studio',
-    label: 'Home',
-    icon: HomeRoundedIcon,
-    permission: 'studio:read',
-  },
-  {
-    href: '/studio/resources',
-    label: 'Resources',
-    icon: MenuBookRoundedIcon,
-    permission: 'resources:read',
-    activePaths: ['/studio/resources', '/studio/manage/resources'],
-  },
-  {
-    href: '/studio/episodes',
-    label: 'My Episodes',
-    icon: PodcastsRoundedIcon,
-    permission: 'episodes:read',
-    section: 'my_work',
-  },
-  {
-    href: '/studio/profile',
-    label: 'My Profile',
-    icon: AccountCircleRoundedIcon,
-    permission: 'profile:self:read',
-    section: 'my_work',
-  },
-  {
-    href: '/studio/mic-kits',
-    label: 'Mic Kits',
-    icon: HeadsetMicRoundedIcon,
-    permission: 'mic_kits:read',
-    section: 'my_work',
-  },
-];
-
-const MANAGER_NAV_ITEMS = [
-  {
-    href: '/studio/manage/episodes',
-    label: 'Episode Calendar',
-    icon: CalendarMonthRoundedIcon,
-    permission: 'episodes:manage',
-    manager: true,
-  },
-  {
-    href: '/studio/manage/access',
-    label: 'Host Access',
-    icon: ManageAccountsRoundedIcon,
-    permission: 'studio_access:manage',
-    manager: true,
-  },
-  {
-    href: '/studio/manage/sponsor-reads',
-    label: 'Sponsor Reads',
-    icon: CampaignRoundedIcon,
-    permission: 'sponsor_reads:read',
-    manager: true,
-  },
-];
+const NAV_ICONS = {
+  home: HomeRoundedIcon,
+  resources: MenuBookRoundedIcon,
+  episodes: PodcastsRoundedIcon,
+  profile: AccountCircleRoundedIcon,
+  mic_kits: HeadsetMicRoundedIcon,
+  calendar: CalendarMonthRoundedIcon,
+  access: ManageAccountsRoundedIcon,
+  sponsor_reads: CampaignRoundedIcon,
+  admin: DashboardRoundedIcon,
+  products: CategoryRoundedIcon,
+  orders: ReceiptLongRoundedIcon,
+  site_content: ArticleRoundedIcon,
+  people: GroupsRoundedIcon,
+  sponsors: HandshakeRoundedIcon,
+  mic_kit_checkout: HeadsetMicRoundedIcon,
+  system_health: HealthAndSafetyRoundedIcon,
+};
 
 function formatGroup(group) {
   return String(group || '')
@@ -153,15 +122,7 @@ export default function StudioLayout({
   }, [hasUnsavedChanges, router, unsavedChangesMessage]);
 
   const navItems = useMemo(() => {
-    const permissions = new Set(session?.permissions || []);
-    return [
-      ...BASE_NAV_ITEMS.filter(
-        (item) => !item.permission || permissions.has(item.permission)
-      ),
-      ...MANAGER_NAV_ITEMS.filter((item) =>
-        permissions.has(item.permission)
-      ),
-    ];
+    return getVisibleStudioNavigationItems(session?.permissions);
   }, [session]);
   const studioHomeHref = session?.permissions?.includes('studio:read')
     ? '/studio'
@@ -220,34 +181,33 @@ export default function StudioLayout({
         ) : null}
 
         <nav aria-label="Host Studio navigation" className={styles.nav}>
-          <span className={styles.navLabel}>Studio</span>
           {navItems.map((item, index) => {
             const active =
               item.activePaths?.some((path) =>
                 router.pathname.startsWith(path)
               ) ||
-              (item.href === '/studio'
+              (item.exact
                 ? router.pathname === item.href
                 : router.pathname.startsWith(item.href));
-            const beginsManagerSection =
-              item.manager && !navItems[index - 1]?.manager;
-            const beginsMyWorkSection =
-              item.section === 'my_work' &&
-              navItems[index - 1]?.section !== 'my_work';
-            const Icon = item.icon;
+            const beginsSection =
+              item.section && navItems[index - 1]?.section !== item.section;
+            const Icon = NAV_ICONS[item.icon] || HomeRoundedIcon;
 
             return (
               <div
                 key={item.href}
-                className={
-                  item.manager ? styles.navItemManager : styles.navItemBase
-                }
+                className={styles.navItemBase}
               >
-                {beginsMyWorkSection ? (
-                  <span className={styles.navLabelSecondary}>My Work</span>
-                ) : null}
-                {beginsManagerSection ? (
-                  <span className={styles.navLabelSecondary}>Manage</span>
+                {beginsSection ? (
+                  <span
+                    className={
+                      index === 0
+                        ? styles.navLabel
+                        : styles.navLabelSecondary
+                    }
+                  >
+                    {STUDIO_NAV_SECTIONS[item.section] || item.section}
+                  </span>
                 ) : null}
                 <Link
                   href={item.href}

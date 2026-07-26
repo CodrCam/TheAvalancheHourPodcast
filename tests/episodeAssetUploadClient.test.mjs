@@ -141,6 +141,110 @@ test('keeps same-origin POST responses readable and rejects a readable storage f
   assert.equal(isEpisodeAssetUploadReadyForCompletion(response), false);
 });
 
+test('reports bounded browser upload progress before returning the S3 response', async () => {
+  const file = new File(['1234567890'], 'interview.wav', {
+    type: 'audio/wav',
+  });
+  const progress = [];
+  const requests = [];
+  class FakeXhr {
+    constructor() {
+      this.listeners = {};
+      this.upload = {
+        addEventListener: (name, listener) => {
+          this.uploadListener = { name, listener };
+        },
+      };
+      this.status = 204;
+    }
+
+    open(method, url, async) {
+      requests.push({ method, url, async });
+    }
+
+    addEventListener(name, listener) {
+      this.listeners[name] = listener;
+    }
+
+    send(body) {
+      requests[0].body = body;
+      this.uploadListener.listener({
+        lengthComputable: true,
+        loaded: 25,
+        total: 100,
+      });
+      this.uploadListener.listener({
+        lengthComputable: true,
+        loaded: 100,
+        total: 100,
+      });
+      this.listeners.load();
+    }
+  }
+
+  const response = await uploadAuthorizedFile(
+    file,
+    {
+      upload_url: 'https://episode-assets.s3.us-east-2.amazonaws.com',
+      upload_method: 'POST',
+      upload_fields: { key: 'test-key', policy: 'signed-policy' },
+      content_type: 'audio/wav',
+    },
+    {
+      onProgress: (event) => progress.push(event),
+      xhrFactory: () => new FakeXhr(),
+    }
+  );
+
+  assert.deepEqual(requests[0].method, 'POST');
+  assert.equal(requests[0].body.get('file').name, 'interview.wav');
+  assert.deepEqual(progress, [
+    { loaded: 3, total: 10, percent: 30 },
+    { loaded: 10, total: 10, percent: 100 },
+  ]);
+  assert.equal(response.ok, true);
+  assert.equal(response.status, 204);
+});
+
+test('turns an interrupted progress upload into the existing network guidance', async () => {
+  class FailingXhr {
+    constructor() {
+      this.listeners = {};
+      this.upload = { addEventListener() {} };
+    }
+
+    open() {}
+
+    addEventListener(name, listener) {
+      this.listeners[name] = listener;
+    }
+
+    send() {
+      this.listeners.error();
+    }
+  }
+
+  await assert.rejects(
+    uploadAuthorizedFile(
+      new File(['audio'], 'interview.wav', { type: 'audio/wav' }),
+      {
+        upload_url: 'https://episode-assets.s3.us-east-2.amazonaws.com',
+        upload_method: 'POST',
+        upload_fields: { key: 'test-key' },
+        content_type: 'audio/wav',
+      },
+      {
+        onProgress() {},
+        xhrFactory: () => new FailingXhr(),
+      }
+    ),
+    (error) => {
+      assert.equal(isEpisodeAssetBrowserNetworkError(error), true);
+      return true;
+    }
+  );
+});
+
 test('keeps legacy signed PUT behavior readable without no-cors mode', async () => {
   const file = new File(['audio bytes'], 'interview.wav', {
     type: 'audio/wav',

@@ -16,6 +16,7 @@ import {
   mergeHostDeliverableValues,
   normalizeEpisodeStudio,
   PRODUCER_DIRECTIONS_MIN_LENGTH,
+  removeEpisodeAssetFromEpisode,
   sanitizeEpisodeStudioForViewer,
   validateEpisodeStudio,
 } from '../lib/episodeStudioPresentation.mjs';
@@ -293,6 +294,67 @@ test('episode assets carry a visible 180-day retention deadline', () => {
   assert.equal(
     isEpisodeAssetExpired(asset, '2027-01-21T12:00:00.000Z'),
     true
+  );
+});
+
+test('removing an asset also clears sponsor-read completion tied to that file', () => {
+  const episode = normalizeEpisodeStudio({
+    ...sampleEpisode(),
+    assets: [
+      {
+        asset_id: 'asset-sponsor',
+        object_key:
+          'episodes/episode-one/sponsor_audio/asset-sponsor-ad.wav',
+        object_version_id: 'version-sponsor',
+        file_name: 'ad.wav',
+        content_type: 'audio/wav',
+        size: 100,
+        category: 'sponsor_audio',
+      },
+      {
+        asset_id: 'asset-notes',
+        object_key:
+          'episodes/episode-one/document/asset-notes-notes.pdf',
+        object_version_id: 'version-notes',
+        file_name: 'notes.pdf',
+        content_type: 'application/pdf',
+        size: 100,
+        category: 'document',
+      },
+    ],
+    sponsor_read_assignments: [
+      {
+        assignment_id: 'assignment-one',
+        sponsor_read_id: 'read-one',
+        sponsor_id: 'sponsor-one',
+        sponsor_name: 'Mountain Gear',
+        script_title: 'Opening read',
+        approved_text: 'Approved sponsor copy.',
+        requires_audio: true,
+        audio_asset_id: 'asset-sponsor',
+        completed: true,
+        completed_at: '2026-07-25T12:00:00.000Z',
+        completed_by_person_id: 'host-one',
+        completed_by_name: 'Host One',
+      },
+    ],
+  });
+
+  const updated = removeEpisodeAssetFromEpisode(
+    episode,
+    'asset-sponsor'
+  );
+
+  assert.deepEqual(
+    updated.assets.map((asset) => asset.asset_id),
+    ['asset-notes']
+  );
+  assert.equal(updated.sponsor_read_assignments[0].audio_asset_id, '');
+  assert.equal(updated.sponsor_read_assignments[0].completed, false);
+  assert.equal(updated.sponsor_read_assignments[0].completed_at, '');
+  assert.equal(
+    updated.sponsor_read_assignments[0].completed_by_person_id,
+    ''
   );
 });
 

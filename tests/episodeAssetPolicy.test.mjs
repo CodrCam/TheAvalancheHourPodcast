@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   EPISODE_ASSET_MAX_BYTES,
+  canDeleteEpisodeAsset,
   canUploadEpisodeAssets,
   episodeAssetMatchesUploadAuthorization,
   getEpisodeAssetAccept,
@@ -285,6 +286,48 @@ test('exposes accurate friendly type labels and upload role rules', () => {
       `producer ${status || 'blank'}`
     );
   }
+});
+
+test('limits asset deletion to managers, assigned producers, and the active host uploader', () => {
+  const common = {
+    status: 'in_progress',
+    viewerPersonId: 'host-one',
+    uploaderPersonId: 'host-one',
+  };
+  assert.equal(canDeleteEpisodeAsset({ ...common, roles: ['host'] }), true);
+  assert.equal(
+    canDeleteEpisodeAsset({
+      ...common,
+      roles: ['host'],
+      viewerPersonId: 'host-two',
+    }),
+    false
+  );
+  assert.equal(
+    canDeleteEpisodeAsset({
+      ...common,
+      roles: ['producer'],
+      viewerPersonId: 'producer-one',
+    }),
+    true
+  );
+  assert.equal(
+    canDeleteEpisodeAsset({
+      ...common,
+      roles: ['host'],
+      status: 'submitted',
+    }),
+    false
+  );
+  assert.equal(
+    canDeleteEpisodeAsset({
+      ...common,
+      roles: [],
+      status: 'accepted',
+      canManage: true,
+    }),
+    true
+  );
 });
 
 test('recognizes only an exact completed asset as an idempotent retry', () => {

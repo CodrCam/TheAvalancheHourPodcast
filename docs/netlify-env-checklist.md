@@ -137,16 +137,21 @@ Do not add it to Netlify for the normal production site.
    transactions so catalog and inventory changes remain atomic.
 7. Keep the episode-assets bucket private, enable default encryption, block all
    public access, and grant its dedicated runtime identity only the required
-   `s3:PutObject`, `s3:GetObject`, and `s3:GetObjectVersion` access under
-   `episodes/*` (`HeadObject` authorization uses `s3:GetObject`, and verified
-   downloads are pinned to an S3 version). An S3 `AccessDenied` response that
-   names `s3:GetObjectVersion` must be fixed on the IAM policy attached to the
-   identity behind `EPISODE_ASSETS_ACCESS_KEY_ID`; it is not a CORS failure.
+   `s3:PutObject`, `s3:GetObject`, `s3:GetObjectVersion`, and
+   `s3:DeleteObjectVersion` access under `episodes/*` (`HeadObject`
+   authorization uses `s3:GetObject`, verified downloads are pinned to an S3
+   version, and confirmed file deletion removes that exact version). An S3
+   `AccessDenied` response that names `s3:GetObjectVersion` must be fixed on
+   the IAM policy attached to the identity behind
+   `EPISODE_ASSETS_ACCESS_KEY_ID`; it is not a CORS failure.
    Updating that policy does not require a Netlify environment change or
-   redeploy unless the access key is also rotated.
+   redeploy unless the access key is also rotated. Do not grant
+   `s3:DeleteObject`: it would create a delete marker rather than removing the
+   recorded version.
 8. Add an S3 CORS rule allowing `POST` from the production site origin with the
    `Content-Type` header. Episode assets and product images use size-bounded
-   signed `POST` forms. Do not allow wildcard origins in production.
+   signed `POST` forms. The same rule supports the preflight needed for visible
+   upload progress. Do not allow wildcard origins in production.
 9. Grant the product-image identity only `s3:PutObject` and `s3:GetObject`
    under `products/*`. If product images reuse the Episode Studio identity,
    add that prefix to its existing restricted policy.

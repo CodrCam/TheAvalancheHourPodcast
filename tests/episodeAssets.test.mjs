@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   createEpisodeAssetDownloadUrl,
   createEpisodeAssetUpload,
+  deleteEpisodeAssetObject,
   validateEpisodeAssetInput,
   verifyEpisodeAssetObject,
   verifyEpisodeAssetUploadToken,
@@ -307,4 +308,39 @@ test('pins downloads to the verified version and forces attachment handling', ()
       /stored object version is invalid/i
     );
   }
+});
+
+test('deletes only the recorded episode object version', async (t) => {
+  const upload = createTestUpload();
+  const originalFetch = global.fetch;
+  t.after(() => {
+    global.fetch = originalFetch;
+  });
+  const requests = [];
+  global.fetch = async (url, options) => {
+    requests.push({ url: new URL(url), options });
+    return { ok: true, status: 204 };
+  };
+
+  assert.deepEqual(
+    await deleteEpisodeAssetObject(upload.object_key, {
+      episodeId: 'episode-one',
+      versionId: 'version-123',
+    }),
+    { deleted: true, version_id: 'version-123' }
+  );
+  assert.equal(requests.length, 1);
+  assert.equal(requests[0].options.method, 'DELETE');
+  assert.equal(requests[0].url.searchParams.get('versionId'), 'version-123');
+  assert.match(
+    requests[0].options.headers.Authorization,
+    /^AWS4-HMAC-SHA256 /
+  );
+  await assert.rejects(
+    deleteEpisodeAssetObject(upload.object_key, {
+      episodeId: 'episode-one',
+      versionId: '',
+    }),
+    /stored object version is invalid/i
+  );
 });

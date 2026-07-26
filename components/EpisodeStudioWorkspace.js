@@ -28,6 +28,7 @@ import {
   PRODUCER_DIRECTIONS_MIN_LENGTH,
 } from '../lib/episodeStudioPresentation.mjs';
 import {
+  canDeleteEpisodeAsset,
   getEpisodeAssetAccept,
   getEpisodeAssetTypeLabel,
   validateEpisodeAssetInput,
@@ -149,6 +150,14 @@ function formatBytes(value) {
   return `${bytes} B`;
 }
 
+function formatUploadTimeRemaining(value) {
+  const seconds = Math.max(0, Math.round(Number(value) || 0));
+  if (!seconds) return '';
+  if (seconds < 60) return `about ${seconds}s left`;
+  const minutes = Math.ceil(seconds / 60);
+  return `about ${minutes} min left`;
+}
+
 function assetUploadHelp(category) {
   if (['recording', 'sponsor_audio'].includes(category)) {
     return 'WAV, MP3, M4A, AAC, AIFF, FLAC, Ogg, Opus, or CAF audio · up to 1.5 GB per file';
@@ -180,6 +189,8 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
   const [canReview, setCanReview] = useState(false);
   const [canConfigure, setCanConfigure] = useState(false);
   const [canAdminOverride, setCanAdminOverride] = useState(false);
+  const [episodeRoles, setEpisodeRoles] = useState([]);
+  const [viewerPersonId, setViewerPersonId] = useState('');
   const [availableSponsorReads, setAvailableSponsorReads] = useState([]);
   const [selectedSponsorReadId, setSelectedSponsorReadId] = useState('');
   const [sponsorRequiresAudio, setSponsorRequiresAudio] = useState(true);
@@ -190,6 +201,7 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
   const [canUploadAssets, setCanUploadAssets] = useState(false);
   const [uploadingAsset, setUploadingAsset] = useState('');
   const [uploadingDeliverableId, setUploadingDeliverableId] = useState('');
+  const [deletingAssetId, setDeletingAssetId] = useState('');
   const [assetUploadFeedback, setAssetUploadFeedback] = useState({});
   const [baseline, setBaseline] = useState('');
   const [loading, setLoading] = useState(true);
@@ -224,6 +236,8 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
         setCanReview(data.canReview === true);
         setCanConfigure(data.canConfigure === true);
         setCanAdminOverride(data.canAdminOverride === true);
+        setEpisodeRoles(data.episode_roles || []);
+        setViewerPersonId(data.viewer_person_id || '');
         setAvailableSponsorReads(data.available_sponsor_reads || []);
         setAssetUploadsConfigured(data.asset_uploads_configured === true);
         setCanUploadAssets(data.canUploadAssets === true);
@@ -348,6 +362,12 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
       }
       if (typeof data.canUploadAssets === 'boolean') {
         setCanUploadAssets(data.canUploadAssets);
+      }
+      if (Array.isArray(data.episode_roles)) {
+        setEpisodeRoles(data.episode_roles);
+      }
+      if (typeof data.viewer_person_id === 'string') {
+        setViewerPersonId(data.viewer_person_id);
       }
       const notificationNote =
         data.notification && !data.notification.sent
@@ -740,9 +760,46 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
           );
         }
         activeUploadStage = 'storage';
+        const uploadStartedAt = Date.now();
+        let lastProgressRenderedAt = 0;
         const uploadResponse = await uploadAuthorizedFile(
           file,
-          authorization.upload
+          authorization.upload,
+          {
+            onProgress: ({ loaded, total, percent }) => {
+              const now = Date.now();
+              if (percent < 100 && now - lastProgressRenderedAt < 250) return;
+              lastProgressRenderedAt = now;
+              const elapsedSeconds = Math.max(
+                0.001,
+                (now - uploadStartedAt) / 1000
+              );
+              const bytesPerSecond = loaded / elapsedSeconds;
+              const secondsRemaining =
+                bytesPerSecond > 0
+                  ? Math.max(0, (total - loaded) / bytesPerSecond)
+                  : 0;
+              const details = [
+                `${formatBytes(loaded)} of ${formatBytes(total)}`,
+                bytesPerSecond > 1024
+                  ? `${formatBytes(bytesPerSecond)}/s`
+                  : '',
+                formatUploadTimeRemaining(secondsRemaining),
+              ].filter(Boolean);
+              setAssetUploadFeedback((current) => ({
+                ...current,
+                [deliverable.id]: {
+                  tone: 'status',
+                  progress: Math.round(percent),
+                  message: `Uploading ${index + 1} of ${
+                    preparedFiles.length
+                  }: ${file.name} — ${Math.round(percent)}%${
+                    details.length ? ` · ${details.join(' · ')}` : ''
+                  }`,
+                },
+              }));
+            },
+          }
         );
         if (!isEpisodeAssetUploadReadyForCompletion(uploadResponse)) {
           throw new Error(
@@ -750,6 +807,14 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
           );
         }
         activeUploadStage = 'completion';
+        setAssetUploadFeedback((current) => ({
+          ...current,
+          [deliverable.id]: {
+            tone: 'status',
+            progress: 100,
+            message: `${file.name} reached secure storage. Verifying and attaching it to the episode…`,
+          },
+        }));
         const completed = await completeEpisodeAssetUpload({
           episodeId: currentEpisode.episode_id,
           upload: authorization.upload,
@@ -786,6 +851,63 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
     } finally {
       setUploadingAsset('');
       setUploadingDeliverableId('');
+    }
+  }
+
+  function viewerCanDeleteAsset(asset) {
+    return canDeleteEpisodeAsset({
+      roles: episodeRoles,
+      status: episode?.status,
+      canManage,
+      viewerPersonId,
+      uploaderPersonId: asset?.uploaded_by_person_id,
+    });
+  }
+
+  async function deleteEpisodeAsset(asset) {
+    if (!episode || !asset || deletingAssetId) return;
+    const confirmed = window.confirm(
+      `Permanently delete “${
+        asset.label || asset.file_name
+      }” from this episode and secure storage?\n\nThis cannot be undone.`
+    );
+    if (!confirmed) return;
+
+    setDeletingAssetId(asset.asset_id);
+    setError('');
+    setMessage('');
+    try {
+      const response = await fetch(
+        `/api/studio/episodes/${encodeURIComponent(
+          episode.episode_id
+        )}/assets/${encodeURIComponent(asset.asset_id)}`,
+        {
+          method: 'DELETE',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            expected_updated_at: episode.updated_at,
+          }),
+        }
+      );
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Could not delete this episode file.');
+      }
+      mergeServerFields(data.episode, [
+        'assets',
+        'sponsor_read_assignments',
+        'updated_at',
+      ]);
+      setMessage(
+        `“${asset.label || asset.file_name}” was permanently deleted.`
+      );
+    } catch (deleteError) {
+      setError(
+        deleteError.message || 'Could not delete this episode file.'
+      );
+    } finally {
+      setDeletingAssetId('');
     }
   }
 
@@ -1801,7 +1923,7 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
                         ) : null}
 
                         {uploadFeedback ? (
-                          <p
+                          <div
                             id={`asset-upload-feedback-${deliverable.id}`}
                             className={`${styles.stepAssetFeedback} ${
                               uploadFeedback.tone === 'error'
@@ -1816,8 +1938,16 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
                                 : 'status'
                             }
                           >
-                            {uploadFeedback.message}
-                          </p>
+                            <p>{uploadFeedback.message}</p>
+                            {Number.isFinite(uploadFeedback.progress) ? (
+                              <progress
+                                className={styles.assetUploadProgress}
+                                max="100"
+                                value={uploadFeedback.progress}
+                                aria-label={`${uploadFeedback.progress}% uploaded`}
+                              />
+                            ) : null}
+                          </div>
                         ) : null}
 
                         {stepAssets.length ? (
@@ -1843,21 +1973,59 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
                                     </span>
                                   </div>
                                   {expired ? (
-                                    <span
-                                      className={styles.assetExpiredBadge}
-                                    >
-                                      Expired
-                                    </span>
+                                    <div className={styles.assetActions}>
+                                      <span
+                                        className={styles.assetExpiredBadge}
+                                      >
+                                        Expired
+                                      </span>
+                                      {viewerCanDeleteAsset(asset) ? (
+                                        <button
+                                          type="button"
+                                          className={styles.assetDeleteButton}
+                                          disabled={
+                                            deletingAssetId === asset.asset_id
+                                          }
+                                          onClick={() =>
+                                            deleteEpisodeAsset(asset)
+                                          }
+                                        >
+                                          <DeleteOutlineRoundedIcon aria-hidden="true" />
+                                          {deletingAssetId === asset.asset_id
+                                            ? 'Deleting…'
+                                            : 'Delete'}
+                                        </button>
+                                      ) : null}
+                                    </div>
                                   ) : (
-                                    <a
-                                      href={`/api/studio/episodes/${encodeURIComponent(
-                                        episode.episode_id
-                                      )}/assets/${encodeURIComponent(
-                                        asset.asset_id
-                                      )}`}
-                                    >
-                                      Download
-                                    </a>
+                                    <div className={styles.assetActions}>
+                                      <a
+                                        href={`/api/studio/episodes/${encodeURIComponent(
+                                          episode.episode_id
+                                        )}/assets/${encodeURIComponent(
+                                          asset.asset_id
+                                        )}`}
+                                      >
+                                        Download
+                                      </a>
+                                      {viewerCanDeleteAsset(asset) ? (
+                                        <button
+                                          type="button"
+                                          className={styles.assetDeleteButton}
+                                          disabled={
+                                            deletingAssetId === asset.asset_id
+                                          }
+                                          onClick={() =>
+                                            deleteEpisodeAsset(asset)
+                                          }
+                                        >
+                                          <DeleteOutlineRoundedIcon aria-hidden="true" />
+                                          {deletingAssetId === asset.asset_id
+                                            ? 'Deleting…'
+                                            : 'Delete'}
+                                        </button>
+                                      ) : null}
+                                    </div>
                                   )}
                                 </article>
                               );
@@ -2073,21 +2241,59 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
                                   </small>
                                 </div>
                                 {expired ? (
-                                  <span
-                                    className={styles.assetExpiredBadge}
-                                  >
-                                    Expired from storage
-                                  </span>
+                                  <div className={styles.assetActions}>
+                                    <span
+                                      className={styles.assetExpiredBadge}
+                                    >
+                                      Expired from storage
+                                    </span>
+                                    {viewerCanDeleteAsset(asset) ? (
+                                      <button
+                                        type="button"
+                                        className={styles.assetDeleteButton}
+                                        disabled={
+                                          deletingAssetId === asset.asset_id
+                                        }
+                                        onClick={() =>
+                                          deleteEpisodeAsset(asset)
+                                        }
+                                      >
+                                        <DeleteOutlineRoundedIcon aria-hidden="true" />
+                                        {deletingAssetId === asset.asset_id
+                                          ? 'Deleting…'
+                                          : 'Delete'}
+                                      </button>
+                                    ) : null}
+                                  </div>
                                 ) : (
-                                  <a
-                                    href={`/api/studio/episodes/${encodeURIComponent(
-                                      episode.episode_id
-                                    )}/assets/${encodeURIComponent(
-                                      asset.asset_id
-                                    )}`}
-                                  >
-                                    Download
-                                  </a>
+                                  <div className={styles.assetActions}>
+                                    <a
+                                      href={`/api/studio/episodes/${encodeURIComponent(
+                                        episode.episode_id
+                                      )}/assets/${encodeURIComponent(
+                                        asset.asset_id
+                                      )}`}
+                                    >
+                                      Download
+                                    </a>
+                                    {viewerCanDeleteAsset(asset) ? (
+                                      <button
+                                        type="button"
+                                        className={styles.assetDeleteButton}
+                                        disabled={
+                                          deletingAssetId === asset.asset_id
+                                        }
+                                        onClick={() =>
+                                          deleteEpisodeAsset(asset)
+                                        }
+                                      >
+                                        <DeleteOutlineRoundedIcon aria-hidden="true" />
+                                        {deletingAssetId === asset.asset_id
+                                          ? 'Deleting…'
+                                          : 'Delete'}
+                                      </button>
+                                    ) : null}
+                                  </div>
                                 )}
                               </article>
                             );

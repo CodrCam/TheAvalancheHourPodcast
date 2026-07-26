@@ -284,6 +284,7 @@ export default async function handler(req, res) {
         canUploadAssets,
         canConfigure,
         canAdminOverride,
+        viewer_person_id: binding?.person_id || '',
         episode_roles: episodeMembership,
         episode: sponsorData.episode,
         available_sponsor_reads: sponsorData.available_sponsor_reads,
@@ -806,6 +807,7 @@ export default async function handler(req, res) {
       canUploadAssets: responseRelationship.canUploadAssets,
       canConfigure: responseRelationship.canConfigure,
       canAdminOverride: responseRelationship.canAdminOverride,
+      viewer_person_id: binding?.person_id || '',
       episode_roles: responseRelationship.roles,
       notification,
     });

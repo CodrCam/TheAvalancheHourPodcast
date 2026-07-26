@@ -81,7 +81,16 @@ to 750 MB. The bottom of the workspace automatically rebuilds the complete
 producer package in checklist order. Only verified metadata is stored in
 DynamoDB. Assigned participants download through an authorized server route
 that creates a short-lived, attachment-only S3 URL pinned to the exact object
-version verified at upload completion.
+version verified at upload completion. While a large file is moving, the
+workspace reports bytes transferred, percentage, average rate, and estimated
+time remaining.
+
+A Studio manager or assigned producer can permanently delete an uploaded file
+after a browser confirmation. An assigned host can delete only a file they
+uploaded, and only while their episode work remains editable. The server
+deletes the exact recorded S3 version and then removes its episode metadata. If
+that file completed a sponsor-read assignment, the assignment returns to
+incomplete so the producer package cannot silently claim missing evidence.
 
 Older episodes are upgraded when read: the prior Drive, Riverside, intro-audio,
 and image-folder link steps become upload-based steps. Existing external URLs
@@ -93,6 +102,15 @@ deadline next to the file, stops issuing download links after it passes, and
 the reminder generator warns episode participants during the final 30 days.
 The S3 bucket lifecycle expires the active object at 180 days and permanently
 removes its noncurrent version after the configured recovery buffer.
+
+Episode-level archive and permanent deletion are intentionally separate from
+file deletion. A true long-term archive cannot use the current `episodes/`
+prefix unchanged because its lifecycle expires every object after 180 days.
+Before adding an Archive control, choose either a separate archive prefix with
+its own lifecycle or an object-tag lifecycle exception. Permanent episode
+deletion also needs a documented cascade for episode data, notifications,
+mic-kit references, sponsor assignments, every recorded S3 version, and the
+append-only audit trail.
 
 ## Producer directions and file labeling
 

@@ -112,6 +112,10 @@ canonical content type. Product images are capped at 12 MB. Episode Studio
 forms require the exact authorized byte length and retain the existing 30 MB
 image and 75 MB document limits, allow audio files up to 1.5 GB, and retain the
 750 MB video limit.
+Episode Studio reports upload bytes, percentage, transfer rate, and an
+estimated time remaining. Registering browser upload-progress events causes a
+CORS preflight; S3 handles that preflight from this same explicit-origin,
+`POST`, and `content-type` rule. Do not add `OPTIONS` or a wildcard origin.
 6. Verify there is no wildcard (`*`) origin.
 7. Do not add public `GET`, `POST`, or `DELETE` access. Downloads use
    short-lived, server-authorized signed URLs.
@@ -179,6 +183,7 @@ AWS reference:
       "Action": [
         "s3:GetObject",
         "s3:GetObjectVersion",
+        "s3:DeleteObjectVersion",
         "s3:PutObject"
       ],
       "Resource": "arn:aws:s3:::theavalanchehourepisodeassetsprod/episodes/*"
@@ -206,7 +211,8 @@ AWS reference:
 Do not grant `s3:*`, `AmazonS3FullAccess`, `s3:DeleteObject`, bucket listing, or
 access to other buckets. S3 `HEAD` verification is authorized by
 `s3:GetObject`; `s3:GetObjectVersion` lets downloads stay pinned to the exact
-version that completion verified.
+version that completion verified. `s3:DeleteObjectVersion` lets the confirmed
+Episode Studio delete action remove only that same recorded version.
 
 ### Repair an existing runtime policy for version-pinned downloads
 
@@ -228,8 +234,29 @@ request. Add this object-scoped statement to the policy attached to
 Do not remove `versionId` from the download, make the bucket public, add a
 public bucket-policy exception, or replace this with `s3:*`. The application
 also still needs `s3:GetObject` for upload-completion `HeadObject` requests and
-`s3:PutObject` for signed uploads. It does not need `s3:ListBucket`,
-`s3:GetObjectVersionAcl`, or delete permissions.
+`s3:PutObject` for signed uploads. It does not need `s3:ListBucket` or
+`s3:GetObjectVersionAcl`.
+
+### Enable confirmed deletion of one uploaded file
+
+Episode Studio deletes the exact immutable version stored in the episode
+record. Add this object-scoped action to `EpisodeAssetObjectsOnly`, or use the
+equivalent separate statement:
+
+```json
+{
+  "Sid": "AllowExactEpisodeAssetVersionDeletion",
+  "Effect": "Allow",
+  "Action": "s3:DeleteObjectVersion",
+  "Resource": "arn:aws:s3:::theavalanchehourepisodeassetsprod/episodes/*"
+}
+```
+
+Do not substitute `s3:DeleteObject`. On a versioned bucket that action creates
+a delete marker while the version-pinned object can remain retrievable.
+`s3:DeleteObjectVersion` is the least-privilege permission that makes a
+confirmed file deletion final for the recorded version. This is a server-side
+request, so it does not require `DELETE` in the browser CORS rule.
 
 An IAM policy update takes effect for the existing access key, so no Netlify
 environment change or redeploy is required unless the access key itself is
@@ -373,10 +400,14 @@ AWS references:
 8. Use the Episode Studio **Download** link and confirm the response downloads
    as an attachment. Confirm the signed S3 URL includes a `versionId` and
    expires after 10 minutes.
-9. Copy the S3 object URL without its signed query string into a private browser
+9. Delete a disposable upload, cancel the first confirmation once, then
+   confirm it. Verify the file row disappears and the exact S3 version is no
+   longer available. An assigned producer and Studio manager can delete; a host
+   can delete only their own file while their episode work is editable.
+10. Copy the S3 object URL without its signed query string into a private browser
    window. Confirm S3 returns **Access Denied**.
-10. Confirm an unrelated Studio user cannot open the episode or asset route.
-11. Delete only the disposable test objects from S3 after testing.
+11. Confirm an unrelated Studio user cannot open the episode or asset route.
+12. Delete only the disposable test objects from S3 after testing.
 
 ## 10. Final production check
 
@@ -385,8 +416,8 @@ AWS references:
 - [ ] Default encryption is SSE-S3.
 - [ ] CORS has only the four explicit application origins and signed `POST`
       uploads.
-- [ ] IAM user has only `GetObject`, `GetObjectVersion`, and `PutObject` under
-      `episodes/*`.
+- [ ] IAM user has only `GetObject`, `GetObjectVersion`,
+      `DeleteObjectVersion`, and `PutObject` under `episodes/*`.
 - [ ] Current versions expire after 180 days under the `episodes/` prefix.
 - [ ] Noncurrent versions are permanently removed after 180 days.
 - [ ] Expired delete markers are removed by the second lifecycle rule.
