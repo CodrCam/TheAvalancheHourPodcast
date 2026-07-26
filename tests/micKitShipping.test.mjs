@@ -13,7 +13,7 @@ function shippingTracker() {
     kits: [
       {
         ...DEFAULT_MIC_KIT_TRACKER.kits[0],
-        status: 'reserved',
+        status: 'available',
         next_request_id: 'ready-request',
         ship_by: '2026-08-01',
         package_weight_lb: '4.5',

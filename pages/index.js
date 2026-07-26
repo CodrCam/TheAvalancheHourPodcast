@@ -15,6 +15,7 @@ import VolunteerActivismRoundedIcon from '@mui/icons-material/VolunteerActivismR
 import Link from 'next/link';
 import Navbar from '../components/Navbar';
 import EpisodeCard from '../components/EpisodeCard';
+import SlabsAndSluffsCallout from '../components/SlabsAndSluffsCallout';
 import SponsorGrid from '../components/SponsorGrid';
 import SEO from '../components/SEO';
 import { DEFAULT_HOME_CONTENT } from '../lib/siteContentDefaults';
@@ -255,6 +256,8 @@ export default function Home() {
                 still here when you are ready.
               </Box>
             )}
+
+            <SlabsAndSluffsCallout publishedEpisodes={episodes} />
           </Container>
         </Box>
 

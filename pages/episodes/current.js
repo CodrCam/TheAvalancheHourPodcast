@@ -20,6 +20,7 @@ import { Search, Clear } from '@mui/icons-material';
 import Navbar from '../../components/Navbar';
 import PublicPageHero from '../../components/PublicPageHero';
 import SEO from '../../components/SEO';
+import SlabsAndSluffsCallout from '../../components/SlabsAndSluffsCallout';
 import { sponsors as DEFAULT_SPONSORS } from '../../src/data/sponsors';
 import publicStyles from '../../styles/PublicSite.module.css';
 
@@ -493,6 +494,8 @@ export default function CurrentSeason() {
               )}
             </Box>
           )}
+
+          <SlabsAndSluffsCallout publishedEpisodes={episodes} />
 
           {/* Search */}
           <Box sx={{ mb: 4, maxWidth: '600px', mx: 'auto' }}>

@@ -29,6 +29,7 @@ import Navbar from '../components/Navbar';
 import PublicPageHero from '../components/PublicPageHero';
 import SurveyBanner from '../components/SurveyBanner';
 import SEO from '../components/SEO';
+import SlabsAndSluffsCallout from '../components/SlabsAndSluffsCallout';
 import publicStyles from '../styles/PublicSite.module.css';
 
 export default function Contact() {
@@ -440,19 +441,7 @@ export default function Contact() {
                 </Button>
               </Paper>
 
-                            {/* VoicemailBag Hotline */}
-              <Paper elevation={1} sx={{ p: 3, mb: 3 }}>
-                <Typography variant="h6" component="h3" gutterBottom sx={{ fontWeight: 600 }}>
-                  VoicemailBag Hotline
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                  Leave your stories, comments, news, and questions. Selected messages may air on
-                  <em> Slabs and Sluffs with Dom and Sara</em>.
-                </Typography>
-                <Button component="a" href="tel:15414060221" variant="contained">
-                  Call 541-406-0221
-                </Button>
-              </Paper>
+              <SlabsAndSluffsCallout compact />
 
               {/* Other Information Box */}
               <Paper elevation={1} sx={{ p: 3, backgroundColor: 'grey.50' }}>

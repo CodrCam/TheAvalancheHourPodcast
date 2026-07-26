@@ -1,0 +1,183 @@
+.callout {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: clamp(20px, 3.5vw, 44px);
+  align-items: center;
+  margin: clamp(34px, 5vw, 58px) 0 0;
+  padding: clamp(26px, 4vw, 48px);
+  overflow: hidden;
+  border: 1px solid rgba(200, 228, 237, 0.23);
+  background:
+    radial-gradient(circle at 100% 0, rgba(91, 157, 181, 0.28), transparent 34rem),
+    linear-gradient(115deg, #0a202a 0%, #123746 100%);
+  color: #fff;
+  box-shadow: 0 24px 70px rgba(9, 31, 42, 0.16);
+}
+
+.callout::after {
+  position: absolute;
+  right: -70px;
+  bottom: -115px;
+  width: 320px;
+  height: 210px;
+  content: '';
+  border: 1px solid rgba(200, 228, 237, 0.13);
+  border-radius: 50%;
+  transform: rotate(-12deg);
+}
+
+.signalIcon {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  width: clamp(58px, 7vw, 82px);
+  height: clamp(58px, 7vw, 82px);
+  place-items: center;
+  border: 1px solid rgba(200, 228, 237, 0.28);
+  background: rgba(200, 228, 237, 0.1);
+  color: #c8e4ed;
+}
+
+.signalIcon svg {
+  width: 34px;
+  height: 34px;
+}
+
+.copy {
+  position: relative;
+  z-index: 1;
+}
+
+.copy > span {
+  color: #ef8758;
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.copy h2 {
+  margin: 8px 0 12px;
+  color: #fff;
+  font-family: 'Amatic SC', cursive;
+  font-size: clamp(2.8rem, 5vw, 4.7rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 0.9;
+}
+
+.copy p {
+  max-width: 760px;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.94rem;
+  line-height: 1.68;
+}
+
+.copy small {
+  display: block;
+  margin-top: 13px;
+  color: rgba(200, 228, 237, 0.7);
+  font-size: 0.72rem;
+  line-height: 1.5;
+}
+
+.actions {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 10px;
+  min-width: 224px;
+}
+
+.callButton,
+.listenLink {
+  display: inline-flex;
+  gap: 9px;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 12px 17px;
+  font-size: 0.78rem;
+  font-weight: 850;
+  text-decoration: none;
+}
+
+.callButton {
+  background: #ef6f35;
+  color: #10222d;
+}
+
+.callButton:hover {
+  background: #ff8751;
+}
+
+.listenLink {
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: #fff;
+}
+
+.listenLink:hover {
+  border-color: #fff;
+}
+
+.callButton svg,
+.listenLink svg {
+  width: 19px;
+  height: 19px;
+}
+
+.calloutCompact {
+  grid-template-columns: auto minmax(0, 1fr);
+  margin: 0 0 24px;
+  padding: 24px;
+  box-shadow: none;
+}
+
+.calloutCompact .signalIcon {
+  width: 48px;
+  height: 48px;
+}
+
+.calloutCompact .copy h2 {
+  font-size: 2.65rem;
+}
+
+.calloutCompact .actions {
+  grid-column: 1 / -1;
+  width: 100%;
+}
+
+@media (max-width: 820px) {
+  .callout {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .actions {
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+}
+
+@media (max-width: 560px) {
+  .callout {
+    grid-template-columns: 1fr;
+    padding: 24px 20px;
+  }
+
+  .signalIcon {
+    width: 52px;
+    height: 52px;
+  }
+
+  .copy h2 {
+    font-size: 3rem;
+  }
+
+  .actions {
+    grid-column: auto;
+    grid-template-columns: 1fr;
+  }
+}

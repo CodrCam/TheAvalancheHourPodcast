@@ -10,6 +10,7 @@ import {
   getGroupsFromCognitoPayload,
   verifyCognitoToken,
 } from '../../../lib/cognitoAuth';
+import { getTeamLandingForGroups } from '../../../lib/teamLanding.mjs';
 
 function getCookie(req, name) {
   return req.cookies?.[name] || '';
@@ -75,12 +76,7 @@ export async function getServerSideProps({ req, res, query }) {
     res.setHeader('Set-Cookie', cookies);
     const payload = await verifyCognitoToken(tokens.access_token);
     const groups = getGroupsFromCognitoPayload(payload);
-    const destination =
-      groups.includes('admin') || groups.includes('logistics')
-        ? '/admin'
-        : groups.includes('studio_manager') || groups.includes('host')
-          ? '/studio'
-          : '/admin/login?error=unauthorized_group';
+    const destination = getTeamLandingForGroups(groups);
 
     return {
       redirect: {

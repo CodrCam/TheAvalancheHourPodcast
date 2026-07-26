@@ -61,11 +61,11 @@ const QUICK_LINKS = [
     permission: 'episodes:manage',
   },
   {
-    href: '/admin',
-    label: 'Operations',
-    detail: 'Orders, inventory, and site work',
+    href: '/admin/orders',
+    label: 'Orders',
+    detail: 'Review fulfillment and shipping',
     icon: Inventory2RoundedIcon,
-    anyPermission: ['orders:read', 'inventory:read', 'products:read'],
+    permission: 'orders:read',
   },
 ];
 

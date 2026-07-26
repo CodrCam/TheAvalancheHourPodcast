@@ -39,7 +39,7 @@ test('combined Studio and logistics users keep both navigation surfaces', () => 
   ]);
 
   assert.equal(hrefs.includes('/studio/manage/episodes'), true);
-  assert.equal(hrefs.includes('/admin'), true);
+  assert.equal(hrefs.includes('/admin'), false);
   assert.equal(hrefs.includes('/admin/products'), true);
   assert.equal(hrefs.includes('/admin/orders'), true);
   assert.equal(hrefs.includes('/admin/system-health'), false);
@@ -51,7 +51,6 @@ test('admins see Studio, management, inventory, and system operations links', ()
   for (const href of [
     '/studio/episodes',
     '/studio/manage/episodes',
-    '/admin',
     '/admin/products',
     '/admin/orders',
     '/admin/system-health',

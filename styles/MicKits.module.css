@@ -559,19 +559,16 @@
   background: #e5f4eb;
 }
 
-.status_reserved,
 .status_with_holder {
   color: #365c7a;
   background: #e7f0f7;
 }
 
-.status_in_transit,
-.status_returning {
+.status_in_transit {
   color: #6e5623;
   background: #f8edcf;
 }
 
-.status_needs_confirmation,
 .status_maintenance {
   color: #8b4a33;
   background: #faeae3;

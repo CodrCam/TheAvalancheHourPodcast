@@ -2,11 +2,89 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   DEFAULT_MIC_KIT_TRACKER,
+  MIC_KIT_STATUSES,
+  applyMicKitStatus,
   micKitTrackerSummary,
   normalizeMicKitTracker,
   sanitizeMicKitTrackerForViewer,
   validateMicKitTracker,
 } from '../lib/micKitPresentation.mjs';
+
+test('uses a compact physical-status lifecycle', () => {
+  assert.deepEqual(MIC_KIT_STATUSES, [
+    'available',
+    'in_transit',
+    'with_holder',
+    'maintenance',
+    'retired',
+  ]);
+});
+
+test('selecting available clears shipment details from an editor draft', () => {
+  assert.deepEqual(
+    applyMicKitStatus(
+      {
+        kit_id: 'kit-one',
+        status: 'in_transit',
+        carrier: 'UPS',
+        tracking_number: '1Z-OLD',
+        tracking_url: 'https://ups.example/1Z-OLD',
+      },
+      'available'
+    ),
+    {
+      kit_id: 'kit-one',
+      status: 'available',
+      carrier: '',
+      tracking_number: '',
+      tracking_url: '',
+    }
+  );
+});
+
+test('migrates retired status choices and clears stale tracking when available', () => {
+  const tracker = normalizeMicKitTracker({
+    kits: [
+      {
+        kit_id: 'confirmation-kit',
+        status: 'needs_confirmation',
+        carrier: 'UPS',
+        tracking_number: 'OLD-CONFIRMATION',
+        tracking_url: 'https://ups.example/old-confirmation',
+      },
+      {
+        kit_id: 'reserved-kit',
+        status: 'reserved',
+        carrier: 'UPS',
+        tracking_number: 'OLD-RESERVATION',
+      },
+      {
+        kit_id: 'returning-kit',
+        status: 'returning',
+        carrier: 'UPS',
+        tracking_number: 'ACTIVE-RETURN',
+      },
+      {
+        kit_id: 'available-kit',
+        status: 'available',
+        carrier: 'UPS',
+        tracking_number: 'STALE-AVAILABLE',
+        tracking_url: 'https://ups.example/stale-available',
+      },
+    ],
+  });
+
+  assert.deepEqual(
+    tracker.kits.map((kit) => kit.status),
+    ['available', 'available', 'in_transit', 'available']
+  );
+  for (const kit of tracker.kits.filter((item) => item.status === 'available')) {
+    assert.equal(kit.carrier, '');
+    assert.equal(kit.tracking_number, '');
+    assert.equal(kit.tracking_url, '');
+  }
+  assert.equal(tracker.kits[2].tracking_number, 'ACTIVE-RETURN');
+});
 
 test('starts with four reported kits and one explicitly possible addition', () => {
   const tracker = normalizeMicKitTracker(DEFAULT_MIC_KIT_TRACKER);
@@ -55,6 +133,7 @@ test('keeps shipping addresses and tracking private from unrelated viewers', () 
       index === 0
         ? {
             ...kit,
+            status: 'in_transit',
             next_request_id: 'request-one',
             carrier: 'UPS',
             tracking_number: 'TRACK-PRIVATE',

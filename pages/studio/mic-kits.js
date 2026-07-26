@@ -12,19 +12,12 @@ import LockRoundedIcon from '@mui/icons-material/LockRounded';
 import PlaceRoundedIcon from '@mui/icons-material/PlaceRounded';
 import StudioLayout from '../../components/StudioLayout';
 import AdminLayout from '../../components/AdminLayout';
+import {
+  MIC_KIT_STATUS_LABELS,
+  applyMicKitStatus,
+} from '../../lib/micKitPresentation.mjs';
 import styles from '../../styles/MicKits.module.css';
 import studioStyles from '../../styles/Studio.module.css';
-
-const KIT_STATUS_LABELS = {
-  needs_confirmation: 'Needs confirmation',
-  available: 'Available',
-  reserved: 'Reserved',
-  in_transit: 'In transit',
-  with_holder: 'With a host',
-  returning: 'Returning',
-  maintenance: 'Needs attention',
-  retired: 'Not in circulation',
-};
 
 const REQUEST_STATUS_LABELS = {
   requested: 'Waiting',
@@ -101,12 +94,8 @@ function kitSummary(tracker) {
   return {
     total: kits.length,
     available: kits.filter((kit) => kit.status === 'available').length,
-    moving: kits.filter((kit) =>
-      ['in_transit', 'returning'].includes(kit.status)
-    ).length,
-    attention: kits.filter((kit) =>
-      ['needs_confirmation', 'maintenance'].includes(kit.status)
-    ).length,
+    moving: kits.filter((kit) => kit.status === 'in_transit').length,
+    attention: kits.filter((kit) => kit.status === 'maintenance').length,
     waiting: (tracker?.requests || []).filter((request) =>
       ['requested', 'approved', 'waitlisted'].includes(request.status)
     ).length,
@@ -561,7 +550,7 @@ export default function MicKitsPage({ adminMode = false }) {
     });
     if (saved) {
       setMessage(
-        `${recommendation.recommended_kit_label} is reserved for ${request.requester_name}, with the ship-by date filled in.`
+        `${recommendation.recommended_kit_label} is assigned to ${request.requester_name}, with the ship-by date filled in.`
       );
     }
   }
@@ -983,7 +972,7 @@ export default function MicKitsPage({ adminMode = false }) {
                       styles[`status_${kit.status}`] || ''
                     }`}
                   >
-                    {KIT_STATUS_LABELS[kit.status] || kit.status}
+                    {MIC_KIT_STATUS_LABELS[kit.status] || kit.status}
                   </span>
                 </div>
 
@@ -1120,13 +1109,15 @@ export default function MicKitsPage({ adminMode = false }) {
                       <select
                         value={kitDraft.status}
                         onChange={(event) =>
-                          setKitDraft((current) => ({
-                            ...current,
-                            status: event.target.value,
-                          }))
+                          setKitDraft((current) => {
+                            return applyMicKitStatus(
+                              current,
+                              event.target.value
+                            );
+                          })
                         }
                       >
-                        {Object.entries(KIT_STATUS_LABELS).map(
+                        {Object.entries(MIC_KIT_STATUS_LABELS).map(
                           ([value, label]) => (
                             <option key={value} value={value}>
                               {label}
@@ -1285,6 +1276,7 @@ export default function MicKitsPage({ adminMode = false }) {
                       Carrier
                       <input
                         value={kitDraft.carrier}
+                        disabled={kitDraft.status === 'available'}
                         onChange={(event) =>
                           setKitDraft((current) => ({
                             ...current,
@@ -1298,6 +1290,7 @@ export default function MicKitsPage({ adminMode = false }) {
                       Tracking number
                       <input
                         value={kitDraft.tracking_number}
+                        disabled={kitDraft.status === 'available'}
                         onChange={(event) =>
                           setKitDraft((current) => ({
                             ...current,
@@ -1311,6 +1304,7 @@ export default function MicKitsPage({ adminMode = false }) {
                       <input
                         type="url"
                         value={kitDraft.tracking_url}
+                        disabled={kitDraft.status === 'available'}
                         onChange={(event) =>
                           setKitDraft((current) => ({
                             ...current,

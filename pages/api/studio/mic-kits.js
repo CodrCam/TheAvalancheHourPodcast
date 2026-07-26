@@ -224,10 +224,6 @@ function clearQueuedRequestFromKits(tracker, requestId) {
     const hasCurrentHolder = Boolean(kit.checked_out_request_id);
     return {
       ...kit,
-      status:
-        !hasCurrentHolder && kit.status === 'reserved'
-          ? 'available'
-          : kit.status,
       next_request_id: '',
       ship_by: '',
       due_back: hasCurrentHolder ? kit.due_back : '',
@@ -418,7 +414,7 @@ export default async function handler(req, res) {
           kit_id: `mic-kit-${crypto.randomUUID()}`,
           label,
           home_country: cleanCountry(req.body?.kit?.home_country),
-          status: 'needs_confirmation',
+          status: 'available',
           current_holder_name: '',
           current_location: '',
           next_request_id: '',
@@ -455,17 +451,25 @@ export default async function handler(req, res) {
         const nextRequestId = cleanText(input.next_request_id, 100);
         syncKitAssignment(tracker, kit, nextRequestId);
         const status = cleanText(input.status, 40);
+        const nextStatus = MIC_KIT_STATUSES.includes(status)
+          ? status
+          : kit.status;
+        const clearTracking = nextStatus === 'available';
         Object.assign(kit, {
           label: cleanText(input.label, 100) || kit.label,
           home_country: cleanCountry(input.home_country),
-          status: MIC_KIT_STATUSES.includes(status) ? status : kit.status,
+          status: nextStatus,
           current_holder_name: cleanText(input.current_holder_name, 120),
           current_location: cleanText(input.current_location, 160),
           next_request_id: nextRequestId,
           ship_by: cleanDate(input.ship_by),
-          carrier: cleanText(input.carrier, 80),
-          tracking_number: cleanText(input.tracking_number, 160),
-          tracking_url: cleanText(input.tracking_url, 1200),
+          carrier: clearTracking ? '' : cleanText(input.carrier, 80),
+          tracking_number: clearTracking
+            ? ''
+            : cleanText(input.tracking_number, 160),
+          tracking_url: clearTracking
+            ? ''
+            : cleanText(input.tracking_url, 1200),
           notes: cleanText(input.notes, 1200),
           possible_addition: input.possible_addition === true,
           checked_out_request_id: kit.checked_out_request_id,
@@ -665,7 +669,7 @@ export default async function handler(req, res) {
         }
         syncKitAssignment(tracker, kit, request.request_id);
         const directHandoff = Boolean(kit.checked_out_request_id);
-        kit.status = directHandoff ? 'with_holder' : 'reserved';
+        kit.status = directHandoff ? 'with_holder' : 'available';
         kit.next_request_id = request.request_id;
         kit.ship_by = recommendation.recommended_ship_by;
         request.planned_due_back = recommendation.recommended_due_back;
@@ -676,7 +680,7 @@ export default async function handler(req, res) {
           request.admin_response ||
           (directHandoff
             ? `${kit.label} is planned as a direct handoff from ${kit.current_holder_name || 'the current host'}. Shipping details will follow.`
-            : `${kit.label} has been reserved. Shipping details will follow.`);
+            : `${kit.label} has been assigned. Shipping details will follow.`);
         request.admin_updated_at = now;
         request.admin_updated_by = actorLabel(principal);
         request.updated_at = now;
@@ -713,7 +717,7 @@ export default async function handler(req, res) {
         }
         const returnedRequestId = kit.checked_out_request_id;
         Object.assign(kit, {
-          status: kit.next_request_id ? 'reserved' : 'available',
+          status: 'available',
           current_holder_name: '',
           current_location: '',
           checked_out_request_id: '',
