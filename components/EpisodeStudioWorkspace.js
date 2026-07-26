@@ -151,7 +151,7 @@ function formatBytes(value) {
 
 function assetUploadHelp(category) {
   if (['recording', 'sponsor_audio'].includes(category)) {
-    return 'WAV, MP3, M4A, AAC, AIFF, FLAC, Ogg, Opus, or CAF audio · up to 750 MB per file';
+    return 'WAV, MP3, M4A, AAC, AIFF, FLAC, Ogg, Opus, or CAF audio · up to 1.5 GB per file';
   }
   if (category === 'image') {
     return 'JPG, PNG, GIF, WebP, AVIF, TIFF, HEIC, HEIF, or BMP · up to 30 MB per file';
@@ -159,7 +159,7 @@ function assetUploadHelp(category) {
   if (category === 'document') {
     return 'PDF, DOCX, text, spreadsheet, presentation, transcript, JSON, or EDL · up to 75 MB per file';
   }
-  return 'Safe audio and video, common raster images, documents, spreadsheets, presentations, transcripts, and edit lists · images up to 30 MB, documents up to 75 MB, audio/video up to 750 MB';
+  return 'Safe audio and video, common raster images, documents, spreadsheets, presentations, transcripts, and edit lists · images up to 30 MB, documents up to 75 MB, audio up to 1.5 GB, video up to 750 MB';
 }
 
 function readableUploadError(error) {

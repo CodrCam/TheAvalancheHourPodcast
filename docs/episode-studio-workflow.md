@@ -76,10 +76,12 @@ inside the checklist step they satisfy. The mixed **Episode Source Files** step
 accepts the complete safe production allowlist; recording, image, and document
 steps remain specialized. Executables, scripts, SVG, macro-enabled Office
 files, and general archives are not accepted. Each object records its step's
-ID, and the bottom of the workspace automatically rebuilds the complete
+ID. Images are limited to 30 MB, documents to 75 MB, audio to 1.5 GB, and video
+to 750 MB. The bottom of the workspace automatically rebuilds the complete
 producer package in checklist order. Only verified metadata is stored in
 DynamoDB. Assigned participants download through an authorized server route
-that creates a short-lived, attachment-only S3 URL.
+that creates a short-lived, attachment-only S3 URL pinned to the exact object
+version verified at upload completion.
 
 Older episodes are upgraded when read: the prior Drive, Riverside, intro-audio,
 and image-folder link steps become upload-based steps. Existing external URLs

@@ -14,6 +14,8 @@ process.env.EPISODE_ASSETS_ACCESS_KEY_ID = 'AKIATESTONLY';
 process.env.EPISODE_ASSETS_SECRET_ACCESS_KEY = 'test-secret';
 process.env.EPISODE_ASSETS_UPLOAD_TOKEN_SECRET = 'test-token-secret';
 
+const MEBIBYTE = 1024 * 1024;
+
 function createTestUpload(overrides = {}) {
   return createEpisodeAssetUpload({
     episodeId: 'episode-one',
@@ -113,6 +115,28 @@ test('creates an exact-size and exact-MIME S3 form bound to one deliverable', ()
   assert.equal(payload.file_name, 'Episode Final.wav');
   assert.equal(payload.content_type, 'audio/wav');
   assert.match(payload.object_key, /^episodes\/episode-one\/other\/asset-/);
+});
+
+test('authorizes an exact 1.5 GB audio object in the signed S3 form policy', () => {
+  const audioLimit = 1536 * MEBIBYTE;
+  const upload = createTestUpload({
+    file_name: 'Full Quality.wav',
+    size: audioLimit,
+    category: 'recording',
+  });
+  const policy = JSON.parse(
+    Buffer.from(upload.upload_fields.policy, 'base64').toString('utf8')
+  );
+
+  assert.equal(upload.size, audioLimit);
+  assert.deepEqual(
+    policy.conditions.find(
+      (condition) =>
+        Array.isArray(condition) &&
+        condition[0] === 'content-length-range'
+    ),
+    ['content-length-range', audioLimit, audioLimit]
+  );
 });
 
 test('rejects tampered, cross-episode, and expired completion tokens', () => {
@@ -246,6 +270,7 @@ test('pins downloads to the verified version and forces attachment handling', ()
   const url = new URL(signedUrl);
 
   assert.equal(url.searchParams.get('versionId'), 'version-123');
+  assert.equal(url.searchParams.get('X-Amz-Expires'), '600');
   assert.match(
     url.searchParams.get('response-content-disposition'),
     /^attachment;/
@@ -271,4 +296,15 @@ test('pins downloads to the verified version and forces attachment handling', ()
       }),
     /stored object key is invalid/i
   );
+  for (const versionId of ['', 'null']) {
+    assert.throws(
+      () =>
+        createEpisodeAssetDownloadUrl(upload.object_key, {
+          episodeId: 'episode-one',
+          fileName: upload.file_name,
+          versionId,
+        }),
+      /stored object version is invalid/i
+    );
+  }
 });

@@ -10,6 +10,8 @@ import {
   validateEpisodeAssetInput,
 } from '../lib/episodeAssetPolicy.mjs';
 
+const MEBIBYTE = 1024 * 1024;
+
 test('accepts common episode production files and canonicalizes browser MIME aliases', () => {
   const cases = [
     ['Interview.WAV', 'audio/x-wav', 'other', 'audio/wav'],
@@ -118,6 +120,13 @@ test('rejects executable, script, active image, macro, archive, and mismatched f
 });
 
 test('enforces positive exact sizes and media-kind limits even in the mixed source step', () => {
+  assert.deepEqual(EPISODE_ASSET_MAX_BYTES, {
+    image: 30 * MEBIBYTE,
+    document: 75 * MEBIBYTE,
+    audio: 1536 * MEBIBYTE,
+    video: 750 * MEBIBYTE,
+  });
+
   for (const size of [0, -1, 1.5, Number.NaN]) {
     assert.throws(
       () =>
@@ -160,6 +169,46 @@ test('enforces positive exact sizes and media-kind limits even in the mixed sour
       fileName
     );
   }
+});
+
+test('accepts the 1.5 GB audio boundary while keeping smaller WAV and document uploads valid', () => {
+  assert.equal(
+    validateEpisodeAssetInput({
+      file_name: 'full-quality-track.wav',
+      content_type: 'audio/wav',
+      size: 1536 * MEBIBYTE,
+      category: 'recording',
+    }).size,
+    1536 * MEBIBYTE
+  );
+  assert.throws(
+    () =>
+      validateEpisodeAssetInput({
+        file_name: 'too-large-track.wav',
+        content_type: 'audio/wav',
+        size: 1536 * MEBIBYTE + 1,
+        category: 'recording',
+      }),
+    /exceeds the 1\.5 GB limit for audio files/i
+  );
+  assert.equal(
+    validateEpisodeAssetInput({
+      file_name: 'short-track.wav',
+      content_type: 'audio/wav',
+      size: 12 * MEBIBYTE,
+      category: 'recording',
+    }).size,
+    12 * MEBIBYTE
+  );
+  assert.equal(
+    validateEpisodeAssetInput({
+      file_name: 'production-notes.pdf',
+      content_type: 'application/pdf',
+      size: 10 * MEBIBYTE,
+      category: 'document',
+    }).size,
+    10 * MEBIBYTE
+  );
 });
 
 test('picker hints come from the same policy and exclude dangerous formats', () => {

@@ -40,10 +40,15 @@ export default async function handler(req, res) {
         versionId: asset.object_version_id,
       })
     );
-  } catch {
-    return res.status(503).json({
+  } catch (error) {
+    const missingVersion = /stored object version is invalid/i.test(
+      String(error?.message || '')
+    );
+    return res.status(missingVersion ? 409 : 503).json({
       ok: false,
-      error: 'Episode asset downloads are not configured in this environment.',
+      error: missingVersion
+        ? 'This episode asset is missing its immutable storage version and cannot be downloaded safely.'
+        : 'Episode asset downloads are not configured in this environment.',
     });
   }
 }

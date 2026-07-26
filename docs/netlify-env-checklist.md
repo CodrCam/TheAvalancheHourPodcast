@@ -139,7 +139,11 @@ Do not add it to Netlify for the normal production site.
    public access, and grant its dedicated runtime identity only the required
    `s3:PutObject`, `s3:GetObject`, and `s3:GetObjectVersion` access under
    `episodes/*` (`HeadObject` authorization uses `s3:GetObject`, and verified
-   downloads are pinned to an S3 version).
+   downloads are pinned to an S3 version). An S3 `AccessDenied` response that
+   names `s3:GetObjectVersion` must be fixed on the IAM policy attached to the
+   identity behind `EPISODE_ASSETS_ACCESS_KEY_ID`; it is not a CORS failure.
+   Updating that policy does not require a Netlify environment change or
+   redeploy unless the access key is also rotated.
 8. Add an S3 CORS rule allowing `POST` from the production site origin with the
    `Content-Type` header. Episode assets and product images use size-bounded
    signed `POST` forms. Do not allow wildcard origins in production.

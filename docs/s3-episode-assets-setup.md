@@ -110,7 +110,8 @@ for Episode Studio files and product images; it does not make objects public.
 Every upload uses a signed S3 form policy that fixes the object key and
 canonical content type. Product images are capped at 12 MB. Episode Studio
 forms require the exact authorized byte length and retain the existing 30 MB
-image, 75 MB document, and 750 MB audio/video limits.
+image and 75 MB document limits, allow audio files up to 1.5 GB, and retain the
+750 MB video limit.
 6. Verify there is no wildcard (`*`) origin.
 7. Do not add public `GET`, `POST`, or `DELETE` access. Downloads use
    short-lived, server-authorized signed URLs.
@@ -206,6 +207,34 @@ Do not grant `s3:*`, `AmazonS3FullAccess`, `s3:DeleteObject`, bucket listing, or
 access to other buckets. S3 `HEAD` verification is authorized by
 `s3:GetObject`; `s3:GetObjectVersion` lets downloads stay pinned to the exact
 version that completion verified.
+
+### Repair an existing runtime policy for version-pinned downloads
+
+If an Episode Studio **Download** link reaches S3 but returns `AccessDenied`
+for `s3:GetObjectVersion`, the signed download flow is working and the runtime
+IAM identity is missing the permission required by the signed `versionId`
+request. Add this object-scoped statement to the policy attached to
+`avalanche-hour-episode-assets-runtime`:
+
+```json
+{
+  "Sid": "AllowVersionPinnedEpisodeAssetDownloads",
+  "Effect": "Allow",
+  "Action": "s3:GetObjectVersion",
+  "Resource": "arn:aws:s3:::theavalanchehourepisodeassetsprod/episodes/*"
+}
+```
+
+Do not remove `versionId` from the download, make the bucket public, add a
+public bucket-policy exception, or replace this with `s3:*`. The application
+also still needs `s3:GetObject` for upload-completion `HeadObject` requests and
+`s3:PutObject` for signed uploads. It does not need `s3:ListBucket`,
+`s3:GetObjectVersionAcl`, or delete permissions.
+
+An IAM policy update takes effect for the existing access key, so no Netlify
+environment change or redeploy is required unless the access key itself is
+rotated. Confirm that the key configured in Netlify belongs to the IAM identity
+whose policy was updated.
 
 ## 5. Create the application IAM user and access key
 
@@ -329,7 +358,8 @@ AWS references:
 1. Restart the local application.
 2. Sign in as a host assigned to a test episode.
 3. Under **Episode Source Files**, confirm the picker permits a small WAV or
-   MP3, PDF, DOCX, and JPG or PNG.
+   MP3, PDF, DOCX, and JPG or PNG. Confirm the interface states a 1.5 GB audio
+   limit and still states a 750 MB video limit.
 4. Upload those representative files and confirm each row shows the correct
    filename, friendly file type, byte size, workflow group, and uploader.
 5. Confirm the same picker clearly rejects an SVG, HTML or JavaScript file,
@@ -340,7 +370,9 @@ AWS references:
    locked until it is reopened.
 7. In S3, confirm their keys begin with:
    `episodes/<episode-id>/`.
-8. Use the Episode Studio **Download** link and confirm the file opens.
+8. Use the Episode Studio **Download** link and confirm the response downloads
+   as an attachment. Confirm the signed S3 URL includes a `versionId` and
+   expires after 10 minutes.
 9. Copy the S3 object URL without its signed query string into a private browser
    window. Confirm S3 returns **Access Denied**.
 10. Confirm an unrelated Studio user cannot open the episode or asset route.
