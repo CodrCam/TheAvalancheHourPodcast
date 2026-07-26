@@ -126,21 +126,55 @@
   backdrop-filter: blur(15px);
 }
 
-.navMenu :global(.MuiMenuItem-root) {
+.navMenuItem {
+  min-height: 72px !important;
+  padding: 12px 18px !important;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  color: #f4f6f2 !important;
 }
 
-.navMenu :global(.MuiMenuItem-root:hover) {
-  background: rgba(200, 228, 237, 0.09);
+.navMenuItem:last-child {
+  border-bottom: 0;
 }
 
-.navMenu :global(.MuiListItemIcon-root),
-.navMenu :global(.MuiTypography-root) {
-  color: inherit;
+.navMenuItem:hover,
+.navMenuItem:focus-visible {
+  background: rgba(200, 228, 237, 0.11) !important;
 }
 
-.navMenu :global(.MuiTypography-caption) {
-  color: rgba(255, 255, 255, 0.52);
+.navMenuIcon {
+  min-width: 42px !important;
+  color: #ef8a5c !important;
+}
+
+.navMenuTitle {
+  color: #f4f6f2 !important;
+  font-size: 0.94rem !important;
+  font-weight: 760 !important;
+  line-height: 1.25 !important;
+}
+
+.navMenuDescription {
+  display: block;
+  margin-top: 3px !important;
+  color: #b9cdd5 !important;
+  font-size: 0.72rem !important;
+  line-height: 1.35 !important;
+}
+
+.navMenuItem:hover .navMenuIcon,
+.navMenuItem:focus-visible .navMenuIcon {
+  color: #ffab83 !important;
+}
+
+.navMenuItem:hover .navMenuTitle,
+.navMenuItem:focus-visible .navMenuTitle {
+  color: #fff !important;
+}
+
+.navMenuItem:focus-visible {
+  outline: 2px solid #ef6f35;
+  outline-offset: -2px;
 }
 
 .mobileMenuButton {

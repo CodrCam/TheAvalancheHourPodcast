@@ -213,11 +213,27 @@ export default function Navbar() {
             PaperProps={{ className: styles.navMenu }}
           >
             {episodeMenuItems.map((item) => (
-              <MenuItem key={item.text} onClick={() => handleMenuItemClick(item.link)} sx={{ py: 1.5 }}>
-                <ListItemIcon sx={{ minWidth: 40 }}>{item.icon}</ListItemIcon>
+              <MenuItem
+                key={item.text}
+                onClick={() => handleMenuItemClick(item.link)}
+                className={styles.navMenuItem}
+              >
+                <ListItemIcon className={styles.navMenuIcon}>
+                  {item.icon}
+                </ListItemIcon>
                 <Box>
-                  <Typography variant="body1" sx={{ fontWeight: 500 }}>{item.text}</Typography>
-                  <Typography variant="caption" color="text.secondary">{item.description}</Typography>
+                  <Typography
+                    variant="body1"
+                    className={styles.navMenuTitle}
+                  >
+                    {item.text}
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    className={styles.navMenuDescription}
+                  >
+                    {item.description}
+                  </Typography>
                 </Box>
               </MenuItem>
             ))}
@@ -240,11 +256,27 @@ export default function Navbar() {
             PaperProps={{ className: styles.navMenu }}
           >
             {contactMenuItems.map((item) => (
-              <MenuItem key={item.text} onClick={() => handleMenuItemClick(item.link)} sx={{ py: 1.5 }}>
-                <ListItemIcon sx={{ minWidth: 40 }}>{item.icon}</ListItemIcon>
+              <MenuItem
+                key={item.text}
+                onClick={() => handleMenuItemClick(item.link)}
+                className={styles.navMenuItem}
+              >
+                <ListItemIcon className={styles.navMenuIcon}>
+                  {item.icon}
+                </ListItemIcon>
                 <Box>
-                  <Typography variant="body1" sx={{ fontWeight: 500 }}>{item.text}</Typography>
-                  <Typography variant="caption" color="text.secondary">{item.description}</Typography>
+                  <Typography
+                    variant="body1"
+                    className={styles.navMenuTitle}
+                  >
+                    {item.text}
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    className={styles.navMenuDescription}
+                  >
+                    {item.description}
+                  </Typography>
                 </Box>
               </MenuItem>
             ))}
