@@ -101,3 +101,45 @@ test('warns episode participants before accepted-episode assets expire', () => {
   );
   assert.equal(JSON.stringify(entries).includes('private-master.wav'), false);
 });
+
+test('includes configured admins in episode reminders with grouped observer records', () => {
+  const entries = generateStudioReminderEntries(
+    {
+      episodes: [
+        {
+          episode_id: 'admin-reminder',
+          title: 'Admin Reminder',
+          status: 'in_progress',
+          due_date: '2026-07-26',
+          host_person_ids: ['host-1'],
+          producer_person_id: 'producer-1',
+        },
+      ],
+    },
+    {
+      today: '2026-07-25',
+      generatedAt: '2026-07-25T08:00:00.000Z',
+      adminPersonIds: ['cam-griffin', 'caleb-merrill'],
+    }
+  );
+
+  assert.deepEqual(
+    entries
+      .map((entry) => entry.notification.recipient_person_id)
+      .sort(),
+    ['caleb-merrill', 'cam-griffin', 'host-1']
+  );
+  assert.ok(
+    entries
+      .filter((entry) =>
+        ['cam-griffin', 'caleb-merrill'].includes(
+          entry.notification.recipient_person_id
+        )
+      )
+      .every(
+        (entry) =>
+          entry.notification.audit.recipient_reason ===
+          'studio_admin_observer'
+      )
+  );
+});

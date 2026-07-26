@@ -7,6 +7,7 @@ import {
   markAllStudioNotificationsRead,
   markStudioNotificationRead,
   markStudioNotificationsSeen,
+  getStudioNotificationSetupIssue,
 } from '../../../../lib/studioNotificationStore';
 import {
   filterNotificationsForPrincipal,
@@ -98,6 +99,23 @@ export default async function handler(req, res) {
       error: 'Choose a valid notification action.',
     });
   } catch (error) {
+    const setupIssue = getStudioNotificationSetupIssue(error);
+    if (setupIssue) {
+      console.warn(
+        JSON.stringify({
+          event: 'studio_notification_setup_required',
+          code: setupIssue.code,
+          reason: setupIssue.reason,
+        })
+      );
+      return res.status(503).json({
+        ok: false,
+        code: setupIssue.code,
+        setup_required: true,
+        error:
+          'Notifications are temporarily unavailable while setup is completed.',
+      });
+    }
     const notFound = /not found/i.test(String(error.message || ''));
     const invalidCursor = /cursor is invalid/i.test(
       String(error.message || '')

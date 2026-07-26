@@ -261,7 +261,8 @@
 }
 
 .empty,
-.error {
+.error,
+.setup {
   border: 1px solid #e1e6e9;
   border-radius: 14px;
   background: white;
@@ -291,6 +292,12 @@
   border-color: #efc5bd;
   background: #fff2ef;
   color: #9e3f30;
+}
+
+.setup {
+  border-color: #d7e2df;
+  background: #f4f8f7;
+  color: #4f6863;
 }
 
 @media (max-width: 700px) {

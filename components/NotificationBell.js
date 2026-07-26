@@ -57,7 +57,10 @@ export default function NotificationBell({
     Number(previewData?.unread_count) || 0
   );
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(previewData?.error || '');
+  const [setupRequired, setSetupRequired] = useState(
+    Boolean(previewData?.setup_required)
+  );
 
   const loadNotifications = useCallback(async () => {
     if (previewMode) return previewData;
@@ -69,17 +72,23 @@ export default function NotificationBell({
       });
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.error || 'Could not load notifications.');
+        const loadError = new Error(
+          data.error || 'Could not load notifications.'
+        );
+        loadError.setupRequired = Boolean(data.setup_required);
+        throw loadError;
       }
       setGroups(data.groups || []);
       setNotifications(data.notifications || []);
       setUnreadCount(Number(data.unread_count) || 0);
       setError('');
+      setSetupRequired(false);
       return data;
     } catch (loadError) {
       setError(
         loadError.message || 'Notifications are temporarily unavailable.'
       );
+      setSetupRequired(Boolean(loadError.setupRequired));
       return null;
     } finally {
       setLoading(false);
@@ -368,7 +377,12 @@ export default function NotificationBell({
 
           <div className={styles.feed}>
             {error ? (
-              <p className={styles.feedback} role="status">
+              <p
+                className={`${styles.feedback} ${
+                  setupRequired ? styles.setup : ''
+                }`}
+                role="status"
+              >
                 {error}
               </p>
             ) : loading && !groups.length ? (

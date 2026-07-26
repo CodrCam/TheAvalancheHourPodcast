@@ -90,7 +90,10 @@ export default function NotificationCenter({
   const [filter, setFilter] = useState('all');
   const [loading, setLoading] = useState(!previewMode);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(previewData?.error || '');
+  const [setupRequired, setSetupRequired] = useState(
+    Boolean(previewData?.setup_required)
+  );
   const Layout = admin ? AdminLayout : StudioLayout;
 
   const loadNotifications = useCallback(async (cursor = '') => {
@@ -108,7 +111,11 @@ export default function NotificationCenter({
       );
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.error || 'Could not load notifications.');
+        const loadError = new Error(
+          data.error || 'Could not load notifications.'
+        );
+        loadError.setupRequired = Boolean(data.setup_required);
+        throw loadError;
       }
       setNotifications((current) =>
         cursor
@@ -118,8 +125,10 @@ export default function NotificationCenter({
       setUnreadCount(Number(data.unread_count) || 0);
       setNextCursor(data.next_cursor || '');
       setError('');
+      setSetupRequired(false);
     } catch (loadError) {
       setError(loadError.message || 'Could not load notifications.');
+      setSetupRequired(Boolean(loadError.setupRequired));
     } finally {
       setLoading(false);
       setLoadingMore(false);
@@ -283,11 +292,13 @@ export default function NotificationCenter({
         </div>
 
         {error ? (
-          <p className={styles.error} role="status">
+          <p
+            className={setupRequired ? styles.setup : styles.error}
+            role="status"
+          >
             {error}
           </p>
-        ) : null}
-        {loading ? (
+        ) : loading ? (
           <p className={styles.empty}>Loading activity…</p>
         ) : visibleGroups.length ? (
           <div className={styles.groupList}>

@@ -32,6 +32,7 @@ DYNAMODB_SITE_CONTENT_TABLE=AvalancheHourSiteContent
 DYNAMODB_STUDIO_NOTIFICATIONS_INDEX=studio-notifications-index
 STUDIO_NOTIFICATION_RETENTION_DAYS=120
 STUDIO_PRODUCTION_LEAD_PERSON_IDS=angie-link,caleb-merrill
+STUDIO_ADMIN_NOTIFICATION_PERSON_IDS=cam-griffin,caleb-merrill
 DYNAMODB_SPONSORS_TABLE=AvalancheHourSponsors
 DYNAMODB_PEOPLE_TABLE=AvalancheHourPeople
 DYNAMODB_MIC_KITS_TABLE=AvalancheHourMicKits
@@ -132,12 +133,12 @@ Do not add it to Netlify for the normal production site.
    - `AvalancheHourPeople`
    - `AvalancheHourMicKits`
    - `AvalancheHourProducts`
-5. Confirm the product table policy also includes
-   `arn:aws:dynamodb:us-east-2:426018612622:table/AvalancheHourProducts/index/*`
-   and allows `dynamodb:Query`.
-6. Confirm the IAM user policy allows `dynamodb:UpdateItem` and
-   `dynamodb:TransactWriteItems`; product saves and paid merchandise orders use
-   transactions so catalog and inventory changes remain atomic.
+5. Confirm the policy also allows `dynamodb:Query` against both index paths:
+   - `arn:aws:dynamodb:us-east-2:426018612622:table/AvalancheHourProducts/index/*`
+   - `arn:aws:dynamodb:us-east-2:426018612622:table/AvalancheHourSiteContent/index/*`
+6. Confirm the IAM user policy allows the underlying `dynamodb:PutItem`,
+   `dynamodb:UpdateItem`, and `dynamodb:DeleteItem` operations used inside
+   transaction requests.
 7. Keep the episode-assets bucket private, enable default encryption, block all
    public access, and grant its dedicated runtime identity only the required
    `s3:PutObject`, `s3:GetObject`, `s3:GetObjectVersion`, and

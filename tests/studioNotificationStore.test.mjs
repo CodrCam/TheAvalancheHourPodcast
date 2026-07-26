@@ -222,3 +222,35 @@ test('notification storage suppresses duplicates and uses indexed cursor queries
     }
   }
 });
+
+test('notification setup errors distinguish missing GSI access from ordinary failures', async () => {
+  const store = await import(
+    `../lib/studioNotificationStore.js?setup=${Date.now()}`
+  );
+  assert.deepEqual(
+    store.getStudioNotificationSetupIssue(
+      new Error(
+        'User is not authorized to perform: dynamodb:Query on resource: arn:aws:dynamodb:us-east-2:123:table/SiteContent/index/studio-notifications-index'
+      )
+    ),
+    {
+      code: 'NOTIFICATION_INDEX_QUERY_NOT_AUTHORIZED',
+      reason: 'notification_index_query_permission_missing',
+    }
+  );
+  assert.deepEqual(
+    store.getStudioNotificationSetupIssue(
+      new Error('The table does not have the specified index')
+    ),
+    {
+      code: 'NOTIFICATION_INDEX_NOT_READY',
+      reason: 'notification_index_missing_or_inactive',
+    }
+  );
+  assert.equal(
+    store.getStudioNotificationSetupIssue(
+      new Error('Connection timed out')
+    ),
+    null
+  );
+});

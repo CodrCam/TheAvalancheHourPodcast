@@ -138,6 +138,11 @@
   text-align: center;
 }
 
+.setup {
+  background: #f5f8f7;
+  color: #4f6863;
+}
+
 .group {
   border-bottom: 1px solid #e9edef;
 }

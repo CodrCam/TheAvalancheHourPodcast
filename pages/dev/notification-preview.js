@@ -1,109 +1,158 @@
 import NotificationBell from '../../components/NotificationBell';
 import NotificationCenter from '../../components/NotificationCenter';
 import {
+  buildEpisodeNotificationEntries,
+} from '../../lib/episodeStudioEvents';
+import {
+  buildMicKitNotificationEntries,
+} from '../../lib/micKitEvents';
+import {
   groupStudioNotifications,
 } from '../../lib/studioNotificationPresentation.mjs';
 
+const PREVIEW_PERSON_ID = 'cam-griffin';
+const ADMIN_PERSON_IDS = ['cam-griffin', 'caleb-merrill'];
+const EPISODE_ID = 'notification-dry-run';
+const REQUEST_ID = 'mic-kit-dry-run';
+
+function materialize(entries, timestamp, prefix) {
+  return entries
+    .filter(
+      (entry) =>
+        entry.notification.recipient_person_id === PREVIEW_PERSON_ID
+    )
+    .map((entry, index) => ({
+      ...entry.notification,
+      notification_id: `${prefix}-${index + 1}`,
+      created_at: new Date(
+        new Date(timestamp).getTime() + index * 1000
+      ).toISOString(),
+    }));
+}
+
+const baseEpisode = {
+  episode_id: EPISODE_ID,
+  title: 'Synthetic Notification Check',
+  host_person_ids: ['sierra-bishop'],
+  producer_person_id: 'angie-link',
+  created_by_person_id: 'sierra-bishop',
+  status: 'planning',
+  delivery_health: 'on_track',
+  updated_at: '2026-07-26T05:00:00.000Z',
+};
+
+const episodeCreatedEntries = buildEpisodeNotificationEntries({
+  previousEpisode: null,
+  episode: baseEpisode,
+  action: 'create',
+  actorPersonId: 'sierra-bishop',
+  actorName: 'Sierra Bishop',
+  adminPersonIds: ADMIN_PERSON_IDS,
+});
+
+const discussionEpisode = {
+  ...baseEpisode,
+  updated_at: '2026-07-26T05:10:00.000Z',
+  messages: [
+    {
+      message_id: 'dry-run-message',
+      body: 'The synthetic production package is ready to review.',
+    },
+  ],
+};
+const discussionEntries = buildEpisodeNotificationEntries({
+  previousEpisode: baseEpisode,
+  episode: discussionEpisode,
+  action: 'message',
+  actorPersonId: 'sierra-bishop',
+  actorName: 'Sierra Bishop',
+  adminPersonIds: ADMIN_PERSON_IDS,
+});
+
+const offTrackEpisode = {
+  ...discussionEpisode,
+  delivery_health: 'off_track',
+  updated_at: '2026-07-26T05:20:00.000Z',
+};
+const offTrackEntries = buildEpisodeNotificationEntries({
+  previousEpisode: discussionEpisode,
+  episode: offTrackEpisode,
+  action: 'set_delivery_health',
+  actorPersonId: 'angie-link',
+  actorName: 'Angie Link',
+  productionLeadPersonIds: ['angie-link', 'caleb-merrill'],
+  adminPersonIds: ADMIN_PERSON_IDS,
+});
+
+const micKitRequest = {
+  request_id: REQUEST_ID,
+  requester_person_id: 'sierra-bishop',
+  requester_name: 'Sierra Bishop',
+  status: 'requested',
+  need_by: '2026-08-02',
+  created_at: '2026-07-26T05:30:00.000Z',
+  updated_at: '2026-07-26T05:30:00.000Z',
+};
+const micKitEntries = buildMicKitNotificationEntries({
+  previousTracker: { requests: [], kits: [] },
+  tracker: {
+    updated_at: micKitRequest.updated_at,
+    requests: [micKitRequest],
+    kits: [],
+  },
+  action: 'create_request',
+  actorPersonId: 'sierra-bishop',
+  actorName: 'Sierra Bishop',
+  managerPersonIds: ADMIN_PERSON_IDS,
+});
+
 const notifications = [
+  ...materialize(
+    episodeCreatedEntries,
+    '2026-07-26T05:00:00.000Z',
+    'episode-created'
+  ),
+  ...materialize(
+    discussionEntries,
+    '2026-07-26T05:10:00.000Z',
+    'episode-discussion'
+  ),
+  ...materialize(
+    offTrackEntries,
+    '2026-07-26T05:20:00.000Z',
+    'episode-off-track'
+  ),
+  ...materialize(
+    micKitEntries,
+    '2026-07-26T05:30:00.000Z',
+    'mic-kit-request'
+  ),
+];
+
+const scenarioChecks = [
   {
-    notification_id: 'episode-submitted',
-    recipient_person_id: 'caleb-merrill',
-    type: 'episode_ready_for_production_lead',
-    category: 'episode',
-    kind: 'event',
-    urgency: 'high',
-    intent: 'actionable',
-    title: 'Episode 12 is ready for your production check',
-    preview:
-      'Angie accepted the host package and attached a staged Spotify listen.',
-    actor_name: 'Angie Link',
-    entity_kind: 'episode',
-    entity_id: 'episode-12',
-    group_entity_kind: 'episode',
-    group_entity_id: 'episode-12',
-    group_key: 'episode:episode-12',
-    deep_link: '/studio/episodes/episode-12#producer-review',
-    created_at: '2026-07-26T05:23:00.000Z',
+    label: 'Episode created',
+    recipients: episodeCreatedEntries.map(
+      (entry) => entry.notification.recipient_person_id
+    ),
   },
   {
-    notification_id: 'episode-file',
-    recipient_person_id: 'caleb-merrill',
-    type: 'episode_required_file_uploaded',
-    category: 'episode',
-    kind: 'event',
-    urgency: 'normal',
-    intent: 'informational',
-    title: 'Brooke uploaded a file to Episode 12',
-    preview:
-      'The Riverside tracks are available in the final asset package.',
-    actor_name: 'Brooke Edwards',
-    entity_kind: 'episode_asset',
-    entity_id: 'asset-riverside',
-    group_entity_kind: 'episode',
-    group_entity_id: 'episode-12',
-    group_key: 'episode:episode-12',
-    deep_link: '/studio/episodes/episode-12#final-assets',
-    created_at: '2026-07-26T05:05:00.000Z',
+    label: 'Discussion posted',
+    recipients: discussionEntries.map(
+      (entry) => entry.notification.recipient_person_id
+    ),
   },
   {
-    notification_id: 'episode-discussion',
-    recipient_person_id: 'caleb-merrill',
-    type: 'episode_discussion_message',
-    category: 'episode',
-    kind: 'event',
-    urgency: 'normal',
-    intent: 'informational',
-    title: 'Angie posted in Episode 12',
-    preview: 'The staged listen is clean. Please check the final sponsor bed.',
-    actor_name: 'Angie Link',
-    entity_kind: 'episode',
-    entity_id: 'episode-12',
-    group_entity_kind: 'episode',
-    group_entity_id: 'episode-12',
-    group_key: 'episode:episode-12',
-    deep_link: '/studio/episodes/episode-12#discussion',
-    created_at: '2026-07-26T04:49:00.000Z',
+    label: 'Episode marked off track',
+    recipients: offTrackEntries.map(
+      (entry) => entry.notification.recipient_person_id
+    ),
   },
   {
-    notification_id: 'mic-kit',
-    recipient_person_id: 'caleb-merrill',
-    type: 'mic_kit_receipt_confirmed',
-    category: 'mic_kit',
-    kind: 'event',
-    urgency: 'normal',
-    intent: 'administrative',
-    title: 'Jason confirmed mic kit receipt',
-    preview:
-      'The kit is recorded with the host and the shared inventory is current.',
-    actor_name: 'Jason Antin',
-    entity_kind: 'mic_kit_request',
-    entity_id: 'mic-request-jason',
-    group_entity_kind: 'mic_kit_request',
-    group_entity_id: 'mic-request-jason',
-    group_key: 'mic-kit-request:mic-request-jason',
-    deep_link: '/admin/mic-kits#mic-request-jason',
-    created_at: '2026-07-26T02:27:00.000Z',
-    read_at: '2026-07-26T03:27:00.000Z',
-    seen_at: '2026-07-26T03:27:00.000Z',
-  },
-  {
-    notification_id: 'overdue',
-    recipient_person_id: 'caleb-merrill',
-    type: 'episode_overdue',
-    category: 'episode',
-    kind: 'reminder',
-    urgency: 'urgent',
-    intent: 'urgent',
-    title: 'Episode 13 host package is overdue',
-    preview:
-      'The planned handoff date passed and the episode has not reached producer review.',
-    entity_kind: 'episode',
-    entity_id: 'episode-13',
-    group_entity_kind: 'episode',
-    group_entity_id: 'episode-13',
-    group_key: 'episode:episode-13',
-    deep_link: '/studio/episodes/episode-13',
-    created_at: '2026-07-25T04:27:00.000Z',
+    label: 'Mic kit requested',
+    recipients: micKitEntries.map(
+      (entry) => entry.notification.recipient_person_id
+    ),
   },
 ];
 
@@ -114,14 +163,28 @@ const previewData = {
     .length,
 };
 
-export async function getServerSideProps() {
+export async function getServerSideProps(context) {
   if (process.env.NODE_ENV === 'production') {
     return { notFound: true };
   }
-  return { props: {} };
+  return {
+    props: {
+      setupPreview: context.query.setup === '1',
+    },
+  };
 }
 
-export default function NotificationPreviewPage() {
+export default function NotificationPreviewPage({ setupPreview = false }) {
+  const displayData = setupPreview
+    ? {
+        notifications: [],
+        groups: [],
+        unread_count: 0,
+        setup_required: true,
+        error:
+          'Notifications are temporarily unavailable while setup is completed.',
+      }
+    : previewData;
   return (
     <main
       style={{
@@ -149,7 +212,7 @@ export default function NotificationPreviewPage() {
         <strong>The Avalanche Hour · Notification preview</strong>
         <NotificationBell
           href="#notification-center"
-          previewData={previewData}
+          previewData={displayData}
         />
       </header>
       <div
@@ -159,7 +222,29 @@ export default function NotificationPreviewPage() {
           margin: '36px auto 0',
         }}
       >
-        <NotificationCenter bare previewData={previewData} />
+        <section
+          style={{
+            marginBottom: 24,
+            padding: 20,
+            border: '1px solid #dce4e5',
+            borderRadius: 18,
+            background: '#fff',
+          }}
+        >
+          <strong>Synthetic recipient check</strong>
+          <p>
+            These scenarios call the real recipient builders with fake
+            records. They never write to DynamoDB or notify a person.
+          </p>
+          <ul>
+            {scenarioChecks.map((scenario) => (
+              <li key={scenario.label}>
+                {scenario.label}: {scenario.recipients.join(', ') || 'none'}
+              </li>
+            ))}
+          </ul>
+        </section>
+        <NotificationCenter bare previewData={displayData} />
       </div>
     </main>
   );

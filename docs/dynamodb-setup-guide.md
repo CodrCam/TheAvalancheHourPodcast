@@ -338,6 +338,7 @@ Create a policy with this permission scope:
         "arn:aws:dynamodb:us-east-2:426018612622:table/AvalancheHourInventory",
         "arn:aws:dynamodb:us-east-2:426018612622:table/AvalancheHourOrders",
         "arn:aws:dynamodb:us-east-2:426018612622:table/AvalancheHourSiteContent",
+        "arn:aws:dynamodb:us-east-2:426018612622:table/AvalancheHourSiteContent/index/*",
         "arn:aws:dynamodb:us-east-2:426018612622:table/AvalancheHourSponsors",
         "arn:aws:dynamodb:us-east-2:426018612622:table/AvalancheHourPeople",
         "arn:aws:dynamodb:us-east-2:426018612622:table/AvalancheHourMicKits",

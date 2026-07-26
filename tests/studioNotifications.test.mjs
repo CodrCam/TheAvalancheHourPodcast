@@ -25,6 +25,10 @@ import {
 import {
   filterNotificationsForPrincipal,
 } from '../lib/studioNotificationAccess.js';
+import {
+  getMicKitManagerPersonIds,
+  getStudioAdminNotificationPersonIds,
+} from '../lib/studioNotificationRecipients.mjs';
 
 test('notification previews are plain text and deep links stay same-origin', () => {
   assert.equal(
@@ -418,6 +422,189 @@ test('producer approval creates the next actionable production-lead notification
     ),
     false
   );
+});
+
+test('episode events fan out to configured admins while keeping the actor quiet', () => {
+  const previousEpisode = {
+    episode_id: 'episode-admin-watch',
+    title: 'Admin Watch',
+    host_person_ids: ['cam-griffin', 'host-1'],
+    producer_person_id: 'angie-link',
+    created_by_person_id: 'cam-griffin',
+    delivery_health: 'on_track',
+    updated_at: '2026-07-25T12:00:00.000Z',
+  };
+  const created = buildEpisodeNotificationEntries({
+    previousEpisode: null,
+    episode: previousEpisode,
+    action: 'create',
+    actorPersonId: 'cam-griffin',
+    actorName: 'Cam Griffin',
+    adminPersonIds: ['cam-griffin', 'caleb-merrill'],
+  });
+  assert.deepEqual(
+    created
+      .map((entry) => entry.notification.recipient_person_id)
+      .sort(),
+    ['angie-link', 'caleb-merrill', 'host-1']
+  );
+  assert.equal(
+    created.some(
+      (entry) =>
+        entry.notification.recipient_person_id === 'cam-griffin'
+    ),
+    false
+  );
+  assert.equal(
+    created.find(
+      (entry) =>
+        entry.notification.recipient_person_id === 'caleb-merrill'
+    ).notification.audit.recipient_reason,
+    'studio_admin_observer'
+  );
+
+  const offTrack = buildEpisodeNotificationEntries({
+    previousEpisode,
+    episode: {
+      ...previousEpisode,
+      delivery_health: 'off_track',
+      updated_at: '2026-07-25T12:10:00.000Z',
+    },
+    action: 'set_delivery_health',
+    actorPersonId: 'cam-griffin',
+    actorName: 'Cam Griffin',
+    productionLeadPersonIds: ['angie-link', 'caleb-merrill'],
+    adminPersonIds: ['cam-griffin', 'caleb-merrill'],
+  });
+  assert.deepEqual(
+    offTrack
+      .map((entry) => entry.notification.recipient_person_id)
+      .sort(),
+    ['angie-link', 'caleb-merrill', 'host-1']
+  );
+});
+
+test('mic kit dry runs notify both managers, not the person testing their own action', () => {
+  const request = {
+    request_id: 'request-dry-run',
+    requester_person_id: 'host-1',
+    requester_name: 'Host One',
+    status: 'requested',
+    created_at: '2026-07-25T12:00:00.000Z',
+    updated_at: '2026-07-25T12:00:00.000Z',
+  };
+  const submitted = buildMicKitNotificationEntries({
+    previousTracker: { requests: [], kits: [] },
+    tracker: {
+      updated_at: request.updated_at,
+      requests: [request],
+      kits: [],
+    },
+    action: 'create_request',
+    actorPersonId: 'host-1',
+    actorName: 'Host One',
+    managerPersonIds: ['cam-griffin', 'caleb-merrill'],
+  });
+  assert.deepEqual(
+    submitted
+      .map((entry) => entry.notification.recipient_person_id)
+      .sort(),
+    ['caleb-merrill', 'cam-griffin']
+  );
+
+  const updatedRequest = {
+    ...request,
+    status: 'approved',
+    admin_response: 'A kit is available.',
+    admin_updated_at: '2026-07-25T12:10:00.000Z',
+    updated_at: '2026-07-25T12:10:00.000Z',
+  };
+  const updated = buildMicKitNotificationEntries({
+    previousTracker: { requests: [request], kits: [] },
+    tracker: {
+      updated_at: updatedRequest.updated_at,
+      requests: [updatedRequest],
+      kits: [],
+    },
+    action: 'update_request',
+    actorPersonId: 'caleb-merrill',
+    actorName: 'Caleb Merrill',
+    managerPersonIds: ['cam-griffin', 'caleb-merrill'],
+  });
+  assert.deepEqual(
+    updated
+      .map((entry) => entry.notification.recipient_person_id)
+      .sort(),
+    ['cam-griffin', 'host-1']
+  );
+});
+
+test('mic kit inventory events group by kit and stay manager-only', () => {
+  const previousKit = {
+    kit_id: 'kit-one',
+    label: 'Kit One',
+    status: 'available',
+  };
+  const entries = buildMicKitNotificationEntries({
+    previousTracker: { requests: [], kits: [previousKit] },
+    tracker: {
+      updated_at: '2026-07-25T12:10:00.000Z',
+      requests: [],
+      kits: [{ ...previousKit, status: 'maintenance' }],
+    },
+    action: 'update_kit',
+    actorPersonId: 'cam-griffin',
+    actorName: 'Cam Griffin',
+    managerPersonIds: ['cam-griffin', 'caleb-merrill'],
+  });
+  assert.equal(entries.length, 1);
+  assert.equal(
+    entries[0].notification.recipient_person_id,
+    'caleb-merrill'
+  );
+  assert.equal(entries[0].notification.group_key, 'mic-kit:kit-one');
+
+  const visible = filterOpenableStudioNotifications(
+    [
+      {
+        notification_id: 'kit-update',
+        ...entries[0].notification,
+      },
+    ],
+    {
+      personId: 'caleb-merrill',
+      permissions: ['mic_kits:manage'],
+      micKitsById: new Map([['kit-one', previousKit]]),
+    }
+  );
+  assert.equal(visible.length, 1);
+  assert.equal(
+    filterOpenableStudioNotifications(
+      [
+        {
+          notification_id: 'kit-update',
+          ...entries[0].notification,
+        },
+      ],
+      {
+        personId: 'caleb-merrill',
+        permissions: ['mic_kits:read'],
+        micKitsById: new Map([['kit-one', previousKit]]),
+      }
+    ).length,
+    0
+  );
+});
+
+test('notification recipient defaults keep Cameron and Caleb in operational scope', () => {
+  assert.deepEqual(getStudioAdminNotificationPersonIds(''), [
+    'cam-griffin',
+    'caleb-merrill',
+  ]);
+  assert.deepEqual(getMicKitManagerPersonIds(''), [
+    'cam-griffin',
+    'caleb-merrill',
+  ]);
 });
 
 test('Spotify staging links are constrained and survive episode normalization', () => {

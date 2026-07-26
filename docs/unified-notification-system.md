@@ -9,11 +9,18 @@ the scheduled reminder generator, the Cognito-to-person binding, and the
 second browser-authored notification path.
 
 Every recipient comes from server-side episode assignments, production
-escalation configuration, mic-kit request ownership, or an operational manager
-list. Requests cannot supply notification recipients. Before a notification is
-returned, the API batch-loads its related episodes and loads the shared mic-kit
-tracker once, then reapplies current access. Reassigned, archived, deleted, and
-unrelated records are suppressed.
+escalation configuration, mic-kit request ownership, or configured admin and
+operational-manager lists. Requests cannot supply notification recipients.
+Before a notification is returned, the API batch-loads its related episodes
+and loads the shared mic-kit tracker once, then reapplies current access.
+Reassigned, archived, deleted, and unrelated records are suppressed.
+
+The person performing an action is excluded. This keeps a host, producer, or
+admin from receiving a notification that merely repeats what they just did.
+Configured administrators still receive other people’s significant Episode
+Studio activity, and configured mic-kit managers receive other people’s
+request and circulation activity. Cameron and Caleb are the safe defaults for
+both admin observer lists; environment values can replace those defaults.
 
 ## Backend event map and recipient matrix
 
@@ -21,7 +28,7 @@ unrelated records are suppressed.
 
 | Event | Server-selected recipients | Never sent to | Related record | Title / summary pattern | Destination | Intent | Duplicate and grouping rule | State |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Episode created or participant added | Newly assigned hosts, producer, and creator except the actor | Unassigned hosts; removed participants | Episode | “You were assigned…” / review role, dates, checklist, reads, discussion | Episode Studio | Actionable | Episode version + recipient; group by episode | Connected |
+| Episode created or participant added | Newly assigned hosts, producer, creator, and configured admin observers except the actor | Unassigned hosts; removed participants | Episode | Episode added / review roles, dates, checklist, reads, discussion | Episode Studio | Actionable | Episode version + recipient; group by episode | Connected |
 | Assignment role changed | Current participant whose host/producer/creator relationship changed | Removed and unrelated people | Episode | “Your assignment changed…” | Episode Studio | Actionable | Episode version + recipient; group by episode | Connected |
 | Due or release date changed | Current episode participants except actor | Unassigned users | Episode | “Schedule updated…” / current host-package date | Episode Studio | Actionable | Episode version + recipient; group by episode | Connected |
 | Discussion post | Current participants except author | Anyone who cannot currently open the episode | Episode / message | Actor posted / plain-text preview | Episode discussion anchor | Informational | Message ID + recipient; group by episode | Connected |
@@ -39,10 +46,11 @@ unrelated records are suppressed.
 | Deadline approaching | Assigned hosts | Unassigned users | Episode | Due today or in N days | Episode Studio | Actionable | Type + episode + due date + recipient | Connected |
 | Episode overdue | Hosts, producer, and creator | Unassigned users | Episode | Host package overdue | Episode Studio | Urgent | Type + episode + due date + recipient | Connected |
 | Asset retention approaching | Episode participants | Unassigned users | Episode / asset expiration group | N assets leave storage in N days | Final assets anchor | Actionable | Expiration date + recipient; group by episode | Connected |
-| Mic-kit request submitted | Request owner; configured mic-kit managers | Other hosts and non-manager operations users | Mic-kit request | Submitted / host requested a kit | Owner or manager request anchor | Informational / administrative | Request creation + recipient; group by request | Connected |
+| Mic-kit request submitted | Configured mic-kit managers except the requester/actor | Other hosts and non-manager operations users | Mic-kit request | Host requested a kit | Manager request anchor | Administrative | Request creation + recipient; group by request | Connected |
 | Mic-kit response, assignment, direct handoff, or tracking | Request owner | Other hosts; tracking data is never copied into previews | Mic-kit request | Status, assignment, handoff, or tracking available | Owner request anchor | Actionable | Request/kit transition + recipient; group by request | Connected |
 | Receipt confirmation | Configured mic-kit managers except confirming actor | Other hosts | Mic-kit request | Host confirmed receipt | Manager request anchor | Administrative | Request update time + manager; group by request | Connected |
 | Return checked in | Request owner except actor | Other hosts | Mic-kit request | Return checked in | Owner request anchor | Informational | Request update time + recipient; group by request | Connected |
+| Mic-kit inventory, reservation, checkout, or check-in changed | Configured mic-kit managers except actor | Hosts and non-manager operations users | Mic kit | Kit updated / operational summary without private address or tracking data | Manager kit anchor | Administrative | Kit + exact transition + manager; group by kit | Connected |
 | Ship-by, receipt, return, or overdue reminder | Request owner and managers only where operational action is required | Other hosts | Mic-kit request | Date-specific action | Role-appropriate request anchor | Actionable / urgent | Type + request + due date + recipient | Connected |
 | Paid order, low stock, product changes | Existing order email and admin workspace remain authoritative | Hosts and Studio-only roles | Order / product | Only genuinely actionable fulfillment or stock exceptions should become in-app events | Admin order/product | Administrative | Order event or SKU threshold transition | Later connection |
 | Person, role, or account binding change | Existing audit log remains authoritative | People unrelated to the changed account | User / binding | Access changed or requires attention | Access management | Administrative | Exact access mutation + affected user | Later connection |
@@ -114,13 +122,18 @@ Do not deploy notification-query code until the index is active.
    projection. Match the table’s on-demand or provisioned capacity mode.
 4. Enable DynamoDB TTL on `expires_at_epoch`.
 5. Add `dynamodb:Query`, `dynamodb:BatchGetItem`,
-   `dynamodb:TransactWriteItems`, `dynamodb:PutItem`, and
-   `dynamodb:UpdateItem` for the site-content table and notification GSI.
+   `dynamodb:PutItem`, and `dynamodb:UpdateItem` for the
+   site-content table and notification GSI.
+   The query policy must include
+   `arn:aws:dynamodb:us-east-2:426018612622:table/AvalancheHourSiteContent/index/*`;
+   table-only resource permission does not cover a GSI.
    Migration credentials also need `dynamodb:Scan`.
 6. Add Netlify values:
    `DYNAMODB_STUDIO_NOTIFICATIONS_INDEX=studio-notifications-index`,
    `STUDIO_NOTIFICATION_RETENTION_DAYS=120`, and
-   `STUDIO_PRODUCTION_LEAD_PERSON_IDS=angie-link,caleb-merrill`.
+   `STUDIO_PRODUCTION_LEAD_PERSON_IDS=angie-link,caleb-merrill`,
+   `STUDIO_ADMIN_NOTIFICATION_PERSON_IDS=cam-griffin,caleb-merrill`, and
+   `STUDIO_MIC_KIT_MANAGER_PERSON_IDS=cam-griffin,caleb-merrill`.
 7. Confirm Angie and Caleb have active person bindings and Cognito groups with
    `episodes:manage`, `notifications:read`, and `notifications:update`.
 8. Keep the existing reminder schedule and
@@ -128,3 +141,12 @@ Do not deploy notification-query code until the index is active.
 
 No new S3 permissions, WebSocket service, notification table, or production
 data mutation is required by the code change itself.
+
+## Synthetic verification
+
+`/dev/notification-preview` exists only outside production. It calls the real
+Episode Studio and mic-kit recipient builders with fake records, renders the
+grouped bell and notification center for Cameron’s observer view, and lists the
+resolved person IDs. It never calls the notification store, writes DynamoDB, or
+sends a notification. Automated tests cover the same create, discussion,
+off-track, request, manager-update, kit-grouping, and self-exclusion rules.
