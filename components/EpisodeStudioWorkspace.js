@@ -32,7 +32,12 @@ import {
   getEpisodeAssetTypeLabel,
   validateEpisodeAssetInput,
 } from '../lib/episodeAssetPolicy.mjs';
-import { completeEpisodeAssetUpload } from '../lib/episodeAssetUploadClient.mjs';
+import {
+  completeEpisodeAssetUpload,
+  episodeAssetUploadStageError,
+  isEpisodeAssetUploadReadyForCompletion,
+  uploadAuthorizedFile,
+} from '../lib/episodeAssetUploadClient.mjs';
 import styles from '../styles/EpisodeStudio.module.css';
 
 const STATUS_LABELS = {
@@ -161,46 +166,6 @@ function readableUploadError(error) {
   return String(error?.message || error || 'Could not upload this file.')
     .replace(/^Episode asset:\s*/i, '')
     .trim();
-}
-
-function canonicalUploadFile(file, upload) {
-  const contentType = String(upload?.content_type || '').trim();
-  if (!contentType || file.type === contentType) return file;
-  return new File([file], upload.file_name || file.name, {
-    type: contentType,
-    lastModified: file.lastModified,
-  });
-}
-
-async function uploadAuthorizedFile(file, upload = {}) {
-  const method = String(
-    upload.upload_method || (upload.upload_fields ? 'POST' : 'PUT')
-  ).toUpperCase();
-  const bodyFile = canonicalUploadFile(file, upload);
-
-  if (method === 'POST') {
-    const body = new FormData();
-    Object.entries(upload.upload_fields || {}).forEach(([name, value]) => {
-      body.append(name, String(value));
-    });
-    body.append('file', bodyFile);
-    return fetch(upload.upload_url, { method: 'POST', body });
-  }
-
-  if (method !== 'PUT') {
-    throw new Error('The upload service returned an unsupported upload method.');
-  }
-
-  return fetch(upload.upload_url, {
-    method: 'PUT',
-    headers: {
-      'Content-Type':
-        String(upload.content_type || '').trim() ||
-        bodyFile.type ||
-        'application/octet-stream',
-    },
-    body: bodyFile,
-  });
 }
 
 export default function EpisodeStudioWorkspace({ admin = false }) {
@@ -713,10 +678,12 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
     let currentEpisode = episode;
     let completedCount = 0;
     let activeFileName = '';
+    let activeUploadStage = 'authorization';
     try {
       for (const [index, preparedFile] of preparedFiles.entries()) {
         const { file, input } = preparedFile;
         activeFileName = file.name;
+        activeUploadStage = 'authorization';
         setUploadingAsset(file.name);
         setAssetUploadFeedback((current) => ({
           ...current,
@@ -741,21 +708,48 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
             }),
           }
         );
-        const authorization = await authorizeResponse.json();
+        let authorization;
+        try {
+          authorization = await authorizeResponse.json();
+        } catch (responseError) {
+          if (authorizeResponse.ok) {
+            const networkError = episodeAssetUploadStageError(
+              responseError,
+              'authorization'
+            );
+            if (networkError !== responseError) throw networkError;
+            throw new Error(
+              'Episode Studio returned an unreadable upload authorization response. Try again.'
+            );
+          }
+          throw new Error(
+            `Episode Studio could not authorize this upload (HTTP ${authorizeResponse.status}). Try again.`
+          );
+        }
         if (!authorizeResponse.ok) {
           throw new Error(
             authorization.error || `Could not authorize ${file.name}.`
           );
         }
+        if (
+          !authorization?.upload ||
+          !String(authorization.upload.upload_url || '').trim()
+        ) {
+          throw new Error(
+            'Episode Studio returned incomplete upload authorization. Try again.'
+          );
+        }
+        activeUploadStage = 'storage';
         const uploadResponse = await uploadAuthorizedFile(
           file,
           authorization.upload
         );
-        if (!uploadResponse.ok) {
+        if (!isEpisodeAssetUploadReadyForCompletion(uploadResponse)) {
           throw new Error(
-            `The upload for ${file.name} did not finish. Check the object-storage CORS policy and try again.`
+            `Secure storage rejected the upload (HTTP ${uploadResponse.status}). Try again. If this continues, ask an administrator to check upload storage access.`
           );
         }
+        activeUploadStage = 'completion';
         const completed = await completeEpisodeAssetUpload({
           episodeId: currentEpisode.episode_id,
           upload: authorization.upload,
@@ -775,7 +769,9 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
         },
       }));
     } catch (uploadError) {
-      const reason = readableUploadError(uploadError);
+      const reason = readableUploadError(
+        episodeAssetUploadStageError(uploadError, activeUploadStage)
+      );
       setAssetUploadFeedback((current) => ({
         ...current,
         [deliverable.id]: {
