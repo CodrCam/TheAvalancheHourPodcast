@@ -2,9 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   completeEpisodeAssetUpload,
+  episodeAssetStorageRejectionMessage,
   episodeAssetUploadStageError,
   isEpisodeAssetUploadReadyForCompletion,
   isEpisodeAssetBrowserNetworkError,
+  isSafariEpisodeAssetUploadBrowser,
   uploadAuthorizedFile,
 } from '../lib/episodeAssetUploadClient.mjs';
 
@@ -73,6 +75,27 @@ test('preserves specific non-network validation errors', () => {
   );
 });
 
+test('recognizes Safari without treating other WebKit-branded browsers as Safari', () => {
+  assert.equal(
+    isSafariEpisodeAssetUploadBrowser(
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Safari/605.1.15'
+    ),
+    true
+  );
+  assert.equal(
+    isSafariEpisodeAssetUploadBrowser(
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36'
+    ),
+    false
+  );
+  assert.equal(
+    isSafariEpisodeAssetUploadBrowser(
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/140.0.0.0 Mobile/15E148 Safari/604.1'
+    ),
+    false
+  );
+});
+
 test('sends a cross-origin signed POST as no-cors and lets authoritative completion verify an opaque response', async () => {
   const file = new File(['audio bytes'], 'interview.wav', {
     type: 'audio/wav',
@@ -108,6 +131,58 @@ test('sends a cross-origin signed POST as no-cors and lets authoritative complet
     'episodes/episode-one/other/asset-one-interview.wav'
   );
   assert.equal(requests[0].options.body.get('file').name, 'interview.wav');
+  assert.equal(response, opaqueResponse);
+  assert.equal(isEpisodeAssetUploadReadyForCompletion(response), true);
+});
+
+test('uses the proven fetch form path for Safari even when upload progress is requested', async () => {
+  const file = new File(['image bytes'], 'IMG_5319.jpeg', {
+    type: 'image/jpeg',
+  });
+  const requests = [];
+  const progress = [];
+  const opaqueResponse = { ok: false, status: 0, type: 'opaque' };
+  const response = await uploadAuthorizedFile(
+    file,
+    {
+      upload_url:
+        'https://episode-assets.s3.us-east-2.amazonaws.com',
+      upload_method: 'POST',
+      upload_fields: {
+        key: 'episodes/episode-one/image/asset-one-IMG_5319.jpeg',
+        policy: 'signed-policy',
+      },
+      content_type: 'image/jpeg',
+    },
+    {
+      currentOrigin: 'https://theavalanchehour.com',
+      userAgent:
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Safari/605.1.15',
+      onProgress: (event) => progress.push(event),
+      xhrFactory() {
+        throw new Error('Safari must not use the progress XHR path.');
+      },
+      fetchImpl: async (url, options) => {
+        requests.push({ url, options });
+        return opaqueResponse;
+      },
+    }
+  );
+
+  assert.equal(requests.length, 1);
+  assert.equal(requests[0].options.mode, 'no-cors');
+  assert.equal(
+    requests[0].options.body.get('file').name,
+    'IMG_5319.jpeg'
+  );
+  assert.deepEqual(progress, [
+    {
+      loaded: 0,
+      total: file.size,
+      percent: 0,
+      indeterminate: true,
+    },
+  ]);
   assert.equal(response, opaqueResponse);
   assert.equal(isEpisodeAssetUploadReadyForCompletion(response), true);
 });
@@ -156,6 +231,7 @@ test('reports bounded browser upload progress before returning the S3 response',
         },
       };
       this.status = 204;
+      this.responseText = '';
     }
 
     open(method, url, async) {
@@ -204,6 +280,19 @@ test('reports bounded browser upload progress before returning the S3 response',
   ]);
   assert.equal(response.ok, true);
   assert.equal(response.status, 204);
+});
+
+test('turns readable S3 XML into a useful storage rejection', () => {
+  const message = episodeAssetStorageRejectionMessage({
+    status: 400,
+    response_text:
+      '<Error><Code>InvalidPolicyDocument</Code><Message>Policy Condition failed</Message></Error>',
+  });
+
+  assert.match(message, /HTTP 400/i);
+  assert.match(message, /did not match the signed file rules/i);
+  assert.match(message, /Storage code: InvalidPolicyDocument/i);
+  assert.doesNotMatch(message, /Policy Condition failed/i);
 });
 
 test('turns an interrupted progress upload into the existing network guidance', async () => {

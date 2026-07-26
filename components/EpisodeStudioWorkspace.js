@@ -43,6 +43,7 @@ import {
 } from '../lib/episodeAssetPolicy.mjs';
 import {
   completeEpisodeAssetUpload,
+  episodeAssetStorageRejectionMessage,
   episodeAssetUploadStageError,
   isEpisodeAssetUploadReadyForCompletion,
   uploadAuthorizedFile,
@@ -1030,7 +1031,12 @@ export default function EpisodeStudioWorkspace({
           file,
           authorization.upload,
           {
-            onProgress: ({ loaded, total, percent }) => {
+            onProgress: ({
+              loaded,
+              total,
+              percent,
+              indeterminate = false,
+            }) => {
               const now = Date.now();
               const rateSampleSeconds =
                 (now - lastRateSampleAt) / 1000;
@@ -1067,7 +1073,8 @@ export default function EpisodeStudioWorkspace({
                   tone: 'status',
                   phase: 'uploading',
                   phaseLabel: 'Uploading',
-                  progress: Math.round(percent),
+                  progress: indeterminate ? null : Math.round(percent),
+                  indeterminate,
                   fileName: file.name,
                   fileIndex: index + 1,
                   fileCount: preparedFiles.length,
@@ -1078,17 +1085,16 @@ export default function EpisodeStudioWorkspace({
                   bytesPerSecond,
                   secondsRemaining,
                   elapsedSeconds,
-                  message:
-                    'Keep this tab open while the file moves directly to secure storage.',
+                  message: indeterminate
+                    ? 'Safari is sending this file directly to secure storage. Keep this tab open until the final verification finishes.'
+                    : 'Keep this tab open while the file moves directly to secure storage.',
                 },
               }));
             },
           }
         );
         if (!isEpisodeAssetUploadReadyForCompletion(uploadResponse)) {
-          throw new Error(
-            `Secure storage rejected the upload (HTTP ${uploadResponse.status}). Try again. If this continues, ask an administrator to check upload storage access.`
-          );
+          throw new Error(episodeAssetStorageRejectionMessage(uploadResponse));
         }
         activeUploadStage = 'completion';
         setAssetUploadFeedback((current) => ({
@@ -2545,7 +2551,8 @@ export default function EpisodeStudioWorkspace({
                                 aria-label={`${uploadFeedback.progress}% uploaded`}
                               />
                             ) : null}
-                            {Number(uploadFeedback.total) > 0 ? (
+                            {Number(uploadFeedback.total) > 0 &&
+                            !uploadFeedback.indeterminate ? (
                               <div className={styles.uploadTransferStats}>
                                 <span>
                                   <small>File</small>
