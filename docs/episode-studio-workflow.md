@@ -82,8 +82,19 @@ producer package in checklist order. Only verified metadata is stored in
 DynamoDB. Assigned participants download through an authorized server route
 that creates a short-lived, attachment-only S3 URL pinned to the exact object
 version verified at upload completion. While a large file is moving, the
-workspace reports bytes transferred, percentage, average rate, and estimated
-time remaining.
+workspace presents a dedicated transfer card with bytes transferred,
+percentage, smoothed transfer rate, estimated time remaining, file position in
+a multi-file batch, and the selected file's share of its per-file capacity.
+The card then changes to a securing state while S3's exact version is verified,
+so 100% transferred is not confused with fully attached.
+
+The browser and upload-authorization API both reject an exact duplicate in the
+same episode step when its normalized filename, byte size, canonical MIME type,
+and category match. A multi-file selection skips matching existing copies and
+continues with new files. Existing matching rows are visibly marked for
+cleanup. A genuinely revised file with identical metadata must replace the old
+copy by deleting it first; this keeps that edge case explicit without hashing a
+1.5 GB recording in browser memory.
 
 A Studio manager or assigned producer can permanently delete an uploaded file
 after a browser confirmation. An assigned host can delete only a file they

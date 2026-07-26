@@ -6,7 +6,9 @@ import {
 } from '../../../../../../lib/episodeAssetStorage';
 import {
   canUploadEpisodeAssets,
+  findDuplicateEpisodeAsset,
   MAX_EPISODE_ASSETS,
+  validateEpisodeAssetInput,
 } from '../../../../../../lib/episodeAssetPolicy.mjs';
 
 export default async function handler(req, res) {
@@ -74,14 +76,27 @@ export default async function handler(req, res) {
       req.body?.file && typeof req.body.file === 'object'
         ? req.body.file
         : {};
+    const input = validateEpisodeAssetInput({
+      ...requestedFile,
+      category: deliverable.asset_category || 'other',
+    });
+    const duplicate = findDuplicateEpisodeAsset(access.episode.assets, {
+      ...input,
+      deliverable_id: deliverable.id,
+    });
+    if (duplicate) {
+      return res.status(409).json({
+        ok: false,
+        code: 'EPISODE_ASSET_DUPLICATE',
+        duplicate_asset_id: duplicate.asset_id,
+        error: `“${input.file_name}” is already uploaded to this episode step. Delete the existing copy first if you intend to replace it.`,
+      });
+    }
     const upload = createEpisodeAssetUpload({
       episodeId,
       uploaderPersonId: access.binding?.person_id,
       deliverableId: deliverable.id,
-      file: {
-        ...requestedFile,
-        category: deliverable.asset_category || 'other',
-      },
+      file: input,
     });
     return res.status(200).json({ ok: true, upload });
   } catch (error) {

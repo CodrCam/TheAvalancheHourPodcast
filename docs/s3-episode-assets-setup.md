@@ -389,25 +389,31 @@ AWS references:
    limit and still states a 750 MB video limit.
 4. Upload those representative files and confirm each row shows the correct
    filename, friendly file type, byte size, workflow group, and uploader.
-5. Confirm the same picker clearly rejects an SVG, HTML or JavaScript file,
+5. During a large test upload, confirm the transfer card shows percentage,
+   transferred bytes, rate, estimated time remaining, batch position, and the
+   file's share of its per-file capacity. Confirm it changes to **Securing
+   file** after the byte transfer finishes.
+6. Select the same file again in the same step and confirm Episode Studio
+   identifies it as already uploaded without sending a second copy to S3.
+7. Confirm the same picker clearly rejects an SVG, HTML or JavaScript file,
    executable, macro-enabled Office file, and ZIP archive before S3 receives a
    request.
-6. Sign in as the assigned producer and confirm they can add a source file
+8. Sign in as the assigned producer and confirm they can add a source file
    while the episode is in producer review. Confirm an accepted episode stays
    locked until it is reopened.
-7. In S3, confirm their keys begin with:
+9. In S3, confirm their keys begin with:
    `episodes/<episode-id>/`.
-8. Use the Episode Studio **Download** link and confirm the response downloads
+10. Use the Episode Studio **Download** link and confirm the response downloads
    as an attachment. Confirm the signed S3 URL includes a `versionId` and
    expires after 10 minutes.
-9. Delete a disposable upload, cancel the first confirmation once, then
+11. Delete a disposable upload, cancel the first confirmation once, then
    confirm it. Verify the file row disappears and the exact S3 version is no
    longer available. An assigned producer and Studio manager can delete; a host
    can delete only their own file while their episode work is editable.
-10. Copy the S3 object URL without its signed query string into a private browser
+12. Copy the S3 object URL without its signed query string into a private browser
    window. Confirm S3 returns **Access Denied**.
-11. Confirm an unrelated Studio user cannot open the episode or asset route.
-12. Delete only the disposable test objects from S3 after testing.
+13. Confirm an unrelated Studio user cannot open the episode or asset route.
+14. Delete only the disposable test objects from S3 after testing.
 
 ## 10. Final production check
 

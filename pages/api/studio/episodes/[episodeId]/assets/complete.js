@@ -1,12 +1,14 @@
 import { ADMIN_PERMISSIONS } from '../../../../../../lib/adminAuth';
 import { logAdminAction } from '../../../../../../lib/adminAudit';
 import {
+  deleteEpisodeAssetObject,
   verifyEpisodeAssetObject,
   verifyEpisodeAssetUploadToken,
 } from '../../../../../../lib/episodeAssetStorage';
 import {
   canUploadEpisodeAssets,
   episodeAssetMatchesUploadAuthorization,
+  findDuplicateEpisodeAsset,
   MAX_EPISODE_ASSETS,
 } from '../../../../../../lib/episodeAssetPolicy.mjs';
 import { requireEpisodeStudioAccess } from '../../../../../../lib/episodeStudioAccess';
@@ -118,6 +120,30 @@ export default async function handler(req, res) {
         ok: false,
         error:
           'This episode step changed during the upload. Refresh and upload the file again.',
+      });
+    }
+    const duplicate = findDuplicateEpisodeAsset(access.episode.assets, {
+      ...payload,
+      deliverable_id: deliverable.id,
+    });
+    if (duplicate) {
+      try {
+        const duplicateObject = await verifyEpisodeAssetObject(payload);
+        await deleteEpisodeAssetObject(payload.object_key, {
+          episodeId,
+          versionId: duplicateObject.object_version_id,
+        });
+      } catch (cleanupError) {
+        console.error(
+          'duplicate episode asset cleanup failed:',
+          cleanupError
+        );
+      }
+      return res.status(409).json({
+        ok: false,
+        code: 'EPISODE_ASSET_DUPLICATE',
+        duplicate_asset_id: duplicate.asset_id,
+        error: `“${payload.file_name}” is already uploaded to this episode step. The duplicate was not attached.`,
       });
     }
     const verifiedObject = await verifyEpisodeAssetObject(payload);

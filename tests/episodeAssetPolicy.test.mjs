@@ -5,6 +5,7 @@ import {
   canDeleteEpisodeAsset,
   canUploadEpisodeAssets,
   episodeAssetMatchesUploadAuthorization,
+  findDuplicateEpisodeAsset,
   getEpisodeAssetAccept,
   getEpisodeAssetTypeLabel,
   sanitizeEpisodeAssetFileName,
@@ -327,6 +328,38 @@ test('limits asset deletion to managers, assigned producers, and the active host
       canManage: true,
     }),
     true
+  );
+});
+
+test('recognizes an exact same-step upload without blocking a distinct file or reuse in another step', () => {
+  const existing = {
+    asset_id: 'asset-existing',
+    file_name: 'Full Episode.WAV',
+    content_type: 'audio/wav',
+    size: 123456,
+    category: 'recording',
+    deliverable_id: 'raw-recording-tracks',
+  };
+  assert.equal(
+    findDuplicateEpisodeAsset([existing], {
+      ...existing,
+      file_name: 'full episode.wav',
+    })?.asset_id,
+    'asset-existing'
+  );
+  assert.equal(
+    findDuplicateEpisodeAsset([existing], {
+      ...existing,
+      size: existing.size + 1,
+    }),
+    null
+  );
+  assert.equal(
+    findDuplicateEpisodeAsset([existing], {
+      ...existing,
+      deliverable_id: 'episode-source-files',
+    }),
+    null
   );
 });
 

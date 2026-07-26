@@ -29,6 +29,8 @@ import {
 } from '../lib/episodeStudioPresentation.mjs';
 import {
   canDeleteEpisodeAsset,
+  EPISODE_ASSET_MAX_BYTES,
+  findDuplicateEpisodeAsset,
   getEpisodeAssetAccept,
   getEpisodeAssetTypeLabel,
   validateEpisodeAssetInput,
@@ -150,12 +152,66 @@ function formatBytes(value) {
   return `${bytes} B`;
 }
 
+function formatCapacity(value) {
+  const bytes = Number(value) || 0;
+  if (bytes >= 1024 * 1024 * 1024) {
+    return `${Number((bytes / (1024 * 1024 * 1024)).toFixed(1))} GB`;
+  }
+  if (bytes >= 1024 * 1024) {
+    return `${Number((bytes / (1024 * 1024)).toFixed(1))} MB`;
+  }
+  return formatBytes(bytes);
+}
+
 function formatUploadTimeRemaining(value) {
   const seconds = Math.max(0, Math.round(Number(value) || 0));
-  if (!seconds) return '';
+  if (!seconds) return 'Finishing…';
+  if (seconds < 5) return 'A few seconds';
   if (seconds < 60) return `about ${seconds}s left`;
   const minutes = Math.ceil(seconds / 60);
   return `about ${minutes} min left`;
+}
+
+function formatUploadDuration(value) {
+  const seconds = Math.max(1, Math.round(Number(value) || 0));
+  if (seconds < 60) return `${seconds}s`;
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  return remainingSeconds
+    ? `${minutes}m ${remainingSeconds}s`
+    : `${minutes}m`;
+}
+
+function assetLimitForInput(input = {}) {
+  const contentType = String(input.content_type || '').toLowerCase();
+  if (contentType.startsWith('audio/')) {
+    return EPISODE_ASSET_MAX_BYTES.audio;
+  }
+  if (contentType.startsWith('video/')) {
+    return EPISODE_ASSET_MAX_BYTES.video;
+  }
+  if (contentType.startsWith('image/')) {
+    return EPISODE_ASSET_MAX_BYTES.image;
+  }
+  return EPISODE_ASSET_MAX_BYTES.document;
+}
+
+function assetCapacityItems(category) {
+  if (['recording', 'sponsor_audio'].includes(category)) {
+    return [['Audio', EPISODE_ASSET_MAX_BYTES.audio]];
+  }
+  if (category === 'image') {
+    return [['Images', EPISODE_ASSET_MAX_BYTES.image]];
+  }
+  if (category === 'document') {
+    return [['Documents', EPISODE_ASSET_MAX_BYTES.document]];
+  }
+  return [
+    ['Audio', EPISODE_ASSET_MAX_BYTES.audio],
+    ['Video', EPISODE_ASSET_MAX_BYTES.video],
+    ['Documents', EPISODE_ASSET_MAX_BYTES.document],
+    ['Images', EPISODE_ASSET_MAX_BYTES.image],
+  ];
 }
 
 function assetUploadHelp(category) {
@@ -647,11 +703,11 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
     }
 
     const category = deliverable.asset_category || 'document';
-    const preparedFiles = [];
+    const validatedFiles = [];
     const validationErrors = [];
     files.forEach((file) => {
       try {
-        preparedFiles.push({
+        validatedFiles.push({
           file,
           input: validateEpisodeAssetInput({
             file_name: file.name,
@@ -677,7 +733,56 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
         ...current,
         [deliverable.id]: {
           tone: 'error',
+          phase: 'error',
+          phaseLabel: 'Files not accepted',
           message: `No files were uploaded. ${visibleErrors}${remainingErrors}`,
+        },
+      }));
+      return;
+    }
+
+    const preparedFiles = [];
+    const duplicateFileNames = [];
+    const duplicateCandidates = [...(episode.assets || [])];
+    for (const preparedFile of validatedFiles) {
+      const candidate = {
+        ...preparedFile.input,
+        deliverable_id: deliverable.id,
+      };
+      const duplicate = findDuplicateEpisodeAsset(
+        duplicateCandidates,
+        candidate
+      );
+      if (duplicate) {
+        duplicateFileNames.push(preparedFile.input.file_name);
+        continue;
+      }
+      preparedFiles.push(preparedFile);
+      duplicateCandidates.push(candidate);
+    }
+
+    if (!preparedFiles.length) {
+      const duplicateNames = duplicateFileNames
+        .slice(0, 3)
+        .map((fileName) => `“${fileName}”`)
+        .join(', ');
+      const additionalDuplicates =
+        duplicateFileNames.length > 3
+          ? ` and ${duplicateFileNames.length - 3} more`
+          : '';
+      setAssetUploadFeedback((current) => ({
+        ...current,
+        [deliverable.id]: {
+          tone: 'warning',
+          phase: 'duplicate',
+          phaseLabel: 'Already uploaded',
+          message: `${duplicateNames}${additionalDuplicates} ${
+            duplicateFileNames.length === 1 ? 'is' : 'are'
+          } already attached to this episode step. Delete the existing ${
+            duplicateFileNames.length === 1 ? 'copy' : 'copies'
+          } first if you intend to replace ${
+            duplicateFileNames.length === 1 ? 'it' : 'them'
+          }.`,
         },
       }));
       return;
@@ -686,32 +791,52 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
     setError('');
     setMessage('');
     setUploadingDeliverableId(deliverable.id);
+    const batchStartedAt = Date.now();
     setAssetUploadFeedback((current) => ({
       ...current,
       [deliverable.id]: {
         tone: 'status',
+        phase: 'preparing',
+        phaseLabel: 'Preparing',
         message: `Preparing ${preparedFiles.length} ${
           preparedFiles.length === 1 ? 'file' : 'files'
-        } for upload…`,
+        } for upload…${
+          duplicateFileNames.length
+            ? ` ${duplicateFileNames.length} already-uploaded ${
+                duplicateFileNames.length === 1 ? 'file was' : 'files were'
+              } skipped.`
+            : ''
+        }`,
       },
     }));
     let currentEpisode = episode;
     let completedCount = 0;
     let activeFileName = '';
+    let activeFileInput = null;
     let activeUploadStage = 'authorization';
     try {
       for (const [index, preparedFile] of preparedFiles.entries()) {
         const { file, input } = preparedFile;
         activeFileName = file.name;
+        activeFileInput = input;
         activeUploadStage = 'authorization';
         setUploadingAsset(file.name);
         setAssetUploadFeedback((current) => ({
           ...current,
           [deliverable.id]: {
             tone: 'status',
-            message: `Uploading ${index + 1} of ${preparedFiles.length}: ${
-              file.name
-            }`,
+            phase: 'authorizing',
+            phaseLabel: 'Getting ready',
+            progress: 0,
+            fileName: file.name,
+            fileIndex: index + 1,
+            fileCount: preparedFiles.length,
+            fileSize: input.size,
+            fileLimit: assetLimitForInput(input),
+            loaded: 0,
+            total: input.size,
+            message:
+              'Checking the file and reserving its private storage location…',
           },
         }));
         const authorizeResponse = await fetch(
@@ -762,40 +887,63 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
         activeUploadStage = 'storage';
         const uploadStartedAt = Date.now();
         let lastProgressRenderedAt = 0;
+        let lastRateSampleAt = uploadStartedAt;
+        let lastRateSampleBytes = 0;
+        let smoothedBytesPerSecond = 0;
         const uploadResponse = await uploadAuthorizedFile(
           file,
           authorization.upload,
           {
             onProgress: ({ loaded, total, percent }) => {
               const now = Date.now();
+              const rateSampleSeconds =
+                (now - lastRateSampleAt) / 1000;
+              if (
+                rateSampleSeconds >= 0.5 &&
+                loaded >= lastRateSampleBytes
+              ) {
+                const currentRate =
+                  (loaded - lastRateSampleBytes) / rateSampleSeconds;
+                smoothedBytesPerSecond = smoothedBytesPerSecond
+                  ? smoothedBytesPerSecond * 0.7 + currentRate * 0.3
+                  : currentRate;
+                lastRateSampleAt = now;
+                lastRateSampleBytes = loaded;
+              }
               if (percent < 100 && now - lastProgressRenderedAt < 250) return;
               lastProgressRenderedAt = now;
               const elapsedSeconds = Math.max(
-                0.001,
+                0,
                 (now - uploadStartedAt) / 1000
               );
-              const bytesPerSecond = loaded / elapsedSeconds;
+              const bytesPerSecond =
+                smoothedBytesPerSecond ||
+                (elapsedSeconds >= 0.5
+                  ? loaded / elapsedSeconds
+                  : 0);
               const secondsRemaining =
                 bytesPerSecond > 0
                   ? Math.max(0, (total - loaded) / bytesPerSecond)
-                  : 0;
-              const details = [
-                `${formatBytes(loaded)} of ${formatBytes(total)}`,
-                bytesPerSecond > 1024
-                  ? `${formatBytes(bytesPerSecond)}/s`
-                  : '',
-                formatUploadTimeRemaining(secondsRemaining),
-              ].filter(Boolean);
+                  : null;
               setAssetUploadFeedback((current) => ({
                 ...current,
                 [deliverable.id]: {
                   tone: 'status',
+                  phase: 'uploading',
+                  phaseLabel: 'Uploading',
                   progress: Math.round(percent),
-                  message: `Uploading ${index + 1} of ${
-                    preparedFiles.length
-                  }: ${file.name} — ${Math.round(percent)}%${
-                    details.length ? ` · ${details.join(' · ')}` : ''
-                  }`,
+                  fileName: file.name,
+                  fileIndex: index + 1,
+                  fileCount: preparedFiles.length,
+                  fileSize: input.size,
+                  fileLimit: assetLimitForInput(input),
+                  loaded,
+                  total,
+                  bytesPerSecond,
+                  secondsRemaining,
+                  elapsedSeconds,
+                  message:
+                    'Keep this tab open while the file moves directly to secure storage.',
                 },
               }));
             },
@@ -811,8 +959,18 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
           ...current,
           [deliverable.id]: {
             tone: 'status',
+            phase: 'verifying',
+            phaseLabel: 'Securing file',
             progress: 100,
-            message: `${file.name} reached secure storage. Verifying and attaching it to the episode…`,
+            fileName: file.name,
+            fileIndex: index + 1,
+            fileCount: preparedFiles.length,
+            fileSize: input.size,
+            fileLimit: assetLimitForInput(input),
+            loaded: input.size,
+            total: input.size,
+            message:
+              'Upload complete. Verifying the exact stored version and attaching it to the episode…',
           },
         }));
         const completed = await completeEpisodeAssetUpload({
@@ -828,9 +986,18 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
         ...current,
         [deliverable.id]: {
           tone: 'success',
+          phase: 'complete',
+          phaseLabel: 'Upload complete',
+          elapsedSeconds: (Date.now() - batchStartedAt) / 1000,
           message: `${completedCount} ${
             completedCount === 1 ? 'file' : 'files'
-          } uploaded to “${deliverable.label}” and added to the producer package.`,
+          } uploaded to “${deliverable.label}” and added to the producer package${
+            duplicateFileNames.length
+              ? `; ${duplicateFileNames.length} existing ${
+                  duplicateFileNames.length === 1 ? 'copy was' : 'copies were'
+                } skipped`
+              : ''
+          }.`,
         },
       }));
     } catch (uploadError) {
@@ -841,6 +1008,13 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
         ...current,
         [deliverable.id]: {
           tone: 'error',
+          phase: 'error',
+          phaseLabel: 'Upload stopped',
+          fileName: activeFileName,
+          fileSize: activeFileInput?.size,
+          fileLimit: activeFileInput
+            ? assetLimitForInput(activeFileInput)
+            : undefined,
           message: completedCount
             ? `${completedCount} of ${preparedFiles.length} ${
                 preparedFiles.length === 1 ? 'file was' : 'files were'
@@ -862,6 +1036,17 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
       viewerPersonId,
       uploaderPersonId: asset?.uploaded_by_person_id,
     });
+  }
+
+  function assetHasMatchingCopy(asset) {
+    return Boolean(
+      findDuplicateEpisodeAsset(
+        (episode?.assets || []).filter(
+          (candidate) => candidate.asset_id !== asset?.asset_id
+        ),
+        asset
+      )
+    );
   }
 
   async function deleteEpisodeAsset(asset) {
@@ -1913,6 +2098,19 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
                               >
                                 {assetUploadHelp(assetCategory)}
                               </p>
+                              <div
+                                className={styles.assetCapacityList}
+                                aria-label="Per-file upload capacity"
+                              >
+                                {assetCapacityItems(assetCategory).map(
+                                  ([label, limit]) => (
+                                    <span key={label}>
+                                      <strong>{label}</strong>
+                                      {formatCapacity(limit)} per file
+                                    </span>
+                                  )
+                                )}
+                              </div>
                             </>
                           ) : (
                             <p className={styles.assetStorageNotice}>
@@ -1928,16 +2126,46 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
                             className={`${styles.stepAssetFeedback} ${
                               uploadFeedback.tone === 'error'
                                 ? styles.stepAssetFeedbackError
+                                : uploadFeedback.tone === 'warning'
+                                  ? styles.stepAssetFeedbackWarning
                                 : uploadFeedback.tone === 'success'
                                   ? styles.stepAssetFeedbackSuccess
                                   : styles.stepAssetFeedbackStatus
                             }`}
                             role={
                               uploadFeedback.tone === 'error'
+                                || uploadFeedback.tone === 'warning'
                                 ? 'alert'
                                 : 'status'
                             }
                           >
+                            <div className={styles.uploadFeedbackHeading}>
+                              <span>
+                                {uploadFeedback.phaseLabel ||
+                                  'Upload status'}
+                              </span>
+                              {Number.isFinite(
+                                uploadFeedback.progress
+                              ) ? (
+                                <strong>
+                                  {uploadFeedback.progress}%
+                                </strong>
+                              ) : uploadFeedback.phase === 'complete' &&
+                                uploadFeedback.elapsedSeconds ? (
+                                <strong>
+                                  {formatUploadDuration(
+                                    uploadFeedback.elapsedSeconds
+                                  )}
+                                </strong>
+                              ) : null}
+                            </div>
+                            {uploadFeedback.fileName ? (
+                              <strong
+                                className={styles.uploadFeedbackFileName}
+                              >
+                                {uploadFeedback.fileName}
+                              </strong>
+                            ) : null}
                             <p>{uploadFeedback.message}</p>
                             {Number.isFinite(uploadFeedback.progress) ? (
                               <progress
@@ -1946,6 +2174,73 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
                                 value={uploadFeedback.progress}
                                 aria-label={`${uploadFeedback.progress}% uploaded`}
                               />
+                            ) : null}
+                            {Number(uploadFeedback.total) > 0 ? (
+                              <div className={styles.uploadTransferStats}>
+                                <span>
+                                  <small>File</small>
+                                  <strong>
+                                    {uploadFeedback.fileIndex || 1} of{' '}
+                                    {uploadFeedback.fileCount || 1}
+                                  </strong>
+                                </span>
+                                <span>
+                                  <small>Transferred</small>
+                                  <strong>
+                                    {formatBytes(
+                                      uploadFeedback.loaded || 0
+                                    )}{' '}
+                                    / {formatBytes(uploadFeedback.total)}
+                                  </strong>
+                                </span>
+                                <span>
+                                  <small>Speed</small>
+                                  <strong>
+                                    {uploadFeedback.bytesPerSecond > 0
+                                      ? `${formatBytes(
+                                          uploadFeedback.bytesPerSecond
+                                        )}/s`
+                                      : uploadFeedback.phase ===
+                                          'verifying'
+                                        ? 'Complete'
+                                        : 'Calculating…'}
+                                  </strong>
+                                </span>
+                                <span>
+                                  <small>Time remaining</small>
+                                  <strong>
+                                    {uploadFeedback.phase === 'verifying'
+                                      ? 'Final checks'
+                                      : uploadFeedback.secondsRemaining !==
+                                          null &&
+                                        uploadFeedback.secondsRemaining !==
+                                          undefined
+                                        ? formatUploadTimeRemaining(
+                                            uploadFeedback.secondsRemaining
+                                          )
+                                        : 'Calculating…'}
+                                  </strong>
+                                </span>
+                              </div>
+                            ) : null}
+                            {uploadFeedback.fileSize &&
+                            uploadFeedback.fileLimit ? (
+                              <p className={styles.uploadCapacityNote}>
+                                {formatBytes(uploadFeedback.fileSize)} file ·{' '}
+                                {Math.max(
+                                  1,
+                                  Math.round(
+                                    (uploadFeedback.fileSize /
+                                      uploadFeedback.fileLimit) *
+                                      100
+                                  )
+                                )}
+                                % of the{' '}
+                                {formatCapacity(
+                                  uploadFeedback.fileLimit
+                                )}{' '}
+                                per-file limit
+                              </p>
                             ) : null}
                           </div>
                         ) : null}
@@ -1960,6 +2255,13 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
                                     <strong>
                                       {asset.label || asset.file_name}
                                     </strong>
+                                    {assetHasMatchingCopy(asset) ? (
+                                      <em
+                                        className={styles.assetDuplicateBadge}
+                                      >
+                                        Matching copy exists
+                                      </em>
+                                    ) : null}
                                     <span>
                                       {asset.label &&
                                       asset.label !== asset.file_name
@@ -2206,6 +2508,13 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
                                   <strong>
                                     {asset.label || asset.file_name}
                                   </strong>
+                                  {assetHasMatchingCopy(asset) ? (
+                                    <em
+                                      className={styles.assetDuplicateBadge}
+                                    >
+                                      Matching copy exists
+                                    </em>
+                                  ) : null}
                                   <span>
                                     {asset.file_name} ·{' '}
                                     {getEpisodeAssetTypeLabel(asset)} ·{' '}
