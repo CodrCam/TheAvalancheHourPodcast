@@ -20,6 +20,9 @@ import {
 } from '../../../../../../lib/episodeStudioPresentation.mjs';
 import { saveEpisodeStudio } from '../../../../../../lib/episodeStudioStore';
 import { listPeople } from '../../../../../../lib/peopleStore';
+import {
+  publishEpisodeNotifications,
+} from '../../../../../../lib/episodeStudioEvents';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -211,6 +214,21 @@ export default async function handler(req, res) {
       content_type: asset.content_type,
       size: asset.size,
     });
+    try {
+      await publishEpisodeNotifications({
+        previousEpisode: access.episode,
+        episode: saved.episode,
+        action: 'asset_uploaded',
+        actorPersonId: access.binding?.person_id || '',
+        actorName: asset.uploaded_by_name,
+        event: { asset },
+      });
+    } catch (notificationError) {
+      console.error(
+        'episode asset notification generation failed:',
+        notificationError
+      );
+    }
     const safeEpisode = sanitizeEpisodeStudioForViewer(saved.episode);
     return res.status(201).json({
       ok: true,

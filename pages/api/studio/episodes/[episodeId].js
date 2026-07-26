@@ -11,6 +11,7 @@ import {
   mergeHostDeliverableValues,
   normalizeEpisodeStudio,
   isSafeEpisodeMaterialUrl,
+  isSafeSpotifyStagingUrl,
   sanitizeEpisodeStudioForViewer,
 } from '../../../../lib/episodeStudioPresentation.mjs';
 import {
@@ -38,6 +39,12 @@ import {
 } from '../../../../lib/sponsorReadStore';
 import { publishEpisodeNotifications } from '../../../../lib/episodeStudioEvents';
 import { isEpisodeAssetStorageConfigured } from '../../../../lib/episodeAssetStorage';
+import {
+  buildProductionAdvance,
+  getAvailableProductionLeadPersonIds,
+  getNextProductionLeadPersonId,
+  getProductionLeadPersonIds,
+} from '../../../../lib/productionEscalation.mjs';
 import crypto from 'crypto';
 
 const HOST_LOCKED_STATUSES = [
@@ -67,6 +74,9 @@ async function getPeopleDirectory() {
     capabilities: getPersonStudioCapabilities(person),
     account_email:
       bindingsByPerson.get(person.person_id)?.account_email || '',
+    account_active: Boolean(
+      bindingsByPerson.get(person.person_id)?.active
+    ),
   }));
   const peopleById = new Map(
     people.map((person) => [person.person_id, person])
@@ -264,6 +274,21 @@ export default async function handler(req, res) {
     const hostNames = result.episode.host_person_ids.map(
       (personId) => peopleById.get(personId)?.name || personId
     );
+    const productionLeadPersonIds =
+      getAvailableProductionLeadPersonIds(
+        getProductionLeadPersonIds(),
+        [...peopleById.values()]
+          .filter(
+            (person) =>
+              person.account_active && person.capabilities.producer
+          )
+          .map((person) => person.person_id)
+      );
+    const canAdvanceProduction =
+      result.episode.status === 'accepted' &&
+      result.episode.production_stage === 'lead_review' &&
+      Boolean(binding?.person_id) &&
+      result.episode.production_lead_person_id === binding.person_id;
 
     if (req.method === 'GET') {
       const sponsorData = await sponsorReadResponseData(
@@ -284,6 +309,10 @@ export default async function handler(req, res) {
         canUploadAssets,
         canConfigure,
         canAdminOverride,
+        canAdvanceProduction,
+        production_lead_name:
+          peopleById.get(result.episode.production_lead_person_id)?.name ||
+          '',
         viewer_person_id: binding?.person_id || '',
         episode_roles: episodeMembership,
         episode: sponsorData.episode,
@@ -328,6 +357,7 @@ export default async function handler(req, res) {
       'remove_sponsor_read',
       'update_sponsor_read_assignment',
       'configure_checklist',
+      'advance_production',
     ]);
     if (!allowedActions.has(action)) {
       return res.status(400).json({
@@ -340,7 +370,20 @@ export default async function handler(req, res) {
     let notification = null;
     const previousDeliveryHealth = result.episode.delivery_health;
 
-    if (action === 'set_delivery_health') {
+    if (action === 'advance_production') {
+      if (!canAdvanceProduction) {
+        return res.status(403).json({
+          ok: false,
+          error:
+            'Only the production lead currently holding this handoff can advance it.',
+        });
+      }
+      nextEpisode = buildProductionAdvance(result.episode, {
+        actorPersonId: binding.person_id,
+        actorName: currentAuthorName,
+        leadPersonIds: productionLeadPersonIds,
+      });
+    } else if (action === 'set_delivery_health') {
       if (result.episode.status === 'accepted') {
         return res.status(409).json({
           ok: false,
@@ -584,6 +627,19 @@ export default async function handler(req, res) {
             'Changes can be requested only after the host package is submitted.',
         });
       }
+      const stagedEpisodeUrl = String(
+        req.body?.staged_episode_url ?? result.episode.staged_episode_url
+      ).trim();
+      if (
+        stagedEpisodeUrl &&
+        !isSafeSpotifyStagingUrl(stagedEpisodeUrl)
+      ) {
+        return res.status(400).json({
+          ok: false,
+          error:
+            'Use a secure Spotify staging link from spotify.com or spotify.link.',
+        });
+      }
       if (
         status === 'needs_changes' &&
         !String(req.body?.producer_feedback || '').trim()
@@ -591,6 +647,16 @@ export default async function handler(req, res) {
         return res.status(400).json({
           ok: false,
           error: 'Add a producer note before requesting changes.',
+        });
+      }
+      if (
+        status === 'accepted' &&
+        !productionLeadPersonIds.length
+      ) {
+        return res.status(409).json({
+          ok: false,
+          error:
+            'No active production lead is available. Activate Angie or Caleb before accepting this package.',
         });
       }
       const overrideReason = String(req.body?.override_reason || '')
@@ -602,9 +668,34 @@ export default async function handler(req, res) {
           error: 'Add an audit reason for the administrator override.',
         });
       }
+      const nextLeadPersonId =
+        status === 'accepted'
+          ? getNextProductionLeadPersonId(
+              result.episode.producer_person_id,
+              productionLeadPersonIds
+            )
+          : '';
       nextEpisode = {
         ...result.episode,
         status,
+        production_stage:
+          status === 'accepted'
+            ? nextLeadPersonId
+              ? 'lead_review'
+              : 'complete'
+            : 'host_preparation',
+        production_lead_person_id: nextLeadPersonId,
+        production_handoff_at:
+          status === 'accepted' ? new Date().toISOString() : '',
+        production_completed_at:
+          status === 'accepted' && !nextLeadPersonId
+            ? new Date().toISOString()
+            : '',
+        production_advanced_by_person_id:
+          status === 'accepted' ? binding?.person_id || '' : '',
+        production_advanced_by_name:
+          status === 'accepted' ? currentAuthorName : '',
+        staged_episode_url: stagedEpisodeUrl,
         producer_feedback: req.body?.producer_feedback || '',
         reviewed_at: new Date().toISOString(),
         reviewed_by_person_id: binding?.person_id || '',
@@ -713,6 +804,12 @@ export default async function handler(req, res) {
         nextEpisode.status = provisional
           ? 'submitted_with_gaps'
           : 'submitted';
+        nextEpisode.production_stage = 'producer_review';
+        nextEpisode.production_lead_person_id = '';
+        nextEpisode.production_handoff_at = '';
+        nextEpisode.production_completed_at = '';
+        nextEpisode.production_advanced_by_person_id = '';
+        nextEpisode.production_advanced_by_name = '';
         nextEpisode.submitted_at = new Date().toISOString();
         nextEpisode.producer_feedback = '';
       } else if (result.episode.status === 'planning') {
@@ -753,6 +850,7 @@ export default async function handler(req, res) {
         action,
         actorPersonId: binding?.person_id || '',
         actorName: currentAuthorName,
+        productionLeadPersonIds,
       });
     } catch (notificationError) {
       console.error(
@@ -792,6 +890,11 @@ export default async function handler(req, res) {
       membershipIdentity,
       principal
     );
+    const responseCanAdvanceProduction =
+      saved.episode.status === 'accepted' &&
+      saved.episode.production_stage === 'lead_review' &&
+      Boolean(binding?.person_id) &&
+      saved.episode.production_lead_person_id === binding.person_id;
     return res.status(200).json({
       ok: true,
       episode: sponsorData.episode,
@@ -807,6 +910,10 @@ export default async function handler(req, res) {
       canUploadAssets: responseRelationship.canUploadAssets,
       canConfigure: responseRelationship.canConfigure,
       canAdminOverride: responseRelationship.canAdminOverride,
+      canAdvanceProduction: responseCanAdvanceProduction,
+      production_lead_name:
+        peopleById.get(saved.episode.production_lead_person_id)?.name ||
+        '',
       viewer_person_id: binding?.person_id || '',
       episode_roles: responseRelationship.roles,
       notification,

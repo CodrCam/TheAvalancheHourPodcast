@@ -283,10 +283,12 @@ export default async function handler(req, res) {
     const tracker = normalizeMicKitTracker(result.tracker);
     const expectedUpdatedAt = cleanText(req.body?.expected_updated_at, 40);
     const now = new Date().toISOString();
+    const actorBinding = await getStudioBindingForSubject(
+      principal.subject
+    );
 
     if (action === 'create_request') {
-      const binding = await getStudioBindingForSubject(principal.subject);
-      const request = requestInput(req, principal, binding);
+      const request = requestInput(req, principal, actorBinding);
       if (request.episode_id) {
         const episodeSource = canManage
           ? automationEpisodes
@@ -296,8 +298,8 @@ export default async function handler(req, res) {
         );
         if (
           !episode ||
-          !binding?.person_id ||
-          !episode.host_person_ids.includes(binding.person_id)
+          !actorBinding?.person_id ||
+          !episode.host_person_ids.includes(actorBinding.person_id)
         ) {
           return res.status(400).json({
             ok: false,
@@ -748,6 +750,7 @@ export default async function handler(req, res) {
         tracker: saved.tracker,
         action,
         actorName: actorLabel(principal),
+        actorPersonId: actorBinding?.person_id || '',
         managerPersonIds: String(
           process.env.STUDIO_MIC_KIT_MANAGER_PERSON_IDS || ''
         )

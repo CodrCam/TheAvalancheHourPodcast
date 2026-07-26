@@ -173,13 +173,6 @@ export default function StudioLayout({
           </span>
         </Link>
 
-        {session.permissions?.includes('notifications:read') ? (
-          <NotificationBell
-            href="/studio/notifications"
-            className={styles.notificationBell}
-          />
-        ) : null}
-
         <nav aria-label="Host Studio navigation" className={styles.nav}>
           {navItems.map((item, index) => {
             const active =
@@ -253,6 +246,16 @@ export default function StudioLayout({
       </aside>
 
       <main className={styles.main}>
+        <header className={styles.topBar} aria-label="Studio utilities">
+          <span
+            className={styles.futureMessagingSlot}
+            data-future-messaging-slot
+            aria-hidden="true"
+          />
+          {session.permissions?.includes('notifications:read') ? (
+            <NotificationBell href="/studio/notifications" />
+          ) : null}
+        </header>
         <div className={styles.mainInner}>{children}</div>
       </main>
     </div>

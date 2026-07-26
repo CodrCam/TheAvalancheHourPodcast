@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import CampaignRoundedIcon from '@mui/icons-material/CampaignRounded';
 import ForumRoundedIcon from '@mui/icons-material/ForumRounded';
 import HeadsetMicRoundedIcon from '@mui/icons-material/HeadsetMicRounded';
@@ -8,6 +8,9 @@ import ScheduleRoundedIcon from '@mui/icons-material/ScheduleRounded';
 import TaskAltRoundedIcon from '@mui/icons-material/TaskAltRounded';
 import AdminLayout from './AdminLayout';
 import StudioLayout from './StudioLayout';
+import {
+  groupStudioNotifications,
+} from '../lib/studioNotificationPresentation.mjs';
 import styles from '../styles/Notifications.module.css';
 
 function iconFor(notification) {
@@ -23,75 +26,146 @@ function iconFor(notification) {
   if (notification.kind === 'reminder') {
     return ScheduleRoundedIcon;
   }
-  if (notification.type.includes('approved')) {
+  if (
+    notification.type.includes('approved') ||
+    notification.type.includes('complete')
+  ) {
     return TaskAltRoundedIcon;
   }
   return NotificationsNoneRoundedIcon;
 }
 
-function formatTime(value) {
+function exactTime(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '';
   return date.toLocaleString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
+    dateStyle: 'medium',
+    timeStyle: 'short',
   });
 }
 
-export default function NotificationCenter({ admin = false }) {
-  const [notifications, setNotifications] = useState([]);
-  const [unreadCount, setUnreadCount] = useState(0);
+function relativeTime(value) {
+  const time = new Date(value).getTime();
+  if (!Number.isFinite(time)) return '';
+  const seconds = Math.round((time - Date.now()) / 1000);
+  const formatter = new Intl.RelativeTimeFormat(undefined, {
+    numeric: 'auto',
+  });
+  if (Math.abs(seconds) < 60) return formatter.format(seconds, 'second');
+  const minutes = Math.round(seconds / 60);
+  if (Math.abs(minutes) < 60) return formatter.format(minutes, 'minute');
+  const hours = Math.round(minutes / 60);
+  if (Math.abs(hours) < 24) return formatter.format(hours, 'hour');
+  return formatter.format(Math.round(hours / 24), 'day');
+}
+
+function mergeNotifications(current, incoming) {
+  const byId = new Map(
+    current.map((notification) => [
+      notification.notification_id,
+      notification,
+    ])
+  );
+  for (const notification of incoming) {
+    byId.set(notification.notification_id, notification);
+  }
+  return [...byId.values()].sort((a, b) =>
+    b.created_at.localeCompare(a.created_at)
+  );
+}
+
+export default function NotificationCenter({
+  admin = false,
+  previewData = null,
+  bare = false,
+}) {
+  const previewMode = Boolean(previewData);
+  const [notifications, setNotifications] = useState(
+    previewData?.notifications || []
+  );
+  const [unreadCount, setUnreadCount] = useState(
+    Number(previewData?.unread_count) || 0
+  );
+  const [nextCursor, setNextCursor] = useState('');
   const [filter, setFilter] = useState('all');
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!previewMode);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState('');
   const Layout = admin ? AdminLayout : StudioLayout;
 
-  useEffect(() => {
-    let alive = true;
-
-    async function loadNotifications() {
-      try {
-        const response = await fetch('/api/studio/notifications?limit=200', {
+  const loadNotifications = useCallback(async (cursor = '') => {
+    if (previewMode) return;
+    cursor ? setLoadingMore(true) : setLoading(true);
+    try {
+      const query = new URLSearchParams({ limit: '50' });
+      if (cursor) query.set('cursor', cursor);
+      const response = await fetch(
+        `/api/studio/notifications?${query.toString()}`,
+        {
           credentials: 'same-origin',
-        });
-        const data = await response.json();
-        if (!response.ok) {
-          throw new Error(data.error || 'Could not load notifications.');
+          cache: 'no-store',
         }
-        if (!alive) return;
-        setNotifications(data.notifications || []);
-        setUnreadCount(Number(data.unread_count) || 0);
-      } catch (loadError) {
-        if (alive) {
-          setError(loadError.message || 'Could not load notifications.');
-        }
-      } finally {
-        if (alive) setLoading(false);
+      );
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Could not load notifications.');
       }
+      setNotifications((current) =>
+        cursor
+          ? mergeNotifications(current, data.notifications || [])
+          : data.notifications || []
+      );
+      setUnreadCount(Number(data.unread_count) || 0);
+      setNextCursor(data.next_cursor || '');
+      setError('');
+    } catch (loadError) {
+      setError(loadError.message || 'Could not load notifications.');
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
     }
+  }, [previewMode]);
 
-    loadNotifications();
-    return () => {
-      alive = false;
-    };
-  }, []);
+  useEffect(() => {
+    if (previewMode) return undefined;
+    const initialLoad = window.setTimeout(loadNotifications, 0);
+    return () => window.clearTimeout(initialLoad);
+  }, [loadNotifications, previewMode]);
 
-  const visible = useMemo(
-    () =>
-      notifications.filter((notification) => {
-        if (filter === 'unread') return !notification.read_at;
-        if (filter === 'reminders') return notification.kind === 'reminder';
-        if (filter === 'episode') return notification.category === 'episode';
-        if (filter === 'mic_kit') return notification.category === 'mic_kit';
-        return true;
-      }),
-    [filter, notifications]
-  );
+  const visibleGroups = useMemo(() => {
+    const visible = notifications.filter((notification) => {
+      if (filter === 'unread') return !notification.read_at;
+      if (filter === 'reminders') return notification.kind === 'reminder';
+      if (filter === 'episode') return notification.category === 'episode';
+      if (filter === 'mic_kit') return notification.category === 'mic_kit';
+      if (filter === 'operations') {
+        return ['store', 'access', 'system'].includes(notification.category);
+      }
+      return true;
+    });
+    return groupStudioNotifications(visible);
+  }, [filter, notifications]);
 
   async function updateRead(notification, read = true) {
     if (Boolean(notification.read_at) === read) return;
+    if (previewMode) {
+      const changedAt = read ? new Date().toISOString() : '';
+      setNotifications((current) =>
+        current.map((candidate) =>
+          candidate.notification_id === notification.notification_id
+            ? {
+                ...candidate,
+                read_at: changedAt,
+                seen_at: read ? candidate.seen_at || changedAt : candidate.seen_at,
+              }
+            : candidate
+        )
+      );
+      setUnreadCount((current) =>
+        read ? Math.max(0, current - 1) : current + 1
+      );
+      return;
+    }
     try {
       const response = await fetch('/api/studio/notifications', {
         method: 'PATCH',
@@ -123,6 +197,18 @@ export default function NotificationCenter({ admin = false }) {
   }
 
   async function markAllRead() {
+    if (previewMode) {
+      const readAt = new Date().toISOString();
+      setNotifications((current) =>
+        current.map((notification) => ({
+          ...notification,
+          read_at: notification.read_at || readAt,
+          seen_at: notification.seen_at || readAt,
+        }))
+      );
+      setUnreadCount(0);
+      return;
+    }
     try {
       const response = await fetch('/api/studio/notifications', {
         method: 'PATCH',
@@ -138,6 +224,7 @@ export default function NotificationCenter({ admin = false }) {
         current.map((notification) => ({
           ...notification,
           read_at: notification.read_at || data.read_at,
+          seen_at: notification.seen_at || data.read_at,
         }))
       );
       setUnreadCount(0);
@@ -146,16 +233,16 @@ export default function NotificationCenter({ admin = false }) {
     }
   }
 
-  return (
-    <Layout requiredPermission="notifications:read">
-      <div className={styles.page}>
+  const content = (
+    <div className={styles.page}>
         <header className={styles.header}>
           <div>
             <span>Studio activity</span>
-            <h1>Notifications and reminders</h1>
+            <h1>Notifications</h1>
             <p>
-              Discussion updates and production events arrive immediately.
-              Time-based reminders are generated separately and labeled.
+              Episode handoffs, production-lead checks, discussion, required
+              files, sponsor reads, mic kits, and scheduled reminders stay
+              grouped with the record they belong to.
             </p>
           </div>
           <div className={styles.unreadSummary}>
@@ -171,13 +258,18 @@ export default function NotificationCenter({ admin = false }) {
           </div>
         </header>
 
-        <div className={styles.filters} role="group" aria-label="Notification filters">
+        <div
+          className={styles.filters}
+          role="group"
+          aria-label="Notification filters"
+        >
           {[
             ['all', 'All'],
             ['unread', 'Unread'],
             ['episode', 'Episodes'],
             ['mic_kit', 'Mic kits'],
             ['reminders', 'Reminders'],
+            ['operations', 'Operations'],
           ].map(([value, label]) => (
             <button
               type="button"
@@ -190,59 +282,124 @@ export default function NotificationCenter({ admin = false }) {
           ))}
         </div>
 
-        {error ? <p className={styles.error}>{error}</p> : null}
+        {error ? (
+          <p className={styles.error} role="status">
+            {error}
+          </p>
+        ) : null}
         {loading ? (
           <p className={styles.empty}>Loading activity…</p>
-        ) : visible.length ? (
-          <div className={styles.list}>
-            {visible.map((notification) => {
-              const Icon = iconFor(notification);
-              return (
-                <article
-                  key={notification.notification_id}
-                  className={`${styles.item} ${
-                    notification.read_at ? styles.read : styles.unread
-                  }`}
-                  data-urgency={notification.urgency}
-                >
-                  <span className={styles.icon}>
-                    <Icon aria-hidden="true" />
-                  </span>
-                  <div className={styles.body}>
-                    <div className={styles.itemMeta}>
-                      <span>{notification.kind}</span>
-                      <time dateTime={notification.created_at}>
-                        {formatTime(notification.created_at)}
+        ) : visibleGroups.length ? (
+          <div className={styles.groupList}>
+            {visibleGroups.map((group) => (
+              <details
+                key={group.group_key}
+                className={`${styles.group} ${
+                  group.unread_count ? styles.groupUnread : ''
+                }`}
+                open={group.unread_count > 0}
+              >
+                <summary>
+                  <span>
+                    <strong>{group.latest_title}</strong>
+                    <small>
+                      {group.notification_count}{' '}
+                      {group.notification_count === 1 ? 'update' : 'updates'}
+                      {' · '}
+                      <time
+                        dateTime={group.latest_at}
+                        title={exactTime(group.latest_at)}
+                      >
+                        {relativeTime(group.latest_at)}
                       </time>
-                    </div>
-                    <Link
-                      href={notification.deep_link}
-                      onClick={() => updateRead(notification, true)}
-                    >
-                      {notification.title}
-                    </Link>
-                    <p>{notification.preview}</p>
-                    {notification.actor_name ? (
-                      <small>From {notification.actor_name}</small>
-                    ) : null}
-                  </div>
-                  <button
-                    type="button"
-                    className={styles.readToggle}
-                    onClick={() =>
-                      updateRead(notification, !Boolean(notification.read_at))
-                    }
-                  >
-                    {notification.read_at ? 'Mark unread' : 'Mark read'}
-                  </button>
-                </article>
-              );
-            })}
+                    </small>
+                  </span>
+                  {group.unread_count ? (
+                    <em>{group.unread_count} unread</em>
+                  ) : (
+                    <em>Read</em>
+                  )}
+                </summary>
+                <div className={styles.list}>
+                  {group.notifications.map((notification) => {
+                    const Icon = iconFor(notification);
+                    return (
+                      <article
+                        key={notification.notification_id}
+                        className={`${styles.item} ${
+                          notification.read_at
+                            ? styles.read
+                            : styles.unread
+                        }`}
+                        data-urgency={notification.urgency}
+                        data-intent={notification.intent}
+                      >
+                        <span className={styles.icon}>
+                          <Icon aria-hidden="true" />
+                        </span>
+                        <div className={styles.body}>
+                          <div className={styles.itemMeta}>
+                            <span>{notification.intent}</span>
+                            <time
+                              dateTime={notification.created_at}
+                              title={exactTime(notification.created_at)}
+                            >
+                              {relativeTime(notification.created_at)}
+                            </time>
+                          </div>
+                          <Link
+                            href={notification.deep_link}
+                            onClick={() => updateRead(notification, true)}
+                          >
+                            {notification.title}
+                          </Link>
+                          <p>{notification.preview}</p>
+                          {notification.actor_name ? (
+                            <small>From {notification.actor_name}</small>
+                          ) : null}
+                        </div>
+                        <button
+                          type="button"
+                          className={styles.readToggle}
+                          onClick={() =>
+                            updateRead(
+                              notification,
+                              !Boolean(notification.read_at)
+                            )
+                          }
+                        >
+                          {notification.read_at
+                            ? 'Mark unread'
+                            : 'Mark read'}
+                        </button>
+                      </article>
+                    );
+                  })}
+                </div>
+              </details>
+            ))}
           </div>
         ) : (
-          <p className={styles.empty}>No notifications match this view.</p>
+          <p className={styles.empty}>
+            No notifications match this view.
+          </p>
         )}
-      </div>
-    </Layout>
+
+        {nextCursor && filter === 'all' ? (
+          <button
+            type="button"
+            className={styles.loadMore}
+            onClick={() => loadNotifications(nextCursor)}
+            disabled={loadingMore}
+          >
+            {loadingMore ? 'Loading…' : 'Load older notifications'}
+          </button>
+        ) : null}
+    </div>
+  );
+  return bare ? (
+    content
+  ) : (
+    <Layout requiredPermission="notifications:read">{content}</Layout>
   );
 }

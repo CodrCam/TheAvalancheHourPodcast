@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  filterOpenableStudioNotifications,
+  groupStudioNotifications,
   normalizeStudioNotification,
   plainTextPreview,
   safeStudioDeepLink,
@@ -11,6 +13,18 @@ import {
 import {
   buildMicKitNotificationEntries,
 } from '../lib/micKitEvents.js';
+import {
+  buildProductionAdvance,
+  getAvailableProductionLeadPersonIds,
+  getNextProductionLeadPersonId,
+} from '../lib/productionEscalation.mjs';
+import {
+  isSafeSpotifyStagingUrl,
+  normalizeEpisodeStudio,
+} from '../lib/episodeStudioPresentation.mjs';
+import {
+  filterNotificationsForPrincipal,
+} from '../lib/studioNotificationAccess.js';
 
 test('notification previews are plain text and deep links stay same-origin', () => {
   assert.equal(
@@ -108,5 +122,333 @@ test('mic kit tracking events never include tracking data in previews', () => {
   assert.equal(
     JSON.stringify(entries[0].notification).includes('SECRET-TRACKING'),
     false
+  );
+});
+
+test('groups multiple events for one episode without merging different episodes', () => {
+  const values = [
+    {
+      notification_id: 'one-upload',
+      recipient_person_id: 'producer-1',
+      type: 'episode_required_file_uploaded',
+      category: 'episode',
+      title: 'A file was uploaded',
+      preview: 'Recording tracks are ready.',
+      entity_kind: 'episode_asset',
+      entity_id: 'asset-1',
+      group_entity_kind: 'episode',
+      group_entity_id: 'episode-one',
+      deep_link: '/studio/episodes/episode-one#final-assets',
+      created_at: '2026-07-25T10:00:00.000Z',
+    },
+    {
+      notification_id: 'one-submit',
+      recipient_person_id: 'producer-1',
+      type: 'episode_package_submitted',
+      category: 'episode',
+      title: 'Episode One is ready',
+      preview: 'Review the package.',
+      entity_kind: 'episode',
+      entity_id: 'episode-one',
+      group_entity_kind: 'episode',
+      group_entity_id: 'episode-one',
+      deep_link: '/studio/episodes/episode-one',
+      created_at: '2026-07-25T11:00:00.000Z',
+    },
+    {
+      notification_id: 'two-submit',
+      recipient_person_id: 'producer-1',
+      type: 'episode_package_submitted',
+      category: 'episode',
+      title: 'Episode Two is ready',
+      preview: 'Review the package.',
+      entity_kind: 'episode',
+      entity_id: 'episode-two',
+      group_entity_kind: 'episode',
+      group_entity_id: 'episode-two',
+      deep_link: '/studio/episodes/episode-two',
+      created_at: '2026-07-25T12:00:00.000Z',
+      read_at: '2026-07-25T12:10:00.000Z',
+    },
+  ];
+
+  const groups = groupStudioNotifications(values);
+  assert.equal(groups.length, 2);
+  assert.equal(groups[0].group_key, 'episode:episode-two');
+  assert.equal(groups[1].notification_count, 2);
+  assert.equal(groups[1].unread_count, 2);
+  assert.deepEqual(
+    groups[1].notifications.map((notification) => notification.notification_id),
+    ['one-submit', 'one-upload']
+  );
+});
+
+test('recipient access suppresses reassigned, unrelated, archived, and cross-role records', () => {
+  const notification = (id, episodeId, personId = 'host-1') => ({
+    notification_id: id,
+    recipient_person_id: personId,
+    type: 'episode_discussion_message',
+    category: 'episode',
+    title: 'Episode update',
+    preview: 'A private discussion preview.',
+    entity_kind: 'episode',
+    entity_id: episodeId,
+    group_entity_kind: 'episode',
+    group_entity_id: episodeId,
+    deep_link: `/studio/episodes/${episodeId}#discussion`,
+    created_at: '2026-07-25T12:00:00.000Z',
+  });
+  const episodesById = new Map([
+    [
+      'mine',
+      {
+        episode_id: 'mine',
+        host_person_ids: ['host-1'],
+        producer_person_id: 'producer-1',
+      },
+    ],
+    [
+      'other',
+      {
+        episode_id: 'other',
+        host_person_ids: ['host-2'],
+        producer_person_id: 'producer-2',
+      },
+    ],
+    [
+      'archived',
+      {
+        episode_id: 'archived',
+        host_person_ids: ['host-1'],
+        archived: true,
+      },
+    ],
+  ]);
+
+  const visible = filterOpenableStudioNotifications(
+    [
+      notification('mine-event', 'mine'),
+      notification('other-event', 'other'),
+      notification('archived-event', 'archived'),
+      notification('wrong-recipient', 'mine', 'host-2'),
+    ],
+    {
+      personId: 'host-1',
+      permissions: ['episodes:read'],
+      episodesById,
+    }
+  );
+  assert.deepEqual(
+    visible.map((item) => item.notification_id),
+    ['mine-event']
+  );
+
+  const managerVisible = filterOpenableStudioNotifications(
+    [notification('manager-event', 'other')],
+    {
+      personId: 'host-1',
+      permissions: ['episodes:manage'],
+      episodesById,
+    }
+  );
+  assert.equal(managerVisible.length, 1);
+});
+
+test('notification access batch-loads related episodes once per page', async () => {
+  let episodeLoads = 0;
+  let micKitLoads = 0;
+  const notifications = ['one', 'two'].map((episodeId) => ({
+    notification_id: `notice-${episodeId}`,
+    recipient_person_id: 'host-1',
+    type: 'episode_discussion_message',
+    category: 'episode',
+    title: 'Episode update',
+    preview: 'New discussion activity.',
+    entity_kind: 'episode',
+    entity_id: episodeId,
+    group_entity_kind: 'episode',
+    group_entity_id: episodeId,
+    deep_link: `/studio/episodes/${episodeId}#discussion`,
+    created_at: '2026-07-25T12:00:00.000Z',
+  }));
+  const result = await filterNotificationsForPrincipal(notifications, {
+    personId: 'host-1',
+    permissions: ['episodes:read'],
+    loadEpisodes: async (ids) => {
+      episodeLoads += 1;
+      assert.deepEqual(ids.sort(), ['one', 'two']);
+      return {
+        episodes: ids.map((episodeId) => ({
+          episode_id: episodeId,
+          host_person_ids: ['host-1'],
+        })),
+      };
+    },
+    loadMicKitTracker: async () => {
+      micKitLoads += 1;
+      return { tracker: { requests: [] } };
+    },
+  });
+  assert.equal(result.notifications.length, 2);
+  assert.equal(episodeLoads, 1);
+  assert.equal(micKitLoads, 0);
+});
+
+test('submission goes only to the assigned producer and deadline changes stay in scope', () => {
+  const previousEpisode = {
+    episode_id: 'episode-one',
+    title: 'Episode One',
+    host_person_ids: ['host-1', 'host-2'],
+    producer_person_id: 'producer-1',
+    due_date: '2026-08-01',
+    updated_at: '2026-07-25T10:00:00.000Z',
+  };
+  const submitted = buildEpisodeNotificationEntries({
+    previousEpisode,
+    episode: {
+      ...previousEpisode,
+      status: 'submitted',
+      updated_at: '2026-07-25T11:00:00.000Z',
+    },
+    action: 'submit',
+    actorPersonId: 'host-1',
+  });
+  assert.deepEqual(
+    submitted.map((entry) => entry.notification.recipient_person_id),
+    ['producer-1']
+  );
+
+  const deadline = buildEpisodeNotificationEntries({
+    previousEpisode,
+    episode: {
+      ...previousEpisode,
+      due_date: '2026-08-03',
+      updated_at: '2026-07-25T12:00:00.000Z',
+    },
+    action: 'update',
+    actorPersonId: 'host-2',
+  });
+  assert.deepEqual(
+    deadline.map((entry) => entry.notification.recipient_person_id).sort(),
+    ['host-1', 'producer-1']
+  );
+  assert.ok(
+    deadline.every(
+      (entry) => entry.notification.type === 'episode_deadline_changed'
+    )
+  );
+});
+
+test('production escalation routes outside producers to Angie and Angie to Caleb', () => {
+  const leads = ['angie-link', 'caleb-merrill'];
+  assert.deepEqual(
+    getAvailableProductionLeadPersonIds(leads, ['caleb-merrill']),
+    ['caleb-merrill']
+  );
+  assert.equal(
+    getNextProductionLeadPersonId('outside-producer', leads),
+    'angie-link'
+  );
+  assert.equal(
+    getNextProductionLeadPersonId('angie-link', leads),
+    'caleb-merrill'
+  );
+  assert.equal(
+    getNextProductionLeadPersonId('caleb-merrill', leads),
+    ''
+  );
+
+  const toCaleb = buildProductionAdvance(
+    { episode_id: 'episode-one', production_stage: 'lead_review' },
+    {
+      actorPersonId: 'angie-link',
+      actorName: 'Angie Link',
+      leadPersonIds: leads,
+      advancedAt: '2026-07-25T12:00:00.000Z',
+    }
+  );
+  assert.equal(toCaleb.production_stage, 'lead_review');
+  assert.equal(toCaleb.production_lead_person_id, 'caleb-merrill');
+
+  const complete = buildProductionAdvance(toCaleb, {
+    actorPersonId: 'caleb-merrill',
+    actorName: 'Caleb Merrill',
+    leadPersonIds: leads,
+    advancedAt: '2026-07-25T13:00:00.000Z',
+  });
+  assert.equal(complete.production_stage, 'complete');
+  assert.equal(complete.production_lead_person_id, '');
+  assert.equal(complete.production_completed_at, '2026-07-25T13:00:00.000Z');
+});
+
+test('producer approval creates the next actionable production-lead notification', () => {
+  const episode = {
+    episode_id: 'episode-one',
+    title: 'Episode One',
+    host_person_ids: ['host-1'],
+    producer_person_id: 'angie-link',
+    status: 'accepted',
+    production_stage: 'lead_review',
+    production_lead_person_id: 'caleb-merrill',
+    staged_episode_url:
+      'https://creators.spotify.com/pod/show/episode/preview',
+    updated_at: '2026-07-25T12:00:00.000Z',
+  };
+  const entries = buildEpisodeNotificationEntries({
+    previousEpisode: { ...episode, status: 'submitted' },
+    episode,
+    action: 'review',
+    actorPersonId: 'angie-link',
+    actorName: 'Angie Link',
+    productionLeadPersonIds: ['angie-link', 'caleb-merrill'],
+  });
+  const leadEntry = entries.find(
+    (entry) =>
+      entry.notification.type === 'episode_ready_for_production_lead'
+  );
+  assert.equal(
+    leadEntry.notification.recipient_person_id,
+    'caleb-merrill'
+  );
+  assert.equal(leadEntry.notification.intent, 'actionable');
+  assert.match(leadEntry.notification.preview, /staged Spotify listen/);
+  assert.equal(
+    entries.some(
+      (entry) => entry.notification.recipient_person_id === 'angie-link'
+    ),
+    false
+  );
+});
+
+test('Spotify staging links are constrained and survive episode normalization', () => {
+  assert.equal(
+    isSafeSpotifyStagingUrl(
+      'https://creators.spotify.com/pod/show/episode/preview'
+    ),
+    true
+  );
+  assert.equal(
+    isSafeSpotifyStagingUrl('https://open.spotify.com/episode/123'),
+    true
+  );
+  assert.equal(
+    isSafeSpotifyStagingUrl('https://spotify.example/episode/123'),
+    false
+  );
+  assert.equal(
+    isSafeSpotifyStagingUrl('javascript:alert(1)'),
+    false
+  );
+
+  const episode = normalizeEpisodeStudio({
+    episode_id: 'episode-one',
+    title: 'Episode One',
+    host_person_ids: ['host-1'],
+    staged_episode_url:
+      'https://creators.spotify.com/pod/show/episode/preview',
+  });
+  assert.equal(
+    episode.staged_episode_url,
+    'https://creators.spotify.com/pod/show/episode/preview'
   );
 });

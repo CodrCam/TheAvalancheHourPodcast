@@ -18,7 +18,8 @@
     "update:dynamo-person-studio-roles": "node scripts/seedDynamoPeople.js",
     "create:dynamo-products": "node scripts/createDynamoProductsTable.js",
     "create:dynamo-mic-kits": "node scripts/createDynamoMicKitsTable.js",
-    "studio:reminders": "node scripts/runStudioReminders.mjs"
+    "studio:reminders": "node scripts/runStudioReminders.mjs",
+    "migrate:studio-notifications": "node scripts/migrateStudioNotifications.mjs"
   },
   "engines": {
     "node": ">=22.13.0"

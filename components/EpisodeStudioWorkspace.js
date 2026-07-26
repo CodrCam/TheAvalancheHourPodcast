@@ -82,6 +82,13 @@ const DELIVERY_HEALTH_FIELDS = [
 const REVIEW_RESPONSE_FIELDS = [
   'status',
   'producer_feedback',
+  'staged_episode_url',
+  'production_stage',
+  'production_lead_person_id',
+  'production_handoff_at',
+  'production_completed_at',
+  'production_advanced_by_person_id',
+  'production_advanced_by_name',
   'reviewed_at',
   'updated_at',
 ];
@@ -245,6 +252,8 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
   const [canReview, setCanReview] = useState(false);
   const [canConfigure, setCanConfigure] = useState(false);
   const [canAdminOverride, setCanAdminOverride] = useState(false);
+  const [canAdvanceProduction, setCanAdvanceProduction] = useState(false);
+  const [productionLeadName, setProductionLeadName] = useState('');
   const [episodeRoles, setEpisodeRoles] = useState([]);
   const [viewerPersonId, setViewerPersonId] = useState('');
   const [availableSponsorReads, setAvailableSponsorReads] = useState([]);
@@ -292,6 +301,8 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
         setCanReview(data.canReview === true);
         setCanConfigure(data.canConfigure === true);
         setCanAdminOverride(data.canAdminOverride === true);
+        setCanAdvanceProduction(data.canAdvanceProduction === true);
+        setProductionLeadName(data.production_lead_name || '');
         setEpisodeRoles(data.episode_roles || []);
         setViewerPersonId(data.viewer_person_id || '');
         setAvailableSponsorReads(data.available_sponsor_reads || []);
@@ -419,6 +430,12 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
       if (typeof data.canUploadAssets === 'boolean') {
         setCanUploadAssets(data.canUploadAssets);
       }
+      if (typeof data.canAdvanceProduction === 'boolean') {
+        setCanAdvanceProduction(data.canAdvanceProduction);
+      }
+      if (typeof data.production_lead_name === 'string') {
+        setProductionLeadName(data.production_lead_name);
+      }
       if (Array.isArray(data.episode_roles)) {
         setEpisodeRoles(data.episode_roles);
       }
@@ -541,12 +558,27 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
         action,
         status,
         producer_feedback: episode.producer_feedback,
+        staged_episode_url: episode.staged_episode_url,
         override_reason: overrideReason,
       },
       status === 'accepted'
         ? 'Episode package accepted.'
         : 'The episode is open for host revisions.',
       { mergeFields: REVIEW_RESPONSE_FIELDS }
+    );
+  }
+
+  async function advanceProduction() {
+    const nextStep =
+      viewerPersonId === 'angie-link'
+        ? 'send this episode to Caleb for the final listen'
+        : 'complete the production review chain';
+    if (!window.confirm(`Confirm you want to ${nextStep}?`)) return;
+    await sendUpdate(
+      { action: 'advance_production' },
+      viewerPersonId === 'angie-link'
+        ? 'Caleb has been notified for the final production listen.'
+        : 'The production review chain is complete.'
     );
   }
 
@@ -1127,7 +1159,10 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
                   styles[`status_${episode.status}`] || ''
                 }`}
               >
-                {STATUS_LABELS[episode.status] || episode.status}
+                {episode.status === 'accepted' &&
+                episode.production_stage === 'lead_review'
+                  ? `Awaiting ${productionLeadName || 'production lead'}`
+                  : STATUS_LABELS[episode.status] || episode.status}
               </span>
             </header>
 
@@ -2628,7 +2663,7 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
             {message ? <p className={styles.successCard}>{message}</p> : null}
 
             {canReview || canAdminOverride ? (
-              <section className={styles.reviewPanel}>
+              <section className={styles.reviewPanel} id="producer-review">
                 <div>
                   <span className={styles.eyebrow}>Producer review</span>
                   <h2>Move the episode forward</h2>
@@ -2646,6 +2681,34 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
                     placeholder="Feedback for the assigned hosts…"
                     aria-label="Producer feedback"
                   />
+                  <label>
+                    <span>Staged Spotify listen</span>
+                    <input
+                      type="url"
+                      value={episode.staged_episode_url || ''}
+                      onChange={(event) =>
+                        updateEpisode({
+                          staged_episode_url: event.target.value,
+                        })
+                      }
+                      placeholder="https://creators.spotify.com/…"
+                      aria-describedby="staged-spotify-help"
+                    />
+                  </label>
+                  <small id="staged-spotify-help">
+                    Optional. This stays inside the secured Episode Studio and
+                    lets the next production lead listen before advancing.
+                  </small>
+                  {episode.staged_episode_url ? (
+                    <a
+                      href={episode.staged_episode_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Listen to the staged episode on Spotify
+                      <OpenInNewRoundedIcon aria-hidden="true" />
+                    </a>
+                  ) : null}
                 </div>
                 <div className={styles.reviewActions}>
                   <button
@@ -2674,6 +2737,49 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
                   >
                     <CheckCircleRoundedIcon aria-hidden="true" />
                     Accept package
+                  </button>
+                </div>
+              </section>
+            ) : null}
+
+            {canAdvanceProduction ? (
+              <section className={styles.reviewPanel} id="production-handoff">
+                <div>
+                  <span className={styles.eyebrow}>
+                    Production lead check
+                  </span>
+                  <h2>Listen, confirm, and pass it forward</h2>
+                  <p>
+                    The producer accepted this package. Check the staged
+                    episode and advance the handoff when it is ready.
+                  </p>
+                  {episode.staged_episode_url ? (
+                    <a
+                      href={episode.staged_episode_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Listen to the staged episode on Spotify
+                      <OpenInNewRoundedIcon aria-hidden="true" />
+                    </a>
+                  ) : (
+                    <p>
+                      No staged Spotify link was attached; confirm the listen
+                      path with the producer before advancing.
+                    </p>
+                  )}
+                </div>
+                <div className={styles.reviewActions}>
+                  <button
+                    type="button"
+                    className={styles.primaryButton}
+                    disabled={saving}
+                    onClick={advanceProduction}
+                  >
+                    <CheckCircleRoundedIcon aria-hidden="true" />
+                    {viewerPersonId === 'angie-link'
+                      ? 'Send to Caleb'
+                      : 'Complete production review'}
                   </button>
                 </div>
               </section>

@@ -275,10 +275,30 @@
   margin-left: 276px;
 }
 
+.topBar {
+  position: sticky;
+  top: 0;
+  z-index: 25;
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 10px 24px;
+  border-bottom: 1px solid rgba(20, 38, 56, 0.09);
+  background: rgba(248, 248, 244, 0.88);
+  backdrop-filter: blur(16px);
+}
+
+.futureMessagingSlot {
+  width: 0;
+  height: 42px;
+}
+
 .mainInner {
   width: min(1180px, calc(100% - 48px));
   margin: 0 auto;
-  padding: 42px 0 70px;
+  padding: 26px 0 70px;
 }
 
 .sessionLoading {
@@ -2034,6 +2054,10 @@
 
   .main {
     margin-left: 0;
+  }
+
+  .topBar {
+    padding-inline: 16px;
   }
 
   .mainInner {

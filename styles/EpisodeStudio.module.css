@@ -1445,6 +1445,7 @@
 .producerGrid select,
 .deliverableBody input,
 .deliverableBody textarea,
+.reviewPanel input,
 .reviewPanel textarea,
 .gapFields input {
   width: 100%;
@@ -1460,6 +1461,7 @@
 .producerGrid input,
 .producerGrid select,
 .deliverableBody input,
+.reviewPanel input,
 .gapFields input {
   min-height: 45px;
   padding: 10px 12px;
@@ -1477,6 +1479,7 @@
 .producerGrid select:focus,
 .deliverableBody input:focus,
 .deliverableBody textarea:focus,
+.reviewPanel input:focus,
 .reviewPanel textarea:focus,
 .gapFields input:focus {
   border-color: #5b8da2;
@@ -1876,6 +1879,36 @@
 .reviewPanel textarea {
   min-height: 100px;
   margin-top: 12px;
+}
+
+.reviewPanel label {
+  display: grid;
+  gap: 7px;
+  margin-top: 14px;
+  color: #36515f;
+  font-size: 0.72rem;
+  font-weight: 760;
+}
+
+.reviewPanel small {
+  display: block;
+  margin-top: 7px;
+  color: var(--episode-muted);
+  line-height: 1.45;
+}
+
+.reviewPanel a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  color: var(--episode-blue-dark);
+  font-size: 0.82rem;
+  font-weight: 780;
+}
+
+.reviewPanel a svg {
+  font-size: 1rem;
 }
 
 .reviewActions,

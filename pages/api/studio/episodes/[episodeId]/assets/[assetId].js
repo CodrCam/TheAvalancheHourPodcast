@@ -15,6 +15,9 @@ import {
   getEpisodeStudio,
   saveEpisodeStudio,
 } from '../../../../../../lib/episodeStudioStore';
+import {
+  publishEpisodeNotifications,
+} from '../../../../../../lib/episodeStudioEvents';
 
 export default async function handler(req, res) {
   if (!['GET', 'DELETE'].includes(req.method)) {
@@ -112,6 +115,24 @@ export default async function handler(req, res) {
         size: asset.size,
         object_version_id: asset.object_version_id,
       });
+      try {
+        await publishEpisodeNotifications({
+          previousEpisode: access.episode,
+          episode: saved.episode,
+          action: 'asset_deleted',
+          actorPersonId: access.binding?.person_id || '',
+          actorName:
+            access.principal.displayName ||
+            access.principal.username ||
+            'Studio participant',
+          event: { asset },
+        });
+      } catch (notificationError) {
+        console.error(
+          'episode asset deletion notification generation failed:',
+          notificationError
+        );
+      }
       return res.status(200).json({
         ok: true,
         episode: sanitizeEpisodeStudioForViewer(saved.episode),

@@ -252,13 +252,6 @@ export default function AdminLayout({
           </span>
         </Link>
 
-        {session?.permissions?.includes('notifications:read') ? (
-          <NotificationBell
-            href="/admin/notifications"
-            className={styles.notificationBell}
-          />
-        ) : null}
-
         <nav className={styles.nav} aria-label="Admin navigation">
           <ul className={styles.navList}>
             {visibleNavSections.flatMap((section) => [
@@ -336,6 +329,16 @@ export default function AdminLayout({
       </aside>
 
       <main className={styles.main}>
+        <header className={styles.topBar} aria-label="Admin utilities">
+          <span
+            className={styles.futureMessagingSlot}
+            data-future-messaging-slot
+            aria-hidden="true"
+          />
+          {session?.permissions?.includes('notifications:read') ? (
+            <NotificationBell href="/admin/notifications" />
+          ) : null}
+        </header>
         <div className={styles.mainInner}>{children}</div>
       </main>
     </div>

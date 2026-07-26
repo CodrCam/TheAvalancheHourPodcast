@@ -393,7 +393,7 @@ test('legacy link-based episode steps migrate to step-owned uploads without losi
     ],
   });
 
-  assert.equal(episode.schema_version, 2);
+  assert.equal(episode.schema_version, 3);
   assert.equal(episode.deliverables[0].label, 'Episode source files');
   assert.equal(episode.deliverables[0].type, 'asset');
   assert.equal(episode.deliverables[0].asset_category, 'other');

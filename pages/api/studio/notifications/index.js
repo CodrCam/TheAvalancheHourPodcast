@@ -6,7 +6,11 @@ import {
   listStudioNotifications,
   markAllStudioNotificationsRead,
   markStudioNotificationRead,
+  markStudioNotificationsSeen,
 } from '../../../../lib/studioNotificationStore';
+import {
+  filterNotificationsForPrincipal,
+} from '../../../../lib/studioNotificationAccess';
 import { getStudioBindingForSubject } from '../../../../lib/studioAccessStore';
 
 export default async function handler(req, res) {
@@ -20,6 +24,7 @@ export default async function handler(req, res) {
       : ADMIN_PERMISSIONS.NOTIFICATIONS_UPDATE;
   const principal = await requirePermissionAsync(req, res, permission);
   if (!principal) return;
+  res.setHeader('Cache-Control', 'no-store, private');
   try {
     const binding = await getStudioBindingForSubject(principal.subject);
     if (!binding?.active || !binding.person_id) {
@@ -33,8 +38,20 @@ export default async function handler(req, res) {
     if (req.method === 'GET') {
       const result = await listStudioNotifications(binding.person_id, {
         limit: req.query.limit,
+        cursor: req.query.cursor,
       });
-      return res.status(200).json({ ok: true, ...result });
+      const visible = await filterNotificationsForPrincipal(
+        result.notifications,
+        {
+          personId: binding.person_id,
+          permissions: principal.permissions,
+        }
+      );
+      return res.status(200).json({
+        ok: true,
+        ...result,
+        ...visible,
+      });
     }
     if (!req.headers['content-type']?.includes('application/json')) {
       return res
@@ -51,7 +68,30 @@ export default async function handler(req, res) {
         req.body?.notification_id,
         req.body?.read !== false
       );
-      return res.status(200).json({ ok: true, notification });
+      const visible = await filterNotificationsForPrincipal(
+        [notification],
+        {
+          personId: binding.person_id,
+          permissions: principal.permissions,
+        }
+      );
+      if (!visible.notifications.length) {
+        return res.status(404).json({
+          ok: false,
+          error: 'Notification not found.',
+        });
+      }
+      return res.status(200).json({
+        ok: true,
+        notification: visible.notifications[0],
+      });
+    }
+    if (req.body?.action === 'mark_seen') {
+      const result = await markStudioNotificationsSeen(
+        binding.person_id,
+        req.body?.notification_ids
+      );
+      return res.status(200).json({ ok: true, ...result });
     }
     return res.status(400).json({
       ok: false,
@@ -59,10 +99,15 @@ export default async function handler(req, res) {
     });
   } catch (error) {
     const notFound = /not found/i.test(String(error.message || ''));
-    return res.status(notFound ? 404 : 500).json({
+    const invalidCursor = /cursor is invalid/i.test(
+      String(error.message || '')
+    );
+    return res.status(notFound ? 404 : invalidCursor ? 400 : 500).json({
       ok: false,
       error: notFound
         ? 'Notification not found.'
+        : invalidCursor
+          ? 'The notification page cursor is invalid.'
         : 'Could not update notifications.',
     });
   }
