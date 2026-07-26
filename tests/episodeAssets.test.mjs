@@ -344,3 +344,20 @@ test('deletes only the recorded episode object version', async (t) => {
     /stored object version is invalid/i
   );
 });
+
+test('treats an already-absent object version as safely deleted', async (t) => {
+  const upload = createTestUpload();
+  const originalFetch = global.fetch;
+  t.after(() => {
+    global.fetch = originalFetch;
+  });
+  global.fetch = async () => ({ ok: false, status: 404 });
+
+  assert.deepEqual(
+    await deleteEpisodeAssetObject(upload.object_key, {
+      episodeId: 'episode-one',
+      versionId: 'version-already-gone',
+    }),
+    { deleted: true, version_id: 'version-already-gone' }
+  );
+});

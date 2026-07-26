@@ -10,6 +10,17 @@
   color: var(--episode-ink);
 }
 
+.previewShell {
+  min-height: 100vh;
+  padding: 46px clamp(18px, 5vw, 72px);
+  background: #eef2f1;
+}
+
+.previewShell > div {
+  width: min(100%, 1220px);
+  margin: 0 auto;
+}
+
 .backLink {
   display: inline-flex;
   align-items: center;
@@ -56,11 +67,11 @@
   margin-bottom: 18px;
   padding: 16px 18px;
   border: 1px solid rgba(67, 139, 104, 0.22);
-  border-radius: 17px;
+  border-radius: 10px;
   background:
     radial-gradient(circle at 100% 0, rgba(143, 196, 166, 0.16), transparent 22rem),
     rgba(247, 251, 249, 0.9);
-  box-shadow: 0 10px 30px rgba(30, 77, 55, 0.05);
+  box-shadow: none;
 }
 
 .healthPanelOffTrack {
@@ -213,13 +224,16 @@
 
 .productionStrip {
   display: grid;
-  grid-template-columns: repeat(3, minmax(130px, 0.7fr)) minmax(210px, 1.2fr);
+  grid-template-columns:
+    repeat(3, minmax(130px, 0.7fr))
+    minmax(210px, 1.2fr)
+    minmax(120px, 0.65fr);
   margin-bottom: 22px;
   overflow: hidden;
   border: 1px solid var(--episode-line);
-  border-radius: 18px;
+  border-radius: 10px;
   background: rgba(255, 255, 255, 0.82);
-  box-shadow: 0 12px 36px rgba(23, 55, 70, 0.06);
+  box-shadow: none;
 }
 
 .stageExplanation {
@@ -236,10 +250,10 @@
   margin-bottom: 18px;
   padding: 17px 18px;
   border: 1px solid rgba(53, 107, 131, 0.18);
-  border-radius: 17px;
+  border-radius: 10px;
   background:
     linear-gradient(110deg, rgba(232, 241, 244, 0.9), rgba(255, 255, 255, 0.86));
-  box-shadow: 0 10px 30px rgba(23, 55, 70, 0.05);
+  box-shadow: none;
 }
 
 .recordingScheduleIcon {
@@ -279,21 +293,23 @@
 }
 
 .sponsorReadsPanel {
-  margin: 24px 0;
-  padding: 24px;
+  margin: 32px 0;
+  padding: 26px;
   border: 1px solid #e2d5c3;
-  border-radius: 18px;
+  border-top: 4px solid #c59d57;
+  border-radius: 10px;
   background: #fffdf8;
-  box-shadow: 0 14px 36px rgba(79, 57, 29, 0.05);
+  box-shadow: none;
 }
 
 .assetPackagePanel {
-  margin: 24px 0;
-  padding: 24px;
+  margin: 32px 0;
+  padding: 26px;
   border: 1px solid #cbdad7;
-  border-radius: 18px;
+  border-top: 4px solid #4f8b7f;
+  border-radius: 10px;
   background: #f9fcfb;
-  box-shadow: 0 14px 36px rgba(31, 95, 86, 0.05);
+  box-shadow: none;
 }
 
 .assetPackagePanel .panelHeading p {
@@ -1289,12 +1305,13 @@
 }
 
 .discussionPanel {
-  margin-bottom: 22px;
-  padding: 20px;
+  margin: 32px 0;
+  padding: 24px;
   border: 1px solid var(--episode-line);
-  border-radius: 18px;
+  border-top: 4px solid #7293a2;
+  border-radius: 10px;
   background: rgba(255, 255, 255, 0.82);
-  box-shadow: 0 12px 36px rgba(23, 55, 70, 0.055);
+  box-shadow: none;
 }
 
 .discussionHeading {
@@ -1440,14 +1457,15 @@
 
 .producerPanel,
 .reviewPanel {
-  margin-bottom: 22px;
-  padding: 22px;
+  margin: 32px 0;
+  padding: 26px;
   border: 1px solid rgba(53, 107, 131, 0.17);
-  border-radius: 19px;
+  border-top: 4px solid #356b83;
+  border-radius: 10px;
   background:
     linear-gradient(rgba(247, 251, 251, 0.94), rgba(247, 251, 251, 0.94)),
     radial-gradient(circle at 100% 0, #cfe4ea, transparent 24rem);
-  box-shadow: 0 15px 42px rgba(25, 52, 65, 0.07);
+  box-shadow: none;
 }
 
 .panelHeading,
@@ -1584,8 +1602,17 @@
   background: var(--episode-ice);
 }
 
+.hostProductionSection {
+  margin: 32px 0;
+  padding: 26px;
+  border: 1px solid rgba(20, 38, 56, 0.14);
+  border-top: 4px solid #173e52;
+  border-radius: 10px;
+  background: #f6f8f8;
+}
+
 .formIntro {
-  margin: 34px 0 16px;
+  margin: 0 0 20px;
 }
 
 .formIntro p {
@@ -1596,16 +1623,26 @@
   line-height: 1.55;
 }
 
+.hostLockNotice {
+  margin: 0 0 20px;
+  padding: 12px 14px;
+  color: #69511f;
+  font-size: 0.76rem;
+  line-height: 1.5;
+  border-left: 4px solid #c89a3d;
+  background: #fff9e9;
+}
+
 .handoffPanel {
-  margin-bottom: 16px;
+  margin-bottom: 20px;
   padding: 24px;
   overflow: hidden;
   border: 1px solid rgba(53, 107, 131, 0.21);
-  border-radius: 20px;
+  border-radius: 8px;
   background:
     radial-gradient(circle at 100% 0, rgba(214, 183, 124, 0.2), transparent 25rem),
     linear-gradient(145deg, rgba(246, 250, 250, 0.98), rgba(236, 244, 246, 0.96));
-  box-shadow: 0 16px 46px rgba(24, 54, 68, 0.08);
+  box-shadow: none;
 }
 
 .handoffPanelComplete {
@@ -1772,15 +1809,15 @@
   grid-template-columns: 58px minmax(0, 1fr);
   overflow: hidden;
   border: 1px solid var(--episode-line);
-  border-radius: 18px;
+  border-radius: 8px;
   background: rgba(255, 255, 255, 0.88);
-  box-shadow: 0 10px 32px rgba(25, 48, 60, 0.055);
+  box-shadow: none;
   transition: border-color 170ms ease, box-shadow 170ms ease;
 }
 
 .deliverableComplete {
   border-color: rgba(67, 139, 104, 0.25);
-  box-shadow: 0 10px 32px rgba(45, 104, 75, 0.06);
+  box-shadow: inset 4px 0 0 rgba(67, 139, 104, 0.72);
 }
 
 .deliverableNumber {
@@ -1920,10 +1957,9 @@
 
 .reviewPanel {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) minmax(360px, 0.72fr);
   gap: 18px;
   align-items: end;
-  margin-top: 22px;
 }
 
 .reviewPanel textarea {
@@ -1961,29 +1997,241 @@
   font-size: 1rem;
 }
 
-.reviewActions,
-.actionDock > div:last-child {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  justify-content: flex-end;
+.reviewActions {
+  display: grid;
+  width: 100%;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
 }
 
-.actionDock {
-  position: sticky;
-  bottom: 14px;
-  z-index: 10;
+.actionControl {
+  display: grid;
+  min-width: 0;
+  gap: 7px;
+  align-content: start;
+}
+
+.actionControl > button {
+  width: 100%;
+}
+
+.actionBlocker {
+  display: block;
+  margin: 0;
+  padding-left: 9px;
+  color: #775421 !important;
+  font-size: 0.65rem !important;
+  font-weight: 720;
+  line-height: 1.45;
+  border-left: 3px solid #d3a652;
+}
+
+.dangerZone {
+  margin-top: 28px;
+  border: 1px solid rgba(166, 66, 51, 0.2);
+  border-radius: 15px;
+  background: rgba(255, 248, 246, 0.72);
+}
+
+.dangerZone summary {
+  padding: 13px 16px;
+  color: #914739;
+  font-size: 0.72rem;
+  font-weight: 820;
+  cursor: pointer;
+}
+
+.dangerZone > div {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  margin-top: 22px;
-  padding: 14px 16px;
+  gap: 20px;
+  padding: 0 16px 16px;
+}
+
+.dangerZone strong {
+  color: #6f3027;
+  font-size: 0.82rem;
+}
+
+.dangerZone p {
+  max-width: 760px;
+  margin: 5px 0 0;
+  color: #7b625e;
+  font-size: 0.72rem;
+  line-height: 1.5;
+}
+
+.dangerButton {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 9px 13px;
+  color: #fff;
+  font: inherit;
+  font-size: 0.73rem;
+  font-weight: 800;
+  white-space: nowrap;
+  border: 1px solid #963f33;
+  border-radius: 11px;
+  background: #a8493b;
+  cursor: pointer;
+}
+
+.dangerButton:hover {
+  background: #923b30;
+}
+
+.dangerButton:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.dangerButton svg {
+  width: 18px;
+  height: 18px;
+}
+
+.dialogBackdrop {
+  position: fixed;
+  z-index: 1400;
+  inset: 0;
+  display: grid;
+  overflow-y: auto;
+  place-items: center;
+  padding: 24px;
+  background: rgba(8, 22, 29, 0.7);
+  backdrop-filter: blur(7px);
+}
+
+.deleteDialog {
+  display: grid;
+  width: min(100%, 590px);
+  gap: 18px;
+  padding: clamp(24px, 4vw, 36px);
+  border: 1px solid rgba(166, 66, 51, 0.24);
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 30px 90px rgba(5, 19, 26, 0.32);
+}
+
+.deleteDialogIcon {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  place-items: center;
+  color: #a8493b;
+  border-radius: 999px;
+  background: #fce9e5;
+}
+
+.deleteDialogIcon svg {
+  width: 25px;
+  height: 25px;
+}
+
+.deleteDialog h2 {
+  margin: 5px 0 8px;
+  color: #5f2821;
+  font-size: 1.65rem;
+  letter-spacing: -0.04em;
+}
+
+.deleteDialog p {
+  margin: 0;
+  color: #6f6562;
+  font-size: 0.8rem;
+  line-height: 1.6;
+}
+
+.deleteSummary {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px 14px;
+  padding: 14px;
+  border-radius: 12px;
+  background: #faf5f3;
+}
+
+.deleteSummary span {
+  color: #8a716b;
+  font-size: 0.68rem;
+}
+
+.deleteSummary strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: #543631;
+  font-size: 0.72rem;
+}
+
+.deleteConfirmationField {
+  display: grid;
+  gap: 7px;
+  color: #594a47;
+  font-size: 0.72rem;
+  font-weight: 760;
+}
+
+.deleteConfirmationField strong {
+  color: #8d4035;
+  overflow-wrap: anywhere;
+}
+
+.deleteConfirmationField input {
+  min-height: 44px;
+  padding: 10px 12px;
+  color: var(--episode-ink);
+  font: inherit;
+  border: 1px solid rgba(166, 66, 51, 0.3);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.deleteAssetConfirmation {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  color: #6a524e;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.deleteAssetConfirmation input {
+  width: 17px;
+  height: 17px;
+  margin: 2px 0 0;
+  flex: 0 0 17px;
+  accent-color: #a8493b;
+}
+
+.deleteDialogActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 9px;
+}
+
+.actionDock {
+  position: static;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-top: 32px;
+  padding: 22px;
   border: 1px solid rgba(20, 38, 56, 0.14);
-  border-radius: 16px;
-  background: rgba(249, 250, 247, 0.95);
-  box-shadow: 0 18px 55px rgba(21, 45, 58, 0.17);
-  backdrop-filter: blur(18px);
+  border-top: 4px solid #173e52;
+  border-radius: 10px;
+  background: #f9faf8;
+  box-shadow: none;
+}
+
+.actionDockCopy {
+  min-width: min(100%, 240px);
 }
 
 .actionDock strong,
@@ -1999,6 +2247,19 @@
   margin-top: 3px;
   color: var(--episode-muted);
   font-size: 0.7rem;
+}
+
+.actionDockActions {
+  display: flex;
+  flex: 1 1 680px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.actionDockActions .actionControl {
+  flex: 1 1 185px;
+  max-width: 250px;
 }
 
 .primaryButton,
@@ -2573,7 +2834,8 @@
   }
 
   .reviewActions {
-    justify-content: flex-start;
+    justify-self: start;
+    max-width: 640px;
   }
 }
 
@@ -2605,6 +2867,29 @@
 
   .actionDock {
     position: static;
+  }
+
+  .dangerZone > div {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .dialogBackdrop {
+    align-items: start;
+    padding: 14px;
+  }
+
+  .deleteDialog {
+    margin: 18px 0;
+    padding: 22px 18px;
+  }
+
+  .deleteDialogActions {
+    justify-content: stretch;
+  }
+
+  .deleteDialogActions button {
+    flex: 1 1 190px;
   }
 
   .workspaceHeader h1 {
@@ -2656,15 +2941,14 @@
     gap: 8px;
   }
 
-  .actionDock > div:last-child {
+  .actionDockActions {
     width: 100%;
+    flex: 0 0 auto;
     justify-content: flex-start;
   }
 
-  .primaryButton,
-  .secondaryButton,
-  .gapSubmitButton {
-    flex: 1 1 145px;
+  .actionDockActions .actionControl {
+    max-width: none;
   }
 
   .pageHeader > .primaryButton {
@@ -2731,6 +3015,14 @@
 }
 
 @media (max-width: 430px) {
+  .hostProductionSection {
+    padding: 18px 14px;
+  }
+
+  .reviewActions {
+    grid-template-columns: 1fr;
+  }
+
   .recordingSchedule {
     grid-template-columns: auto minmax(0, 1fr);
   }

@@ -16,6 +16,7 @@ import {
 } from '../../../../lib/episodeStudioPresentation.mjs';
 import {
   getEpisodeStudio,
+  deleteEpisodeStudio,
   saveEpisodeStudio,
 } from '../../../../lib/episodeStudioStore';
 import { sendEpisodeSubmissionNotification } from '../../../../lib/episodeStudioNotifications';
@@ -38,7 +39,14 @@ import {
   listSponsorReads,
 } from '../../../../lib/sponsorReadStore';
 import { publishEpisodeNotifications } from '../../../../lib/episodeStudioEvents';
-import { isEpisodeAssetStorageConfigured } from '../../../../lib/episodeAssetStorage';
+import {
+  deleteEpisodeAssetObject,
+  isEpisodeAssetStorageConfigured,
+} from '../../../../lib/episodeAssetStorage';
+import {
+  EpisodeStudioAssetCleanupError,
+  deleteEpisodeStudioWithAssets,
+} from '../../../../lib/episodeStudioDeletion.mjs';
 import {
   buildProductionAdvance,
   getAvailableProductionLeadPersonIds,
@@ -210,15 +218,17 @@ async function sponsorReadResponseData(episode, canManage) {
 }
 
 export default async function handler(req, res) {
-  if (!['GET', 'PATCH'].includes(req.method)) {
-    res.setHeader('Allow', 'GET,PATCH');
+  if (!['GET', 'PATCH', 'DELETE'].includes(req.method)) {
+    res.setHeader('Allow', 'GET,PATCH,DELETE');
     return res.status(405).json({ ok: false, error: 'Method not allowed' });
   }
 
   const permission =
     req.method === 'GET'
       ? ADMIN_PERMISSIONS.EPISODES_READ
-      : ADMIN_PERMISSIONS.EPISODES_UPDATE;
+      : req.method === 'DELETE'
+        ? ADMIN_PERMISSIONS.EPISODES_MANAGE
+        : ADMIN_PERMISSIONS.EPISODES_UPDATE;
   const principal = await requirePermissionAsync(req, res, permission);
   if (!principal) return;
 
@@ -262,6 +272,103 @@ export default async function handler(req, res) {
         ok: false,
         error: 'This Episode Studio is not assigned to your account.',
       });
+    }
+
+    if (req.method === 'DELETE') {
+      if (!canManage) {
+        return res.status(403).json({
+          ok: false,
+          error: 'Only a Studio manager can delete an Episode Studio.',
+        });
+      }
+      if (!req.headers['content-type']?.includes('application/json')) {
+        return res.status(400).json({
+          ok: false,
+          error: 'Content-Type must be application/json',
+        });
+      }
+
+      const expectedUpdatedAt = String(
+        req.body?.expected_updated_at || ''
+      ).trim();
+      const confirmationTitle = String(
+        req.body?.confirmation_title || ''
+      ).trim();
+      if (
+        !expectedUpdatedAt ||
+        expectedUpdatedAt !== result.episode.updated_at
+      ) {
+        return res.status(409).json({
+          ok: false,
+          error:
+            'This Episode Studio changed in another session. Refresh before deleting it.',
+        });
+      }
+      if (
+        confirmationTitle !== result.episode.title ||
+        req.body?.delete_assets !== true
+      ) {
+        return res.status(400).json({
+          ok: false,
+          error:
+            'Type the exact Episode Studio title and confirm permanent file deletion.',
+        });
+      }
+
+      try {
+        const deletion = await deleteEpisodeStudioWithAssets(
+          result.episode,
+          {
+            deleteAsset: (asset) =>
+              deleteEpisodeAssetObject(asset.object_key, {
+                episodeId,
+                versionId: asset.object_version_id,
+              }),
+            deleteRecord: () =>
+              deleteEpisodeStudio(episodeId, {
+                expectedUpdatedAt,
+              }),
+          }
+        );
+
+        logAdminAction(req, principal, 'episode_studio.delete', {
+          episode_id: episodeId,
+          title: result.episode.title,
+          deleted_asset_count: deletion.deleted_asset_count,
+          deleted_asset_bytes: deletion.deleted_asset_bytes,
+        });
+
+        return res.status(200).json({
+          ok: true,
+          ...deletion,
+        });
+      } catch (deleteError) {
+        if (deleteError instanceof EpisodeStudioAssetCleanupError) {
+          console.error('episode studio asset cleanup incomplete:', {
+            episode_id: episodeId,
+            deleted_asset_count: deleteError.deletedAssets.length,
+            failed_asset_count: deleteError.failedAssets.length,
+          });
+          return res.status(502).json({
+            ok: false,
+            code: deleteError.code,
+            deleted_asset_count: deleteError.deletedAssets.length,
+            remaining_asset_count: deleteError.failedAssets.length,
+            error:
+              'Some stored files could not be removed, so the Episode Studio was kept. Retry deletion to finish the cleanup safely.',
+          });
+        }
+
+        const conflict = /conditional/i.test(
+          String(deleteError?.message || '')
+        );
+        return res.status(conflict ? 409 : 500).json({
+          ok: false,
+          error: conflict
+            ? 'The stored files were cleaned up, but this Episode Studio changed before its record could be deleted. Refresh and retry to finish.'
+            : 'The Episode Studio could not be deleted. Its record was kept.',
+        });
+      }
     }
 
     const directory = await getPeopleDirectory();
@@ -310,6 +417,7 @@ export default async function handler(req, res) {
         canConfigure,
         canAdminOverride,
         canAdvanceProduction,
+        production_handoff_available: productionLeadPersonIds.length > 0,
         production_lead_name:
           peopleById.get(result.episode.production_lead_person_id)?.name ||
           '',
@@ -911,6 +1019,7 @@ export default async function handler(req, res) {
       canConfigure: responseRelationship.canConfigure,
       canAdminOverride: responseRelationship.canAdminOverride,
       canAdvanceProduction: responseCanAdvanceProduction,
+      production_handoff_available: productionLeadPersonIds.length > 0,
       production_lead_name:
         peopleById.get(saved.episode.production_lead_person_id)?.name ||
         '',

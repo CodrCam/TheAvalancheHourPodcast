@@ -22,6 +22,7 @@ import {
   EpisodeRecordingFields,
   EpisodeRecordingSummary,
 } from './EpisodeRecordingSchedule';
+import EpisodeStudioDeletionControl from './EpisodeStudioDeletionControl';
 import {
   areProducerDirectionsComplete,
   EPISODE_ASSET_RETENTION_DAYS,
@@ -31,6 +32,7 @@ import {
   mergeEpisodeStudioServerFields,
   PRODUCER_DIRECTIONS_MIN_LENGTH,
 } from '../lib/episodeStudioPresentation.mjs';
+import { getEpisodeStudioActionBlockers } from '../lib/episodeStudioActionReadiness.mjs';
 import {
   canDeleteEpisodeAsset,
   EPISODE_ASSET_MAX_BYTES,
@@ -248,42 +250,87 @@ function readableUploadError(error) {
     .trim();
 }
 
-export default function EpisodeStudioWorkspace({ admin = false }) {
+function EpisodeStudioPreviewLayout({ children }) {
+  return (
+    <main className={styles.previewShell}>
+      <div>{children}</div>
+    </main>
+  );
+}
+
+export default function EpisodeStudioWorkspace({
+  admin = false,
+  previewData = null,
+}) {
   const router = useRouter();
   const episodeId = String(router.query.episodeId || '');
-  const [episode, setEpisode] = useState(null);
-  const [hostNames, setHostNames] = useState([]);
-  const [people, setPeople] = useState([]);
-  const [producers, setProducers] = useState([]);
-  const [canManage, setCanManage] = useState(false);
-  const [canHost, setCanHost] = useState(false);
-  const [canReview, setCanReview] = useState(false);
-  const [canConfigure, setCanConfigure] = useState(false);
-  const [canAdminOverride, setCanAdminOverride] = useState(false);
-  const [canAdvanceProduction, setCanAdvanceProduction] = useState(false);
-  const [productionLeadName, setProductionLeadName] = useState('');
-  const [episodeRoles, setEpisodeRoles] = useState([]);
-  const [viewerPersonId, setViewerPersonId] = useState('');
-  const [availableSponsorReads, setAvailableSponsorReads] = useState([]);
+  const [episode, setEpisode] = useState(() => previewData?.episode || null);
+  const [hostNames, setHostNames] = useState(
+    () => previewData?.host_names || []
+  );
+  const [people, setPeople] = useState(() => previewData?.people || []);
+  const [producers, setProducers] = useState(
+    () => previewData?.producers || []
+  );
+  const [canManage, setCanManage] = useState(
+    () => previewData?.canManage === true
+  );
+  const [canHost, setCanHost] = useState(
+    () => previewData?.canHost === true
+  );
+  const [canReview, setCanReview] = useState(
+    () => previewData?.canReview === true
+  );
+  const [canConfigure, setCanConfigure] = useState(
+    () => previewData?.canConfigure === true
+  );
+  const [canAdminOverride, setCanAdminOverride] = useState(
+    () => previewData?.canAdminOverride === true
+  );
+  const [canAdvanceProduction, setCanAdvanceProduction] = useState(
+    () => previewData?.canAdvanceProduction === true
+  );
+  const [productionHandoffAvailable, setProductionHandoffAvailable] =
+    useState(() => previewData?.production_handoff_available !== false);
+  const [productionLeadName, setProductionLeadName] = useState(
+    () => previewData?.production_lead_name || ''
+  );
+  const [episodeRoles, setEpisodeRoles] = useState(
+    () => previewData?.episode_roles || []
+  );
+  const [viewerPersonId, setViewerPersonId] = useState(
+    () => previewData?.viewer_person_id || ''
+  );
+  const [availableSponsorReads, setAvailableSponsorReads] = useState(
+    () => previewData?.available_sponsor_reads || []
+  );
   const [selectedSponsorReadId, setSelectedSponsorReadId] = useState('');
   const [sponsorRequiresAudio, setSponsorRequiresAudio] = useState(true);
   const [sponsorRecordingMode, setSponsorRecordingMode] = useState(
     'separate_upload'
   );
-  const [assetUploadsConfigured, setAssetUploadsConfigured] = useState(false);
-  const [canUploadAssets, setCanUploadAssets] = useState(false);
+  const [assetUploadsConfigured, setAssetUploadsConfigured] = useState(
+    () => previewData?.asset_uploads_configured === true
+  );
+  const [canUploadAssets, setCanUploadAssets] = useState(
+    () => previewData?.canUploadAssets === true
+  );
   const [uploadingAsset, setUploadingAsset] = useState('');
   const [uploadingDeliverableId, setUploadingDeliverableId] = useState('');
   const [deletingAssetId, setDeletingAssetId] = useState('');
+  const [deletingStudio, setDeletingStudio] = useState(false);
   const [assetUploadFeedback, setAssetUploadFeedback] = useState({});
-  const [baseline, setBaseline] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [baseline, setBaseline] = useState(() =>
+    previewData?.episode ? JSON.stringify(previewData.episode) : ''
+  );
+  const [loading, setLoading] = useState(() => !previewData);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [messageDraft, setMessageDraft] = useState('');
 
   useEffect(() => {
+    if (previewData) return undefined;
     if (!router.isReady || !episodeId) return;
     let alive = true;
 
@@ -310,6 +357,9 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
         setCanConfigure(data.canConfigure === true);
         setCanAdminOverride(data.canAdminOverride === true);
         setCanAdvanceProduction(data.canAdvanceProduction === true);
+        setProductionHandoffAvailable(
+          data.production_handoff_available !== false
+        );
         setProductionLeadName(data.production_lead_name || '');
         setEpisodeRoles(data.episode_roles || []);
         setViewerPersonId(data.viewer_person_id || '');
@@ -328,7 +378,7 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
     return () => {
       alive = false;
     };
-  }, [episodeId, router.isReady]);
+  }, [episodeId, previewData, router.isReady]);
 
   const completion = useMemo(
     () => getEpisodeCompletion(episode || {}),
@@ -350,12 +400,32 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
     canUploadAssets &&
     episode?.status !== 'accepted' &&
     (canReview || !LOCKED_HOST_STATUSES.includes(episode?.status));
-  const Layout = admin ? AdminLayout : StudioLayout;
+  const Layout = previewData
+    ? EpisodeStudioPreviewLayout
+    : admin
+      ? AdminLayout
+      : StudioLayout;
   const listHref = admin
     ? '/admin/studios'
     : canManage
       ? '/studio/manage/episodes'
       : '/studio/episodes';
+
+  const actionBlockers = getEpisodeStudioActionBlockers({
+    episode,
+    completion,
+    dirty,
+    saving,
+    uploading: Boolean(uploadingAsset),
+    productionHandoffAvailable,
+  });
+  const hostEditBlocker = !canHost
+    ? 'Host production fields are read-only because you are not assigned to this episode as a host.'
+    : episode?.status === 'accepted'
+      ? 'The producer accepted this package, so host production fields are locked.'
+      : LOCKED_HOST_STATUSES.includes(episode?.status)
+        ? 'The package is with the producer. A producer must request changes before hosts can edit it again.'
+        : '';
 
   function replaceEpisode(nextEpisode) {
     setEpisode(nextEpisode);
@@ -463,6 +533,9 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
       }
       if (typeof data.canAdvanceProduction === 'boolean') {
         setCanAdvanceProduction(data.canAdvanceProduction);
+      }
+      if (typeof data.production_handoff_available === 'boolean') {
+        setProductionHandoffAvailable(data.production_handoff_available);
       }
       if (typeof data.production_lead_name === 'string') {
         setProductionLeadName(data.production_lead_name);
@@ -1159,6 +1232,45 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
     }
   }
 
+  async function deleteStudio({ confirmationTitle } = {}) {
+    if (!episode || confirmationTitle !== episode.title || deletingStudio) return;
+
+    setDeletingStudio(true);
+    setError('');
+    setMessage('');
+    try {
+      const response = await fetch(
+        `/api/studio/episodes/${encodeURIComponent(episodeId)}`,
+        {
+          method: 'DELETE',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            expected_updated_at: episode.updated_at,
+            confirmation_title: confirmationTitle,
+            delete_assets: true,
+          }),
+        }
+      );
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(
+          data.error || 'Could not permanently delete this Episode Studio.'
+        );
+      }
+
+      setBaseline(JSON.stringify(episode));
+      await router.replace(listHref);
+    } catch (deleteError) {
+      setError(
+        deleteError.message ||
+          'Could not permanently delete this Episode Studio.'
+      );
+    } finally {
+      setDeletingStudio(false);
+    }
+  }
+
   return (
     <Layout
       hasUnsavedChanges={dirty || Boolean(messageDraft.trim())}
@@ -1238,7 +1350,8 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
                 className={`${styles.healthSwitch} ${
                   offTrack ? styles.healthSwitchActive : ''
                 }`}
-                disabled={saving || healthLocked}
+                disabled={Boolean(actionBlockers.deliveryHealth)}
+                title={actionBlockers.deliveryHealth || undefined}
                 onClick={() =>
                   setDeliveryHealth(offTrack ? 'on_track' : 'off_track')
                 }
@@ -1368,6 +1481,13 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
                     type="button"
                     className={styles.secondaryButton}
                     disabled={saving || !selectedSponsorReadId}
+                    title={
+                      saving
+                        ? 'Wait for the current Studio update to finish.'
+                        : !selectedSponsorReadId
+                          ? 'Choose an approved sponsor read first.'
+                          : undefined
+                    }
                     onClick={assignSponsorRead}
                   >
                     <CampaignRoundedIcon aria-hidden="true" />
@@ -1475,6 +1595,13 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
                             <select
                               value={assignment.audio_asset_id || ''}
                               disabled={lockedForHost || saving}
+                              title={
+                                lockedForHost
+                                  ? hostEditBlocker
+                                  : saving
+                                    ? 'Wait for the current Studio update to finish.'
+                                    : undefined
+                              }
                               aria-label={`${assignment.sponsor_name} recording evidence`}
                               onChange={(event) => {
                                 const audioAssetId = event.target.value;
@@ -1520,6 +1647,13 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
                               type="url"
                               value={assignment.audio_url}
                               disabled={lockedForHost || saving}
+                              title={
+                                lockedForHost
+                                  ? hostEditBlocker
+                                  : saving
+                                    ? 'Wait for the current Studio update to finish.'
+                                    : undefined
+                              }
                               onChange={(event) => {
                                 const audioUrl = event.target.value;
                                 setEpisode((current) => ({
@@ -1550,6 +1684,14 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
                                   saving ||
                                   (!assignment.audio_asset_id &&
                                     !assignment.audio_url.trim())
+                                }
+                                title={
+                                  saving
+                                    ? 'Wait for the current Studio update to finish.'
+                                    : !assignment.audio_asset_id &&
+                                        !assignment.audio_url.trim()
+                                      ? 'Choose uploaded audio evidence or add the legacy audio link first.'
+                                      : undefined
                                 }
                                 onClick={() =>
                                   updateSponsorAssignment(assignment, {
@@ -1644,6 +1786,13 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
                     type="submit"
                     className={styles.secondaryButton}
                     disabled={saving || messageDraft.trim().length < 2}
+                    title={
+                      saving
+                        ? 'Wait for the current Studio update to finish.'
+                        : messageDraft.trim().length < 2
+                          ? 'Write a short update first.'
+                          : undefined
+                    }
                   >
                     <ForumRoundedIcon aria-hidden="true" />
                     Post update
@@ -1784,10 +1933,14 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
               </section>
             ) : null}
 
+            <section
+              className={styles.hostProductionSection}
+              aria-labelledby="host-production-heading"
+            >
             <section className={styles.formIntro}>
               <div>
                 <span className={styles.eyebrow}>Host production form</span>
-                <h2>Assemble the episode</h2>
+                <h2 id="host-production-heading">Assemble the episode</h2>
                 <p>
                   Link the actual material, then remove the guesswork. Use
                   exact filenames and tell the producer what each asset is,
@@ -1810,7 +1963,8 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
                     <button
                       type="button"
                       className={styles.primaryButton}
-                      disabled={saving || !dirty}
+                      disabled={Boolean(actionBlockers.save)}
+                      title={actionBlockers.save || undefined}
                       onClick={saveChecklistConfiguration}
                     >
                       <SaveRoundedIcon aria-hidden="true" />
@@ -1820,6 +1974,12 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
                 ) : null}
               </div>
             </section>
+            {hostEditBlocker ? (
+              <p className={styles.hostLockNotice}>
+                <strong>Why these fields are read-only:</strong>{' '}
+                {hostEditBlocker}
+              </p>
+            ) : null}
 
             <section
               className={`${styles.handoffPanel} ${
@@ -1875,6 +2035,7 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
                 <textarea
                   value={episode.producer_directions || ''}
                   disabled={lockedForHost}
+                  title={lockedForHost ? hostEditBlocker : undefined}
                   onChange={(event) =>
                     updateEpisode({
                       producer_directions: event.target.value,
@@ -2051,6 +2212,7 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
                             type="url"
                             value={deliverable.value}
                             disabled={lockedForHost}
+                            title={lockedForHost ? hostEditBlocker : undefined}
                             onChange={(event) =>
                               updateDeliverable(deliverable.id, {
                                 value: event.target.value,
@@ -2074,6 +2236,7 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
                         <textarea
                           value={deliverable.value}
                           disabled={lockedForHost}
+                          title={lockedForHost ? hostEditBlocker : undefined}
                           onChange={(event) =>
                             updateDeliverable(deliverable.id, {
                               value: event.target.value,
@@ -2090,6 +2253,7 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
                           <textarea
                             value={deliverable.social_profiles || ''}
                             disabled={lockedForHost}
+                            title={lockedForHost ? hostEditBlocker : undefined}
                             onChange={(event) =>
                               updateDeliverable(deliverable.id, {
                                 social_profiles: event.target.value,
@@ -2504,6 +2668,7 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
                 );
               })}
             </div>
+            </section>
 
             <section id="final-assets" className={styles.assetPackagePanel}>
               <div className={styles.panelHeading}>
@@ -2751,33 +2916,55 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
                   ) : null}
                 </div>
                 <div className={styles.reviewActions}>
-                  <button
-                    type="button"
-                    className={styles.secondaryButton}
-                    disabled={
-                      saving ||
-                      Boolean(uploadingAsset) ||
-                      !episode.producer_feedback.trim()
-                    }
-                    onClick={() => reviewEpisode('needs_changes')}
-                  >
-                    Request changes
-                  </button>
-                  <button
-                    type="button"
-                    className={styles.primaryButton}
-                    disabled={
-                      saving ||
-                      Boolean(uploadingAsset) ||
-                      !['submitted', 'submitted_with_gaps'].includes(
-                        episode.status
-                      )
-                    }
-                    onClick={() => reviewEpisode('accepted')}
-                  >
-                    <CheckCircleRoundedIcon aria-hidden="true" />
-                    Accept package
-                  </button>
+                  <div className={styles.actionControl}>
+                    <button
+                      type="button"
+                      className={styles.secondaryButton}
+                      disabled={Boolean(actionBlockers.requestChanges)}
+                      title={actionBlockers.requestChanges || undefined}
+                      aria-describedby={
+                        actionBlockers.requestChanges
+                          ? 'request-changes-blocker'
+                          : undefined
+                      }
+                      onClick={() => reviewEpisode('needs_changes')}
+                    >
+                      Request changes
+                    </button>
+                    {actionBlockers.requestChanges ? (
+                      <small
+                        className={styles.actionBlocker}
+                        id="request-changes-blocker"
+                      >
+                        Why unavailable: {actionBlockers.requestChanges}
+                      </small>
+                    ) : null}
+                  </div>
+                  <div className={styles.actionControl}>
+                    <button
+                      type="button"
+                      className={styles.primaryButton}
+                      disabled={Boolean(actionBlockers.accept)}
+                      title={actionBlockers.accept || undefined}
+                      aria-describedby={
+                        actionBlockers.accept
+                          ? 'accept-package-blocker'
+                          : undefined
+                      }
+                      onClick={() => reviewEpisode('accepted')}
+                    >
+                      <CheckCircleRoundedIcon aria-hidden="true" />
+                      Accept package
+                    </button>
+                    {actionBlockers.accept ? (
+                      <small
+                        className={styles.actionBlocker}
+                        id="accept-package-blocker"
+                      >
+                        Why unavailable: {actionBlockers.accept}
+                      </small>
+                    ) : null}
+                  </div>
                 </div>
               </section>
             ) : null}
@@ -2813,7 +3000,8 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
                   <button
                     type="button"
                     className={styles.primaryButton}
-                    disabled={saving}
+                    disabled={Boolean(actionBlockers.advanceProduction)}
+                    title={actionBlockers.advanceProduction || undefined}
                     onClick={advanceProduction}
                   >
                     <CheckCircleRoundedIcon aria-hidden="true" />
@@ -2825,13 +3013,25 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
               </section>
             ) : null}
 
+            {canManage ? (
+              <EpisodeStudioDeletionControl
+                episode={episode}
+                saving={saving}
+                uploading={Boolean(uploadingAsset)}
+                deleting={deletingStudio}
+                onDelete={deleteStudio}
+              />
+            ) : null}
+
             <section className={styles.actionDock}>
-              <div>
+              <div className={styles.actionDockCopy}>
                 <strong>
                   {dirty
                     ? 'You have unpublished episode material'
-                    : lockedForHost
-                      ? 'This package is with the producer'
+                    : canHost && lockedForHost
+                      ? episode.status === 'accepted'
+                        ? 'The producer accepted this package'
+                        : 'This package is with the producer'
                       : 'Everything here is saved'}
                 </strong>
                 <span>
@@ -2840,50 +3040,78 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
                     : `${completion.missing.length} required items are still missing.`}
                 </span>
               </div>
-              <div>
+              <div className={styles.actionDockActions}>
                 {canManage || !lockedForHost ? (
-                  <button
-                    type="button"
-                    className={styles.secondaryButton}
-                    disabled={saving || Boolean(uploadingAsset) || !dirty}
-                    onClick={saveDraft}
-                  >
-                    <SaveRoundedIcon aria-hidden="true" />
-                    {canManage ? 'Save Studio' : 'Save draft'}
-                  </button>
+                  <div className={styles.actionControl}>
+                    <button
+                      type="button"
+                      className={styles.secondaryButton}
+                      disabled={Boolean(actionBlockers.save)}
+                      title={actionBlockers.save || undefined}
+                      onClick={saveDraft}
+                    >
+                      <SaveRoundedIcon aria-hidden="true" />
+                      {canManage ? 'Save Studio' : 'Save draft'}
+                    </button>
+                  </div>
                 ) : null}
                 {canHost && !lockedForHost ? (
                   <>
-                    <button
-                      type="button"
-                      className={styles.gapSubmitButton}
-                      disabled={
-                        saving ||
-                        Boolean(uploadingAsset) ||
-                        !completion.can_submit_with_gaps
-                      }
-                      onClick={() => submitEpisode('with_gaps')}
-                    >
-                      <WarningAmberRoundedIcon aria-hidden="true" />
-                      Send with known gaps
-                    </button>
-                    <button
-                      type="button"
-                      className={styles.primaryButton}
-                      disabled={
-                        saving ||
-                        Boolean(uploadingAsset) ||
-                        !completion.can_submit
-                      }
-                      onClick={() => submitEpisode('complete')}
-                    >
-                      <SendRoundedIcon aria-hidden="true" />
-                      Send to producer
-                    </button>
+                    <div className={styles.actionControl}>
+                      <button
+                        type="button"
+                        className={styles.gapSubmitButton}
+                        disabled={Boolean(actionBlockers.submitWithGaps)}
+                        title={actionBlockers.submitWithGaps || undefined}
+                        aria-describedby={
+                          actionBlockers.submitWithGaps
+                            ? 'submit-gaps-blocker'
+                            : undefined
+                        }
+                        onClick={() => submitEpisode('with_gaps')}
+                      >
+                        <WarningAmberRoundedIcon aria-hidden="true" />
+                        Send with known gaps
+                      </button>
+                      {actionBlockers.submitWithGaps ? (
+                        <small
+                          className={styles.actionBlocker}
+                          id="submit-gaps-blocker"
+                        >
+                          Why unavailable: {actionBlockers.submitWithGaps}
+                        </small>
+                      ) : null}
+                    </div>
+                    <div className={styles.actionControl}>
+                      <button
+                        type="button"
+                        className={styles.primaryButton}
+                        disabled={Boolean(actionBlockers.submit)}
+                        title={actionBlockers.submit || undefined}
+                        aria-describedby={
+                          actionBlockers.submit
+                            ? 'submit-package-blocker'
+                            : undefined
+                        }
+                        onClick={() => submitEpisode('complete')}
+                      >
+                        <SendRoundedIcon aria-hidden="true" />
+                        Send to producer
+                      </button>
+                      {actionBlockers.submit ? (
+                        <small
+                          className={styles.actionBlocker}
+                          id="submit-package-blocker"
+                        >
+                          Why unavailable: {actionBlockers.submit}
+                        </small>
+                      ) : null}
+                    </div>
                   </>
                 ) : null}
               </div>
             </section>
+
           </>
         ) : null}
       </div>
