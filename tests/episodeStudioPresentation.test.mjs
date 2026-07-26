@@ -241,6 +241,31 @@ test('manager recording schedules are normalized and included in summaries', () 
   assert.equal(summary.recording_time_zone, 'America/Denver');
 });
 
+test('manager saves and can intentionally clear producer review drafts', () => {
+  const stagedEpisodeUrl =
+    'https://creators.spotify.com/pod/show/mission-ridge/episodes/draft';
+  const episode = normalizeEpisodeStudio({
+    ...sampleEpisode(),
+    producer_feedback: 'Tighten the opening before the first sponsor read.',
+  });
+  const updated = mergeEpisodeStudioManagerValues(episode, {
+    producer_feedback:
+      'At 03:14, remove the repeated setup before the first answer.',
+    staged_episode_url: stagedEpisodeUrl,
+  });
+
+  assert.equal(
+    updated.producer_feedback,
+    'At 03:14, remove the repeated setup before the first answer.'
+  );
+  assert.equal(updated.staged_episode_url, stagedEpisodeUrl);
+
+  const cleared = mergeEpisodeStudioManagerValues(updated, {
+    producer_feedback: '',
+  });
+  assert.equal(cleared.producer_feedback, '');
+});
+
 test('rejects incomplete recording schedules while preserving legacy episodes', () => {
   assert.doesNotThrow(() => validateEpisodeStudio(sampleEpisode()));
   assert.throws(

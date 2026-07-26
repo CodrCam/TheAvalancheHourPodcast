@@ -1406,9 +1406,42 @@ export default function EpisodeStudioWorkspace({
               {completion.remaining_reason}
             </p>
 
-            {episode.producer_feedback ? (
+            {canReview || canAdminOverride ? (
+              <section
+                className={styles.producerNotesPanel}
+                id="producer-notes"
+                aria-labelledby="producer-notes-heading"
+              >
+                <div className={styles.panelHeading}>
+                  <div>
+                    <span className={styles.eyebrow}>Producer workspace</span>
+                    <h2 id="producer-notes-heading">Notes for the hosts</h2>
+                  </div>
+                  <span>Saved with the Episode Studio</span>
+                </div>
+                <label htmlFor="producer-feedback">
+                  <span>Producer notes and revision guidance</span>
+                  <textarea
+                    id="producer-feedback"
+                    value={episode.producer_feedback || ''}
+                    onChange={(event) =>
+                      updateEpisode({ producer_feedback: event.target.value })
+                    }
+                    placeholder="Call out the exact section, what needs to change, and what the finished result should be…"
+                    maxLength={4000}
+                  />
+                </label>
+                <small>
+                  {canManage
+                    ? 'Save Studio keeps these notes as a draft. '
+                    : ''}
+                  Requesting changes sends them with the episode; the approval
+                  controls stay at the bottom.
+                </small>
+              </section>
+            ) : episode.producer_feedback ? (
               <section className={styles.feedbackBanner}>
-                <strong>Producer note</strong>
+                <strong>Producer notes for the hosts</strong>
                 <p>{episode.producer_feedback}</p>
               </section>
             ) : null}
@@ -2082,6 +2115,9 @@ export default function EpisodeStudioWorkspace({
                   deliverable.asset_category || 'document';
                 const uploadFeedback =
                   assetUploadFeedback[deliverable.id] || null;
+                const canEditChecklist =
+                  canConfigure &&
+                  !LOCKED_HOST_STATUSES.includes(episode.status);
                 return (
                   <article
                     key={deliverable.id}
@@ -2098,112 +2134,207 @@ export default function EpisodeStudioWorkspace({
                       <span>{String(index + 1).padStart(2, '0')}</span>
                     </div>
                     <div className={styles.deliverableBody}>
-                      <div className={styles.deliverableHeading}>
-                        {canConfigure &&
-                        !LOCKED_HOST_STATUSES.includes(episode.status) ? (
-                          <div className={styles.checklistItemEditor}>
-                            <input
-                              value={deliverable.label}
-                              aria-label={`Checklist item ${index + 1} label`}
-                              maxLength={180}
-                              onChange={(event) =>
-                                updateDeliverable(deliverable.id, {
-                                  label: event.target.value,
-                                })
-                              }
-                            />
-                            <textarea
-                              value={deliverable.description}
-                              aria-label={`${deliverable.label} instructions`}
-                              maxLength={800}
-                              onChange={(event) =>
-                                updateDeliverable(deliverable.id, {
-                                  description: event.target.value,
-                                })
-                              }
-                            />
+                      {canEditChecklist ? (
+                        <section
+                          className={styles.stepSetupZone}
+                          aria-label={`${deliverable.label} producer setup`}
+                        >
+                          <div className={styles.stepZoneHeading}>
+                            <div>
+                              <span className={styles.stepSetupKicker}>
+                                Producer setup
+                              </span>
+                              <strong>What the host sees</strong>
+                              <small>
+                                Edit the step title and the guidance shown above
+                                the host’s response.
+                              </small>
+                            </div>
+                            <span className={styles.stepRequirementPill}>
+                              {deliverable.required ? 'Required' : 'Optional'}
+                            </span>
                           </div>
-                        ) : (
+                          <div className={styles.checklistItemEditor}>
+                            <label>
+                              <span>Step title shown to the host</span>
+                              <input
+                                value={deliverable.label}
+                                aria-label={`Checklist item ${index + 1} label`}
+                                maxLength={180}
+                                onChange={(event) =>
+                                  updateDeliverable(deliverable.id, {
+                                    label: event.target.value,
+                                  })
+                                }
+                              />
+                            </label>
+                            <label>
+                              <span>Instructions shown above the response</span>
+                              <textarea
+                                value={deliverable.description}
+                                aria-label={`${deliverable.label} instructions`}
+                                maxLength={800}
+                                onChange={(event) =>
+                                  updateDeliverable(deliverable.id, {
+                                    description: event.target.value,
+                                  })
+                                }
+                              />
+                            </label>
+                          </div>
+                          <div className={styles.checklistItemControls}>
+                            <label>
+                              Response the host provides
+                              <select
+                                value={deliverable.type}
+                                onChange={(event) =>
+                                  updateDeliverable(deliverable.id, {
+                                    type: event.target.value,
+                                  })
+                                }
+                              >
+                                <option value="textarea">Written response</option>
+                                <option value="asset">File upload</option>
+                                <option value="url">
+                                  Optional working-source link
+                                </option>
+                              </select>
+                            </label>
+                            <label>
+                              File group
+                              <select
+                                value={deliverable.asset_category || 'document'}
+                                disabled={deliverable.id === 'episode-folder'}
+                                onChange={(event) =>
+                                  updateDeliverable(deliverable.id, {
+                                    asset_category: event.target.value,
+                                  })
+                                }
+                              >
+                                {Object.entries(ASSET_CATEGORY_LABELS).map(
+                                  ([value, label]) => (
+                                    <option key={value} value={value}>
+                                      {label}
+                                    </option>
+                                  )
+                                )}
+                              </select>
+                            </label>
+                            <button
+                              type="button"
+                              aria-label={`Move ${deliverable.label} up`}
+                              disabled={index === 0}
+                              onClick={() =>
+                                moveChecklistItem(deliverable.id, -1)
+                              }
+                            >
+                              <ArrowUpwardRoundedIcon aria-hidden="true" />
+                            </button>
+                            <button
+                              type="button"
+                              aria-label={`Move ${deliverable.label} down`}
+                              disabled={
+                                index === episode.deliverables.length - 1
+                              }
+                              onClick={() =>
+                                moveChecklistItem(deliverable.id, 1)
+                              }
+                            >
+                              <ArrowDownwardRoundedIcon aria-hidden="true" />
+                            </button>
+                            <button
+                              type="button"
+                              aria-label={`Remove ${deliverable.label}`}
+                              disabled={episode.deliverables.length <= 1}
+                              onClick={() => removeChecklistItem(deliverable)}
+                            >
+                              <DeleteOutlineRoundedIcon aria-hidden="true" />
+                            </button>
+                          </div>
+                          <label className={styles.requirementToggle}>
+                            <input
+                              type="checkbox"
+                              checked={deliverable.required}
+                              onChange={(event) =>
+                                updateDeliverable(deliverable.id, {
+                                  required: event.target.checked,
+                                })
+                              }
+                            />
+                            Require this response before a complete handoff
+                          </label>
+                        </section>
+                      ) : canConfigure ? (
+                        <section
+                          className={`${styles.stepSetupZone} ${styles.stepSetupZoneReadOnly}`}
+                          aria-label={`${deliverable.label} host-facing setup`}
+                        >
+                          <div className={styles.stepZoneHeading}>
+                            <div>
+                              <span className={styles.stepSetupKicker}>
+                                Host-facing step
+                              </span>
+                              <strong>What the host was shown</strong>
+                              <small>
+                                This title and guidance are locked while the
+                                package is in producer review.
+                              </small>
+                            </div>
+                            <span className={styles.stepRequirementPill}>
+                              {deliverable.required ? 'Required' : 'Optional'}
+                            </span>
+                          </div>
+                          <div className={styles.stepPreviewCopy}>
+                            <h3>{deliverable.label}</h3>
+                            <p>{deliverable.description}</p>
+                          </div>
+                        </section>
+                      ) : (
+                        <div className={styles.deliverableHeading}>
                           <div>
                             <h3>{deliverable.label}</h3>
                             <p>{deliverable.description}</p>
                           </div>
-                        )}
-                        <span>
-                          {deliverable.required ? 'Required' : 'Optional'}
-                        </span>
-                      </div>
-
-                      {canConfigure &&
-                      !LOCKED_HOST_STATUSES.includes(episode.status) ? (
-                        <div className={styles.checklistItemControls}>
-                          <label>
-                            Response type
-                            <select
-                              value={deliverable.type}
-                              onChange={(event) =>
-                                updateDeliverable(deliverable.id, {
-                                  type: event.target.value,
-                                })
-                              }
-                            >
-                              <option value="textarea">Written response</option>
-                              <option value="asset">File upload</option>
-                              <option value="url">
-                                Optional working-source link
-                              </option>
-                            </select>
-                          </label>
-                          <label>
-                            File group
-                            <select
-                              value={deliverable.asset_category || 'document'}
-                              disabled={deliverable.id === 'episode-folder'}
-                              onChange={(event) =>
-                                updateDeliverable(deliverable.id, {
-                                  asset_category: event.target.value,
-                                })
-                              }
-                            >
-                              {Object.entries(ASSET_CATEGORY_LABELS).map(
-                                ([value, label]) => (
-                                  <option key={value} value={value}>
-                                    {label}
-                                  </option>
-                                )
-                              )}
-                            </select>
-                          </label>
-                          <button
-                            type="button"
-                            aria-label={`Move ${deliverable.label} up`}
-                            disabled={index === 0}
-                            onClick={() =>
-                              moveChecklistItem(deliverable.id, -1)
-                            }
-                          >
-                            <ArrowUpwardRoundedIcon aria-hidden="true" />
-                          </button>
-                          <button
-                            type="button"
-                            aria-label={`Move ${deliverable.label} down`}
-                            disabled={index === episode.deliverables.length - 1}
-                            onClick={() =>
-                              moveChecklistItem(deliverable.id, 1)
-                            }
-                          >
-                            <ArrowDownwardRoundedIcon aria-hidden="true" />
-                          </button>
-                          <button
-                            type="button"
-                            aria-label={`Remove ${deliverable.label}`}
-                            disabled={episode.deliverables.length <= 1}
-                            onClick={() => removeChecklistItem(deliverable)}
-                          >
-                            <DeleteOutlineRoundedIcon aria-hidden="true" />
-                          </button>
+                          <span>
+                            {deliverable.required ? 'Required' : 'Optional'}
+                          </span>
                         </div>
-                      ) : null}
+                      )}
+
+                      <section
+                        className={
+                          canConfigure ? styles.hostResponseZone : undefined
+                        }
+                        aria-label={
+                          canConfigure
+                            ? `${deliverable.label} host response`
+                            : undefined
+                        }
+                      >
+                        {canConfigure ? (
+                          <div className={styles.stepZoneHeading}>
+                            <div>
+                              <span className={styles.hostResponseKicker}>
+                                Host response
+                              </span>
+                              <strong>What the host submits</strong>
+                              <small>
+                                {deliverable.type === 'asset'
+                                  ? 'This is the host’s actual upload area, not the instructions above.'
+                                  : 'This is the host’s actual answer field, not the instructions above.'}
+                              </small>
+                            </div>
+                            <span
+                              className={`${styles.stepResponseStatus} ${
+                                complete
+                                  ? styles.stepResponseStatusComplete
+                                  : ''
+                              }`}
+                            >
+                              {complete ? 'Response complete' : 'No response yet'}
+                            </span>
+                          </div>
+                        ) : null}
 
                       {deliverable.type === 'asset' ? null : deliverable.type ===
                         'url' ? (
@@ -2588,21 +2719,6 @@ export default function EpisodeStudioWorkspace({
                         ) : null}
                       </div>
 
-                      {canConfigure ? (
-                        <label className={styles.requirementToggle}>
-                          <input
-                            type="checkbox"
-                            checked={deliverable.required}
-                            onChange={(event) =>
-                              updateDeliverable(deliverable.id, {
-                                required: event.target.checked,
-                              })
-                            }
-                          />
-                          Require this item before a complete handoff
-                        </label>
-                      ) : null}
-
                       {missingRequired && canHost && !lockedForHost ? (
                         <div className={styles.gapPanel}>
                           <label className={styles.gapCheck}>
@@ -2663,6 +2779,7 @@ export default function EpisodeStudioWorkspace({
                           </p>
                         </div>
                       ) : null}
+                      </section>
                     </div>
                   </article>
                 );
@@ -2872,20 +2989,17 @@ export default function EpisodeStudioWorkspace({
                 <div>
                   <span className={styles.eyebrow}>Producer review</span>
                   <h2>Move the episode forward</h2>
+                  <p>
+                    These controls change the episode status. Producer notes are
+                    edited near the top of this Studio.
+                  </p>
+                  <a href="#producer-notes">Review producer notes</a>
                   {!canReview && canAdminOverride ? (
                     <p>
                       You are not the assigned producer. Any review action
                       below is an attributed administrator override.
                     </p>
                   ) : null}
-                  <textarea
-                    value={episode.producer_feedback}
-                    onChange={(event) =>
-                      updateEpisode({ producer_feedback: event.target.value })
-                    }
-                    placeholder="Feedback for the assigned hosts…"
-                    aria-label="Producer feedback"
-                  />
                   <label>
                     <span>Staged Spotify listen</span>
                     <input

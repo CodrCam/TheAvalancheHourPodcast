@@ -16,6 +16,7 @@ process.env.EPISODE_ASSETS_SECRET_ACCESS_KEY = 'test-secret';
 process.env.EPISODE_ASSETS_UPLOAD_TOKEN_SECRET = 'test-token-secret';
 
 const MEBIBYTE = 1024 * 1024;
+const S3_POST_FORM_OVERHEAD_ALLOWANCE_BYTES = 64 * 1024;
 
 function createTestUpload(overrides = {}) {
   return createEpisodeAssetUpload({
@@ -81,7 +82,7 @@ test('rejects mismatched and executable episode assets', () => {
   );
 });
 
-test('creates an exact-size and exact-MIME S3 form bound to one deliverable', () => {
+test('creates a multipart-safe and exact-MIME S3 form bound to one deliverable', () => {
   const upload = createTestUpload();
   const policy = JSON.parse(
     Buffer.from(upload.upload_fields.policy, 'base64').toString('utf8')
@@ -104,7 +105,11 @@ test('creates an exact-size and exact-MIME S3 form bound to one deliverable', ()
         Array.isArray(condition) &&
         condition[0] === 'content-length-range'
     ),
-    ['content-length-range', 1024, 1024]
+    [
+      'content-length-range',
+      1024,
+      1024 + S3_POST_FORM_OVERHEAD_ALLOWANCE_BYTES,
+    ]
   );
   assert.deepEqual(
     policy.conditions.find((condition) => condition['Content-Type']),
@@ -118,7 +123,7 @@ test('creates an exact-size and exact-MIME S3 form bound to one deliverable', ()
   assert.match(payload.object_key, /^episodes\/episode-one\/other\/asset-/);
 });
 
-test('authorizes an exact 1.5 GB audio object in the signed S3 form policy', () => {
+test('allows multipart form overhead for an exact 1.5 GB audio object', () => {
   const audioLimit = 1536 * MEBIBYTE;
   const upload = createTestUpload({
     file_name: 'Full Quality.wav',
@@ -136,7 +141,11 @@ test('authorizes an exact 1.5 GB audio object in the signed S3 form policy', () 
         Array.isArray(condition) &&
         condition[0] === 'content-length-range'
     ),
-    ['content-length-range', audioLimit, audioLimit]
+    [
+      'content-length-range',
+      audioLimit,
+      audioLimit + S3_POST_FORM_OVERHEAD_ALLOWANCE_BYTES,
+    ]
   );
 });
 

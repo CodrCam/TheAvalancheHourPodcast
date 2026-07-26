@@ -1167,10 +1167,125 @@
   justify-content: flex-end;
 }
 
+.stepSetupZone,
+.hostResponseZone {
+  padding: 16px;
+  border-radius: 7px;
+}
+
+.stepSetupZone {
+  margin-bottom: 14px;
+  border: 1px solid rgba(53, 107, 131, 0.2);
+  border-left: 4px solid #5d8293;
+  background: #f3f8fa;
+}
+
+.stepSetupZoneReadOnly {
+  background: #f7f9fa;
+}
+
+.hostResponseZone {
+  border: 1px solid rgba(72, 112, 95, 0.2);
+  border-left: 4px solid #739182;
+  background: #fbfcfb;
+}
+
+.stepZoneHeading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 13px;
+}
+
+.stepZoneHeading > div {
+  display: grid;
+  gap: 3px;
+}
+
+.stepZoneHeading strong {
+  color: #273f49;
+  font-size: 0.9rem;
+}
+
+.stepZoneHeading small {
+  color: #66767d;
+  font-size: 0.7rem;
+  line-height: 1.45;
+}
+
+.stepSetupKicker,
+.hostResponseKicker {
+  font-size: 0.62rem;
+  font-weight: 840;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.stepSetupKicker {
+  color: #47748a;
+}
+
+.hostResponseKicker {
+  color: #507966;
+}
+
+.stepRequirementPill,
+.stepResponseStatus {
+  flex: 0 0 auto;
+  padding: 5px 8px;
+  font-size: 0.6rem;
+  font-weight: 820;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border-radius: 6px;
+}
+
+.stepRequirementPill {
+  color: #486675;
+  background: #e4eef2;
+}
+
+.stepResponseStatus {
+  color: #687871;
+  background: #e9efec;
+}
+
+.stepResponseStatusComplete {
+  color: #2f7355;
+  background: #e2f2e9;
+}
+
+.stepPreviewCopy {
+  padding: 12px 13px;
+  border: 1px solid rgba(53, 107, 131, 0.12);
+  background: rgba(255, 255, 255, 0.76);
+}
+
+.stepPreviewCopy h3 {
+  margin: 0;
+  color: var(--episode-ink);
+  font-size: 0.94rem;
+}
+
+.stepPreviewCopy p {
+  margin: 5px 0 0;
+  color: var(--episode-muted);
+  font-size: 0.76rem;
+  line-height: 1.5;
+}
+
 .checklistItemEditor {
-  flex: 1;
   display: grid;
   gap: 7px;
+}
+
+.checklistItemEditor label {
+  display: grid;
+  gap: 5px;
+  color: #526b77;
+  font-size: 0.68rem;
+  font-weight: 760;
 }
 
 .checklistItemEditor input,
@@ -1186,30 +1301,46 @@
 }
 
 .checklistItemEditor input {
+  font-size: 0.84rem;
   font-weight: 820;
 }
 
 .checklistItemEditor textarea {
   min-height: 72px;
+  font-size: 0.8rem;
+  font-weight: 450;
   resize: vertical;
   line-height: 1.45;
 }
 
+.stepSetupZone .checklistItemEditor textarea {
+  min-height: 88px;
+  font-family: inherit;
+  font-weight: 450;
+}
+
 .checklistItemControls {
-  margin-bottom: 10px;
   display: flex;
+  flex-wrap: wrap;
   gap: 7px;
+  margin-top: 10px;
   align-items: end;
-  justify-content: flex-end;
+  justify-content: flex-start;
 }
 
 .checklistItemControls label {
   display: grid;
+  min-width: min(100%, 220px);
+  flex: 1 1 240px;
   gap: 4px;
-  margin-right: auto;
   color: #667085;
   font-size: 0.72rem;
   font-weight: 750;
+}
+
+.checklistItemControls select {
+  min-height: 38px;
+  font-size: 0.78rem;
 }
 
 .checklistItemControls button {
@@ -1231,6 +1362,16 @@
 
 .checklistItemControls svg {
   font-size: 1rem;
+}
+
+.stepSetupZone .requirementToggle {
+  margin-top: 12px;
+}
+
+.hostResponseZone input:disabled,
+.hostResponseZone textarea:disabled {
+  color: #556660;
+  background: #f1f4f2;
 }
 
 .productionStrip > div {
@@ -1302,6 +1443,52 @@
   margin: 6px 0 0;
   font-size: 0.86rem;
   line-height: 1.55;
+}
+
+.producerNotesPanel {
+  margin: 0 0 28px;
+  padding: 22px;
+  border: 1px solid rgba(181, 132, 55, 0.3);
+  border-left: 4px solid #b58437;
+  border-radius: 10px;
+  background: #fffaf0;
+}
+
+.producerNotesPanel label {
+  display: grid;
+  gap: 8px;
+  color: #4f482f;
+  font-size: 0.76rem;
+  font-weight: 780;
+}
+
+.producerNotesPanel textarea {
+  width: 100%;
+  min-height: 150px;
+  padding: 13px 14px;
+  color: var(--episode-ink);
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 450;
+  line-height: 1.55;
+  resize: vertical;
+  border: 1px solid rgba(103, 79, 39, 0.24);
+  border-radius: 9px;
+  outline: none;
+  background: #fff;
+}
+
+.producerNotesPanel textarea:focus {
+  border-color: #9a7131;
+  box-shadow: 0 0 0 4px rgba(181, 132, 55, 0.11);
+}
+
+.producerNotesPanel > small {
+  display: block;
+  margin-top: 9px;
+  color: #74684d;
+  font-size: 0.72rem;
+  line-height: 1.5;
 }
 
 .discussionPanel {
@@ -2849,6 +3036,7 @@
   .panelHeading,
   .discussionHeading,
   .handoffHeading,
+  .stepZoneHeading,
   .formIntro,
   .actionDock,
   .queueHeader {
