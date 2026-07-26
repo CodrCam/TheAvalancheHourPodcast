@@ -28,6 +28,7 @@ import {
 import {
   getProductTaxonomy,
 } from '../../lib/productCatalogStructure.mjs';
+import { getOptimizedPublicImage } from '../../lib/publicImage.mjs';
 import styles from '../../styles/Storefront.module.css';
 
 function money(cents) {
@@ -129,8 +130,10 @@ function CatalogStoryAnchor() {
     <Box component="figure" className={styles.catalogAnchor}>
       <Box
         component="img"
-        src="/images/background/main-page1.jpg"
+        src="/images/optimized/background/main-page1.webp"
         alt="An avalanche moving through a snow-covered mountain valley"
+        loading="lazy"
+        decoding="async"
         className={styles.anchorImage}
       />
       <div className={styles.anchorWash} aria-hidden="true" />
@@ -321,8 +324,10 @@ export default function StoreIndexPage({
                     <Box className={styles.productImageWrap}>
                       <CardMedia
                         component="img"
-                        image={p.image}
+                        image={getOptimizedPublicImage(p.image)}
                         alt={p.name}
+                        loading="lazy"
+                        decoding="async"
                         className={styles.productImage}
                       />
                       <span className={styles.productNumber}>
@@ -446,19 +451,19 @@ export default function StoreIndexPage({
             <Box className={styles.heroVisual} aria-hidden="true">
               <Box
                 component="img"
-                src={
+                src={getOptimizedPublicImage(
                   activeProducts[0]?.image ||
                   '/images/store/caps/Black_Camo.jpg'
-                }
+                )}
                 alt=""
                 className={styles.heroImageMain}
               />
               <Box
                 component="img"
-                src={
+                src={getOptimizedPublicImage(
                   activeProducts[5]?.image ||
                   '/images/store/tote/free-range-canvas.jpg'
-                }
+                )}
                 alt=""
                 className={styles.heroImageInset}
               />

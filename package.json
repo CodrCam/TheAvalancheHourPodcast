@@ -3,11 +3,14 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "predev": "npm run images:optimize",
     "dev": "WATCHPACK_POLLING=true WATCHPACK_POLLING_INTERVAL=1000 next dev --webpack",
+    "prebuild": "npm run images:optimize",
     "build": "next build",
     "start": "next start",
     "test": "node --test",
     "lint": "eslint .",
+    "images:optimize": "node scripts/generateOptimizedImages.mjs",
     "export:supabase-inventory": "node scripts/exportSupabaseInventorySeed.js",
     "seed:dynamo-inventory": "node scripts/seedDynamoInventory.js",
     "export:supabase-orders": "node scripts/exportSupabaseOrdersSeed.js",
@@ -43,7 +46,8 @@
   },
   "devDependencies": {
     "eslint": "^9.39.4",
-    "eslint-config-next": "16.2.11"
+    "eslint-config-next": "16.2.11",
+    "sharp": "0.35.3"
   },
   "overrides": {
     "postcss": "8.5.23",

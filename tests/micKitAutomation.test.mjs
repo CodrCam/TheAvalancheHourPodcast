@@ -119,6 +119,34 @@ test('surfaces overdue returns and upcoming episode hosts without requests', () 
   );
 });
 
+test('uses the recording date ahead of release deadlines for mic coverage', () => {
+  const automation = buildMicKitAutomation(
+    {
+      kits: [],
+      requests: [],
+      shipments: [],
+    },
+    [
+      {
+        episode_id: 'recording-first',
+        title: 'Recording First',
+        status: 'planning',
+        recording_date: '2026-08-03',
+        due_date: '2026-09-01',
+        target_release_date: '2026-09-08',
+        host_person_ids: ['host-one'],
+      },
+    ],
+    { today: '2026-08-01' }
+  );
+
+  const coverage = automation.actions.find(
+    (action) => action.episode_id === 'recording-first'
+  );
+  assert.equal(coverage?.kind, 'episode_coverage');
+  assert.equal(coverage?.urgency, 'urgent');
+});
+
 test('plans a direct handoff when a held kit is due before the next ship date', () => {
   const tracker = {
     ...DEFAULT_MIC_KIT_TRACKER,

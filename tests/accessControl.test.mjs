@@ -24,6 +24,8 @@ test('keeps host access limited to the Studio and the host own profile', () => {
     ACCESS_PERMISSIONS.MIC_KITS_REQUEST,
     ACCESS_PERMISSIONS.NOTIFICATIONS_READ,
     ACCESS_PERMISSIONS.NOTIFICATIONS_UPDATE,
+    ACCESS_PERMISSIONS.INTAKE_READ,
+    ACCESS_PERMISSIONS.INTAKE_CREATE,
   ]);
   assert.equal(
     permissions.includes(ACCESS_PERMISSIONS.PROFILES_UPDATE),
@@ -120,6 +122,30 @@ test('treats admin as the all-permissions group', () => {
   assert.deepEqual(
     new Set(permissions),
     new Set(Object.values(ACCESS_PERMISSIONS))
+  );
+});
+
+test('makes the Team Inbox collaborative while reserving triage controls', () => {
+  for (const group of Object.values(ACCESS_GROUPS)) {
+    const permissions = getPermissionsForGroups([group]);
+    assert.equal(permissions.includes(ACCESS_PERMISSIONS.INTAKE_READ), true);
+    assert.equal(
+      permissions.includes(ACCESS_PERMISSIONS.INTAKE_CREATE),
+      true
+    );
+  }
+
+  assert.equal(
+    getPermissionsForGroups([ACCESS_GROUPS.HOST]).includes(
+      ACCESS_PERMISSIONS.INTAKE_MANAGE
+    ),
+    false
+  );
+  assert.equal(
+    getPermissionsForGroups([ACCESS_GROUPS.STUDIO_MANAGER]).includes(
+      ACCESS_PERMISSIONS.INTAKE_MANAGE
+    ),
+    true
   );
 });
 

@@ -24,6 +24,7 @@ import {
   getVariantImage,
 } from '../lib/productCatalog';
 import { ecommerceEvent } from '../lib/gtag';
+import { getOptimizedPublicImage } from '../lib/publicImage.mjs';
 
 const CART_KEY = 'ah_cart';
 const LOW_STOCK_THRESHOLD = 5;
@@ -231,6 +232,7 @@ export default function VariantPickerDialog({
   const heroImage =
     getVariantImage(product, { style: options.style, color: options.color }) ||
     product.image;
+  const optimizedHeroImage = getOptimizedPublicImage(heroImage);
 
   const handleStyleChange = (nextStyle) => {
     if (!nextStyle) return;
@@ -282,7 +284,7 @@ export default function VariantPickerDialog({
         name: product.name,
         price: unitPrice, // IMPORTANT: variant-aware price
         options,
-        image: heroImage,
+        image: optimizedHeroImage,
         qty: 1,
       });
     }
@@ -319,8 +321,9 @@ export default function VariantPickerDialog({
         <Box sx={{ display: 'flex', gap: 2, mb: 2, alignItems: 'flex-start' }}>
           <Box
             component="img"
-            src={heroImage}
+            src={optimizedHeroImage}
             alt={product.name}
+            decoding="async"
             sx={{
               width: 120,
               height: 120,

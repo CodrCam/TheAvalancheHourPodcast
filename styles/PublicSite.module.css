@@ -23,7 +23,7 @@
   border-bottom: 1px solid rgba(200, 228, 237, 0.24);
   background:
     linear-gradient(110deg, rgba(7, 21, 29, 0.99), rgba(17, 45, 58, 0.96) 62%, rgba(30, 69, 83, 0.94)),
-    url('/images/background/main-page3.jpg') center 34% / cover;
+    url('/images/optimized/background/main-page3.webp') center 34% / cover;
   color: #fff;
 }
 

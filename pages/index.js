@@ -43,7 +43,7 @@ export default function Home() {
   useEffect(() => {
     async function fetchEpisodes() {
       try {
-        const response = await fetch('/api/spotify');
+        const response = await fetch('/api/spotify?limit=3');
         if (!response.ok) throw new Error('Failed to fetch episodes');
         const data = await response.json();
         setEpisodes(
@@ -262,8 +262,10 @@ export default function Home() {
           <Container maxWidth="lg" className={styles.missionGrid}>
             <Box className={styles.missionImage}>
               <img
-                src="/images/background/main-page2.jpg"
+                src="/images/optimized/background/main-page2.webp"
                 alt="Snow-covered mountain terrain"
+                loading="lazy"
+                decoding="async"
               />
               <span>Observation · conversation · community</span>
             </Box>

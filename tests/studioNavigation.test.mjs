@@ -18,6 +18,7 @@ test('host-only navigation does not expose operations or management links', () =
   const hrefs = visibleHrefs([ACCESS_GROUPS.HOST]);
 
   assert.equal(hrefs.includes('/studio/episodes'), true);
+  assert.equal(hrefs.includes('/studio/inbox'), true);
   assert.equal(hrefs.includes('/studio/manage/episodes'), false);
   assert.equal(hrefs.some((href) => href.startsWith('/admin')), false);
 });
@@ -26,6 +27,7 @@ test('Studio managers keep management links without gaining operations links', (
   const hrefs = visibleHrefs([ACCESS_GROUPS.STUDIO_MANAGER]);
 
   assert.equal(hrefs.includes('/studio/manage/episodes'), true);
+  assert.equal(hrefs.includes('/studio/inbox'), true);
   assert.equal(hrefs.includes('/studio/manage/access'), true);
   assert.equal(hrefs.includes('/admin/products'), false);
 });

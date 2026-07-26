@@ -18,7 +18,7 @@
   overflow: hidden;
   background:
     linear-gradient(112deg, rgba(8, 23, 31, 0.98) 0%, rgba(16, 42, 54, 0.96) 58%, rgba(24, 62, 76, 0.9) 100%),
-    url('/images/background/main-page3.jpg') center 30% / cover;
+    url('/images/optimized/background/main-page3.webp') center 30% / cover;
   color: var(--white);
 }
 
@@ -643,7 +643,7 @@
   overflow: hidden;
   background:
     linear-gradient(90deg, rgba(9, 27, 36, 0.96), rgba(9, 27, 36, 0.78)),
-    url('/images/background/main-page1.jpg') center / cover;
+    url('/images/optimized/background/main-page1.webp') center / cover;
   color: var(--white);
 }
 

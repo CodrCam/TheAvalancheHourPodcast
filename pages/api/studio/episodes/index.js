@@ -92,6 +92,10 @@ export default async function handler(req, res) {
       let profileConnection = null;
       let membershipIdentity = null;
       const personalScope = !canManage || req.query.scope === 'mine';
+      const includeDirectory =
+        canManage &&
+        req.query.scope !== 'mine' &&
+        req.query.include_directory !== 'false';
       if (personalScope) {
         const binding = await getStudioBindingForSubject(principal.subject);
         if (!binding) {
@@ -140,9 +144,8 @@ export default async function handler(req, res) {
               directory.peopleById.get(personId)?.name || personId
           ),
         })),
-        people: canManage && req.query.scope !== 'mine' ? directory.hosts : [],
-        producers:
-          canManage && req.query.scope !== 'mine' ? directory.producers : [],
+        people: includeDirectory ? directory.hosts : [],
+        producers: includeDirectory ? directory.producers : [],
       });
     }
 
@@ -198,6 +201,11 @@ export default async function handler(req, res) {
         target_release_date: input.target_release_date,
         due_date:
           input.due_date || dateDaysBefore(input.target_release_date, 7),
+        recording_date: input.recording_date,
+        recording_time: input.recording_time,
+        recording_time_zone: input.recording_time_zone,
+        recording_duration_minutes: input.recording_duration_minutes,
+        recording_location: input.recording_location,
         host_person_ids: hostPersonIds,
         producer_person_id: producerPersonId,
         producer_email: producerEmail,

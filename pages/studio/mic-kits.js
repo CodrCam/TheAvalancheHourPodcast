@@ -218,7 +218,9 @@ export default function MicKitsPage({ adminMode = false }) {
       setEpisodesError('');
       try {
         const response = await fetch(
-          `/api/studio/episodes${adminMode ? '' : '?scope=mine'}`,
+          `/api/studio/episodes${
+            adminMode || canManage ? '' : '?scope=mine'
+          }`,
           { credentials: 'same-origin' }
         );
         const data = await response.json();
@@ -247,11 +249,11 @@ export default function MicKitsPage({ adminMode = false }) {
     return () => {
       alive = false;
     };
-  }, [adminMode]);
+  }, [adminMode, canManage]);
 
   const today = new Date().toISOString().slice(0, 10);
   const summary = useMemo(() => kitSummary(tracker), [tracker]);
-  const showManage = adminMode && canManage;
+  const showManage = canManage;
   const recommendationsByRequestId = useMemo(
     () =>
       new Map(

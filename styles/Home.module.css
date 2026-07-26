@@ -18,7 +18,7 @@
   overflow: hidden;
   background:
     linear-gradient(92deg, rgba(6, 19, 27, 0.91) 0%, rgba(10, 31, 41, 0.79) 54%, rgba(10, 31, 41, 0.5) 100%),
-    url('/images/background/main-page3.jpg') center 36% / cover;
+    url('/images/optimized/background/main-page3.webp') center 36% / cover;
   color: #fff;
 }
 
@@ -223,7 +223,7 @@
   overflow: hidden;
   background:
     linear-gradient(112deg, rgba(8, 25, 34, 0.98), rgba(19, 52, 65, 0.94)),
-    url('/images/background/main-page1.jpg') center / cover;
+    url('/images/optimized/background/main-page1.webp') center / cover;
 }
 
 .missionGrid {

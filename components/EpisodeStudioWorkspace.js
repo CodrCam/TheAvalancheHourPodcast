@@ -19,6 +19,10 @@ import AdminLayout from './AdminLayout';
 import FriendlyDateField from './FriendlyDateField';
 import StudioLayout from './StudioLayout';
 import {
+  EpisodeRecordingFields,
+  EpisodeRecordingSummary,
+} from './EpisodeRecordingSchedule';
+import {
   areProducerDirectionsComplete,
   EPISODE_ASSET_RETENTION_DAYS,
   getEpisodeCompletion,
@@ -41,6 +45,10 @@ import {
   isEpisodeAssetUploadReadyForCompletion,
   uploadAuthorizedFile,
 } from '../lib/episodeAssetUploadClient.mjs';
+import {
+  buildEpisodeCalendarFile,
+  episodeCalendarFilename,
+} from '../lib/episodeCalendar.mjs';
 import styles from '../styles/EpisodeStudio.module.css';
 
 const STATUS_LABELS = {
@@ -358,6 +366,29 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
     setEpisode((current) => ({ ...current, ...patch }));
     setMessage('');
     setError('');
+  }
+
+  function downloadRecordingCalendar() {
+    try {
+      const calendar = buildEpisodeCalendarFile(episode);
+      const blob = new Blob([calendar], {
+        type: 'text/calendar;charset=utf-8',
+      });
+      const objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = objectUrl;
+      link.download = episodeCalendarFilename(episode);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+      setMessage('Calendar event downloaded.');
+      setError('');
+    } catch (calendarError) {
+      setError(
+        calendarError.message || 'Could not create the calendar event.'
+      );
+    }
   }
 
   function updateDeliverable(deliverableId, patch) {
@@ -1225,6 +1256,11 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
               </button>
             </section>
 
+            <EpisodeRecordingSummary
+              episode={episode}
+              onDownload={downloadRecordingCalendar}
+            />
+
             <section className={styles.productionStrip}>
               <div>
                 <span>Release</span>
@@ -1666,6 +1702,10 @@ export default function EpisodeStudioWorkspace({ admin = false }) {
                       ariaLabel="host package due date"
                     />
                   </label>
+                  <EpisodeRecordingFields
+                    schedule={episode}
+                    onChange={updateEpisode}
+                  />
                   <label>
                     Producer
                     <select

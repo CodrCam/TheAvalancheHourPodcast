@@ -22,7 +22,7 @@
   overflow: hidden;
   background:
     linear-gradient(112deg, rgba(8, 23, 31, 0.99), rgba(20, 54, 67, 0.97)),
-    url('/images/background/main-page3.jpg') center 42% / cover;
+    url('/images/optimized/background/main-page3.webp') center 42% / cover;
   color: #fff;
 }
 
@@ -359,7 +359,7 @@
   padding: 27px 27px 22px;
   background:
     linear-gradient(122deg, rgba(10, 28, 37, 0.98), rgba(24, 62, 76, 0.96)),
-    url('/images/background/main-page3.jpg') center / cover;
+    url('/images/optimized/background/main-page3.webp') center / cover;
 }
 
 .summaryTop .summaryEyebrow {

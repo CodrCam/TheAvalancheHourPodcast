@@ -23,6 +23,7 @@ import {
   optionLabel,
 } from '../../../components/CheckoutFlow';
 import { ecommerceEvent } from '../../../lib/gtag';
+import { getOptimizedPublicImage } from '../../../lib/publicImage.mjs';
 import styles from '../../../styles/Checkout.module.css';
 import {
   CART_KEY,
@@ -414,8 +415,10 @@ export default function ShippingPage() {
                       <Box key={item.key} className={styles.miniItem}>
                         <Box
                           component="img"
-                          src={item.image}
+                          src={getOptimizedPublicImage(item.image)}
                           alt=""
+                          loading="lazy"
+                          decoding="async"
                           className={styles.miniImage}
                         />
                         <Box>

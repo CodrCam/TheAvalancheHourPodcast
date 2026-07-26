@@ -194,7 +194,7 @@
   padding: 27px 22px 23px;
   background:
     linear-gradient(110deg, rgba(6, 20, 28, 0.97), rgba(20, 54, 67, 0.94)),
-    url('/images/background/main-page1.jpg') center / cover;
+    url('/images/optimized/background/main-page1.webp') center / cover;
   color: #fff;
 }
 
@@ -234,7 +234,7 @@
   border-bottom: 1px solid rgba(16, 34, 45, 0.16);
   background:
     linear-gradient(120deg, rgba(10, 28, 37, 0.98), rgba(24, 62, 76, 0.96)),
-    url('/images/background/main-page3.jpg') center / cover;
+    url('/images/optimized/background/main-page3.webp') center / cover;
   color: #fff;
 }
 

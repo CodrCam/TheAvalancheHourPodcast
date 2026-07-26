@@ -15,6 +15,7 @@ import {
   getMicKitTracker,
   saveMicKitTracker,
 } from '../../../lib/micKitStore';
+import { getMicKitAccessForPermissions } from '../../../lib/micKitAccess.mjs';
 import { listEpisodeStudios } from '../../../lib/episodeStudioStore';
 import { getStudioBindingForSubject } from '../../../lib/studioAccessStore';
 import { publishMicKitNotifications } from '../../../lib/micKitEvents';
@@ -127,16 +128,21 @@ function viewerFor(principal, canManage) {
   };
 }
 
-function responsePayload(result, principal, canManage, episodes = []) {
+function responsePayload(
+  result,
+  principal,
+  micKitAccess,
+  episodes = [],
+  includeAutomation = true
+) {
+  const { canManage, canRequest } = micKitAccess;
   return {
     ok: true,
     configured: result.configured,
     source: result.source,
-    can_request: principal.permissions.includes(
-      ADMIN_PERMISSIONS.MIC_KITS_REQUEST
-    ),
+    can_request: canRequest,
     can_manage: canManage,
-    automation: canManage
+    automation: canManage && includeAutomation
       ? buildMicKitAutomation(result.tracker, episodes)
       : null,
     tracker: sanitizeMicKitTrackerForViewer(
@@ -245,12 +251,15 @@ export default async function handler(req, res) {
   if (!principal) return;
 
   try {
-    const canManage =
-      req.query.view === 'admin' &&
-      principal.permissions.includes(ADMIN_PERMISSIONS.MIC_KITS_MANAGE);
+    const micKitAccess = getMicKitAccessForPermissions(
+      principal.permissions
+    );
+    const { canManage } = micKitAccess;
+    const includeAutomation =
+      canManage && req.query.automation !== 'false';
     const result = await getMicKitTracker();
     let automationEpisodes = [];
-    if (canManage) {
+    if (includeAutomation) {
       try {
         const episodeResult = await listEpisodeStudios();
         automationEpisodes = episodeResult.episodes || [];
@@ -269,8 +278,9 @@ export default async function handler(req, res) {
           responsePayload(
             result,
             principal,
-            canManage,
-            automationEpisodes
+            micKitAccess,
+            automationEpisodes,
+            includeAutomation
           )
         );
     }
@@ -770,7 +780,7 @@ export default async function handler(req, res) {
         responsePayload(
           saved,
           principal,
-          canManage,
+          micKitAccess,
           automationEpisodes
         )
       );

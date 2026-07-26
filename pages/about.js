@@ -23,6 +23,7 @@ import {
   PEOPLE_SECTIONS,
   groupPeopleForDisplay,
 } from '../lib/peoplePresentation.mjs';
+import { getOptimizedPublicImage } from '../lib/publicImage.mjs';
 import publicStyles from '../styles/PublicSite.module.css';
 
 const PLACEHOLDER_IMG = '/images/placeholder-person.svg';
@@ -196,9 +197,11 @@ export default function AboutPage({ people, aboutContent }) {
                             !person.needsImages &&
                             person.images &&
                             person.images.length > 0
-                              ? person.images[0]
+                              ? getOptimizedPublicImage(person.images[0])
                               : PLACEHOLDER_IMG
                           }
+                          loading="lazy"
+                          decoding="async"
                           alt={
                             person.needsImages
                               ? `Profile photo coming soon for ${person.name}`
@@ -302,6 +305,9 @@ export default function AboutPage({ people, aboutContent }) {
 export async function getServerSideProps() {
   let peopleResult;
   let contentResult;
+  const staticPeopleBySlug = new Map(
+    getStaticPeopleSeed().map((person) => [person.slug, person])
+  );
 
   try {
     peopleResult = await listPeople({ allowStaticFallback: true });
@@ -317,10 +323,47 @@ export async function getServerSideProps() {
 
   return {
     props: {
-      people: peopleResult.people || [],
+      people: (peopleResult.people || []).map((person) => ({
+        slug: person.slug,
+        name: person.name,
+        role: person.role,
+        roles: person.roles || [],
+        title: person.title || '',
+        bioShort: person.bioShort || '',
+        needsBio: Boolean(person.needsBio),
+        needsImages: Boolean(person.needsImages),
+        images: (() => {
+          const image = person.images?.[0] || '';
+          if (!image) return [];
+          if (!image.startsWith('data:')) return [image];
+
+          const staticImage =
+            staticPeopleBySlug.get(person.slug)?.images?.[0] || '';
+          return staticImage ? [staticImage] : [];
+        })(),
+      })),
       aboutContent: {
-        ...DEFAULT_HOME_CONTENT,
-        ...(contentResult.content || {}),
+        aboutEyebrow:
+          contentResult.content?.aboutEyebrow ??
+          DEFAULT_HOME_CONTENT.aboutEyebrow,
+        aboutHeading:
+          contentResult.content?.aboutHeading ??
+          DEFAULT_HOME_CONTENT.aboutHeading,
+        aboutIntro:
+          contentResult.content?.aboutIntro ??
+          DEFAULT_HOME_CONTENT.aboutIntro,
+        aboutMissionHeading:
+          contentResult.content?.aboutMissionHeading ??
+          DEFAULT_HOME_CONTENT.aboutMissionHeading,
+        aboutMissionBody:
+          contentResult.content?.aboutMissionBody ??
+          DEFAULT_HOME_CONTENT.aboutMissionBody,
+        aboutListenUrl:
+          contentResult.content?.aboutListenUrl ??
+          DEFAULT_HOME_CONTENT.aboutListenUrl,
+        aboutListenLabel:
+          contentResult.content?.aboutListenLabel ??
+          DEFAULT_HOME_CONTENT.aboutListenLabel,
       },
     },
   };

@@ -22,7 +22,7 @@ body {
   margin: 0;
   background:
     linear-gradient(rgba(244, 246, 242, 0.97), rgba(244, 246, 242, 0.97)),
-    url('/images/background/main-page1.jpg') center top / cover fixed;
+    url('/images/optimized/background/main-page1.webp') center top / cover fixed;
   color: var(--ah-ink);
 }
 

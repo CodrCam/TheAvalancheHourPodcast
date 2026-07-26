@@ -222,6 +222,38 @@ test('manager required versus optional changes survive the manager merge', () =>
   assert.equal(updated.deliverables[1].required, true);
 });
 
+test('manager recording schedules are normalized and included in summaries', () => {
+  const updated = mergeEpisodeStudioManagerValues(sampleEpisode(), {
+    recording_date: '2026-08-01',
+    recording_time: '10:30',
+    recording_time_zone: 'America/Denver',
+    recording_duration_minutes: 90,
+    recording_location: 'Riverside room',
+  });
+  const summary = episodeStudioSummary(updated);
+
+  assert.equal(updated.recording_date, '2026-08-01');
+  assert.equal(updated.recording_time, '10:30');
+  assert.equal(updated.recording_time_zone, 'America/Denver');
+  assert.equal(updated.recording_duration_minutes, 90);
+  assert.equal(updated.recording_location, 'Riverside room');
+  assert.equal(summary.recording_date, '2026-08-01');
+  assert.equal(summary.recording_time_zone, 'America/Denver');
+});
+
+test('rejects incomplete recording schedules while preserving legacy episodes', () => {
+  assert.doesNotThrow(() => validateEpisodeStudio(sampleEpisode()));
+  assert.throws(
+    () =>
+      validateEpisodeStudio({
+        ...sampleEpisode(),
+        recording_date: '2026-08-01',
+        recording_time: '10:30',
+      }),
+    /time zone/
+  );
+});
+
 test('canonical asset requirements block readiness until audio and images are attached', () => {
   const base = {
     ...sampleEpisode(),

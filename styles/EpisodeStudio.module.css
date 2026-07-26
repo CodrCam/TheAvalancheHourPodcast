@@ -228,6 +228,56 @@
   font-size: 0.92rem;
 }
 
+.recordingSchedule {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 18px;
+  padding: 17px 18px;
+  border: 1px solid rgba(53, 107, 131, 0.18);
+  border-radius: 17px;
+  background:
+    linear-gradient(110deg, rgba(232, 241, 244, 0.9), rgba(255, 255, 255, 0.86));
+  box-shadow: 0 10px 30px rgba(23, 55, 70, 0.05);
+}
+
+.recordingScheduleIcon {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  color: #356b83;
+  border-radius: 13px;
+  background: rgba(53, 107, 131, 0.12);
+}
+
+.recordingScheduleCopy {
+  min-width: 0;
+}
+
+.recordingScheduleCopy span,
+.recordingScheduleCopy strong {
+  display: block;
+}
+
+.recordingScheduleCopy strong {
+  margin-top: 3px;
+  font-size: 0.92rem;
+}
+
+.recordingScheduleCopy p {
+  margin: 4px 0 0;
+  overflow-wrap: anywhere;
+  color: var(--episode-muted);
+  font-size: 0.75rem;
+}
+
+.recordingScheduleCopy a {
+  color: #2f657d;
+  font-weight: 760;
+}
+
 .sponsorReadsPanel {
   margin: 24px 0;
   padding: 24px;
@@ -2681,6 +2731,14 @@
 }
 
 @media (max-width: 430px) {
+  .recordingSchedule {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .recordingSchedule > button {
+    grid-column: 1 / -1;
+  }
+
   .productionStrip {
     grid-template-columns: 1fr;
   }

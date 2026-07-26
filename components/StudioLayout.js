@@ -1,5 +1,11 @@
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 import { useRouter } from 'next/router';
 import HomeRoundedIcon from '@mui/icons-material/HomeRounded';
 import MenuBookRoundedIcon from '@mui/icons-material/MenuBookRounded';
@@ -16,6 +22,7 @@ import ArticleRoundedIcon from '@mui/icons-material/ArticleRounded';
 import GroupsRoundedIcon from '@mui/icons-material/GroupsRounded';
 import HandshakeRoundedIcon from '@mui/icons-material/HandshakeRounded';
 import HealthAndSafetyRoundedIcon from '@mui/icons-material/HealthAndSafetyRounded';
+import InboxRoundedIcon from '@mui/icons-material/InboxRounded';
 import OpenInNewRoundedIcon from '@mui/icons-material/OpenInNewRounded';
 import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
 import NotificationBell from './NotificationBell';
@@ -28,6 +35,7 @@ import styles from '../styles/Studio.module.css';
 const NAV_ICONS = {
   home: HomeRoundedIcon,
   resources: MenuBookRoundedIcon,
+  inbox: InboxRoundedIcon,
   episodes: PodcastsRoundedIcon,
   profile: AccountCircleRoundedIcon,
   mic_kits: HeadsetMicRoundedIcon,
@@ -44,6 +52,12 @@ const NAV_ICONS = {
   system_health: HealthAndSafetyRoundedIcon,
 };
 
+const StudioSessionContext = createContext(null);
+
+export function useStudioSession() {
+  return useContext(StudioSessionContext);
+}
+
 function formatGroup(group) {
   return String(group || '')
     .split(/[_-]+/)
@@ -58,6 +72,7 @@ export default function StudioLayout({
   unsavedChangesMessage = 'You have unpublished changes. Leave this page and discard them?',
   requiredPermission = '',
   accessDeniedRedirect = '/studio',
+  wide = false,
 }) {
   const router = useRouter();
   const [session, setSession] = useState(null);
@@ -151,13 +166,14 @@ export default function StudioLayout({
     return (
       <main className={styles.sessionLoading}>
         <img src="/images/logo.png" alt="" />
-        <p>{sessionState === 'loading' ? 'Opening Host Studio…' : 'Redirecting…'}</p>
+        <p>{sessionState === 'loading' ? 'Opening Team Studio…' : 'Redirecting…'}</p>
       </main>
     );
   }
 
   return (
-    <div className={styles.shell}>
+    <StudioSessionContext.Provider value={session}>
+      <div className={styles.shell}>
       <aside className={styles.sidebar}>
         <Link
           href={studioHomeHref}
@@ -169,11 +185,11 @@ export default function StudioLayout({
           </span>
           <span>
             <span className={styles.brandEyebrow}>The Avalanche Hour</span>
-            <span className={styles.brandTitle}>Host Studio</span>
+            <span className={styles.brandTitle}>Team Studio</span>
           </span>
         </Link>
 
-        <nav aria-label="Host Studio navigation" className={styles.nav}>
+        <nav aria-label="Team Studio navigation" className={styles.nav}>
           {navItems.map((item, index) => {
             const active =
               item.activePaths?.some((path) =>
@@ -189,7 +205,11 @@ export default function StudioLayout({
             return (
               <div
                 key={item.href}
-                className={styles.navItemBase}
+                className={`${styles.navItemBase} ${
+                  item.section === 'manage' || item.section === 'operations'
+                    ? styles.navItemManager
+                    : ''
+                }`}
               >
                 {beginsSection ? (
                   <span
@@ -246,7 +266,7 @@ export default function StudioLayout({
       </aside>
 
       <main className={styles.main}>
-        <header className={styles.topBar} aria-label="Studio utilities">
+        <header className={styles.topBar} aria-label="Team Studio utilities">
           <span
             className={styles.futureMessagingSlot}
             data-future-messaging-slot
@@ -256,8 +276,15 @@ export default function StudioLayout({
             <NotificationBell href="/studio/notifications" />
           ) : null}
         </header>
-        <div className={styles.mainInner}>{children}</div>
+        <div
+          className={`${styles.mainInner} ${
+            wide ? styles.mainInnerWide : ''
+          }`}
+        >
+          {children}
+        </div>
       </main>
-    </div>
+      </div>
+    </StudioSessionContext.Provider>
   );
 }

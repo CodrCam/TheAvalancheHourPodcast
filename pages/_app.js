@@ -21,6 +21,7 @@ export default function MyApp({ Component, pageProps }) {
   const router = useRouter();
   const isAdminRoute = router.pathname.startsWith('/admin');
   const isStudioRoute = router.pathname.startsWith('/studio');
+  const isPrivateTeamRoute = isAdminRoute || isStudioRoute;
   const isCheckoutRoute = router.pathname.startsWith('/store/checkout');
   const showVoicemailWidget =
     !isAdminRoute && !isStudioRoute && !isCheckoutRoute;
@@ -29,10 +30,16 @@ export default function MyApp({ Component, pageProps }) {
   const lastTrackedPathRef = React.useRef('');
 
   React.useEffect(() => {
-    if (!isGoogleAnalyticsEnabled || isAdminRoute) return;
+    if (!isGoogleAnalyticsEnabled || isPrivateTeamRoute) return;
 
     const trackPageview = (url) => {
-      if (url.startsWith('/admin') || lastTrackedPathRef.current === url) return;
+      if (
+        url.startsWith('/admin') ||
+        url.startsWith('/studio') ||
+        lastTrackedPathRef.current === url
+      ) {
+        return;
+      }
       lastTrackedPathRef.current = url;
       pageview(url);
     };
@@ -44,7 +51,7 @@ export default function MyApp({ Component, pageProps }) {
     return () => {
       router.events.off('routeChangeComplete', trackPageview);
     };
-  }, [isAdminRoute, router.asPath, router.events]);
+  }, [isPrivateTeamRoute, router.asPath, router.events]);
 
   return (
     <React.Fragment>
@@ -52,7 +59,7 @@ export default function MyApp({ Component, pageProps }) {
         <title>The Avalanche Hour Podcast</title>
         <meta name="viewport" content="initial-scale=1, width=device-width" />
       </Head>
-      {isGoogleAnalyticsEnabled && !isAdminRoute ? (
+      {isGoogleAnalyticsEnabled && !isPrivateTeamRoute ? (
         <>
           <Script
             strategy="afterInteractive"

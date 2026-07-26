@@ -24,6 +24,7 @@ import {
   CheckoutPage,
   optionLabel,
 } from '../../components/CheckoutFlow';
+import { getOptimizedPublicImage } from '../../lib/publicImage.mjs';
 import styles from '../../styles/Checkout.module.css';
 
 const CART_KEY = 'ah_cart';
@@ -255,8 +256,10 @@ export default function CartPage() {
                         <Box className={styles.cartImageWrap}>
                           <Box
                             component="img"
-                            src={it.image}
+                            src={getOptimizedPublicImage(it.image)}
                             alt={it.name}
+                            loading="lazy"
+                            decoding="async"
                             className={styles.cartImage}
                           />
                         </Box>

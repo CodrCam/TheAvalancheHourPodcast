@@ -7,6 +7,7 @@ import PublicPageHero from '../../components/PublicPageHero';
 import SEO from '../../components/SEO';
 import { getPersonBySlug, getStaticPeopleSeed } from '../../lib/peopleStore';
 import { profileBioToPlainText } from '../../lib/peoplePresentation.mjs';
+import { getOptimizedPublicImage } from '../../lib/publicImage.mjs';
 import { safeJsonLdStringify } from '../../lib/structuredData.mjs';
 import publicStyles from '../../styles/PublicSite.module.css';
 
@@ -72,7 +73,9 @@ export default function HostProfile({ person }) {
   } = person;
 
   const usesPlaceholder = needsImages || images.length === 0;
-  const imgList = usesPlaceholder ? [PLACEHOLDER_IMG] : images;
+  const imgList = usesPlaceholder
+    ? [PLACEHOLDER_IMG]
+    : images.map(getOptimizedPublicImage);
   const roleLabel = getCategoryLabel(role);
   const displayTitle =
     title.trim().toLowerCase() === roleLabel.toLowerCase()
@@ -163,6 +166,8 @@ export default function HostProfile({ person }) {
                 <CardMedia
                   component="img"
                   image={src}
+                  loading="lazy"
+                  decoding="async"
                   alt={
                     usesPlaceholder
                       ? `Profile photo coming soon for ${name}`

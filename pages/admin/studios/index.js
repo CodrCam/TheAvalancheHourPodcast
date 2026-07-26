@@ -5,6 +5,7 @@ import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import ChevronLeftRoundedIcon from '@mui/icons-material/ChevronLeftRounded';
 import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded';
 import AdminLayout from '../../../components/AdminLayout';
+import { EpisodeRecordingFields } from '../../../components/EpisodeRecordingSchedule';
 import FriendlyDateField from '../../../components/FriendlyDateField';
 import StudioLayout from '../../../components/StudioLayout';
 import styles from '../../../styles/EpisodeStudio.module.css';
@@ -23,6 +24,11 @@ const EMPTY_FORM = {
   season: 'Season 11',
   target_release_date: '',
   due_date: '',
+  recording_date: '',
+  recording_time: '',
+  recording_time_zone: '',
+  recording_duration_minutes: 60,
+  recording_location: '',
   producer_person_id: '',
   producer_email: '',
   host_person_ids: [],
@@ -263,6 +269,23 @@ export function EpisodeStudiosDashboard({ studioLayout = false }) {
       setError('Add a title, release date, and at least one host.');
       return;
     }
+    const recordingStarted = Boolean(
+      form.recording_date ||
+        form.recording_time ||
+        form.recording_time_zone ||
+        form.recording_location.trim()
+    );
+    if (
+      recordingStarted &&
+      (!form.recording_date ||
+        !form.recording_time ||
+        !form.recording_time_zone)
+    ) {
+      setError(
+        'Complete the recording date, time, and time zone, or leave the recording schedule blank.'
+      );
+      return;
+    }
     setCreating(true);
     setError('');
     try {
@@ -416,6 +439,12 @@ export function EpisodeStudiosDashboard({ studioLayout = false }) {
                   ariaLabel="host package due date"
                 />
               </label>
+              <EpisodeRecordingFields
+                schedule={form}
+                onChange={(patch) =>
+                  setForm((current) => ({ ...current, ...patch }))
+                }
+              />
               <label>
                 Producer
                 <select

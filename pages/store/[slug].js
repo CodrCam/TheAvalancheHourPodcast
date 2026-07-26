@@ -35,6 +35,7 @@ import {
   getProductTaxonomy,
 } from '../../lib/productCatalogStructure.mjs';
 import { ecommerceEvent } from '../../lib/gtag';
+import { getOptimizedPublicImage } from '../../lib/publicImage.mjs';
 import styles from '../../styles/Storefront.module.css';
 
 const CART_KEY = 'ah_cart';
@@ -322,6 +323,7 @@ export default function ProductSlugPage({
     computedVariantImage ||
     allImages[0] ||
     product.image;
+  const optimizedHeroImage = getOptimizedPublicImage(heroImage);
   const taxonomy = getProductTaxonomy(product);
   const showColorSelector =
     selectableColors.length > 1 ||
@@ -373,7 +375,7 @@ export default function ProductSlugPage({
     );
 
     const existing = items.find((i) => i.key === key);
-    const imageForCart = heroImage;
+    const imageForCart = optimizedHeroImage;
 
     if (isUnavailable) return;
 
@@ -479,8 +481,9 @@ export default function ProductSlugPage({
             >
               <Box
                 component="img"
-                src={heroImage}
+                src={optimizedHeroImage}
                 alt={product.name}
+                decoding="async"
                 className={styles.detailHeroImage}
               />
               <Box className={styles.thumbnailRail}>
@@ -488,9 +491,11 @@ export default function ProductSlugPage({
                   <Box
                     key={src}
                     component="img"
-                    src={src}
+                    src={getOptimizedPublicImage(src)}
                     alt={product.name}
                     onClick={() => setSelectedImage(src)}
+                    loading="lazy"
+                    decoding="async"
                     className={`${styles.thumbnail} ${
                       heroImage === src ? styles.thumbnailActive : ''
                     }`}
@@ -570,7 +575,7 @@ export default function ProductSlugPage({
                       className={styles.visualOption}
                     >
                       <img
-                        src={
+                        src={getOptimizedPublicImage(
                           getVariantImage(product, {
                             style: st,
                             color:
@@ -580,8 +585,10 @@ export default function ProductSlugPage({
                                 st
                               )[0] || '',
                           }) || product.image
-                        }
+                        )}
                         alt=""
+                        loading="lazy"
+                        decoding="async"
                       />
                       <span>{st}</span>
                     </ToggleButton>
@@ -616,14 +623,16 @@ export default function ProductSlugPage({
                       className={styles.visualOption}
                     >
                       <img
-                        src={
+                        src={getOptimizedPublicImage(
                           getVariantImage(product, {
                             color: c,
                             style,
                             size,
                           }) || product.image
-                        }
+                        )}
                         alt=""
+                        loading="lazy"
+                        decoding="async"
                       />
                       <span>{c}</span>
                     </ToggleButton>

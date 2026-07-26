@@ -21,6 +21,7 @@ import {
   optionLabel,
 } from '../../../components/CheckoutFlow';
 import { ecommerceEvent } from '../../../lib/gtag';
+import { getOptimizedPublicImage } from '../../../lib/publicImage.mjs';
 import styles from '../../../styles/Checkout.module.css';
 import {
   CART_KEY,
@@ -480,8 +481,10 @@ export default function ReviewPage() {
                       <Box key={it.key} className={styles.reviewItem}>
                         <Box
                           component="img"
-                          src={it.image}
+                          src={getOptimizedPublicImage(it.image)}
                           alt={it.name}
+                          loading="lazy"
+                          decoding="async"
                           className={styles.reviewImage}
                         />
                         <Box>
