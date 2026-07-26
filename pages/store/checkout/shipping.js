@@ -13,8 +13,17 @@ import {
   Button,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded';
+import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
+import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined';
 import Navbar from '../../../components/Navbar';
+import {
+  CheckoutHero,
+  CheckoutPage,
+  optionLabel,
+} from '../../../components/CheckoutFlow';
 import { ecommerceEvent } from '../../../lib/gtag';
+import styles from '../../../styles/Checkout.module.css';
 import {
   CART_KEY,
   CHECKOUT_ATTEMPT_KEY,
@@ -202,160 +211,245 @@ export default function ShippingPage() {
 
       <Navbar />
 
-      <Container maxWidth="md" sx={{ py: { xs: 3, md: 5 } }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+      <CheckoutPage>
+        <CheckoutHero
+          currentStep={2}
+          title="Where should it land?"
+          description="Give us the contact and shipping details we need. We currently ship field goods within the United States."
+        />
+
+        <Container maxWidth="lg" className={styles.content}>
           <Button
             component={Link}
             href="/store/cart"
-            size="small"
             startIcon={<ArrowBackIcon />}
+            className={styles.backLink}
           >
             Back to cart
           </Button>
-          <Box sx={{ flexGrow: 1 }} />
-          {subtotal > 0 && (
-            <Typography sx={{ fontWeight: 500 }}>
-              Subtotal: {money(subtotal)}
-            </Typography>
-          )}
-        </Box>
 
-        <Paper
-          component="form"
-          noValidate
-          onSubmit={handleContinue}
-          elevation={0}
-          sx={{
-            p: { xs: 2, md: 3 },
-            borderRadius: 2,
-            border: '1px solid',
-            borderColor: 'divider',
-          }}
-        >
-          <Typography variant="h5" sx={{ mb: 2 }}>
-            Shipping &amp; Contact
-          </Typography>
-
-          {errorMsg ? (
-            <Typography
-              sx={{ color: 'error.main', mb: 2, fontSize: 14 }}
+          <Box className={styles.layout}>
+            <Paper
+              component="form"
+              noValidate
+              onSubmit={handleContinue}
+              elevation={0}
+              className={`${styles.panel} ${styles.formPanel}`}
             >
-              {errorMsg}
-            </Typography>
-          ) : null}
+              <Box className={styles.panelHeader}>
+                <Box>
+                  <Typography component="p" className={styles.panelEyebrow}>
+                    Delivery details
+                  </Typography>
+                  <Typography component="h2" className={styles.panelTitle}>
+                    Shipping &amp; contact
+                  </Typography>
+                </Box>
+              </Box>
 
-          <Grid container spacing={2}>
-            <Grid item xs={12}>
-              <TextField
-                label="Email"
-                type="email"
-                name="email"
-                autoComplete="email"
-                size="small"
-                fullWidth
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                helperText="We’ll send your order and shipping updates here."
-              />
-            </Grid>
+              {errorMsg ? (
+                <Box role="alert" className={styles.errorNotice}>
+                  {errorMsg}
+                </Box>
+              ) : null}
 
-            <Grid item xs={12}>
-              <TextField
-                label="Full name"
-                name="name"
-                autoComplete="name"
-                size="small"
-                fullWidth
-                value={shipping.name}
-                onChange={handleShippingChange('name')}
-                required
-              />
-            </Grid>
+              <Box className={styles.formSection}>
+                <Box className={styles.sectionHeading}>
+                  <span className={styles.sectionNumber}>01</span>
+                  <Typography component="h3" className={styles.sectionTitle}>
+                    Contact
+                  </Typography>
+                </Box>
+                <Grid container spacing={2}>
+                  <Grid item xs={12}>
+                    <TextField
+                      label="Email"
+                      type="email"
+                      name="email"
+                      autoComplete="email"
+                      fullWidth
+                      value={email}
+                      onChange={(event) => setEmail(event.target.value)}
+                      required
+                      helperText="We’ll send your order and shipping updates here."
+                      className={styles.field}
+                    />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <TextField
+                      label="Full name"
+                      name="name"
+                      autoComplete="name"
+                      fullWidth
+                      value={shipping.name}
+                      onChange={handleShippingChange('name')}
+                      required
+                      className={styles.field}
+                    />
+                  </Grid>
+                </Grid>
+              </Box>
 
-            <Grid item xs={12}>
-              <TextField
-                label="Street address"
-                name="address-line1"
-                autoComplete="address-line1"
-                size="small"
-                fullWidth
-                value={shipping.line1}
-                onChange={handleShippingChange('line1')}
-                required
-              />
-            </Grid>
+              <Box className={styles.formSection}>
+                <Box className={styles.sectionHeading}>
+                  <span className={styles.sectionNumber}>02</span>
+                  <Typography component="h3" className={styles.sectionTitle}>
+                    Shipping address
+                  </Typography>
+                </Box>
+                <Grid container spacing={2}>
+                  <Grid item xs={12}>
+                    <TextField
+                      label="Street address"
+                      name="address-line1"
+                      autoComplete="address-line1"
+                      fullWidth
+                      value={shipping.line1}
+                      onChange={handleShippingChange('line1')}
+                      required
+                      className={styles.field}
+                    />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <TextField
+                      label="Apartment, suite, etc. (optional)"
+                      name="address-line2"
+                      autoComplete="address-line2"
+                      fullWidth
+                      value={shipping.line2}
+                      onChange={handleShippingChange('line2')}
+                      className={styles.field}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      label="City"
+                      name="address-level2"
+                      autoComplete="address-level2"
+                      fullWidth
+                      value={shipping.city}
+                      onChange={handleShippingChange('city')}
+                      required
+                      className={styles.field}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={3}>
+                    <TextField
+                      label="State"
+                      name="address-level1"
+                      autoComplete="address-level1"
+                      fullWidth
+                      value={shipping.state}
+                      onChange={handleShippingChange('state')}
+                      required
+                      className={styles.field}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={3}>
+                    <TextField
+                      label="ZIP code"
+                      name="postal-code"
+                      autoComplete="postal-code"
+                      fullWidth
+                      value={shipping.postal_code}
+                      onChange={handleShippingChange('postal_code')}
+                      required
+                      className={styles.field}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      label="Country"
+                      fullWidth
+                      value="United States"
+                      disabled
+                      helperText="U.S. shipping only for the current drop."
+                      className={styles.field}
+                    />
+                  </Grid>
+                </Grid>
+              </Box>
 
-            <Grid item xs={12}>
-              <TextField
-                label="Apartment, suite, etc. (optional)"
-                name="address-line2"
-                autoComplete="address-line2"
-                size="small"
-                fullWidth
-                value={shipping.line2}
-                onChange={handleShippingChange('line2')}
-              />
-            </Grid>
+              <Box className={styles.trustRow}>
+                <LockOutlinedIcon />
+                <span>
+                  These details are used only to process this order and provide
+                  delivery updates.
+                </span>
+              </Box>
 
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="City"
-                name="address-level2"
-                autoComplete="address-level2"
-                size="small"
-                fullWidth
-                value={shipping.city}
-                onChange={handleShippingChange('city')}
-                required
-              />
-            </Grid>
+              <Box className={styles.formActions}>
+                <Button
+                  component={Link}
+                  href="/store/cart"
+                  variant="outlined"
+                  className={styles.secondaryButton}
+                >
+                  Review cart
+                </Button>
+                <Button
+                  variant="contained"
+                  type="submit"
+                  endIcon={<ArrowForwardRoundedIcon />}
+                  className={styles.primaryButton}
+                >
+                  Continue to review
+                </Button>
+              </Box>
+            </Paper>
 
-            <Grid item xs={12} sm={3}>
-              <TextField
-                label="State / Province"
-                name="address-level1"
-                autoComplete="address-level1"
-                size="small"
-                fullWidth
-                value={shipping.state}
-                onChange={handleShippingChange('state')}
-                required
-              />
-            </Grid>
-
-            <Grid item xs={12} sm={3}>
-              <TextField
-                label="Postal code"
-                name="postal-code"
-                autoComplete="postal-code"
-                size="small"
-                fullWidth
-                value={shipping.postal_code}
-                onChange={handleShippingChange('postal_code')}
-                required
-              />
-            </Grid>
-
-            <Grid item xs={12} sm={4}>
-              <TextField
-                label="Country"
-                size="small"
-                fullWidth
-                value="United States"
-                disabled
-                helperText="We currently only ship within the United States."
-              />
-            </Grid>
-          </Grid>
-
-          <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end' }}>
-            <Button variant="contained" type="submit">
-              Continue to review
-            </Button>
+            <Box className={styles.sideColumn}>
+              <Paper elevation={0} className={styles.summaryCard}>
+                <Box className={styles.summaryTop}>
+                  <Typography component="p" className={styles.summaryEyebrow}>
+                    Packed so far
+                  </Typography>
+                  <Typography component="h2" className={styles.summaryTitle}>
+                    Your field goods
+                  </Typography>
+                </Box>
+                <Box className={styles.summaryBody}>
+                  <Box className={styles.miniItems}>
+                    {items.map((item) => (
+                      <Box key={item.key} className={styles.miniItem}>
+                        <Box
+                          component="img"
+                          src={item.image}
+                          alt=""
+                          className={styles.miniImage}
+                        />
+                        <Box>
+                          <Typography className={styles.miniName}>
+                            {item.name} × {item.qty}
+                          </Typography>
+                          {optionLabel(item.options) ? (
+                            <Typography className={styles.miniOptions}>
+                              {optionLabel(item.options)}
+                            </Typography>
+                          ) : null}
+                        </Box>
+                        <Typography className={styles.miniPrice}>
+                          {money(item.price * item.qty)}
+                        </Typography>
+                      </Box>
+                    ))}
+                  </Box>
+                  <Box className={styles.summaryTotal}>
+                    <span>Subtotal</span>
+                    <strong>{money(subtotal)}</strong>
+                  </Box>
+                  <Box className={styles.summaryStatus}>
+                    <LocalShippingOutlinedIcon fontSize="small" />
+                    <span>
+                      Shipping is confirmed on the next step.
+                    </span>
+                  </Box>
+                </Box>
+              </Paper>
+            </Box>
           </Box>
-        </Paper>
-      </Container>
+        </Container>
+      </CheckoutPage>
     </>
   );
 }

@@ -35,6 +35,63 @@ test('hosts receive only the host resource path', () => {
   );
 });
 
+test('host resources include the complete Riverside recording workflow', () => {
+  const [host] = getStudioResourcePathways(
+    getPermissionsForGroups([ACCESS_GROUPS.HOST])
+  );
+  const riversideSetup = host.steps.find(
+    (step) => step.id === 'host-riverside-setup'
+  );
+  const recordingCheck = host.steps.find(
+    (step) => step.id === 'host-recording-check'
+  );
+  const recordAndUpload = host.steps.find(
+    (step) => step.id === 'host-record-and-upload'
+  );
+
+  assert.ok(riversideSetup);
+  assert.ok(recordingCheck);
+  assert.ok(recordAndUpload);
+  assert.ok(riversideSetup.instructions.length >= 8);
+  assert.ok(recordingCheck.instructions.length >= 8);
+  assert.ok(recordAndUpload.instructions.length >= 8);
+  assert.equal(
+    host.faqs.some((faq) => faq.id === 'host-faq-upload'),
+    true
+  );
+  assert.equal(
+    host.faqs.some((faq) => faq.id === 'host-faq-wrong-mic'),
+    true
+  );
+  assert.equal(
+    host.suggested_searches.includes('set up Riverside'),
+    true
+  );
+});
+
+test('every host walkthrough provides a visible step-by-step refresher', () => {
+  const [host] = getStudioResourcePathways(
+    getPermissionsForGroups([ACCESS_GROUPS.HOST])
+  );
+
+  assert.ok(host.steps.length >= 8);
+  assert.equal(
+    host.steps.every(
+      (step) =>
+        Array.isArray(step.instructions) && step.instructions.length >= 3
+    ),
+    true
+  );
+  assert.equal(
+    host.steps.some((step) => 'permission' in step),
+    false
+  );
+  assert.equal(
+    host.faqs.some((faq) => 'permission' in faq),
+    false
+  );
+});
+
 test('logistics users receive operations guidance without producer controls', () => {
   const permissions = getPermissionsForGroups([ACCESS_GROUPS.LOGISTICS]);
   const pathways = getStudioResourcePathways(permissions);
@@ -47,6 +104,14 @@ test('logistics users receive operations guidance without producer controls', ()
   );
   assert.equal(
     operations.steps.some((step) => step.id === 'operations-orders'),
+    true
+  );
+  assert.equal(
+    operations.steps.some((step) => step.id === 'operations-products'),
+    true
+  );
+  assert.equal(
+    operations.faqs.some((faq) => faq.id === 'operations-faq-sold-out'),
     true
   );
   assert.equal(
@@ -107,6 +172,12 @@ test('admins see restricted resource actions but no action loses its permission 
   assert.equal(
     pathways.some((pathway) =>
       pathway.steps.some((step) => 'permission' in step)
+    ),
+    false
+  );
+  assert.equal(
+    pathways.some((pathway) =>
+      pathway.faqs.some((faq) => 'permission' in faq)
     ),
     false
   );

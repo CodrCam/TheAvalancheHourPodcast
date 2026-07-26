@@ -59,13 +59,19 @@ export default function EpisodeCard({ episode, loading = false }) {
         display: 'flex', 
         flexDirection: 'column', 
         height: '100%',
-        transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
+        overflow: 'hidden',
+        border: '1px solid rgba(16, 34, 45, 0.18)',
+        borderRadius: 0,
+        backgroundColor: 'rgba(255,255,255,0.82)',
+        boxShadow: 'none',
+        transition: 'transform 0.2s ease-in-out, border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
         '&:hover': {
           transform: 'translateY(-4px)',
-          boxShadow: 4,
+          borderColor: 'rgba(16, 34, 45, 0.4)',
+          boxShadow: '0 20px 46px rgba(16, 34, 45, 0.12)',
         }
       }}
-      elevation={2}
+      elevation={0}
     >
       <CardActionArea
         href={episode.external_urls?.spotify || '#'}
@@ -76,11 +82,11 @@ export default function EpisodeCard({ episode, loading = false }) {
       >
         <Box
           sx={{
-            height: 200, // Increased height for better visual impact
+            height: 230,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: '#f5f5f5',
+            backgroundColor: '#dce5e4',
             position: 'relative',
             overflow: 'hidden',
           }}
@@ -92,7 +98,7 @@ export default function EpisodeCard({ episode, loading = false }) {
             sx={{
               maxHeight: '100%',
               maxWidth: '100%',
-              objectFit: 'contain',
+              objectFit: 'cover',
               transition: 'transform 0.3s ease-in-out',
             }}
           />
@@ -104,7 +110,7 @@ export default function EpisodeCard({ episode, loading = false }) {
               left: 0,
               right: 0,
               bottom: 0,
-              backgroundColor: 'rgba(0, 0, 0, 0.4)',
+              backgroundColor: 'rgba(8, 27, 36, 0.68)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -126,12 +132,26 @@ export default function EpisodeCard({ episode, loading = false }) {
         </Box>
 
         <CardContent sx={{ flexGrow: 1, p: 3 }}>
+          <Typography
+            component="p"
+            sx={{
+              mb: 1.1,
+              color: '#a8431e',
+              fontSize: '0.64rem',
+              fontWeight: 900,
+              letterSpacing: '0.15em',
+              textTransform: 'uppercase',
+            }}
+          >
+            Field conversation
+          </Typography>
           <Typography 
             variant="h6" 
             component="h3"
             gutterBottom
             sx={{
-              fontWeight: 600,
+              color: '#10222d',
+              fontWeight: 800,
               lineHeight: 1.3,
               display: '-webkit-box',
               WebkitLineClamp: 2,
@@ -148,7 +168,8 @@ export default function EpisodeCard({ episode, loading = false }) {
             color="text.secondary"
             sx={{
               mb: 2,
-              lineHeight: 1.4,
+              color: '#526a75',
+              lineHeight: 1.55,
               display: '-webkit-box',
               WebkitLineClamp: 3,
               WebkitBoxOrient: 'vertical',
@@ -183,7 +204,7 @@ export default function EpisodeCard({ episode, loading = false }) {
       </CardActionArea>
 
       {/* Separate button area to prevent double-click issues */}
-      <Box sx={{ p: 2, pt: 0 }}>
+      <Box sx={{ p: 2.5, pt: 0 }}>
         <Button
           variant="contained"
           color="primary"
@@ -194,10 +215,14 @@ export default function EpisodeCard({ episode, loading = false }) {
           fullWidth
           sx={{
             textTransform: 'none',
-            fontWeight: 600,
-            py: 1,
+            fontWeight: 800,
+            py: 1.15,
+            borderRadius: 0,
+            backgroundColor: '#10222d',
+            boxShadow: 'none',
             '&:hover': {
-              backgroundColor: 'primary.dark',
+              backgroundColor: '#1e4657',
+              boxShadow: 'none',
             }
           }}
           aria-label={`Listen to ${episode.name} on Spotify`}

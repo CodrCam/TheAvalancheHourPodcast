@@ -22,11 +22,13 @@ import {
   WorkspacePremium,
 } from '@mui/icons-material';
 import Navbar from '../components/Navbar';
+import PublicPageHero from '../components/PublicPageHero';
 import SEO from '../components/SEO';
 import {
   getStaticSponsorSeed,
   listSponsors,
 } from '../lib/sponsorStore';
+import publicStyles from '../styles/PublicSite.module.css';
 
 const rateCardUrl = '/files/avalanche-hour-s11-rate-card.pdf';
 
@@ -100,9 +102,9 @@ function SponsorSupportCard({ sponsor }) {
       variant="outlined"
       sx={{
         height: '100%',
-        borderRadius: 2.5,
+        borderRadius: 0,
         borderColor: hasOffer ? 'primary.main' : 'grey.200',
-        boxShadow: hasOffer ? '0 12px 34px rgba(23, 59, 91, 0.10)' : 'none',
+        boxShadow: hasOffer ? '0 16px 38px rgba(16, 34, 45, 0.10)' : 'none',
       }}
     >
       <CardContent
@@ -252,79 +254,36 @@ export default function SupportPage({ sponsors = [] }) {
 
       <Navbar />
 
-      <Box component="main">
-        <Box
-          component="section"
-          sx={{
-            bgcolor: 'primary.main',
-            color: 'primary.contrastText',
-            py: { xs: 6, md: 9 },
-          }}
+      <Box component="main" className={publicStyles.publicPage}>
+        <PublicPageHero
+          eyebrow="Independent voices · community supported"
+          title="Keep the signal strong."
+          description="Help the podcast grow through single-episode ads, season-long support, underwriting, or a direct contribution to the conversations."
         >
-          <Container maxWidth="lg">
-            <Grid container spacing={4} alignItems="center">
-              <Grid item xs={12} md={8}>
-                <Typography
-                  variant="h1"
-                  sx={{
-                    fontSize: { xs: '2.75rem', md: '4rem' },
-                    mb: 2,
-                    color: 'inherit',
-                  }}
-                >
-                  Support The Avalanche Hour
-                </Typography>
-                <Typography
-                  variant="h6"
-                  component="p"
-                  sx={{
-                    maxWidth: 760,
-                    color: 'rgba(255,255,255,0.9)',
-                    fontWeight: 400,
-                  }}
-                >
-                  Help keep the podcast growing through single-episode ads,
-                  season-long support, or underwriting opportunities built for
-                  brands, educators, guide services, ski patrols, and avalanche
-                  community supporters.
-                </Typography>
-              </Grid>
-
-              <Grid item xs={12} md={4}>
-                <Stack spacing={1.5} alignItems={{ xs: 'stretch', sm: 'flex-start', md: 'stretch' }}>
-                  <Button
-                    component="a"
-                    href={rateCardUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    variant="contained"
-                    color="secondary"
-                    startIcon={<Download />}
-                    sx={{ justifyContent: 'center' }}
-                  >
-                    View Rate Card
-                  </Button>
-                  <Button
-                    component={Link}
-                    href="/contact"
-                    variant="outlined"
-                    sx={{
-                      color: 'primary.contrastText',
-                      borderColor: 'rgba(255,255,255,0.75)',
-                      justifyContent: 'center',
-                      '&:hover': {
-                        borderColor: 'primary.contrastText',
-                        bgcolor: 'rgba(255,255,255,0.08)',
-                      },
-                    }}
-                  >
-                    Ask About Custom Support
-                  </Button>
-                </Stack>
-              </Grid>
-            </Grid>
-          </Container>
-        </Box>
+          <Stack spacing={1.25}>
+            <Button
+              component="a"
+              href={rateCardUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              variant="contained"
+              startIcon={<Download />}
+            >
+              View Rate Card
+            </Button>
+            <Button
+              component={Link}
+              href="/contact"
+              variant="outlined"
+              sx={{
+                color: '#fff',
+                borderColor: 'rgba(255,255,255,.52)',
+              }}
+            >
+              Ask About Custom Support
+            </Button>
+          </Stack>
+        </PublicPageHero>
 
         <Box component="section" sx={{ bgcolor: 'background.default', py: { xs: 5, md: 8 } }}>
           <Container maxWidth="lg">
@@ -344,7 +303,7 @@ export default function SupportPage({ sponsors = [] }) {
                   <Card
                     sx={{
                       height: '100%',
-                      borderRadius: 2,
+                      borderRadius: 0,
                       border: '1px solid',
                       borderColor: tier.featured ? 'primary.main' : 'grey.200',
                       boxShadow: tier.featured ? 4 : 1,
@@ -447,7 +406,7 @@ export default function SupportPage({ sponsors = [] }) {
                 ))}
               </Grid>
             ) : (
-              <Card variant="outlined" sx={{ borderRadius: 2 }}>
+              <Card variant="outlined" sx={{ borderRadius: 0 }}>
                 <CardContent>
                   <Typography color="text.secondary">
                     The current sponsor list is being updated. Please check back

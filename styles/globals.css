@@ -3,3 +3,53 @@
 /* Import the Amatic font */
 @import url('https://fonts.googleapis.com/css2?family=Amatic+SC:wght@700&display=swap');
 
+:root {
+  color-scheme: light;
+  --ah-ink: #10222d;
+  --ah-ink-soft: #405965;
+  --ah-snow: #f4f6f2;
+  --ah-ice: #c8e4ed;
+  --ah-signal: #ef6f35;
+  --ah-line: rgba(16, 34, 45, 0.18);
+}
+
+html {
+  scroll-behavior: smooth;
+  background: var(--ah-snow);
+}
+
+body {
+  margin: 0;
+  background:
+    linear-gradient(rgba(244, 246, 242, 0.97), rgba(244, 246, 242, 0.97)),
+    url('/images/background/main-page1.jpg') center top / cover fixed;
+  color: var(--ah-ink);
+}
+
+::selection {
+  background: var(--ah-signal);
+  color: var(--ah-ink);
+}
+
+a {
+  text-underline-offset: 3px;
+}
+
+img {
+  display: block;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}

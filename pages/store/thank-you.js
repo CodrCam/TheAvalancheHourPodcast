@@ -8,12 +8,19 @@ import {
   Button,
   Paper,
   Box,
-  Divider,
-  Grid,
 } from '@mui/material';
+import CheckRoundedIcon from '@mui/icons-material/CheckRounded';
+import PrintOutlinedIcon from '@mui/icons-material/PrintOutlined';
+import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded';
 import Navbar from '../../components/Navbar';
+import {
+  CheckoutHero,
+  CheckoutPage,
+  optionLabel,
+} from '../../components/CheckoutFlow';
 import { LAST_ORDER_KEY } from '../../src/config/store';
 import { ecommerceEvent } from '../../lib/gtag';
+import styles from '../../styles/Checkout.module.css';
 
 // Treat the argument as **dollars**, not cents
 const money = (amount = 0) =>
@@ -79,136 +86,137 @@ export default function ThankYouPage() {
 
       <Navbar />
 
-      <Container maxWidth="md" sx={{ py: { xs: 3, md: 5 } }}>
-        <Paper
-          elevation={0}
-          sx={{
-            p: { xs: 2, md: 3 },
-            border: '1px solid',
-            borderColor: 'divider',
-            borderRadius: 2,
-          }}
-        >
-          <Typography variant="h4" sx={{ mb: 1 }}>
-            Thank you for your order
-          </Typography>
+      <CheckoutPage>
+        <CheckoutHero
+          currentStep={5}
+          complete
+          eyebrow="Order confirmed"
+          title="Your support is on its way."
+          description="Thanks for backing independent conversations that make avalanche communities more informed, connected, and honest."
+        />
 
-          {meta?.orderId ? (
-            <Typography sx={{ color: 'text.secondary', mb: 2 }}>
-              Order ID: <strong>{meta.orderId}</strong>
-            </Typography>
-          ) : null}
-
-          {meta?.email ? (
-            <Typography sx={{ color: 'text.secondary', mb: 2 }}>
-              A receipt has been sent to <strong>{meta.email}</strong>.
-            </Typography>
-          ) : null}
-
-          <Divider sx={{ my: 2 }} />
-
-          {/* Payment summary */}
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-              Total paid
-            </Typography>
-            <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-              {money(getOrderAmountDollars(meta))}
-            </Typography>
-          </Box>
-
-          {meta?.last4 ? (
-            <Typography sx={{ color: 'text.secondary', mb: 2 }}>
-              Paid with card ending in <strong>{meta.last4}</strong>.
-            </Typography>
-          ) : null}
-
-          <Divider sx={{ my: 2 }} />
-
-          {/* Order recap */}
-          <Typography variant="h6" sx={{ mb: 1 }}>
-            Order recap
-          </Typography>
-
-          {hasItems ? (
-            <Box sx={{ display: 'grid', gap: 1.5, mb: 2 }}>
-              {meta.items.map((it) => {
-                const qty = Number(it.qty || 0);
-                const priceCents = Number(it.price || 0);
-                const lineTotalDollars = (priceCents * qty) / 100;
-
-                return (
-                  <Grid
-                    container
-                    key={
-                      it.key ||
-                      `${it.id}-${JSON.stringify(it.options || {})}`
-                    }
-                    alignItems="center"
-                  >
-                    <Grid item xs={8}>
-                      <Typography
-                        variant="body1"
-                        sx={{ fontWeight: 600 }}
-                      >
-                        {it.name}
-                      </Typography>
-                      <Typography
-                        sx={{ color: 'text.secondary', fontSize: 13 }}
-                      >
-                        {it?.options?.style ? (
-                          <span>Style: {it.options.style}</span>
-                        ) : null}
-                        {it?.options?.color ? (
-                          <span>{' • '}Color: {it.options.color}</span>
-                        ) : null}
-                        {it?.options?.size ? (
-                          <span>{' • '}Size: {it.options.size}</span>
-                        ) : null}
-                        <span>{' • '}Qty: {qty}</span>
-                      </Typography>
-                    </Grid>
-                    <Grid
-                      item
-                      xs={4}
-                      sx={{ textAlign: 'right', fontWeight: 600 }}
-                    >
-                      {money(lineTotalDollars)}
-                    </Grid>
-                  </Grid>
-                );
-              })}
+        <Container maxWidth="md" className={styles.content}>
+          <Paper elevation={0} className={styles.confirmationCard}>
+            <Box className={styles.confirmationMain}>
+              <span className={styles.confirmationIcon}>
+                <CheckRoundedIcon fontSize="large" />
+              </span>
+              <Typography component="p" className={styles.confirmationEyebrow}>
+                Payment confirmed
+              </Typography>
+              <Typography component="h2" className={styles.confirmationTitle}>
+                Thank you for your order.
+              </Typography>
+              <Typography className={styles.confirmationCopy}>
+                {meta?.email ? (
+                  <>
+                    A receipt and order confirmation have been sent to{' '}
+                    <strong>{meta.email}</strong>.
+                  </>
+                ) : (
+                  <>
+                    Your payment was successful. Your Stripe receipt is the
+                    durable confirmation for this order.
+                  </>
+                )}
+              </Typography>
+              {meta?.orderId ? (
+                <span className={styles.orderReference}>
+                  Order <strong>{meta.orderId}</strong>
+                </span>
+              ) : null}
             </Box>
-          ) : (
-            <Typography sx={{ color: 'text.secondary', mb: 2 }}>
-              We couldn&apos;t find the order details in this browser session,
-              but your payment was successful.
-            </Typography>
-          )}
 
-          <Divider sx={{ my: 2 }} />
+            <Box className={styles.confirmationDetails}>
+              <Box className={styles.confirmationItems}>
+                <Typography component="p" className={styles.panelEyebrow}>
+                  What you packed
+                </Typography>
+                <Typography component="h2" className={styles.panelTitle}>
+                  Order recap
+                </Typography>
 
-          <Box
-            sx={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              gap: 1,
-              justifyContent: 'space-between',
-            }}
-          >
-            <Button component={Link} href="/store" variant="outlined">
-              Back to store
-            </Button>
-            <Button
-              variant="text"
-              onClick={() => window.print()}
-              sx={{ ml: { xs: 0, md: 'auto' } }}
-            >
-              Print receipt
-            </Button>
-          </Box>
-        </Paper>
-      </Container>
+                {hasItems ? (
+                  <Box sx={{ mt: 2 }}>
+                    {meta.items.map((it) => {
+                      const qty = Number(it.qty || 0);
+                      const priceCents = Number(it.price || 0);
+                      const lineTotalDollars = (priceCents * qty) / 100;
+
+                      return (
+                        <Box
+                          key={
+                            it.key ||
+                            `${it.id}-${JSON.stringify(it.options || {})}`
+                          }
+                          className={styles.confirmationLine}
+                        >
+                          <Box>
+                            <Typography className={styles.confirmationLineName}>
+                              {it.name} × {qty}
+                            </Typography>
+                            {optionLabel(it.options) ? (
+                              <Typography className={styles.miniOptions}>
+                                {optionLabel(it.options)}
+                              </Typography>
+                            ) : null}
+                          </Box>
+                          <strong>{money(lineTotalDollars)}</strong>
+                        </Box>
+                      );
+                    })}
+                  </Box>
+                ) : (
+                  <Typography className={styles.summaryNote}>
+                    We couldn&apos;t find the item details in this browser
+                    session, but your payment was successful.
+                  </Typography>
+                )}
+              </Box>
+
+              <Box className={styles.confirmationTotal}>
+                <Typography component="p" className={styles.panelEyebrow}>
+                  Payment
+                </Typography>
+                <Box className={styles.summaryTotal}>
+                  <span>Total paid</span>
+                  <strong>{money(getOrderAmountDollars(meta))}</strong>
+                </Box>
+                {meta?.last4 ? (
+                  <Typography className={styles.summaryNote}>
+                    Paid with card ending in <strong>{meta.last4}</strong>.
+                  </Typography>
+                ) : null}
+                <Box className={styles.confirmationActions}>
+                  <Button
+                    component={Link}
+                    href="/store"
+                    variant="contained"
+                    endIcon={<ArrowForwardRoundedIcon />}
+                    className={styles.primaryButton}
+                  >
+                    Back to store
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    startIcon={<PrintOutlinedIcon />}
+                    onClick={() => window.print()}
+                    className={styles.secondaryButton}
+                  >
+                    Print receipt
+                  </Button>
+                </Box>
+              </Box>
+            </Box>
+
+            <Box className={styles.missionNote}>
+              <strong>Your purchase supports the signal.</strong> It helps keep
+              long-form avalanche conversations independent and moving through
+              the community.
+            </Box>
+          </Paper>
+        </Container>
+      </CheckoutPage>
     </>
   );
 }

@@ -6,6 +6,7 @@ import {
   studioGuideSearchText,
   validateStudioGuide,
 } from '../lib/studioGuidePresentation.mjs';
+import { DEFAULT_STUDIO_GUIDE } from '../lib/studioGuideDefaults.js';
 
 const sampleGuide = {
   title: 'Guide',
@@ -115,5 +116,45 @@ test('requires unique section IDs', () => {
   assert.throws(
     () => validateStudioGuide(duplicateGuide),
     /duplicate section ID/
+  );
+});
+
+test('default host manual is durable, complete, and valid', () => {
+  const guide = validateStudioGuide(DEFAULT_STUDIO_GUIDE);
+  const sectionIds = guide.sections.map((section) => section.id);
+  const serialized = JSON.stringify(guide);
+
+  assert.equal(guide.schema_version, 2);
+  assert.equal(guide.title, 'The Avalanche Hour Host Field Manual');
+  assert.equal(guide.announcement.enabled, false);
+  assert.equal(sectionIds.includes('training-and-schedule'), false);
+  assert.equal(sectionIds.includes('riverside-structure-and-scheduling'), true);
+  assert.equal(sectionIds.includes('riverside-lobby-and-test'), true);
+  assert.equal(sectionIds.includes('riverside-upload-and-recovery'), true);
+  assert.equal(sectionIds.includes('riverside-download'), true);
+  assert.equal(serialized.includes('August 5, 2026'), false);
+  assert.equal(
+    serialized.includes('people with a curious fascination with avalanches'),
+    true
+  );
+});
+
+test('Riverside manual sections use active official references', () => {
+  const guide = sanitizeStudioGuideForHosts(DEFAULT_STUDIO_GUIDE);
+  const riversideSections = guide.sections.filter(
+    (section) => section.category === 'Riverside'
+  );
+  const links = riversideSections.flatMap((section) => section.links);
+
+  assert.ok(riversideSections.length >= 6);
+  assert.ok(links.length >= 10);
+  assert.equal(
+    links.every(
+      (link) =>
+        link.active === true &&
+        (link.url.startsWith('https://support.riverside.com/') ||
+          link.url.startsWith('https://riverside.com/'))
+    ),
+    true
   );
 });

@@ -2,7 +2,7 @@
 import Stripe from 'stripe';
 import nodemailer from 'nodemailer';
 import { upsertOrder } from '../../../lib/orderStore';
-import { skuKey } from '../../../lib/stock';
+import { resolveRecordedOrderItems } from '../../../lib/catalogCheckout';
 
 const stripe = process.env.STRIPE_SECRET_KEY
   ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2022-11-15' })
@@ -26,51 +26,13 @@ function parsePaymentIntentItems(paymentIntent) {
   }
 }
 
-function aggregateItemsBySku(rawItems = []) {
-  const result = new Map();
-  const items = Array.isArray(rawItems) ? rawItems : [];
-
-  for (const item of items) {
-    if (!item || typeof item !== 'object') continue;
-
-    const qty = parseInt(item.qty ?? item.quantity, 10) || 0;
-    const sku =
-      typeof item.sku === 'string' && item.sku
-        ? item.sku
-        : item.id
-          ? skuKey(item.id, item.options || {})
-          : '';
-
-    if (!sku || qty <= 0) continue;
-    result.set(sku, (result.get(sku) || 0) + qty);
-  }
-
-  return result;
-}
-
-function itemAggregatesMatch(left, right) {
-  if (!left.size || left.size !== right.size) return false;
-
-  for (const [sku, qty] of left.entries()) {
-    if (right.get(sku) !== qty) return false;
-  }
-
-  return true;
-}
-
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const {
-    orderId,
-    paymentIntentId,
-    items,
-    email,
-    shipping,
-  } = req.body || {};
+  const { orderId, paymentIntentId } = req.body || {};
 
   if (!orderId || !paymentIntentId) {
     return res
@@ -98,9 +60,7 @@ export default async function handler(req, res) {
       typeof paymentIntent.amount_received === 'number'
         ? paymentIntent.amount_received
         : paymentIntent.amount;
-    const safeShipping =
-      paymentIntent.shipping ||
-      (shipping && typeof shipping === 'object' ? shipping : {});
+    const safeShipping = paymentIntent.shipping || {};
     const safeAddress = safeShipping.address || safeShipping;
     const shippingName = safeShipping.name || null;
     const shippingAddress1 = safeAddress.line1 || null;
@@ -109,17 +69,18 @@ export default async function handler(req, res) {
     const shippingState = safeAddress.state || null;
     const shippingPostalCode = safeAddress.postal_code || null;
     const shippingCountry = safeAddress.country || null;
-    const verifiedCustomerEmail =
-      paymentIntent.receipt_email ||
-      (typeof email === 'string' && email ? email : null);
+    const verifiedCustomerEmail = paymentIntent.receipt_email || null;
     const customerName = shippingName || null;
     const metadataItems = parsePaymentIntentItems(paymentIntent);
-    const postedItems = Array.isArray(items) ? items : [];
-    const postedItemsMatchPayment = itemAggregatesMatch(
-      aggregateItemsBySku(postedItems),
-      aggregateItemsBySku(metadataItems)
-    );
-    const recordedItems = postedItemsMatchPayment ? postedItems : metadataItems;
+    let recordedItems = metadataItems;
+    try {
+      recordedItems = await resolveRecordedOrderItems(metadataItems);
+    } catch (catalogError) {
+      console.error(
+        'record-order catalog reconstruction failed; preserving verified Stripe metadata:',
+        catalogError
+      );
+    }
 
     const { isNewOrder } = await upsertOrder({
       order_id: verifiedOrderId,

@@ -1,27 +1,27 @@
 // src/theme.js
 import { createTheme } from '@mui/material/styles';
 
-// Custom color palette inspired by mountain/snow themes
+// Shared public-facing palette: snow, deep terrain ink, ice, and signal orange.
 const palette = {
   primary: {
-    main: '#1976d2', // Mountain blue
-    light: '#42a5f5',
-    dark: '#1565c0',
+    main: '#b9471d',
+    light: '#ef6f35',
+    dark: '#8f3314',
     contrastText: '#ffffff',
   },
   secondary: {
-    main: '#f57c00', // Warm orange/amber for accent
-    light: '#ffb74d',
-    dark: '#e65100',
+    main: '#173b4a',
+    light: '#2c6071',
+    dark: '#0b202a',
     contrastText: '#ffffff',
   },
   background: {
-    default: '#fafafa',
+    default: '#f4f6f2',
     paper: '#ffffff',
   },
   text: {
-    primary: '#2c3e50',
-    secondary: '#546e7a',
+    primary: '#10222d',
+    secondary: '#526a75',
   },
   grey: {
     50: '#fafafa',
@@ -38,10 +38,10 @@ const palette = {
   // Custom colors for the avalanche theme
   avalanche: {
     snow: '#ffffff',
-    ice: '#e3f2fd',
+    ice: '#c8e4ed',
     danger: '#d32f2f',
-    warning: '#ff9800',
-    safe: '#4caf50',
+    warning: '#ef6f35',
+    safe: '#26865c',
   }
 };
 
@@ -135,20 +135,21 @@ const components = {
   MuiButton: {
     styleOverrides: {
       root: {
-        borderRadius: 8,
+        borderRadius: 0,
         textTransform: 'none',
         fontWeight: 600,
         padding: '12px 24px',
-        transition: 'all 0.2s ease-in-out',
+        letterSpacing: '0.01em',
+        transition: 'background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease, transform 0.18s ease',
         '&:hover': {
           transform: 'translateY(-1px)',
           boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
         },
       },
       contained: {
-        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+        boxShadow: 'none',
         '&:hover': {
-          boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
+          boxShadow: 'none',
         },
       },
       outlined: {
@@ -163,11 +164,13 @@ const components = {
   MuiCard: {
     styleOverrides: {
       root: {
-        borderRadius: 12,
-        boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
+        border: '1px solid rgba(16, 34, 45, 0.18)',
+        borderRadius: 0,
+        boxShadow: 'none',
         transition: 'all 0.3s ease-in-out',
         '&:hover': {
-          boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+          borderColor: 'rgba(16, 34, 45, 0.38)',
+          boxShadow: '0 18px 42px rgba(16, 34, 45, 0.10)',
         },
       },
     },
@@ -187,7 +190,7 @@ const components = {
   MuiAppBar: {
     styleOverrides: {
       root: {
-        backgroundColor: palette.primary.main,
+        backgroundColor: palette.secondary.dark,
         boxShadow: '0 2px 12px rgba(0,0,0,0.1)',
       },
     },
@@ -207,7 +210,7 @@ const components = {
   MuiChip: {
     styleOverrides: {
       root: {
-        borderRadius: 6,
+        borderRadius: 0,
         fontWeight: 500,
       },
       outlined: {
@@ -220,7 +223,7 @@ const components = {
     styleOverrides: {
       root: {
         '& .MuiOutlinedInput-root': {
-          borderRadius: 8,
+          borderRadius: 0,
           '&:hover .MuiOutlinedInput-notchedOutline': {
             borderColor: palette.primary.light,
           },
@@ -291,7 +294,7 @@ const theme = createTheme({
   
   // Custom theme extensions
   shape: {
-    borderRadius: 8,
+    borderRadius: 0,
   },
   
   // Custom shadows for depth

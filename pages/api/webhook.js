@@ -3,13 +3,8 @@
 import Stripe from 'stripe';
 import nodemailer from 'nodemailer';
 import { escapeHtml } from '../../lib/escapeHtml';
-import { applyInventoryDeltasAtomically } from '../../lib/inventoryStore';
-import {
-  claimInventoryDecrement,
-  markInventoryDecrementFailed,
-  markInventoryDecremented,
-  upsertOrder,
-} from '../../lib/orderStore';
+import { finalizePaidOrderInventory } from '../../lib/orderInventoryStore';
+import { upsertOrder } from '../../lib/orderStore';
 import { products } from '../../src/data/products';
 
 // Stripe needs the raw body, not JSON-parsed
@@ -89,12 +84,10 @@ function resolveSkuForItem(item) {
 }
 
 /**
- * Decrement inventory quantities for all SKUs in this order.
- * We aggregate quantities per SKU and then apply a "delta" update:
- *   quantity = greatest(0, quantity + delta)
- * where delta is negative for an order.
+ * Finalize inventory for a paid order. The order marker and every stock
+ * decrement are committed in one DynamoDB transaction.
  */
-async function decrementInventoryForItems(items) {
+async function finalizeInventoryForItems(orderId, items) {
   if (!Array.isArray(items) || !items.length) {
     throw new Error('Paid store order has no inventory items');
   }
@@ -122,10 +115,19 @@ async function decrementInventoryForItems(items) {
     throw new Error('Paid store order has no valid inventory quantities');
   }
 
-  const changes = await applyInventoryDeltasAtomically(
+  const result = await finalizePaidOrderInventory(
+    orderId,
     [...skuDeltas.entries()].map(([sku, delta]) => ({ sku, delta }))
   );
-  console.log('Inventory transaction completed for SKUs', changes.map((c) => c.sku));
+  console.log(
+    result.applied
+      ? 'Inventory transaction completed for SKUs'
+      : result.alreadyApplied
+        ? 'Inventory transaction was already completed for SKUs'
+        : 'Inventory transaction requires stock review for SKUs',
+    result.changes.map((change) => change.sku)
+  );
+  return result;
 }
 
 function formatMoney(cents) {
@@ -153,6 +155,7 @@ async function sendOrderNotificationEmail({
   shippingState,
   shippingPostalCode,
   shippingCountry,
+  inventoryRequiresAttention = false,
 }) {
   if (!EMAIL_USER || !EMAIL_PASS || !TO_EMAIL) {
     console.warn(
@@ -206,6 +209,11 @@ async function sendOrderNotificationEmail({
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto;">
       <h2>New store order received</h2>
+      ${
+        inventoryRequiresAttention
+          ? '<p style="padding: 12px; background: #fff3cd; color: #7a4b00;"><strong>Stock review required:</strong> payment succeeded, but the complete inventory decrement could not be applied. Review this order before fulfillment.</p>'
+          : ''
+      }
       
       <p><strong>Order ID:</strong> ${safeOrderId}</p>
       <p><strong>Total amount:</strong> ${formatMoney(amountCents)}</p>
@@ -239,7 +247,9 @@ async function sendOrderNotificationEmail({
   const mailOptions = {
     from: EMAIL_USER,
     to: TO_EMAIL,
-    subject: `New store order: ${orderId}`,
+    subject: `${
+      inventoryRequiresAttention ? 'Stock review required — ' : ''
+    }New store order: ${orderId}`,
     html,
   };
 
@@ -348,36 +358,16 @@ export default async function handler(req, res) {
 
       console.log('Order upserted into orders table:', orderId);
 
-      // 2) Decrement inventory once for each paid order. Stripe may retry
-      // webhooks, so claim the decrement before touching stock.
-      const shouldDecrementInventory = await claimInventoryDecrement(orderId);
-      if (shouldDecrementInventory) {
-        try {
-          await decrementInventoryForItems(items);
-        } catch (inventoryError) {
-          try {
-            await markInventoryDecrementFailed(orderId);
-          } catch (releaseError) {
-            console.error('Failed to release inventory claim:', releaseError);
-          }
-          throw inventoryError;
-        }
-
-        try {
-          await markInventoryDecremented(orderId);
-        } catch (markError) {
-          // The inventory transaction already completed. Do not ask Stripe to
-          // retry and risk applying the decrement twice.
-          console.error('Inventory updated but completion marker failed:', markError);
-        }
-      } else {
-        console.log('Inventory already decremented for order:', orderId);
-      }
+      // 2) Mark the paid order and decrement every SKU in one transaction.
+      // Duplicate webhooks become no-ops; insufficient stock is flagged for
+      // operations without allowing the quantity to go negative.
+      const inventoryResult = await finalizeInventoryForItems(orderId, items);
 
       // 3) Fire off internal notification email only when this webhook created
       // the order. If the browser fallback recorded it first, that endpoint
-      // already sent the notification.
-      if (isNewOrder) {
+      // already sent the notification. A newly detected stock problem always
+      // receives its own alert.
+      if (isNewOrder || inventoryResult.newlyFlagged) {
         try {
           await sendOrderNotificationEmail({
             orderId,
@@ -392,6 +382,8 @@ export default async function handler(req, res) {
             shippingState,
             shippingPostalCode,
             shippingCountry,
+            inventoryRequiresAttention:
+              inventoryResult.requiresAttention,
           });
         } catch (err) {
           console.error('Order notification email failed:', err);

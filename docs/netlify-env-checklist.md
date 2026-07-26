@@ -32,6 +32,7 @@ DYNAMODB_SITE_CONTENT_TABLE=AvalancheHourSiteContent
 DYNAMODB_SPONSORS_TABLE=AvalancheHourSponsors
 DYNAMODB_PEOPLE_TABLE=AvalancheHourPeople
 DYNAMODB_MIC_KITS_TABLE=AvalancheHourMicKits
+DYNAMODB_PRODUCTS_TABLE=AvalancheHourProducts
 
 COGNITO_DOMAIN=...
 COGNITO_REGION=us-east-2
@@ -54,6 +55,15 @@ EPISODE_ASSETS_SECRET_ACCESS_KEY=...
 # Only set when using temporary AWS credentials; leave empty for an IAM user.
 EPISODE_ASSETS_SESSION_TOKEN=
 EPISODE_ASSETS_UPLOAD_TOKEN_SECRET=...
+
+# Optional separate product-image package. When omitted, product images reuse
+# the private Episode Studio bucket and credentials above.
+PRODUCT_IMAGES_S3_BUCKET=...
+PRODUCT_IMAGES_S3_REGION=us-east-2
+PRODUCT_IMAGES_ACCESS_KEY_ID=...
+PRODUCT_IMAGES_SECRET_ACCESS_KEY=...
+PRODUCT_IMAGES_SESSION_TOKEN=
+PRODUCT_IMAGES_UPLOAD_TOKEN_SECRET=...
 
 # Authenticates the scheduled reminder runner
 STUDIO_REMINDER_RUN_SECRET=...
@@ -111,24 +121,40 @@ Do not add it to Netlify for the normal production site.
    - `https://theavalanchehour.com/admin/login`
 3. Confirm the Stripe webhook endpoint points to:
    - `https://www.theavalanchehour.com/api/webhook`
-4. Confirm the IAM user policy includes all six tables:
+4. Confirm the IAM user policy includes all seven tables:
    - `AvalancheHourInventory`
    - `AvalancheHourOrders`
    - `AvalancheHourSiteContent`
    - `AvalancheHourSponsors`
    - `AvalancheHourPeople`
    - `AvalancheHourMicKits`
-5. Confirm the IAM user policy allows `dynamodb:UpdateItem`; paid merchandise
-   orders use transactional `Update` operations to decrement every line item
-   atomically. DynamoDB authorizes those operations through the underlying
-   `UpdateItem` permission.
-6. Keep the episode-assets bucket private, enable default encryption, block all
+   - `AvalancheHourProducts`
+5. Confirm the product table policy also includes
+   `arn:aws:dynamodb:us-east-2:426018612622:table/AvalancheHourProducts/index/*`
+   and allows `dynamodb:Query`.
+6. Confirm the IAM user policy allows `dynamodb:UpdateItem` and
+   `dynamodb:TransactWriteItems`; product saves and paid merchandise orders use
+   transactions so catalog and inventory changes remain atomic.
+7. Keep the episode-assets bucket private, enable default encryption, block all
    public access, and grant its dedicated runtime identity only the required
    `s3:PutObject` and `s3:GetObject` access under `episodes/*` (`HeadObject`
    authorization uses `s3:GetObject`).
-7. Add an S3 CORS rule allowing `PUT` from the production site origin with the
-   `Content-Type` header. Do not allow wildcard origins in production.
-8. Configure a Netlify Scheduled Function or another trusted scheduler to POST
+8. Add an S3 CORS rule allowing `PUT` and `POST` from the production site
+   origin with the `Content-Type` header. Episode assets use signed `PUT`
+   requests; product images use size-bounded signed `POST` forms. Do not allow
+   wildcard origins in production.
+9. Grant the product-image identity only `s3:PutObject` and `s3:GetObject`
+   under `products/*`. If product images reuse the Episode Studio identity,
+   add that prefix to its existing restricted policy.
+10. Confirm the product table retains `dynamodb:PutItem`,
+    `dynamodb:UpdateItem`, `dynamodb:DeleteItem`, and
+    `dynamodb:TransactWriteItems`.
+11. Configure a Netlify Scheduled Function or another trusted scheduler to POST
    `/api/studio/reminders/run` with
    `Authorization: Bearer $STUDIO_REMINDER_RUN_SECRET`. The generator is
    idempotent, so retries are safe.
+12. Confirm the store's sales-tax obligations with the appropriate tax
+    professional before launch. The current custom PaymentIntent checkout does
+    not add sales tax. Enabling Stripe Tax for this flow requires a deliberate
+    Stripe API-version migration, tax calculation, and test-mode validation;
+    do not imply that tax is calculated until that work is complete.

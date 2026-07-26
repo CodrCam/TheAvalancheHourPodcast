@@ -1,116 +1,24 @@
 // pages/api/store/create-payment-intent.js
 import Stripe from 'stripe';
 import crypto from 'crypto';
-import { products } from '../../../src/data/products';
-import { skuKey } from '../../../lib/stock';
+import { resolveCheckoutItems } from '../../../lib/catalogCheckout';
 import { validateItemsWithInventory } from '../../../lib/cartValidation';
+import {
+  applyStoreDiscount,
+  isStoreDiscountCode,
+  normalizeStoreDiscountCode,
+} from '../../../lib/storeDiscounts.mjs';
 import { FLAT_SHIPPING_CENTS } from '../../../src/config/store';
 
 const stripe = process.env.STRIPE_SECRET_KEY
   ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2022-11-15' })
   : null;
 
-// Simple discount codes: keys are UPPERCASE, matching normalization
-const DISCOUNT_CODES = {
-  S10HOST40: { type: 'percent', value: 40 },  // 40% off
-  TAHFRIENDS: { type: 'percent', value: 15 }, // 15% off
-};
-
-function normalizeItems(raw = []) {
-  const clean = [];
-  for (const r of Array.isArray(raw) ? raw : []) {
-    const p = products.find(x => x.id === r.id);
-    if (!p) continue; // ignore unknown products
-
-    const qty = Math.max(0, Math.min(parseInt(r.qty ?? 0, 10) || 0, 100));
-    if (!qty) continue;
-
-    const rawOptions =
-      r.options && typeof r.options === 'object' ? r.options : {};
-    const options = {};
-    for (const key of ['style', 'size', 'color']) {
-      if (typeof rawOptions[key] === 'string' && rawOptions[key].trim()) {
-        options[key] = rawOptions[key].trim();
-      }
-    }
-
-    // Variant-level pricing (e.g. Voile 20" vs 25")
-    let price = p.price || 0;
-    if (
-      options.style &&
-      p.variants &&
-      p.variants[options.style] &&
-      typeof p.variants[options.style].price === 'number'
-    ) {
-      price = p.variants[options.style].price;
-    }
-
-    const sku = skuKey(p.id, options);
-    clean.push({
-      id: p.id,
-      sku,
-      name: p.name || p.id,
-      price,   // cents
-      qty,
-      options,
-    });
-  }
-  return clean;
-}
+const CHECKOUT_INTENT_SCHEMA_VERSION = 'v3';
+const PAYMENT_METHOD_TYPES = ['card', 'amazon_pay', 'cashapp'];
 
 function computeOrderAmount(items = []) {
   return items.reduce((sum, it) => sum + it.price * it.qty, 0);
-}
-
-function applyDiscount(amountCents, rawCode) {
-  const normalized =
-    typeof rawCode === 'string' ? rawCode.trim().toUpperCase() : '';
-
-  if (!normalized) {
-    return {
-      subtotalAfterDiscount: amountCents,
-      discountAmountCents: 0,
-      discountCode: null,
-    };
-  }
-
-  const def = DISCOUNT_CODES[normalized];
-  if (!def) {
-    return {
-      subtotalAfterDiscount: amountCents,
-      discountAmountCents: 0,
-      discountCode: null,
-    };
-  }
-
-  let discountAmountCents = 0;
-  if (def.type === 'percent') {
-    discountAmountCents = Math.floor((amountCents * def.value) / 100);
-  } else if (def.type === 'fixed') {
-    discountAmountCents = def.value;
-  }
-
-  if (discountAmountCents <= 0) {
-    return {
-      subtotalAfterDiscount: amountCents,
-      discountAmountCents: 0,
-      discountCode: null,
-    };
-  }
-
-  // Prevent discount from reducing total below some minimum (e.g. 50¢)
-  const minCharge = 50;
-  const newSubtotal = Math.max(amountCents - discountAmountCents, minCharge);
-
-  if (newSubtotal === minCharge) {
-    discountAmountCents = amountCents - minCharge;
-  }
-
-  return {
-    subtotalAfterDiscount: newSubtotal,
-    discountAmountCents,
-    discountCode: normalized,
-  };
 }
 
 function normalizeEmail(value) {
@@ -151,11 +59,28 @@ function normalizeCheckoutAttemptId(value) {
   return /^[a-zA-Z0-9_-]{8,100}$/.test(attemptId) ? attemptId : '';
 }
 
-function buildIdempotencyKey({ attemptId, items, email, shipping, discountCode }) {
+function buildIdempotencyKey({
+  attemptId,
+  items,
+  email,
+  shipping,
+  discountCode,
+  totalCents,
+  shippingCents,
+  taxAmountCents,
+  discountAmountCents,
+}) {
   const fingerprint = crypto
     .createHash('sha256')
     .update(
       JSON.stringify({
+        schemaVersion: CHECKOUT_INTENT_SCHEMA_VERSION,
+        amount: totalCents,
+        currency: 'usd',
+        paymentMethodTypes: PAYMENT_METHOD_TYPES,
+        shippingCents,
+        taxAmountCents,
+        discountAmountCents,
         items: items.map(({ id, sku, price, qty, options }) => ({
           id,
           sku,
@@ -171,7 +96,7 @@ function buildIdempotencyKey({ attemptId, items, email, shipping, discountCode }
     .digest('hex')
     .slice(0, 32);
 
-  return `checkout-${attemptId}-${fingerprint}`;
+  return `checkout-${CHECKOUT_INTENT_SCHEMA_VERSION}-${attemptId}-${fingerprint}`;
 }
 
 export default async function handler(req, res) {
@@ -185,7 +110,21 @@ export default async function handler(req, res) {
 
   try {
     const body = req.body || {};
-    const items = normalizeItems(body.items);
+    let items;
+    try {
+      items = await resolveCheckoutItems(body.items);
+    } catch (err) {
+      if (err?.isCatalogCheckoutValidationError) {
+        return res.status(400).json({
+          error: err.message || 'The cart contains an unavailable product.',
+        });
+      }
+      console.error('create-payment-intent catalog error', err);
+      return res.status(503).json({
+        error:
+          'The store catalog is temporarily unavailable. Please try again shortly.',
+      });
+    }
 
     // Normalize & validate email; require basic structure so receipts go somewhere real.
     const email = normalizeEmail(body.email);
@@ -238,11 +177,11 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Invalid order amount' });
     }
 
-    const requestedDiscountCode =
-      typeof discountCode === 'string'
-        ? discountCode.trim().toUpperCase()
-        : '';
-    if (requestedDiscountCode && !DISCOUNT_CODES[requestedDiscountCode]) {
+    const requestedDiscountCode = normalizeStoreDiscountCode(discountCode);
+    if (
+      requestedDiscountCode &&
+      !isStoreDiscountCode(requestedDiscountCode)
+    ) {
       return res.status(400).json({
         error: 'That discount code was not recognized. Check the code and try again.',
       });
@@ -253,18 +192,15 @@ export default async function handler(req, res) {
       subtotalAfterDiscount,
       discountAmountCents,
       discountCode: normalizedCode,
-    } = applyDiscount(subtotalCents, discountCode);
+      shippingWaived,
+    } = applyStoreDiscount(subtotalCents, discountCode);
 
     const discountedSubtotalCents = subtotalAfterDiscount;
 
     // For now, we do NOT calculate tax (handled later if needed)
     const taxAmountCents = 0;
 
-    // Shipping:
-    // - Waive shipping entirely when the host code is used (S10HOST40)
-    // - Otherwise, charge the flat rate
-    const isHostCode = normalizedCode === 'S10HOST40';
-    const shippingCents = isHostCode ? 0 : FLAT_SHIPPING_CENTS;
+    const shippingCents = shippingWaived ? 0 : FLAT_SHIPPING_CENTS;
 
     // Final total = discounted subtotal + shipping + tax (0)
     const totalCents =
@@ -276,6 +212,10 @@ export default async function handler(req, res) {
       email,
       shipping,
       discountCode: normalizedCode || '',
+      totalCents,
+      shippingCents,
+      taxAmountCents,
+      discountAmountCents,
     });
     const orderId = `avh_${crypto
       .createHash('sha256')
@@ -287,11 +227,16 @@ export default async function handler(req, res) {
     const metaItems = [];
     for (const item of items) {
       const entry = {
-        sku: skuKey(item.id, item.options || {}),
+        sku: item.sku,
         qty: item.qty,
       };
       const testJson = JSON.stringify([...metaItems, entry]);
-      if (testJson.length > 480) break;
+      if (testJson.length > 480) {
+        return res.status(400).json({
+          error:
+            'This cart has too many separate product variants. Place it as two orders.',
+        });
+      }
       metaItems.push(entry);
     }
     const metaItemsJson = JSON.stringify(metaItems);
@@ -300,18 +245,20 @@ export default async function handler(req, res) {
       {
         amount: totalCents,
         currency: 'usd',
-        payment_method_types: ['card'],
+        payment_method_types: PAYMENT_METHOD_TYPES,
         receipt_email: email,
         metadata: {
           order_id: orderId,
           items: metaItemsJson,
           checkout_attempt_id: checkoutAttemptId,
+          checkout_intent_version: CHECKOUT_INTENT_SCHEMA_VERSION,
           discount_code: normalizedCode || '',
           discount_amount_cents: String(discountAmountCents || 0),
           tax_amount_cents: String(taxAmountCents || 0),
           subtotal_cents: String(subtotalCents || 0),
           discounted_subtotal_cents: String(discountedSubtotalCents || 0),
           shipping_cents: String(shippingCents || 0),
+          shipping_waived: String(shippingWaived),
         },
         shipping: {
           name: shipping.name,
@@ -342,12 +289,13 @@ export default async function handler(req, res) {
         shippingCents,
         totalCents,
         discountCode: normalizedCode,
+        shippingWaived,
       },
     });
   } catch (e) {
     console.error('create-payment-intent error', e);
-    return res
-      .status(500)
-      .json({ error: e.message || 'Internal error' });
+    return res.status(500).json({
+      error: 'Secure checkout could not be prepared. Please try again.',
+    });
   }
 }

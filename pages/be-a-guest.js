@@ -15,7 +15,9 @@ import {
 } from '@mui/material';
 import { Send, Mic, Person, Work, Schedule } from '@mui/icons-material';
 import Navbar from '../components/Navbar';
+import PublicPageHero from '../components/PublicPageHero';
 import SEO from '../components/SEO';
+import publicStyles from '../styles/PublicSite.module.css';
 
 export default function BeAGuest() {
   const [formData, setFormData] = useState({
@@ -134,33 +136,15 @@ export default function BeAGuest() {
       />
       
       <Navbar />
-      
-      <Container maxWidth="md">
-        <Box sx={{ mt: 4, mb: 6 }}>
-          <Typography 
-            variant="h1" 
-            component="h1" 
-            gutterBottom
-            sx={{ 
-              fontSize: { xs: '2.5rem', md: '3.5rem' },
-              fontFamily: 'Amatic SC, cursive',
-              textAlign: 'center',
-              mb: 2
-            }}
-          >
-            Be a Guest on Our Show
-          </Typography>
-          
-          <Typography 
-            variant="h6" 
-            component="p" 
-            color="text.secondary" 
-            align="center"
-            sx={{ mb: 4, maxWidth: '700px', mx: 'auto' }}
-          >
-            Have a story to share? We'd love to have you on the show! 
-            This application takes just 2 minutes to complete.
-          </Typography>
+      <Box component="main" className={publicStyles.publicPage}>
+        <PublicPageHero
+          eyebrow="Bring your experience to the conversation"
+          title="Tell us what the mountain taught you."
+          description="Have a story worth sharing? The application takes about two minutes. The conversation is relaxed, remote, and built around what you know."
+        />
+
+        <Container maxWidth="md" className={publicStyles.content}>
+          <Box>
 
           {/* Success Message */}
           {success && (
@@ -364,8 +348,9 @@ export default function BeAGuest() {
               </Box>
             </Box>
           </Paper>
-        </Box>
-      </Container>
+          </Box>
+        </Container>
+      </Box>
     </>
   );
 }

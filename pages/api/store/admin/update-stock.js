@@ -9,10 +9,25 @@ import {
   setInventoryHidden,
   setInventoryQuantity,
 } from '../../../../lib/inventoryStore';
-import { getSkuCatalog } from '../../../../lib/productCatalog';
+import {
+  getProductSkuEntries,
+  getSkuCatalog,
+} from '../../../../lib/productCatalog';
+import {
+  isDynamoProductCatalogConfigured,
+  listCatalogProducts,
+} from '../../../../lib/productCatalogStore';
 
 export const config = { api: { bodyParser: true } };
-const catalogSkuMap = getSkuCatalog();
+async function getManagedCatalogSkuMap() {
+  if (!isDynamoProductCatalogConfigured()) return getSkuCatalog();
+  const products = await listCatalogProducts({ includeBackendOnly: true });
+  return new Map(
+    products.flatMap((product) =>
+      getProductSkuEntries(product).map((entry) => [entry.sku, entry])
+    )
+  );
+}
 
 function normalizeBody(req, mode) {
   // mode: 'delta' for PUT, 'set' for PATCH
@@ -63,15 +78,15 @@ export default async function handler(req, res) {
     if (!sku) {
       return res.status(400).json({ ok: false, error: 'No SKU provided' });
     }
-    if (catalogSkuMap.has(sku)) {
-      return res.status(400).json({
-        ok: false,
-        error:
-          'Catalog SKUs cannot be removed. Move the item to standby instead.',
-      });
-    }
-
     try {
+      const catalogSkuMap = await getManagedCatalogSkuMap();
+      if (catalogSkuMap.has(sku)) {
+        return res.status(400).json({
+          ok: false,
+          error:
+            'Catalog SKUs cannot be removed. Move the item to standby instead.',
+        });
+      }
       const deleteOptions = Object.prototype.hasOwnProperty.call(
         req.body || {},
         'expected_updated_at'
@@ -168,12 +183,27 @@ export default async function handler(req, res) {
     if (item.create === true && !String(item.name || '').trim()) {
       return res.status(400).json({
         ok: false,
-        error: 'A product name is required for a manual SKU',
+        error: 'A product name is required to start tracking this SKU',
       });
     }
   }
 
   try {
+    const newItems = items.filter((item) => item.create === true);
+    if (newItems.length) {
+      const catalogSkuMap = await getManagedCatalogSkuMap();
+      const detachedItem = newItems.find(
+        (item) => !catalogSkuMap.has(String(item.sku || '').trim())
+      );
+      if (detachedItem) {
+        return res.status(400).json({
+          ok: false,
+          error:
+            'Create the product and its variant first, then start tracking its stock.',
+        });
+      }
+    }
+
     const updated = [];
 
     if (mode === 'delta') {

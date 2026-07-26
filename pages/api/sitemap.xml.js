@@ -1,6 +1,6 @@
 // /pages/api/sitemap.xml.js
 import { SITE_URL } from '../../lib/siteMetadata';
-import { products } from '../../src/data/products';
+import { loadStorefrontCatalog } from '../../lib/storefrontCatalog.mjs';
 
 function resolveSiteUrl(req) {
   const base = process.env.NEXT_PUBLIC_BASE_URL;
@@ -31,11 +31,12 @@ export default async function handler(req, res) {
     ];
 
     // Product detail pages
-    const productPages = (products || [])
+    const catalog = await loadStorefrontCatalog();
+    const productPages = catalog.products
       .filter(p => p?.slug)
       .map(p => ({
         url: `/store/${encodeURIComponent(p.slug)}`,
-        lastmod: now,
+        lastmod: p.updatedAt || now,
         changefreq: 'weekly',
         priority: '0.7'
       }));

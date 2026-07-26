@@ -12,7 +12,7 @@ import { studioGuideSearchText } from '../lib/studioGuidePresentation.mjs';
 import styles from '../styles/Studio.module.css';
 
 function formatUpdatedAt(value) {
-  if (!value) return 'Season 11 working guide';
+  if (!value) return 'Evergreen host manual';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return 'Recently updated';
   return `Updated ${date.toLocaleDateString(undefined, {
@@ -112,7 +112,7 @@ export default function StudioResourceLibrary({
 
       <section
         className={styles.resourceControls}
-        aria-label="Filter the Host Guide"
+        aria-label="Filter the Host Field Manual"
       >
         <div className={styles.searchRow}>
           <div className={styles.searchField}>
@@ -121,8 +121,8 @@ export default function StudioResourceLibrary({
               type="search"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search recording, interviews, invoices, mic kits…"
-              aria-label="Search the Host Guide"
+              placeholder="Search Riverside, microphones, guest prep, uploads, editing…"
+              aria-label="Search the Host Field Manual"
             />
             {query ? (
               <button

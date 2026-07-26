@@ -26,8 +26,10 @@ import {
   Info
 } from '@mui/icons-material';
 import Navbar from '../components/Navbar';
+import PublicPageHero from '../components/PublicPageHero';
 import SurveyBanner from '../components/SurveyBanner';
 import SEO from '../components/SEO';
+import publicStyles from '../styles/PublicSite.module.css';
 
 export default function Contact() {
   const [formData, setFormData] = useState({
@@ -152,32 +154,15 @@ export default function Contact() {
       />
       
       <Navbar />
-      
-      <Container maxWidth="md">
-        <Box sx={{ mt: 4, mb: 6 }}>
-          <Typography 
-            variant="h1" 
-            component="h1" 
-            gutterBottom
-            sx={{ 
-              fontSize: { xs: '2.5rem', md: '3.5rem' },
-              fontFamily: 'Amatic SC, cursive',
-              textAlign: 'center',
-              mb: 2
-            }}
-          >
-            Contact Us
-          </Typography>
-          
-          <Typography 
-            variant="h6" 
-            component="p" 
-            color="text.secondary" 
-            align="center"
-            sx={{ mb: 4, maxWidth: '600px', mx: 'auto' }}
-          >
-            Have a question, story idea, feedback, or interested in sponsorship? We'd love to hear from you.
-          </Typography>
+      <Box component="main" className={publicStyles.publicPage}>
+        <PublicPageHero
+          eyebrow="Questions · stories · partnerships"
+          title="Send a signal."
+          description="Have a question, story idea, feedback, or an interest in supporting the show? Send it our way and it will reach the right person."
+        />
+
+        <Container maxWidth="lg" className={publicStyles.content}>
+          <Box>
 
           {/* Success Message */}
           {success && (
@@ -504,8 +489,9 @@ export default function Contact() {
               </Paper>
             </Grid>
           </Grid>
-        </Box>
-      </Container>
+          </Box>
+        </Container>
+      </Box>
     </>
   );
 }

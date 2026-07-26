@@ -206,6 +206,36 @@ the checkout desk, read all private mailing details, respond to requests, or
 check kits out and in. The requesting host can see their own private address,
 tracking, and admin response.
 
+Products use a dedicated seventh table:
+
+```txt
+Table name: AvalancheHourProducts
+Partition key: pk
+Partition key type: String
+Sort key: sk
+Sort key type: String
+Capacity mode: On-demand
+
+Global secondary index: catalog-index
+Index partition key: gsi1pk (String)
+Index sort key: gsi1sk (String)
+Projection: All
+```
+
+Each product is stored as a small group of records: product details, variants,
+media references, and a slug lookup. Public visibility is controlled by the
+product status:
+
+- `live`: visible in the storefront. A zero-stock live product remains visible
+  and displays **Sold out**.
+- `standby`: retained in the backend but hidden from the public storefront.
+- `draft`: retained in the backend and not yet public.
+- `archived`: retained for history and hidden from the public storefront.
+
+Inventory remains in `AvalancheHourInventory`; product copy, merchandising
+state, variant definitions, and media references belong in
+`AvalancheHourProducts`.
+
 ## Create the Tables
 
 1. Open AWS Console.
@@ -248,13 +278,37 @@ tracking, and admin response.
 38. Capacity: choose On-demand.
 39. Leave the rest as the defaults.
 40. Create the table.
+41. Create a seventh table named `AvalancheHourProducts`.
+42. Use partition key `pk` as a String.
+43. Add sort key `sk` as a String.
+44. Choose **Customize settings** and use On-demand capacity.
+45. Add a global secondary index named `catalog-index`.
+46. Give the index partition key `gsi1pk` as a String.
+47. Give the index sort key `gsi1sk` as a String.
+48. Set the index projection to **All**.
+49. Create the table.
 
-The repository also includes a safe setup command. It previews by default and
-creates/seeds the table only when `--apply` is provided:
+The repository includes safe setup commands. Each previews by default and only
+changes AWS when `--apply` is provided:
 
 ```bash
 npm run create:dynamo-mic-kits
 npm run create:dynamo-mic-kits -- --apply
+
+npm run create:dynamo-products
+npm run create:dynamo-products -- --apply
+```
+
+The full product command inspects and, when needed, creates the table. Run that
+form only with a separate AWS administrator/infrastructure identity. Do not
+grant `CreateTable` to the production website identity.
+
+If an administrator created `AvalancheHourProducts` in the console, update the
+website identity's data-access policy below and seed without any table
+management calls:
+
+```bash
+npm run create:dynamo-products -- --apply --seed-only
 ```
 
 ## Create the App Access Key
@@ -275,7 +329,9 @@ Create a policy with this permission scope:
         "dynamodb:DeleteItem",
         "dynamodb:GetItem",
         "dynamodb:PutItem",
+        "dynamodb:Query",
         "dynamodb:Scan",
+        "dynamodb:TransactWriteItems",
         "dynamodb:UpdateItem"
       ],
       "Resource": [
@@ -284,7 +340,9 @@ Create a policy with this permission scope:
         "arn:aws:dynamodb:us-east-2:426018612622:table/AvalancheHourSiteContent",
         "arn:aws:dynamodb:us-east-2:426018612622:table/AvalancheHourSponsors",
         "arn:aws:dynamodb:us-east-2:426018612622:table/AvalancheHourPeople",
-        "arn:aws:dynamodb:us-east-2:426018612622:table/AvalancheHourMicKits"
+        "arn:aws:dynamodb:us-east-2:426018612622:table/AvalancheHourMicKits",
+        "arn:aws:dynamodb:us-east-2:426018612622:table/AvalancheHourProducts",
+        "arn:aws:dynamodb:us-east-2:426018612622:table/AvalancheHourProducts/index/*"
       ]
     }
   ]
@@ -307,6 +365,7 @@ DYNAMODB_SITE_CONTENT_TABLE=AvalancheHourSiteContent
 DYNAMODB_SPONSORS_TABLE=AvalancheHourSponsors
 DYNAMODB_PEOPLE_TABLE=AvalancheHourPeople
 DYNAMODB_MIC_KITS_TABLE=AvalancheHourMicKits
+DYNAMODB_PRODUCTS_TABLE=AvalancheHourProducts
 ```
 
 For local testing, put them in `.env.local`. For deployment, add them in the
@@ -388,7 +447,7 @@ npm run seed:dynamo-inventory -- --apply
 Then:
 
 1. Start the site locally.
-2. Open `/admin/inventory`.
+2. Open `/admin/products?view=stock`.
 3. Confirm all inventory rows appear.
 4. Change one low-risk SKU quantity.
 5. Refresh the page to confirm the change persists in DynamoDB.

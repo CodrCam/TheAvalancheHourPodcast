@@ -8,6 +8,7 @@ import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import theme from '../src/theme';
 import VoicemailWidget from '../components/VoicemailWidget';
+import SiteFooter from '../components/SiteFooter';
 import {
   GA_MEASUREMENT_ID,
   isGoogleAnalyticsEnabled,
@@ -22,6 +23,8 @@ export default function MyApp({ Component, pageProps }) {
   const isStudioRoute = router.pathname.startsWith('/studio');
   const isCheckoutRoute = router.pathname.startsWith('/store/checkout');
   const showVoicemailWidget =
+    !isAdminRoute && !isStudioRoute && !isCheckoutRoute;
+  const showPublicFooter =
     !isAdminRoute && !isStudioRoute && !isCheckoutRoute;
   const lastTrackedPathRef = React.useRef('');
 
@@ -68,6 +71,7 @@ export default function MyApp({ Component, pageProps }) {
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <Component {...pageProps} />
+        {showPublicFooter ? <SiteFooter /> : null}
         {showVoicemailWidget ? <VoicemailWidget /> : null}
       </ThemeProvider>
     </React.Fragment>

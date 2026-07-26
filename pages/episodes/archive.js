@@ -20,9 +20,11 @@ import {
   AccordionDetails,
   Divider
 } from '@mui/material';
-import { Search, Clear, ExpandMore, CalendarToday, History } from '@mui/icons-material';
+import { Search, Clear, ExpandMore, CalendarToday } from '@mui/icons-material';
 import Navbar from '../../components/Navbar';
+import PublicPageHero from '../../components/PublicPageHero';
 import SEO from '../../components/SEO';
+import publicStyles from '../../styles/PublicSite.module.css';
 
 export default function PastSeasons() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -211,39 +213,41 @@ export default function PastSeasons() {
       />
       
       <Navbar />
-      
-      <Container maxWidth="lg">
-        <Box sx={{ mt: 4, mb: 4 }}>
-          <Typography 
-            variant="h1" 
-            component="h1" 
-            gutterBottom
-            sx={{ 
-              fontSize: { xs: '2.5rem', md: '3.5rem' },
-              fontFamily: 'Amatic SC, cursive',
-              textAlign: 'center',
-              mb: 2
+      <Box component="main" className={publicStyles.publicPage}>
+        <PublicPageHero
+          eyebrow="The long record"
+          title="Past seasons, lasting lessons."
+          description="Search the complete archive of conversations from previous seasons. Every season runs from August through July."
+        >
+          <Typography
+            component="p"
+            sx={{
+              color: '#c8e4ed',
+              fontSize: '.67rem',
+              fontWeight: 900,
+              letterSpacing: '.17em',
+              textTransform: 'uppercase',
             }}
           >
-            Past Seasons Archive
+            In the archive
           </Typography>
+          <Typography
+            component="p"
+            sx={{
+              mt: 1,
+              color: '#fff',
+              fontFamily: 'Amatic SC, cursive',
+              fontSize: '3.6rem',
+              fontWeight: 700,
+              lineHeight: 1,
+            }}
+          >
+            {totalPastEpisodes} episodes
+          </Typography>
+        </PublicPageHero>
 
-          <Box sx={{ textAlign: 'center', mb: 4 }}>
-            <Chip 
-              icon={<History />}
-              label={`${totalPastEpisodes} Episodes`}
-              color="secondary"
-              variant="outlined"
-              size="large"
-              sx={{ mb: 2, fontSize: '1.1rem', py: 3 }}
-            />
-            <Typography variant="h6" color="text.secondary">
-              Complete archive of all previous seasons
-            </Typography>
-            <Typography variant="body1" color="text.secondary" sx={{ mt: 1 }}>
-              Each season runs from August to July
-            </Typography>
-          </Box>
+        <Container maxWidth="lg" className={publicStyles.content}>
+          <Box>
 
           {/* Search */}
           <Box sx={{ mb: 4, maxWidth: '600px', mx: 'auto' }}>
@@ -336,7 +340,7 @@ export default function PastSeasons() {
                                 transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
                                 '&:hover': {
                                   transform: 'translateY(-2px)',
-                                  boxShadow: 3,
+                                  boxShadow: '0 16px 38px rgba(16,34,45,.11)',
                                 }
                               }}
                             >
@@ -425,8 +429,9 @@ export default function PastSeasons() {
               </Box>
             </Fade>
           )}
-        </Box>
-      </Container>
+          </Box>
+        </Container>
+      </Box>
     </>
   );
 }

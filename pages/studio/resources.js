@@ -65,8 +65,8 @@ export default function StudioResourcesPage() {
           <span className={styles.eyebrow}>The Avalanche Hour team</span>
           <h1>Resource Center</h1>
           <p>
-            Choose the responsibility you are working on to see what each
-            workspace does, when to use it, and where the handoff goes next.
+            Search a task or question, follow the walkthrough for the right
+            workspace, and understand what the next person needs from you.
           </p>
         </div>
         <div className={styles.resourceHeaderActions}>
@@ -92,6 +92,7 @@ export default function StudioResourcesPage() {
       {!loading && !error ? (
         <>
           <StudioResourcePathways
+            key={activePath?.id || 'resources'}
             pathways={resourcePaths}
             activePathId={activePath?.id}
           />
@@ -102,13 +103,17 @@ export default function StudioResourcesPage() {
             >
               <div className={styles.workflowHeading}>
                 <div>
-                  <span className={styles.eyebrow}>Shared host reference</span>
+                  <span className={styles.eyebrow}>
+                    Deeper host instruction manual
+                  </span>
                   <h2 id="host-guide-heading">
                     {guide?.title || 'Host Guide'}
                   </h2>
                   <p>
-                    {guide?.intro ||
-                      'Search the guide or browse by production stage.'}
+                    The quick path above tells you what comes next. This
+                    searchable field manual explains exactly how to prepare,
+                    run Riverside, protect the recordings, shape the story,
+                    and deliver a producer-ready episode.
                   </p>
                 </div>
               </div>

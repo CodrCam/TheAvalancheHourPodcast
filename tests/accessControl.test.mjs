@@ -100,6 +100,18 @@ test('gives logistics users the operations resource center without Studio manage
     permissions.includes(ACCESS_PERMISSIONS.EPISODES_MANAGE),
     false
   );
+  assert.equal(
+    permissions.includes(ACCESS_PERMISSIONS.PRODUCTS_UPDATE),
+    true
+  );
+  assert.equal(
+    permissions.includes(ACCESS_PERMISSIONS.PRODUCT_MEDIA_UPDATE),
+    true
+  );
+  assert.equal(
+    permissions.includes(ACCESS_PERMISSIONS.PRODUCTS_PUBLISH),
+    true
+  );
 });
 
 test('treats admin as the all-permissions group', () => {

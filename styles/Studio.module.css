@@ -701,6 +701,233 @@
   color: rgba(240, 248, 250, 0.72);
 }
 
+.resourceFinder {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  gap: 17px;
+  overflow: hidden;
+  margin-top: 18px;
+  padding: clamp(22px, 3.5vw, 34px);
+  color: #f6fafb;
+  border: 1px solid rgba(190, 220, 230, 0.16);
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at 90% -25%, rgba(139, 194, 213, 0.3), transparent 34rem),
+    linear-gradient(140deg, #173e52, #102e3f 68%, #0c2533);
+  box-shadow: 0 18px 44px rgba(19, 49, 65, 0.2);
+}
+
+.resourceFinder::before,
+.resourceFinder::after {
+  position: absolute;
+  z-index: -1;
+  width: 420px;
+  height: 120px;
+  border: 1px solid rgba(220, 239, 245, 0.1);
+  border-radius: 50%;
+  content: '';
+  pointer-events: none;
+  transform: rotate(-8deg);
+}
+
+.resourceFinder::before {
+  top: -62px;
+  right: 6%;
+}
+
+.resourceFinder::after {
+  top: -29px;
+  right: -8%;
+  width: 350px;
+}
+
+.resourceFinderIntro {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 15px;
+  align-items: center;
+}
+
+.resourceFinderIcon,
+.resourceFaqIcon {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  place-items: center;
+  border-radius: 14px;
+}
+
+.resourceFinderIcon {
+  color: #163d50;
+  background: #d9ebf1;
+  box-shadow: 0 9px 24px rgba(4, 20, 29, 0.18);
+}
+
+.resourceFinderIcon svg,
+.resourceFaqIcon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.resourceFinder .eyebrow {
+  color: #9ec7d6;
+}
+
+.resourceFinder h2 {
+  margin: 3px 0 5px;
+  font-size: clamp(1.45rem, 2.7vw, 2.15rem);
+  letter-spacing: -0.035em;
+}
+
+.resourceFinderIntro p {
+  max-width: 720px;
+  margin: 0;
+  color: rgba(232, 243, 247, 0.73);
+  font-size: 0.86rem;
+  line-height: 1.55;
+}
+
+.resourceFinderSearch {
+  position: relative;
+}
+
+.resourceFinderSearch > svg {
+  position: absolute;
+  top: 50%;
+  left: 17px;
+  width: 22px;
+  color: #66818e;
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.resourceFinderSearch input {
+  width: 100%;
+  height: 56px;
+  box-sizing: border-box;
+  padding: 0 52px;
+  color: #173243;
+  font: inherit;
+  font-size: 0.94rem;
+  border: 1px solid rgba(218, 235, 241, 0.42);
+  border-radius: 15px;
+  outline: none;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 12px 28px rgba(6, 26, 37, 0.16);
+}
+
+.resourceFinderSearch input:focus {
+  border-color: #83b5c8;
+  box-shadow:
+    0 0 0 4px rgba(132, 184, 203, 0.18),
+    0 12px 28px rgba(6, 26, 37, 0.16);
+}
+
+.resourceFinderSearch button {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  color: #607783;
+  border: 0;
+  border-radius: 50%;
+  background: #eef4f6;
+  cursor: pointer;
+  transform: translateY(-50%);
+}
+
+.resourceFinderSearch button svg {
+  width: 18px;
+  height: 18px;
+}
+
+.suggestedSearches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  align-items: center;
+}
+
+.suggestedSearches > span {
+  margin-right: 2px;
+  color: rgba(220, 237, 243, 0.62);
+  font-size: 0.68rem;
+  font-weight: 780;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.suggestedSearches button {
+  min-height: 30px;
+  padding: 0 10px;
+  color: #dcebf0;
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: 700;
+  border: 1px solid rgba(208, 232, 240, 0.2);
+  border-radius: 999px;
+  background: rgba(237, 247, 250, 0.07);
+  cursor: pointer;
+}
+
+.suggestedSearches button:hover {
+  border-color: rgba(208, 232, 240, 0.38);
+  background: rgba(237, 247, 250, 0.13);
+}
+
+.resourceFinderMeta {
+  color: rgba(219, 235, 241, 0.62);
+  font-size: 0.72rem;
+  font-weight: 680;
+}
+
+.resourceSearchEmpty {
+  display: grid;
+  justify-items: center;
+  margin-top: 22px;
+  padding: 38px 24px;
+  color: #4f6672;
+  text-align: center;
+  border: 1px dashed rgba(53, 107, 131, 0.25);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.resourceSearchEmpty > svg {
+  width: 30px;
+  height: 30px;
+  color: #6e93a3;
+}
+
+.resourceSearchEmpty h2 {
+  margin: 12px 0 5px;
+  color: var(--studio-ink);
+  font-size: 1.1rem;
+}
+
+.resourceSearchEmpty p {
+  margin: 0;
+  font-size: 0.83rem;
+}
+
+.resourceSearchEmpty button {
+  margin-top: 16px;
+  padding: 8px 12px;
+  color: #285f78;
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 760;
+  border: 1px solid rgba(53, 107, 131, 0.2);
+  border-radius: 9px;
+  background: #fff;
+  cursor: pointer;
+}
+
 .workflowSection,
 .hostGuideSection {
   margin-top: 32px;
@@ -739,7 +966,7 @@
 
 .workflowCard {
   display: flex;
-  min-height: 390px;
+  min-height: 365px;
   flex-direction: column;
   padding: 23px;
   border: 1px solid var(--studio-line);
@@ -816,6 +1043,61 @@
   line-height: 1.5;
 }
 
+.instructionDisclosure {
+  margin: 0 0 18px;
+  border: 1px solid rgba(53, 107, 131, 0.15);
+  border-radius: 12px;
+  background: #f7fafb;
+}
+
+.instructionDisclosure summary,
+.resourceFaqItem summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+.instructionDisclosure summary::-webkit-details-marker,
+.resourceFaqItem summary::-webkit-details-marker {
+  display: none;
+}
+
+.instructionDisclosure summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 12px;
+  color: #315f73;
+  font-size: 0.75rem;
+  font-weight: 790;
+}
+
+.instructionDisclosure summary span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.instructionDisclosure summary svg {
+  width: 17px;
+  height: 17px;
+  transition: transform 150ms ease;
+}
+
+.instructionDisclosure[open] summary > svg:last-child {
+  transform: rotate(180deg);
+}
+
+.instructionDisclosure ol {
+  display: grid;
+  gap: 9px;
+  margin: 0;
+  padding: 2px 18px 16px 35px;
+  color: #526b78;
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
 .workflowAction {
   display: inline-flex;
   align-items: center;
@@ -835,6 +1117,112 @@
 
 .workflowAction:hover svg {
   transform: translateX(3px);
+}
+
+.resourceFaqSection {
+  display: grid;
+  grid-template-columns: minmax(230px, 0.72fr) minmax(0, 1.28fr);
+  gap: 25px;
+  margin-top: 32px;
+  padding: clamp(22px, 3vw, 30px);
+  border: 1px solid var(--studio-line);
+  border-radius: 21px;
+  background:
+    linear-gradient(135deg, rgba(236, 243, 243, 0.86), rgba(255, 255, 255, 0.76));
+  box-shadow: 0 12px 38px rgba(25, 48, 60, 0.065);
+}
+
+.resourceFaqHeading {
+  display: grid;
+  align-content: start;
+  justify-items: start;
+}
+
+.resourceFaqIcon {
+  margin-bottom: 15px;
+  color: #285f78;
+  background: #dae9ed;
+}
+
+.resourceFaqHeading h2 {
+  margin: 3px 0 8px;
+  font-size: clamp(1.35rem, 2.5vw, 1.9rem);
+  letter-spacing: -0.03em;
+}
+
+.resourceFaqHeading p {
+  margin: 0;
+  color: var(--studio-muted);
+  font-size: 0.84rem;
+  line-height: 1.6;
+}
+
+.resourceFaqList {
+  display: grid;
+  align-content: start;
+  gap: 9px;
+}
+
+.resourceFaqItem {
+  overflow: hidden;
+  border: 1px solid rgba(20, 38, 56, 0.11);
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.resourceFaqItem summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  min-height: 52px;
+  padding: 8px 14px;
+  color: #243f50;
+  font-size: 0.82rem;
+  font-weight: 750;
+}
+
+.resourceFaqItem summary svg {
+  flex: 0 0 auto;
+  width: 19px;
+  height: 19px;
+  color: #69818e;
+  transition: transform 150ms ease;
+}
+
+.resourceFaqItem[open] summary {
+  background: #f2f7f8;
+}
+
+.resourceFaqItem[open] summary svg {
+  transform: rotate(180deg);
+}
+
+.resourceFaqItem > div {
+  padding: 0 15px 15px;
+}
+
+.resourceFaqItem p {
+  margin: 0;
+  color: #566d78;
+  font-size: 0.8rem;
+  line-height: 1.6;
+}
+
+.resourceFaqItem a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  color: #285f78;
+  font-size: 0.75rem;
+  font-weight: 780;
+  text-decoration: none;
+}
+
+.resourceFaqItem a svg {
+  width: 16px;
+  height: 16px;
 }
 
 .hostGuideSection .resourceControls {
@@ -1701,6 +2089,20 @@
     grid-template-columns: 1fr;
   }
 
+  .resourceFaqSection {
+    grid-template-columns: 1fr;
+  }
+
+  .resourceFaqHeading {
+    grid-template-columns: auto minmax(0, 1fr);
+    column-gap: 13px;
+  }
+
+  .resourceFaqIcon {
+    grid-row: 1 / span 4;
+    margin-bottom: 0;
+  }
+
   .workflowCard {
     min-height: 0;
   }
@@ -1766,6 +2168,37 @@
 }
 
 @media (max-width: 520px) {
+  .resourceFinder {
+    padding: 21px 17px;
+  }
+
+  .resourceFinderIntro {
+    grid-template-columns: 1fr;
+  }
+
+  .resourceFinderIcon {
+    width: 42px;
+    height: 42px;
+  }
+
+  .resourceFinderSearch input {
+    height: 52px;
+    padding-left: 46px;
+    font-size: 0.83rem;
+  }
+
+  .suggestedSearches > span {
+    width: 100%;
+  }
+
+  .resourceFaqHeading {
+    display: block;
+  }
+
+  .resourceFaqIcon {
+    margin-bottom: 12px;
+  }
+
   .nav {
     display: grid;
     grid-template-columns: repeat(6, minmax(0, 1fr));

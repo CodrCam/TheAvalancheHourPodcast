@@ -12,14 +12,21 @@ import {
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ShoppingCartCheckoutIcon from '@mui/icons-material/ShoppingCartCheckout';
+import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import { loadStripe } from '@stripe/stripe-js';
 import {
   Elements,
+  ExpressCheckoutElement,
   PaymentElement,
   useStripe,
   useElements,
 } from '@stripe/react-stripe-js';
 import Navbar from '../../../components/Navbar';
+import {
+  CheckoutHero,
+  CheckoutPage,
+} from '../../../components/CheckoutFlow';
+import styles from '../../../styles/Checkout.module.css';
 import {
   CART_KEY,
   CHECKOUT_SHIPPING_KEY,
@@ -60,6 +67,7 @@ function PaymentForm({ checkout }) {
 
   const [submitting, setSubmitting] = React.useState(false);
   const [errorMsg, setErrorMsg] = React.useState('');
+  const [expressAvailable, setExpressAvailable] = React.useState(false);
   const returnHandledRef = React.useRef(false);
   const {
     clientSecret,
@@ -245,109 +253,237 @@ function PaymentForm({ checkout }) {
     }
   }
 
+  async function handleExpressConfirm(event) {
+    if (!stripe || !elements || submitting) return;
+
+    setSubmitting(true);
+    setErrorMsg('');
+
+    try {
+      ecommerceEvent('add_payment_info', {
+        items,
+        value: (breakdown?.totalCents || 0) / 100,
+        payment_type: event?.expressPaymentType || 'wallet',
+      });
+
+      const result = await stripe.confirmPayment({
+        elements,
+        clientSecret,
+        confirmParams: {
+          return_url: `${window.location.origin}/store/checkout/payment?payment_return=1`,
+        },
+        redirect: 'if_required',
+      });
+
+      if (result.error) {
+        const message =
+          result.error.message ||
+          'Express payment failed. Please try again or use another payment method.';
+        event?.paymentFailed?.({ reason: 'fail', message });
+        setErrorMsg(message);
+        setSubmitting(false);
+        return;
+      }
+
+      if (result.paymentIntent) {
+        await finalizePayment(result.paymentIntent);
+      }
+    } catch (e) {
+      const message =
+        e?.message || 'Unexpected error during express payment.';
+      event?.paymentFailed?.({ reason: 'fail', message });
+      setErrorMsg(message);
+      setSubmitting(false);
+    }
+  }
+
   const subtotal = breakdown?.subtotalCents ?? 0;
   const discount = breakdown?.discountAmountCents ?? 0;
   const shippingCents = breakdown?.shippingCents ?? 0;
+  const shippingWaived = Boolean(breakdown?.shippingWaived);
   const tax = breakdown?.taxAmountCents ?? 0;
   const total = breakdown?.totalCents ?? 0;
 
   return (
-    <Paper
-      elevation={0}
-      sx={{
-        p: { xs: 2, md: 3 },
-        border: '1px solid',
-        borderColor: 'divider',
-        borderRadius: 2,
-      }}
-    >
-      <Typography variant="h5" sx={{ mb: 2 }}>
-        Payment
-      </Typography>
-
-      {/* Summary carried over from Review */}
-      {breakdown ? (
-        <Box sx={{ mb: 2, fontSize: 14 }}>
-          <Typography sx={{ fontWeight: 600, mb: 0.5 }}>
-            Order summary
-          </Typography>
-          <Box
-            sx={{ display: 'flex', justifyContent: 'space-between' }}
-          >
-            <span>Subtotal</span>
-            <span>{money(subtotal)}</span>
-          </Box>
-          {discount > 0 ? (
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                color: 'success.main',
-              }}
-            >
-              <span>Discount</span>
-              <span>-{money(discount)}</span>
-            </Box>
-          ) : null}
-          <Box
-            sx={{ display: 'flex', justifyContent: 'space-between' }}
-          >
-            <span>Shipping</span>
-            <span>{money(shippingCents)}</span>
-          </Box>
-          <Box
-            sx={{ display: 'flex', justifyContent: 'space-between' }}
-          >
-            <span>Tax</span>
-            <span>{money(tax)}</span>
-          </Box>
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              fontWeight: 700,
-              mt: 0.5,
-            }}
-          >
-            <span>Total charged</span>
-            <span>{money(total)}</span>
+    <Box className={styles.paymentLayout}>
+      <Paper
+        elevation={0}
+        className={`${styles.panel} ${styles.formPanel}`}
+      >
+        <Box className={styles.panelHeader}>
+          <Box>
+            <Typography component="p" className={styles.panelEyebrow}>
+              Encrypted checkout
+            </Typography>
+            <Typography component="h2" className={styles.panelTitle}>
+              Payment details
+            </Typography>
           </Box>
         </Box>
-      ) : null}
 
-      {errorMsg ? (
-        <Typography
-          sx={{ color: 'error.main', mb: 2, fontSize: 14 }}
-        >
-          {errorMsg}
-        </Typography>
-      ) : null}
+        <Box className={styles.secureHeading}>
+          <LockOutlinedIcon />
+          <Typography component="p">
+            Payment information is handled securely by Stripe.
+          </Typography>
+        </Box>
 
-      <PaymentElement />
+        {errorMsg ? (
+          <Box role="alert" className={styles.errorNotice} sx={{ mt: 2 }}>
+            {errorMsg}
+          </Box>
+        ) : null}
 
-      <Box sx={{ mt: 3, display: 'flex', gap: 1 }}>
-        <Button
-          component={Link}
-          href="/store/checkout/review"
-          aria-disabled={submitting}
-          onClick={(event) => {
-            if (submitting) event.preventDefault();
-          }}
-          startIcon={<ArrowBackIcon />}
-          variant="outlined"
+        <Box
+          hidden={!expressAvailable}
+          className={styles.expressCheckout}
         >
-          Back to review
-        </Button>
-        <Button
-          onClick={handlePay}
-          disabled={!stripe || submitting}
-          variant="contained"
-          startIcon={<ShoppingCartCheckoutIcon />}
+          <Typography component="p" className={styles.expressEyebrow}>
+            Fast track
+          </Typography>
+          <Typography component="h3" className={styles.expressTitle}>
+            Express checkout
+          </Typography>
+          <Typography component="p" className={styles.expressCopy}>
+            Apple Pay, Google Pay, and Amazon Pay appear when they are
+            available on this device.
+          </Typography>
+          <ExpressCheckoutElement
+            options={{
+              buttonType: {
+                applePay: 'check-out',
+                googlePay: 'checkout',
+              },
+              buttonTheme: {
+                applePay: 'black',
+                googlePay: 'white',
+              },
+              buttonHeight: 52,
+              layout: {
+                maxColumns: 2,
+                maxRows: 2,
+                overflow: 'auto',
+              },
+              paymentMethods: {
+                applePay: 'always',
+                googlePay: 'always',
+                link: 'never',
+                paypal: 'never',
+                klarna: 'never',
+              },
+            }}
+            onReady={({ availablePaymentMethods }) => {
+              setExpressAvailable(
+                Boolean(
+                  availablePaymentMethods &&
+                    Object.values(availablePaymentMethods).some(Boolean)
+                )
+              );
+            }}
+            onLoadError={() => setExpressAvailable(false)}
+            onConfirm={handleExpressConfirm}
+          />
+        </Box>
+
+        {expressAvailable ? (
+          <Box className={styles.paymentDivider}>
+            <span />
+            <Typography component="p">or use another method</Typography>
+            <span />
+          </Box>
+        ) : null}
+
+        <Box
+          className={`${styles.paymentElementWrap} ${
+            expressAvailable ? styles.paymentElementWithExpress : ''
+          }`}
         >
-          {submitting ? 'Processing…' : 'Pay now'}
-        </Button>
-      </Box>
-    </Paper>
+          <PaymentElement />
+        </Box>
+
+        <Box className={styles.paymentActions}>
+          <Button
+            component={Link}
+            href="/store/checkout/review"
+            aria-disabled={submitting}
+            onClick={(event) => {
+              if (submitting) event.preventDefault();
+            }}
+            variant="outlined"
+            className={styles.secondaryButton}
+          >
+            Back to review
+          </Button>
+          <Button
+            onClick={handlePay}
+            disabled={!stripe || submitting}
+            variant="contained"
+            startIcon={<ShoppingCartCheckoutIcon />}
+            className={styles.primaryButton}
+          >
+            {submitting ? 'Processing securely…' : `Pay ${money(total)}`}
+          </Button>
+        </Box>
+      </Paper>
+
+      <Paper elevation={0} className={styles.summaryCard}>
+        <Box className={styles.summaryTop}>
+          <Typography component="p" className={styles.summaryEyebrow}>
+            Final amount
+          </Typography>
+          <Typography component="h2" className={styles.summaryTitle}>
+            Order summary
+          </Typography>
+        </Box>
+        <Box className={styles.summaryBody}>
+          {breakdown ? (
+            <>
+              <Box className={styles.summaryRows}>
+                <Box className={styles.summaryRow}>
+                  <span>Subtotal</span>
+                  <strong>{money(subtotal)}</strong>
+                </Box>
+                {discount > 0 ? (
+                  <Box
+                    className={`${styles.summaryRow} ${styles.discountRow}`}
+                  >
+                    <span>Discount</span>
+                    <strong>-{money(discount)}</strong>
+                  </Box>
+                ) : null}
+                <Box className={styles.summaryRow}>
+                  <span>Shipping</span>
+                  <strong>
+                    {shippingWaived ? 'Waived' : money(shippingCents)}
+                  </strong>
+                </Box>
+                {tax > 0 ? (
+                  <Box className={styles.summaryRow}>
+                    <span>Tax</span>
+                    <strong>{money(tax)}</strong>
+                  </Box>
+                ) : null}
+              </Box>
+              <Box className={styles.summaryTotal}>
+                <span>Total charged</span>
+                <strong>{money(total)}</strong>
+              </Box>
+            </>
+          ) : null}
+          <Typography className={styles.summaryNote}>
+            You will receive an email receipt and order confirmation after a
+            successful payment.
+          </Typography>
+          <Box className={styles.trustRow}>
+            <LockOutlinedIcon />
+            <span>
+              The order remains in your cart unless Stripe confirms the payment
+              succeeded.
+            </span>
+          </Box>
+        </Box>
+      </Paper>
+    </Box>
   );
 }
 
@@ -357,7 +493,33 @@ function PaymentWrapper({ checkout }) {
       stripe={stripePromise}
       options={{
         clientSecret: checkout.clientSecret,
-        appearance: { theme: 'stripe' },
+        appearance: {
+          theme: 'stripe',
+          variables: {
+            colorPrimary: '#b9471d',
+            colorBackground: '#ffffff',
+            colorText: '#10222d',
+            colorDanger: '#b9471d',
+            borderRadius: '0px',
+            fontFamily: 'Arial, Helvetica, sans-serif',
+            spacingUnit: '4px',
+          },
+          rules: {
+            '.Input': {
+              border: '1px solid rgba(16, 34, 45, 0.28)',
+              boxShadow: 'none',
+              padding: '13px',
+            },
+            '.Input:focus': {
+              border: '1px solid #ef6f35',
+              boxShadow: '0 0 0 1px #ef6f35',
+            },
+            '.Label': {
+              color: '#29414d',
+              fontWeight: '600',
+            },
+          },
+        },
       }}
     >
       <PaymentForm checkout={checkout} />
@@ -417,32 +579,45 @@ export default function PaymentPage() {
 
       <Navbar />
 
-      <Container maxWidth="sm" sx={{ py: { xs: 3, md: 5 } }}>
-        {pageError ? (
-          <Paper
-            elevation={0}
-            sx={{
-              p: 3,
-              border: '1px solid',
-              borderColor: 'divider',
-              borderRadius: 2,
-            }}
+      <CheckoutPage>
+        <CheckoutHero
+          currentStep={4}
+          title="Finish securely."
+          description="Complete payment through Stripe. Your cart is cleared only after the payment is confirmed."
+        />
+
+        <Container maxWidth="lg" className={styles.content}>
+          <Button
+            component={Link}
+            href="/store/checkout/review"
+            startIcon={<ArrowBackIcon />}
+            className={styles.backLink}
           >
-            <Typography sx={{ color: 'error.main', mb: 2 }}>
-              {pageError}
-            </Typography>
-            <Button
-              component={Link}
-              href="/store/checkout/review"
-              variant="outlined"
-            >
-              Back to review
-            </Button>
-          </Paper>
-        ) : (
-          <PaymentWrapper checkout={checkout} />
-        )}
-      </Container>
+            Back to review
+          </Button>
+
+          {pageError ? (
+            <Paper elevation={0} className={styles.panel}>
+              <Box role="alert" className={styles.errorNotice}>
+                {pageError}
+              </Box>
+              <Typography className={styles.summaryNote}>
+                Your cart and checkout details have not been cleared.
+              </Typography>
+              <Button
+                component={Link}
+                href="/store/checkout/review"
+                variant="outlined"
+                className={styles.secondaryButton}
+              >
+                Back to review
+              </Button>
+            </Paper>
+          ) : (
+            <PaymentWrapper checkout={checkout} />
+          )}
+        </Container>
+      </CheckoutPage>
     </>
   );
 }

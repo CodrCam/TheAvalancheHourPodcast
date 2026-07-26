@@ -376,7 +376,7 @@ export default function VariantPickerDialog({
               variant="overline"
               sx={{ letterSpacing: 1, color: 'text.secondary' }}
             >
-              Style
+              {product.optionLabels?.style || 'Style'}
             </Typography>
             <ToggleButtonGroup
               exclusive
@@ -401,7 +401,7 @@ export default function VariantPickerDialog({
               variant="overline"
               sx={{ letterSpacing: 1, color: 'text.secondary' }}
             >
-              Color
+              {product.optionLabels?.color || 'Color'}
             </Typography>
             <ToggleButtonGroup
               exclusive
@@ -426,7 +426,7 @@ export default function VariantPickerDialog({
               variant="overline"
               sx={{ letterSpacing: 1, color: 'text.secondary' }}
             >
-              Size
+              {product.optionLabels?.size || 'Size'}
             </Typography>
             <ToggleButtonGroup
               exclusive

@@ -297,7 +297,7 @@ export default function AdminHome() {
                   alignItems: 'baseline',
                 }}
               >
-                <h2 style={{ margin: 0, fontSize: 18 }}>Inventory Attention</h2>
+                <h2 style={{ margin: 0, fontSize: 18 }}>Stock attention</h2>
                 <StatusPill tone={attentionSummary.inventoryTone}>
                   {attentionSummary.inventoryAttention
                     ? `${attentionSummary.inventoryAttention} items`
@@ -314,7 +314,7 @@ export default function AdminHome() {
                 <ActionList rows={overview.inventory.sold_out_rows} kind="sku" />
               ) : null}
               <div style={{ marginTop: 12 }}>
-                <Link href="/admin/inventory">Open inventory</Link>
+                <Link href="/admin/products?view=stock">Review stock</Link>
               </div>
             </div>
 

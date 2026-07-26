@@ -8,14 +8,20 @@ import {
   Paper,
   Box,
   Typography,
-  Grid,
-  Divider,
   TextField,
   Button,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded';
+import VerifiedUserOutlinedIcon from '@mui/icons-material/VerifiedUserOutlined';
 import Navbar from '../../../components/Navbar';
+import {
+  CheckoutHero,
+  CheckoutPage,
+  optionLabel,
+} from '../../../components/CheckoutFlow';
 import { ecommerceEvent } from '../../../lib/gtag';
+import styles from '../../../styles/Checkout.module.css';
 import {
   CART_KEY,
   CHECKOUT_ATTEMPT_KEY,
@@ -321,7 +327,9 @@ export default function ReviewPage() {
     ecommerceEvent('add_shipping_info', {
       items,
       value: (breakdown.totalCents || 0) / 100,
-      shipping_tier: 'Flat rate',
+      shipping_tier: breakdown.shippingWaived
+        ? 'Shipping waived'
+        : 'Flat rate',
     });
 
     try {
@@ -355,7 +363,12 @@ export default function ReviewPage() {
   const discountCents = breakdown?.discountAmountCents ?? 0;
   const taxCents = breakdown?.taxAmountCents ?? 0;
   const shippingCents = breakdown?.shippingCents ?? 0; // NEW: show shipping on Review
+  const shippingWaived = Boolean(breakdown?.shippingWaived);
   const totalCents = breakdown?.totalCents ?? 0;
+  const cartSubtotalCents = items.reduce(
+    (sum, item) => sum + (item.price || 0) * (item.qty || 0),
+    0
+  );
 
   // Just show a generic label so we never leak old code names like "Friends 20"
   const discountLabel = 'Discount';
@@ -372,297 +385,284 @@ export default function ReviewPage() {
 
       <Navbar />
 
-      <Container maxWidth="md" sx={{ py: { xs: 3, md: 5 } }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+      <CheckoutPage>
+        <CheckoutHero
+          currentStep={3}
+          title="Check the route."
+          description="Review the destination, quantities, and final order total before opening the secure payment step."
+        />
+
+        <Container maxWidth="lg" className={styles.content}>
           <Button
             component={Link}
             href="/store/checkout/shipping"
-            size="small"
             startIcon={<ArrowBackIcon />}
+            className={styles.backLink}
           >
             Back to shipping
           </Button>
-        </Box>
-
-        <Paper
-          elevation={0}
-          sx={{
-            p: { xs: 2, md: 3 },
-            borderRadius: 2,
-            border: '1px solid',
-            borderColor: 'divider',
-          }}
-        >
-          <Typography variant="h5" sx={{ mb: 2 }}>
-            Review your order
-          </Typography>
 
           {errorMsg ? (
-            <Typography
-              sx={{ color: 'error.main', mb: 2, fontSize: 14 }}
-            >
+            <Box role="alert" className={styles.errorNotice} sx={{ mb: 2.5 }}>
               {errorMsg}
-            </Typography>
+            </Box>
           ) : null}
 
-          <Grid container spacing={3}>
-            {/* Left: Shipping + discount */}
-            <Grid item xs={12} md={6}>
-              <Typography variant="subtitle1" sx={{ mb: 1 }}>
-                Contact &amp; Shipping
-              </Typography>
-
-              {shipping ? (
-                <Box sx={{ mb: 2 }}>
-                  <Typography sx={{ fontWeight: 500 }}>
-                    {shipping.name}
-                  </Typography>
-                  <Typography>{email}</Typography>
-                  <Typography sx={{ mt: 1 }}>
-                    {shipping.line1}
-                    {shipping.line2 ? `, ${shipping.line2}` : ''}
-                  </Typography>
-                  <Typography>
-                    {shipping.city}, {shipping.state}{' '}
-                    {shipping.postal_code}
-                  </Typography>
-                  <Typography>{shipping.country}</Typography>
-                </Box>
-              ) : null}
-
-              <Divider sx={{ my: 2 }} />
-
-              {/* Discount code input */}
-              <Box
-                sx={{
-                  display: 'flex',
-                  gap: 1,
-                  alignItems: 'center',
-                  mb: 2,
-                  flexWrap: 'wrap',
-                }}
-              >
-                <TextField
-                  label="Discount code"
-                  size="small"
-                  value={discountInput}
-                  onChange={(e) => setDiscountInput(e.target.value)}
-                  sx={{ flexGrow: 1, minWidth: 160 }}
-                  placeholder="Optional – host/friends code"
-                />
-                <Button
-                  variant="outlined"
-                  size="small"
-                  onClick={() =>
-                    setAppliedDiscountCode(discountInput.trim().toUpperCase())
-                  }
-                >
-                  Apply
-                </Button>
-              </Box>
-            </Grid>
-
-            {/* Right: Items */}
-            <Grid item xs={12} md={6}>
-              <Typography variant="subtitle1" sx={{ mb: 1 }}>
-                Items
-              </Typography>
-
-              <Box sx={{ display: 'grid', gap: 1 }}>
-                {items.map((it) => {
-                  const problem = problemBySku.get(it.key) || problemBySku.get(it.sku);
-                  const available =
-                    it.sku && Number.isFinite(stockBySku[it.sku])
-                      ? stockBySku[it.sku]
-                      : it.sku
-                        ? it.qty || 1
-                      : 99;
-                  const atMax = it.qty >= available && available < 99;
-                  return (
-                  <Box
-                    key={it.key}
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 1.5,
-                    }}
-                  >
-                    <Box
-                      component="img"
-                      src={it.image}
-                      alt={it.name}
-                      sx={{
-                        width: 56,
-                        height: 56,
-                        objectFit: 'cover',
-                        borderRadius: 1,
-                        border: '1px solid',
-                        borderColor: 'divider',
-                      }}
-                    />
-                    <Box sx={{ flexGrow: 1 }}>
-                      <Typography
-                        variant="body1"
-                        sx={{ fontWeight: 600 }}
-                      >
-                        {it.name}
-                      </Typography>
-                      {it.options ? (
-                        <Typography
-                          variant="body2"
-                          sx={{ color: 'text.secondary' }}
-                        >
-                          {[
-                            it.options.style,
-                            it.options.size,
-                            it.options.color,
-                          ]
-                            .filter(Boolean)
-                            .join(' • ')}
-                        </Typography>
-                      ) : null}
-                      <Typography
-                        variant="body2"
-                        sx={{ color: 'text.secondary' }}
-                      >
-                        Qty:{' '}
-                        <input
-                          type="number"
-                          min={1}
-                          max={available}
-                          value={it.qty}
-                          onChange={(e) =>
-                            handleQtyChange(
-                              it.key,
-                              parseInt(e.target.value, 10) || 1
-                            )
-                          }
-                          style={{
-                            width: 56,
-                            padding: 4,
-                            borderRadius: 6,
-                            border: '1px solid #ccc',
-                            textAlign: 'center',
-                            marginLeft: 4,
-                          }}
-                        />
-                      </Typography>
-                      {problem ? (
-                        <Typography
-                          variant="body2"
-                          sx={{ color: 'error.main', mt: 0.5 }}
-                        >
-                          {problem.available > 0
-                            ? 'Only limited stock remains for this item.'
-                            : 'This item is no longer available.'}
-                          </Typography>
-                      ) : null}
-                      {!problem && atMax ? (
-                        <Typography
-                          variant="body2"
-                          sx={{ color: 'text.secondary', mt: 0.5 }}
-                        >
-                          Maximum available quantity selected.
-                        </Typography>
-                      ) : null}
-                    </Box>
-                    <Box sx={{ textAlign: 'right' }}>
-                      <Typography sx={{ fontWeight: 500 }}>
-                        {money(it.price * it.qty)}
-                      </Typography>
-                      <Button
-                        size="small"
-                        color="inherit"
-                        onClick={() => handleRemoveItem(it.key)}
-                      >
-                        Remove
-                      </Button>
-                    </Box>
+          <Box className={styles.layout}>
+            <Box className={styles.mainColumn}>
+              <Paper elevation={0} className={styles.panel}>
+                <Box className={styles.panelHeader}>
+                  <Box>
+                    <Typography component="p" className={styles.panelEyebrow}>
+                      Destination
+                    </Typography>
+                    <Typography component="h2" className={styles.panelTitle}>
+                      Contact &amp; shipping
+                    </Typography>
                   </Box>
-                );
-                })}
-              </Box>
-            </Grid>
-          </Grid>
+                </Box>
+                {shipping ? (
+                  <Box className={styles.addressPanel}>
+                    <Typography component="div" className={styles.addressText}>
+                      <strong>{shipping.name}</strong>
+                      {email}
+                      <br />
+                      {shipping.line1}
+                      {shipping.line2 ? `, ${shipping.line2}` : ''}
+                      <br />
+                      {shipping.city}, {shipping.state} {shipping.postal_code}
+                      <br />
+                      {shipping.country}
+                    </Typography>
+                    <Link
+                      href="/store/checkout/shipping"
+                      className={styles.editLink}
+                    >
+                      Edit details
+                    </Link>
+                  </Box>
+                ) : (
+                  <Box className={styles.notice}>
+                    Shipping details are missing. Return to the previous step to
+                    continue.
+                  </Box>
+                )}
+              </Paper>
 
-          <Divider sx={{ my: 2 }} />
+              <Paper elevation={0} className={styles.panel}>
+                <Box className={styles.panelHeader}>
+                  <Box>
+                    <Typography component="p" className={styles.panelEyebrow}>
+                      Field goods
+                    </Typography>
+                    <Typography component="h2" className={styles.panelTitle}>
+                      Review your items
+                    </Typography>
+                  </Box>
+                  <span className={styles.panelCount}>
+                    {items.reduce((sum, item) => sum + (item.qty || 0), 0)} items
+                  </span>
+                </Box>
 
-          {/* Price breakdown */}
-          <Box sx={{ display: 'grid', gap: 0.5, mb: 2 }}>
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-              }}
-            >
-              <span>Subtotal</span>
-              <strong>{money(subtotalCents)}</strong>
+                <Box>
+                  {items.map((it) => {
+                    const problem =
+                      problemBySku.get(it.key) || problemBySku.get(it.sku);
+                    const available =
+                      it.sku && Number.isFinite(stockBySku[it.sku])
+                        ? stockBySku[it.sku]
+                        : it.sku
+                          ? it.qty || 1
+                          : 99;
+                    const atMax = it.qty >= available && available < 99;
+
+                    return (
+                      <Box key={it.key} className={styles.reviewItem}>
+                        <Box
+                          component="img"
+                          src={it.image}
+                          alt={it.name}
+                          className={styles.reviewImage}
+                        />
+                        <Box>
+                          <Typography component="h3" className={styles.cartName}>
+                            {it.name}
+                          </Typography>
+                          {optionLabel(it.options) ? (
+                            <Typography className={styles.cartOptions}>
+                              {optionLabel(it.options)}
+                            </Typography>
+                          ) : null}
+                          {problem ? (
+                            <Typography className={styles.stockMessage}>
+                              {problem.available > 0
+                                ? 'Only limited stock remains for this item.'
+                                : 'This item is no longer available.'}
+                            </Typography>
+                          ) : null}
+                          {!problem && atMax ? (
+                            <Typography className={styles.stockMessage}>
+                              Maximum available quantity selected.
+                            </Typography>
+                          ) : null}
+                        </Box>
+                        <Box className={styles.reviewItemActions}>
+                          <Typography className={styles.lineTotal}>
+                            {money(it.price * it.qty)}
+                          </Typography>
+                          <Box className={styles.reviewQty}>
+                            <span>Qty</span>
+                            <input
+                              type="number"
+                              min={1}
+                              max={available}
+                              value={it.qty}
+                              onChange={(event) =>
+                                handleQtyChange(
+                                  it.key,
+                                  parseInt(event.target.value, 10) || 1
+                                )
+                              }
+                              aria-label={`${it.name} quantity`}
+                              className={styles.reviewQtyInput}
+                            />
+                          </Box>
+                          <Button
+                            onClick={() => handleRemoveItem(it.key)}
+                            className={styles.removeText}
+                          >
+                            Remove
+                          </Button>
+                        </Box>
+                      </Box>
+                    );
+                  })}
+                </Box>
+              </Paper>
+
+              <Paper elevation={0} className={styles.panel}>
+                <Box className={styles.panelHeader}>
+                  <Box>
+                    <Typography component="p" className={styles.panelEyebrow}>
+                      Have a code?
+                    </Typography>
+                    <Typography component="h2" className={styles.panelTitle}>
+                      Discount
+                    </Typography>
+                  </Box>
+                </Box>
+                <Box className={styles.discountForm}>
+                  <TextField
+                    label="Discount code"
+                    value={discountInput}
+                    onChange={(event) => setDiscountInput(event.target.value)}
+                    placeholder="Optional discount or event code"
+                    className={styles.field}
+                  />
+                  <Button
+                    variant="outlined"
+                    onClick={() =>
+                      setAppliedDiscountCode(discountInput.trim().toUpperCase())
+                    }
+                    className={styles.applyButton}
+                  >
+                    Apply
+                  </Button>
+                </Box>
+              </Paper>
             </Box>
 
-            {discountCents > 0 ? (
-              <Box
-                sx={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  color: 'success.main',
-                }}
-              >
-                <span>{discountLabel}</span>
-                <span>-{money(discountCents)}</span>
-              </Box>
-            ) : null}
-
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-              }}
-            >
-              <span>Shipping</span>
-              <span>{money(shippingCents)}</span>
-            </Box>
-
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-              }}
-            >
-              <span>Tax</span>
-              <span>{money(taxCents)}</span>
-            </Box>
-
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                fontSize: 18,
-                fontWeight: 600,
-                mt: 0.5,
-              }}
-            >
-              <span>Total</span>
-              <span>{money(totalCents)}</span>
+            <Box className={styles.sideColumn}>
+              <Paper elevation={0} className={styles.summaryCard}>
+                <Box className={styles.summaryTop}>
+                  <Typography component="p" className={styles.summaryEyebrow}>
+                    Final check
+                  </Typography>
+                  <Typography component="h2" className={styles.summaryTitle}>
+                    Order total
+                  </Typography>
+                </Box>
+                <Box className={styles.summaryBody}>
+                  <Box className={styles.summaryRows}>
+                    <Box className={styles.summaryRow}>
+                      <span>Subtotal</span>
+                      <strong>
+                        {money(breakdown ? subtotalCents : cartSubtotalCents)}
+                      </strong>
+                    </Box>
+                    {discountCents > 0 ? (
+                      <Box
+                        className={`${styles.summaryRow} ${styles.discountRow}`}
+                      >
+                        <span>{discountLabel}</span>
+                        <strong>-{money(discountCents)}</strong>
+                      </Box>
+                    ) : null}
+                    <Box className={styles.summaryRow}>
+                      <span>Shipping</span>
+                      <strong>
+                        {loading
+                          ? '—'
+                          : shippingWaived
+                            ? 'Waived'
+                            : money(shippingCents)}
+                      </strong>
+                    </Box>
+                {taxCents > 0 ? (
+                  <Box className={styles.summaryRow}>
+                    <span>Tax</span>
+                    <strong>{loading ? '—' : money(taxCents)}</strong>
+                  </Box>
+                ) : null}
+                  </Box>
+                  <Box className={styles.summaryTotal}>
+                    <span>Total</span>
+                    <strong>{loading ? '—' : money(totalCents)}</strong>
+                  </Box>
+                  <Box className={styles.summaryStatus}>
+                    <span
+                      className={`${styles.statusDot} ${
+                        errorMsg ? styles.statusDotWarning : ''
+                      }`}
+                      aria-hidden="true"
+                    />
+                    <span>
+                      {loading
+                        ? 'Preparing your secure order total…'
+                        : errorMsg
+                          ? 'The order needs attention before payment.'
+                          : 'Inventory and pricing are confirmed for payment.'}
+                    </span>
+                  </Box>
+                  <Button
+                    fullWidth
+                    variant="contained"
+                    onClick={handleContinueToPayment}
+                    disabled={
+                      !clientSecret ||
+                      !intentId ||
+                      !orderId ||
+                      !breakdown ||
+                      loading
+                    }
+                    endIcon={<ArrowForwardRoundedIcon />}
+                    className={styles.primaryButton}
+                  >
+                    Continue to secure payment
+                  </Button>
+                  <Box className={styles.trustRow}>
+                    <VerifiedUserOutlinedIcon />
+                    <span>
+                      The amount shown here is calculated on the server, not
+                      trusted from the browser.
+                    </span>
+                  </Box>
+                </Box>
+              </Paper>
             </Box>
           </Box>
-
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
-            <Button
-              variant="contained"
-              onClick={handleContinueToPayment}
-              disabled={
-                !clientSecret ||
-                !intentId ||
-                !orderId ||
-                !breakdown ||
-                loading
-              }
-            >
-              Continue to payment
-            </Button>
-          </Box>
-        </Paper>
-      </Container>
+        </Container>
+      </CheckoutPage>
     </>
   );
 }

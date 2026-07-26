@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import DashboardRoundedIcon from '@mui/icons-material/DashboardRounded';
-import Inventory2RoundedIcon from '@mui/icons-material/Inventory2Rounded';
+import CategoryRoundedIcon from '@mui/icons-material/CategoryRounded';
 import ReceiptLongRoundedIcon from '@mui/icons-material/ReceiptLongRounded';
 import ArticleRoundedIcon from '@mui/icons-material/ArticleRounded';
 import GroupsRoundedIcon from '@mui/icons-material/GroupsRounded';
@@ -40,9 +40,10 @@ const NAV_SECTIONS = [
     items: [
       { href: '/admin', label: 'Overview', icon: DashboardRoundedIcon },
       {
-        href: '/admin/inventory',
-        label: 'Inventory',
-        icon: Inventory2RoundedIcon,
+        href: '/admin/products',
+        label: 'Products & stock',
+        icon: CategoryRoundedIcon,
+        permission: 'products:read',
       },
       { href: '/admin/orders', label: 'Orders', icon: ReceiptLongRoundedIcon },
       {

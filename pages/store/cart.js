@@ -6,19 +6,25 @@ import { useRouter } from 'next/router';
 import {
   Container,
   Box,
-  Grid,
   Paper,
   Typography,
   IconButton,
-  Button,
-  Divider
+  Button
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
 import ShoppingCartCheckoutIcon from '@mui/icons-material/ShoppingCartCheckout';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded';
+import ShoppingBagOutlinedIcon from '@mui/icons-material/ShoppingBagOutlined';
 import Navbar from '../../components/Navbar';
+import {
+  CheckoutHero,
+  CheckoutPage,
+  optionLabel,
+} from '../../components/CheckoutFlow';
+import styles from '../../styles/Checkout.module.css';
 
 const CART_KEY = 'ah_cart';
 
@@ -173,220 +179,227 @@ export default function CartPage() {
 
       <Navbar />
 
-      <Container maxWidth="lg" sx={{ py: { xs: 2, md: 4 } }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+      <CheckoutPage>
+        <CheckoutHero
+          currentStep={1}
+          title="Pack your field kit."
+          description="Confirm the pieces you want, then we’ll collect the details needed to get them headed your way."
+        />
+
+        <Container maxWidth="lg" className={styles.content}>
           <Button
             component={Link}
             href="/store"
-            size="small"
             startIcon={<ArrowBackIcon />}
+            className={styles.backLink}
           >
-            Back to store
+            Keep browsing the current drop
           </Button>
-        </Box>
 
-        <Typography variant="h4" sx={{ mb: 3 }}>
-          Your Cart
-        </Typography>
-
-        {items.length === 0 ? (
-          <Paper
-            elevation={0}
-            sx={{ p: 3, border: '1px solid', borderColor: 'divider', borderRadius: 2 }}
-          >
-            <Typography variant="h6" sx={{ mb: 1 }}>
-              Your cart is empty
-            </Typography>
-            <Typography sx={{ color: 'text.secondary', mb: 2 }}>
-              Add some merch and come back!
-            </Typography>
-            <Button component={Link} href="/store" variant="contained">
-              Browse store
-            </Button>
-          </Paper>
-        ) : (
-          <Grid container spacing={3}>
-            {/* Left: line items */}
-            <Grid item xs={12} md={8}>
-              <Paper
-                elevation={0}
-                sx={{ p: { xs: 1, sm: 2 }, border: '1px solid', borderColor: 'divider', borderRadius: 2 }}
-              >
-                {items.map((it, idx) => {
-                  const available =
-                    it.sku && Number.isFinite(stockBySku[it.sku])
-                      ? stockBySku[it.sku]
-                      : it.sku
-                        ? it.qty || 1
-                      : 100;
-                  const atMax = it.qty >= available;
-                  return (
-                  <Box key={it.key} sx={{ py: 2 }}>
-                    <Grid container spacing={2} alignItems="center">
-                      <Grid item xs={3} sm={2}>
-                        <Box
-                          component="img"
-                          src={it.image}
-                          alt={it.name}
-                          sx={{
-                            width: '100%',
-                            height: 'auto',
-                            display: 'block',
-                            borderRadius: 1,
-                            border: '1px solid',
-                            borderColor: 'divider'
-                          }}
-                        />
-                      </Grid>
-
-                      <Grid item xs={9} sm={6}>
-                        {/* Outer Typography becomes a div to avoid <p> nesting */}
-                        <Typography variant="body1" component="div" sx={{ fontWeight: 600 }}>
-                          {it.name}
-                        </Typography>
-
-                        {/* Variant labels in a separate block */}
-                        <Typography component="div" sx={{ color: 'text.secondary', fontSize: 14, mt: 0.5 }}>
-                          {it?.options?.style ? <span>Style: {it.options.style}</span> : null}
-                          {it?.options?.color ? <span>{' • '}Color: {it.options.color}</span> : null}
-                          {it?.options?.size ? <span>{' • '}Size: {it.options.size}</span> : null}
-                        </Typography>
-
-                        {/* Price each */}
-                        <Typography component="div" sx={{ fontSize: 14, mt: 0.5 }}>
-                          {money(it.price)} each
-                        </Typography>
-                        {atMax && available < 100 ? (
-                          <Typography component="div" sx={{ color: 'text.secondary', fontSize: 14, mt: 0.5 }}>
-                            Maximum available quantity selected.
-                          </Typography>
-                        ) : null}
-                      </Grid>
-
-                      {/* Qty controls */}
-                      <Grid item xs={12} sm={4}>
-                        <Box
-                          sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: { xs: 'space-between', sm: 'flex-end' },
-                            gap: 1
-                          }}
-                        >
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <IconButton
-                              size="small"
-                              onClick={() => updateQty(it.key, (it.qty || 1) - 1)}
-                              aria-label="Decrease quantity"
-                              disabled={(it.qty || 1) <= 1}
-                            >
-                              <RemoveIcon fontSize="small" />
-                            </IconButton>
-
-                            <Box
-                              component="input"
-                              value={it.qty}
-                              onChange={(e) => updateQty(it.key, e.target.value)}
-                              type="number"
-                              min={1}
-                              max={available}
-                              style={{
-                                width: 56,
-                                textAlign: 'center',
-                                padding: '8px 6px',
-                                borderRadius: 8,
-                                border: '1px solid #ccc'
-                              }}
-                            />
-
-                            <IconButton
-                              size="small"
-                              onClick={() => updateQty(it.key, (it.qty || 1) + 1)}
-                              aria-label="Increase quantity"
-                              disabled={atMax}
-                            >
-                              <AddIcon fontSize="small" />
-                            </IconButton>
-                          </Box>
-
-                          {/* Line total */}
-                          <Typography component="div" sx={{ fontWeight: 600, minWidth: 90, textAlign: 'right' }}>
-                            {money((it.price || 0) * (it.qty || 0))}
-                          </Typography>
-
-                          <IconButton
-                            color="error"
-                            onClick={() => removeItem(it.key)}
-                            aria-label={`Remove ${it.name}`}
-                          >
-                            <DeleteIcon />
-                          </IconButton>
-                        </Box>
-                      </Grid>
-                    </Grid>
-
-                    {idx < items.length - 1 ? <Divider sx={{ mt: 2 }} /> : null}
-                  </Box>
-                );
-                })}
-              </Paper>
-            </Grid>
-
-            {/* Right: summary */}
-            <Grid item xs={12} md={4}>
-              <Paper
-                elevation={0}
-                sx={{ p: 2, border: '1px solid', borderColor: 'divider', borderRadius: 2, position: 'sticky', top: 88 }}
-              >
-                <Typography variant="h6" sx={{ mb: 1 }}>
-                  Order Summary
+          {items.length === 0 ? (
+            <Paper elevation={0} className={styles.emptyPanel}>
+              <Box>
+                <span className={styles.emptyIcon}>
+                  <ShoppingBagOutlinedIcon />
+                </span>
+                <Typography component="h2" className={styles.emptyTitle}>
+                  Your field kit is empty.
                 </Typography>
-
-                {/* Avoid <p> nesting by using component="div" */}
-                <Typography component="div" sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                  <span>Subtotal</span>
-                  <strong>{money(subtotal)}</strong>
+                <Typography className={styles.emptyCopy}>
+                  Head back to the current drop and find something that carries
+                  the conversation.
                 </Typography>
-
-                <Typography component="div" sx={{ color: 'text.secondary', fontSize: 14, mb: 2 }}>
-                  Shipping and taxes calculated at checkout.
-                </Typography>
-                {checkingInventory ? (
-                  <Typography component="div" sx={{ color: 'text.secondary', fontSize: 14, mb: 1 }}>
-                    Checking inventory...
-                  </Typography>
-                ) : null}
-                {inventoryMessage ? (
-                  <Typography component="div" sx={{ color: inventoryUnavailable ? 'error.main' : 'text.secondary', fontSize: 14, mb: 1 }}>
-                    {inventoryMessage}
-                  </Typography>
-                ) : null}
-
-                <Button
-                  fullWidth
-                  variant="contained"
-                  size="large"
-                  startIcon={<ShoppingCartCheckoutIcon />}
-                  onClick={goCheckout}
-                  disabled={checkingInventory || inventoryUnavailable}
-                >
-                  Checkout
-                </Button>
-
                 <Button
                   component={Link}
                   href="/store"
-                  fullWidth
-                  sx={{ mt: 1 }}
-                  variant="outlined"
+                  variant="contained"
+                  endIcon={<ArrowForwardRoundedIcon />}
+                  className={styles.primaryButton}
                 >
-                  Continue shopping
+                  Explore the shop
                 </Button>
+              </Box>
+            </Paper>
+          ) : (
+            <Box className={styles.layout}>
+              <Paper elevation={0} className={`${styles.panel} ${styles.mainColumn}`}>
+                <Box className={styles.panelHeader}>
+                  <Box>
+                    <Typography component="p" className={styles.panelEyebrow}>
+                      Selected goods
+                    </Typography>
+                    <Typography component="h2" className={styles.panelTitle}>
+                      Your cart
+                    </Typography>
+                  </Box>
+                  <span className={styles.panelCount}>
+                    {items.reduce((sum, item) => sum + (item.qty || 0), 0)}{' '}
+                    {items.reduce((sum, item) => sum + (item.qty || 0), 0) === 1
+                      ? 'item'
+                      : 'items'}
+                  </span>
+                </Box>
+
+                <Box className={styles.cartItems}>
+                  {items.map((it) => {
+                    const available =
+                      it.sku && Number.isFinite(stockBySku[it.sku])
+                        ? stockBySku[it.sku]
+                        : it.sku
+                          ? it.qty || 1
+                          : 100;
+                    const atMax = it.qty >= available;
+
+                    return (
+                      <Box key={it.key} className={styles.cartLine}>
+                        <Box className={styles.cartImageWrap}>
+                          <Box
+                            component="img"
+                            src={it.image}
+                            alt={it.name}
+                            className={styles.cartImage}
+                          />
+                        </Box>
+
+                        <Box>
+                          <Typography component="h3" className={styles.cartName}>
+                            {it.name}
+                          </Typography>
+                          {optionLabel(it.options) ? (
+                            <Typography className={styles.cartOptions}>
+                              {optionLabel(it.options)}
+                            </Typography>
+                          ) : null}
+                          <Typography className={styles.unitPrice}>
+                            {money(it.price)} each
+                          </Typography>
+                          {atMax && available < 100 ? (
+                            <Typography className={styles.stockMessage}>
+                              Maximum available quantity selected.
+                            </Typography>
+                          ) : null}
+                        </Box>
+
+                        <Box className={styles.cartLineActions}>
+                          <Typography className={styles.lineTotal}>
+                            {money((it.price || 0) * (it.qty || 0))}
+                          </Typography>
+                          <Box className={styles.quantityAndRemove}>
+                            <Box className={styles.quantityControl}>
+                              <IconButton
+                                onClick={() =>
+                                  updateQty(it.key, (it.qty || 1) - 1)
+                                }
+                                aria-label={`Decrease ${it.name} quantity`}
+                                disabled={(it.qty || 1) <= 1}
+                                className={styles.quantityButton}
+                              >
+                                <RemoveIcon fontSize="small" />
+                              </IconButton>
+                              <input
+                                value={it.qty}
+                                onChange={(event) =>
+                                  updateQty(it.key, event.target.value)
+                                }
+                                type="number"
+                                min={1}
+                                max={available}
+                                aria-label={`${it.name} quantity`}
+                                className={styles.quantityInput}
+                              />
+                              <IconButton
+                                onClick={() =>
+                                  updateQty(it.key, (it.qty || 1) + 1)
+                                }
+                                aria-label={`Increase ${it.name} quantity`}
+                                disabled={atMax}
+                                className={styles.quantityButton}
+                              >
+                                <AddIcon fontSize="small" />
+                              </IconButton>
+                            </Box>
+                            <IconButton
+                              onClick={() => removeItem(it.key)}
+                              aria-label={`Remove ${it.name}`}
+                              className={styles.removeButton}
+                            >
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          </Box>
+                        </Box>
+                      </Box>
+                    );
+                  })}
+                </Box>
               </Paper>
-            </Grid>
-          </Grid>
-        )}
-      </Container>
+
+              <Box className={styles.sideColumn}>
+                <Paper elevation={0} className={styles.summaryCard}>
+                  <Box className={styles.summaryTop}>
+                    <Typography component="p" className={styles.summaryEyebrow}>
+                      Order overview
+                    </Typography>
+                    <Typography component="h2" className={styles.summaryTitle}>
+                      Ready for the next step?
+                    </Typography>
+                  </Box>
+                  <Box className={styles.summaryBody}>
+                    <Box className={styles.summaryRows}>
+                      <Box className={styles.summaryRow}>
+                        <span>Merch subtotal</span>
+                        <strong>{money(subtotal)}</strong>
+                      </Box>
+                    </Box>
+                    <Box className={styles.summaryTotal}>
+                      <span>Subtotal</span>
+                      <strong>{money(subtotal)}</strong>
+                    </Box>
+                    <Typography className={styles.summaryNote}>
+                      Shipping is calculated before payment.
+                    </Typography>
+                    <Box
+                      className={styles.summaryStatus}
+                      role={inventoryMessage ? 'status' : undefined}
+                    >
+                      <span
+                        className={`${styles.statusDot} ${
+                          inventoryUnavailable ? styles.statusDotWarning : ''
+                        }`}
+                        aria-hidden="true"
+                      />
+                      <span>
+                        {checkingInventory
+                          ? 'Confirming current availability…'
+                          : inventoryMessage ||
+                            'Availability will be confirmed again before payment.'}
+                      </span>
+                    </Box>
+                    <Button
+                      fullWidth
+                      variant="contained"
+                      endIcon={<ShoppingCartCheckoutIcon />}
+                      onClick={goCheckout}
+                      disabled={checkingInventory || inventoryUnavailable}
+                      className={styles.primaryButton}
+                    >
+                      Continue to shipping
+                    </Button>
+                    <Button
+                      component={Link}
+                      href="/store"
+                      fullWidth
+                      variant="outlined"
+                      className={styles.secondaryButton}
+                    >
+                      Continue shopping
+                    </Button>
+                  </Box>
+                </Paper>
+              </Box>
+            </Box>
+          )}
+        </Container>
+      </CheckoutPage>
     </>
   );
 }

@@ -11,10 +11,10 @@ import {
   Chip,
   Box,
   Stack,
-  Paper,
 } from '@mui/material';
 import Link from 'next/link';
 import Navbar from '../components/Navbar';
+import PublicPageHero from '../components/PublicPageHero';
 import SEO from '../components/SEO';
 import { DEFAULT_HOME_CONTENT } from '../lib/siteContentDefaults';
 import { getHomeContent } from '../lib/siteContentStore';
@@ -23,6 +23,7 @@ import {
   PEOPLE_SECTIONS,
   groupPeopleForDisplay,
 } from '../lib/peoplePresentation.mjs';
+import publicStyles from '../styles/PublicSite.module.css';
 
 const PLACEHOLDER_IMG = '/images/placeholder-person.svg';
 
@@ -61,79 +62,41 @@ export default function AboutPage({ people, aboutContent }) {
         url="/about"
       />
       <Navbar />
-      <Container maxWidth="lg" sx={{ mt: { xs: 4, md: 6 }, mb: { xs: 6, md: 10 } }}>
-        <Box
-          component="section"
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 1.25fr) minmax(280px, 0.75fr)' },
-            gap: { xs: 3, md: 5 },
-            alignItems: 'start',
-            mb: { xs: 5, md: 7 },
-          }}
+      <Box component="main" className={publicStyles.publicPage}>
+        <PublicPageHero
+          eyebrow={aboutContent.aboutEyebrow}
+          title={aboutContent.aboutHeading}
+          description={aboutContent.aboutIntro}
         >
-          <Box>
-            <Typography
-              variant="overline"
-              color="primary"
-              sx={{ fontWeight: 800, letterSpacing: 0 }}
-            >
-              {aboutContent.aboutEyebrow}
-            </Typography>
-            <Typography
-              variant="h1"
-              sx={{
-                fontWeight: 800,
-                lineHeight: 1.08,
-                mt: 1,
-                mb: 2.5,
-                fontSize: { xs: '2.2rem', md: '3.4rem' },
-              }}
-            >
-              {aboutContent.aboutHeading}
-            </Typography>
-            <Typography
-              variant="body1"
-              color="text.secondary"
-              sx={{ fontSize: { xs: '1rem', md: '1.08rem' }, lineHeight: 1.8 }}
-            >
-              {aboutContent.aboutIntro}
-            </Typography>
-          </Box>
-
-          <Paper
-            elevation={0}
+          <Typography
+            component="h2"
             sx={{
-              border: '1px solid',
-              borderColor: 'grey.200',
-              borderRadius: 2,
-              p: { xs: 2.5, md: 3 },
-              bgcolor: 'grey.50',
+              color: '#fff',
+              fontFamily: 'Amatic SC, cursive',
+              fontSize: '2.35rem',
+              fontWeight: 700,
+              lineHeight: 1,
             }}
           >
-            <Typography variant="h5" sx={{ fontWeight: 800, mb: 1.5 }}>
-              {aboutContent.aboutMissionHeading}
-            </Typography>
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{ lineHeight: 1.75, mb: 2.5 }}
+            {aboutContent.aboutMissionHeading}
+          </Typography>
+          <Typography sx={{ mt: 1.5, color: 'rgba(255,255,255,.68)', lineHeight: 1.65 }}>
+            {aboutContent.aboutMissionBody}
+          </Typography>
+          {aboutContent.aboutListenUrl ? (
+            <Button
+              component="a"
+              href={aboutContent.aboutListenUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              variant="contained"
             >
-              {aboutContent.aboutMissionBody}
-            </Typography>
-            {aboutContent.aboutListenUrl ? (
-              <Button
-                component="a"
-                href={aboutContent.aboutListenUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                variant="contained"
-              >
-                {aboutContent.aboutListenLabel}
-              </Button>
-            ) : null}
-          </Paper>
-        </Box>
+              {aboutContent.aboutListenLabel}
+            </Button>
+          ) : null}
+        </PublicPageHero>
+
+        <Container maxWidth="lg" className={publicStyles.content}>
 
         <Stack
           direction={{ xs: 'column', sm: 'row' }}
@@ -330,7 +293,8 @@ export default function AboutPage({ people, aboutContent }) {
             </Box>
           );
         })}
-      </Container>
+        </Container>
+      </Box>
     </>
   );
 }

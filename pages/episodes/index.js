@@ -23,8 +23,10 @@ import {
 } from '@mui/icons-material';
 import { useRouter } from 'next/router';
 import Navbar from '../../components/Navbar';
+import PublicPageHero from '../../components/PublicPageHero';
 import SurveyBanner from '../../components/SurveyBanner';
 import SEO from '../../components/SEO';
+import publicStyles from '../../styles/PublicSite.module.css';
 
 export default function Episodes() {
   const [episodeStats, setEpisodeStats] = useState(null);
@@ -176,99 +178,72 @@ export default function Episodes() {
       />
       
       <Navbar />
-      
-      <Container maxWidth="lg">
-        <Box sx={{ mt: 4, mb: 4 }}>
-          <Typography 
-            variant="h1" 
-            component="h1" 
-            gutterBottom
-            sx={{ 
-              fontSize: { xs: '2.5rem', md: '3.5rem' },
-              fontFamily: 'Amatic SC, cursive',
-              textAlign: 'center',
-              mb: 2
+      <Box component="main" className={publicStyles.publicPage}>
+        <PublicPageHero
+          eyebrow="The complete listening map"
+          title="Stories from the snow."
+          description="Explore conversations, field lessons, research, and lived experience from across the avalanche and snow science community."
+        >
+          <Typography
+            component="p"
+            sx={{
+              color: '#c8e4ed',
+              fontSize: '.67rem',
+              fontWeight: 900,
+              letterSpacing: '.17em',
+              textTransform: 'uppercase',
             }}
           >
-            Podcast Episodes
+            Available now
           </Typography>
-
-          <Typography 
-            variant="h6" 
-            component="p" 
-            color="text.secondary" 
-            align="center"
-            sx={{ mb: 4, maxWidth: '600px', mx: 'auto' }}
+          <Typography
+            component="p"
+            sx={{
+              my: 1,
+              color: '#fff',
+              fontFamily: 'Amatic SC, cursive',
+              fontSize: '4.3rem',
+              fontWeight: 700,
+              lineHeight: .9,
+            }}
           >
-            Explore our collection of episodes featuring stories, knowledge, 
-            and insights from the avalanche and snow science community.
+            {episodeStats?.total || 0} episodes
           </Typography>
+          <Typography sx={{ color: 'rgba(255,255,255,.62)' }}>
+            New conversations arrive three times a month from October through
+            June.
+          </Typography>
+        </PublicPageHero>
+
+        <Container maxWidth="lg" className={publicStyles.content}>
+          <Box>
 
           {/* Release Schedule Banner */}
           <Paper 
-            elevation={3} 
+            elevation={0}
             sx={{ 
               p: 3, 
               mb: 4, 
-              background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)',
+              border: '1px solid rgba(16,34,45,.18)',
+              borderLeft: '7px solid #ef6f35',
+              borderRadius: 0,
+              background: '#dce9e9',
               color: 'white',
-              textAlign: 'center'
+              textAlign: 'left'
             }}
           >
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
-              <ScheduleIcon sx={{ fontSize: 40, mr: 2 }} />
-              <Typography variant="h5" component="h2" sx={{ fontWeight: 'bold' }}>
-                Release Schedule
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <ScheduleIcon sx={{ fontSize: 34, color: '#10222d' }} />
+              <Box>
+              <Typography variant="h5" component="h2" sx={{ color: '#10222d', fontWeight: 850 }}>
+                Three new episodes per month
               </Typography>
+              <Typography variant="body1" sx={{ color: '#405965' }}>
+                October through June · timed to the North American avalanche season
+              </Typography>
+              </Box>
             </Box>
-            <Typography variant="h6" sx={{ mb: 1 }}>
-              3 New Episodes Per Month
-            </Typography>
-            <Typography variant="body1">
-              October through June
-            </Typography>
           </Paper>
-
-          {/* Episode Stats Overview */}
-          {episodeStats && (
-            <Paper 
-              elevation={2} 
-              sx={{ 
-                p: 4, 
-                mb: 4, 
-                background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
-                textAlign: 'center'
-              }}
-            >
-              <Typography variant="h4" component="h2" gutterBottom sx={{ fontWeight: 'bold', color: 'primary.main' }}>
-                {episodeStats.total}
-              </Typography>
-              <Typography variant="h6" color="text.secondary" gutterBottom>
-                Total Episodes Available
-              </Typography>
-              
-              {episodeStats.latestEpisode && (
-                <Box sx={{ mt: 3 }}>
-                  <Typography variant="body1" color="text.secondary" gutterBottom>
-                    Latest Episode:
-                  </Typography>
-                  <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                    {episodeStats.latestEpisode.name}
-                  </Typography>
-                  <Chip 
-                    label={new Date(episodeStats.latestEpisode.release_date).toLocaleDateString('en-US', {
-                      month: 'long',
-                      day: 'numeric',
-                      year: 'numeric'
-                    })}
-                    color="primary"
-                    variant="outlined"
-                    sx={{ mt: 1 }}
-                  />
-                </Box>
-              )}
-            </Paper>
-          )}
 
           {/* Navigation Cards */}
           <Grid container spacing={4} sx={{ mb: 4 }}>
@@ -282,7 +257,7 @@ export default function Episodes() {
                   transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
                   '&:hover': {
                     transform: 'translateY(-4px)',
-                    boxShadow: 6,
+                    boxShadow: '0 20px 46px rgba(16,34,45,.12)',
                   },
                   cursor: 'pointer'
                 }}
@@ -343,7 +318,7 @@ export default function Episodes() {
                   transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
                   '&:hover': {
                     transform: 'translateY(-4px)',
-                    boxShadow: 6,
+                    boxShadow: '0 20px 46px rgba(16,34,45,.12)',
                   },
                   cursor: 'pointer'
                 }}
@@ -411,7 +386,8 @@ export default function Episodes() {
             </Typography>
           </Paper>
         </Box>
-      </Container>
+        </Container>
+      </Box>
     </>
   );
 }

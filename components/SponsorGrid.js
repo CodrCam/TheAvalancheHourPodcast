@@ -85,7 +85,10 @@ function Tier({ title, items, variant, visibility }) {
                   borderLeft: (theme) =>
                     `${cfg.borderW}px solid ${theme.palette.primary.main}`,
                   transition: 'transform 120ms ease, box-shadow 120ms ease',
-                  '&:hover': { transform: 'translateY(-2px)', boxShadow: 4 },
+                  '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 16px 38px rgba(16,34,45,.10)',
+                  },
                 }}
               >
                 <SponsorAction

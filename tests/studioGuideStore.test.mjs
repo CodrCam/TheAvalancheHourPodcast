@@ -27,6 +27,7 @@ test.after(() => {
 
 function guide(title, { published = true } = {}) {
   return {
+    schema_version: 2,
     eyebrow: 'The Avalanche Hour',
     title,
     intro: `${title} intro`,
@@ -147,6 +148,33 @@ test('legacy published records are the manager draft fallback', async () => {
   assert.equal(result.has_draft, false);
   assert.equal(result.draft_source, 'published');
   assert.equal(result.draft_updated_at, '');
+});
+
+test('version-one guides read as the new field manual without rewriting DynamoDB', async () => {
+  const calls = mockDynamoResponse({
+    Item: dynamoItem({
+      publishedGuide: {
+        ...guide('Season 11 Host Studio'),
+        schema_version: 1,
+      },
+      draftGuide: {
+        ...guide('Old manager draft'),
+        schema_version: 1,
+      },
+      updatedAt: '2026-07-20T12:00:00.000Z',
+    }),
+  });
+
+  const result = await getStudioGuide({ includeDraft: true });
+
+  assert.equal(result.guide.title, 'The Avalanche Hour Host Field Manual');
+  assert.equal(result.published_guide.schema_version, 2);
+  assert.equal(result.published_source, 'default-upgrade');
+  assert.equal(result.draft_source, 'default-upgrade');
+  assert.equal(result.has_draft, false);
+  assert.equal(calls.length, 1, 'the upgrade must remain read-only');
+  assert.equal(calls[0].Key.content_key.S, 'host_studio_guide');
+  assert.equal(calls[0].UpdateExpression, undefined);
 });
 
 test('host reads only sanitized published content and ignores the draft', async () => {

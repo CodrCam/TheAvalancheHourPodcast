@@ -16,10 +16,12 @@ import {
   IconButton,
   Fade,
 } from '@mui/material';
-import { Search, Clear, CalendarToday } from '@mui/icons-material';
+import { Search, Clear } from '@mui/icons-material';
 import Navbar from '../../components/Navbar';
+import PublicPageHero from '../../components/PublicPageHero';
 import SEO from '../../components/SEO';
 import { sponsors as DEFAULT_SPONSORS } from '../../src/data/sponsors';
+import publicStyles from '../../styles/PublicSite.module.css';
 
 // Import your performance hooks
 import {
@@ -301,46 +303,47 @@ export default function CurrentSeason() {
       />
 
       <Navbar />
-
-      <Container maxWidth="lg">
-        <Box sx={{ mt: 4, mb: 4 }}>
+      <Box component="main" className={publicStyles.publicPage}>
+        <PublicPageHero
+          eyebrow="Now in the field"
+          title="The current season."
+          description="The newest conversations, research, and field lessons from The Avalanche Hour."
+        >
           <Typography
-            variant="h1"
-            component="h1"
-            gutterBottom
+            component="p"
             sx={{
-              fontSize: { xs: '2.5rem', md: '3.5rem' },
-              fontFamily: 'Amatic SC, cursive',
-              textAlign: 'center',
-              mb: 2,
+              color: '#c8e4ed',
+              fontSize: '.67rem',
+              fontWeight: 900,
+              letterSpacing: '.17em',
+              textTransform: 'uppercase',
             }}
           >
-            Current Season
+            Season window
           </Typography>
+          <Typography
+            component="p"
+            sx={{
+              mt: 1,
+              color: '#fff',
+              fontFamily: 'Amatic SC, cursive',
+              fontSize: '3.2rem',
+              fontWeight: 700,
+              lineHeight: 1,
+            }}
+          >
+            {currentSeasonInfo?.label || 'Current'}
+          </Typography>
+          <Typography sx={{ mt: 1.2, color: 'rgba(255,255,255,.64)' }}>
+            {episodes.length} episode{episodes.length !== 1 ? 's' : ''} available
+          </Typography>
+        </PublicPageHero>
+
+        <Container maxWidth="lg" className={publicStyles.content}>
+          <Box>
 
           {currentSeasonInfo && (
             <Box sx={{ textAlign: 'center', mb: 4 }}>
-              <Chip
-                icon={<CalendarToday />}
-                label={`Season ${currentSeasonInfo.label}`}
-                color="primary"
-                variant="outlined"
-                size="large"
-                sx={{ mb: 2, fontSize: '1.1rem', py: 3 }}
-              />
-              <Typography variant="h6" color="text.secondary">
-                August {currentSeasonInfo.startYear} - July{' '}
-                {currentSeasonInfo.endYear}
-              </Typography>
-              <Typography
-                variant="body1"
-                color="text.secondary"
-                sx={{ mt: 1 }}
-              >
-                {episodes.length} episode
-                {episodes.length !== 1 ? 's' : ''} available
-              </Typography>
-
               {seasonSponsorRows.some((row) => row.items.length > 0) && (
                 <Box sx={{ mt: 3, maxWidth: 1080, mx: 'auto' }}>
                   <Typography
@@ -360,7 +363,7 @@ export default function CurrentSeason() {
                           p: { xs: 1.25, sm: 1.5 },
                           border: '1px solid',
                           borderColor: row.borderColor,
-                          borderRadius: 2,
+                          borderRadius: 0,
                           bgcolor: row.bgcolor,
                         }}
                       >
@@ -559,7 +562,7 @@ export default function CurrentSeason() {
                           'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
                         '&:hover': {
                           transform: 'translateY(-4px)',
-                          boxShadow: 4,
+                          boxShadow: '0 18px 42px rgba(16,34,45,.11)',
                         },
                       }}
                     >
@@ -728,8 +731,8 @@ export default function CurrentSeason() {
             </Fade>
           )}
         </Box>
-
-      </Container>
+        </Container>
+      </Box>
     </>
   );
 }

@@ -16,7 +16,7 @@ import { safeJsonLdStringify } from '../lib/structuredData.mjs';
 class MyDocument extends Document {
   render() {
     return (
-      <Html lang="en">
+      <Html lang="en" data-scroll-behavior="smooth">
         <Head>
           {/* DNS Prefetching for external resources */}
           <link rel="dns-prefetch" href="//fonts.googleapis.com" />
@@ -26,21 +26,16 @@ class MyDocument extends Document {
           
           {/* Preconnect to critical domains */}
           <link rel="preconnect" href="https://fonts.googleapis.com" />
-          <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="true" />
+          <link
+            rel="preconnect"
+            href="https://fonts.gstatic.com"
+            crossOrigin="anonymous"
+          />
           
           {/* Font loading with font-display swap for better performance */}
           <link
             href="https://fonts.googleapis.com/css2?family=Amatic+SC:wght@700&display=swap"
             rel="stylesheet"
-          />
-          
-          {/* Preload critical fonts */}
-          <link
-            rel="preload"
-            href="https://fonts.gstatic.com/s/amaticsc/v24/TUZyzwprpvBS1izr_vOMscDJuFEAcTEzJRo.woff2"
-            as="font"
-            type="font/woff2"
-            crossOrigin="anonymous"
           />
           
           {/* Favicon and app icons */}
@@ -77,30 +72,34 @@ class MyDocument extends Document {
           />
           
           {/* Critical CSS inlining hint */}
-          <style jsx global>{`
-            /* Critical CSS for above-the-fold content */
-            * {
-              box-sizing: border-box;
-            }
-            
-            body {
-              margin: 0;
-              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-              -webkit-font-smoothing: antialiased;
-              -moz-osx-font-smoothing: grayscale;
-            }
-            
-            /* Prevent layout shift during font loading */
-            .amatic-loading {
-              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            }
-            
-            /* Reduce initial render blocking */
-            img {
-              max-width: 100%;
-              height: auto;
-            }
-          `}</style>
+          <style
+            dangerouslySetInnerHTML={{
+              __html: `
+                /* Critical CSS for above-the-fold content */
+                * {
+                  box-sizing: border-box;
+                }
+
+                body {
+                  margin: 0;
+                  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+                  -webkit-font-smoothing: antialiased;
+                  -moz-osx-font-smoothing: grayscale;
+                }
+
+                /* Prevent layout shift during font loading */
+                .amatic-loading {
+                  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                }
+
+                /* Reduce initial render blocking */
+                img {
+                  max-width: 100%;
+                  height: auto;
+                }
+              `,
+            }}
+          />
           
           {/* Structured Data for Organization */}
           <script

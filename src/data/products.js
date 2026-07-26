@@ -8,12 +8,16 @@ export const products = [
     id: 'avalanche-hour-hats',
     slug: 'avalanche-hour-hats',
     name: 'Avalanche Hour Hats',
+    category: 'Headwear',
+    collection: 'Avalanche Hour',
+    optionLabels: { style: 'Design', color: 'Color', size: 'Size' },
 
     // This is just a fallback display price on the card in some UIs.
     // Real price is set per-variant below.
     price: 2500, // from $25
 
     active: true,
+    status: 'live',
     description:
       'Everyday hats built for skin tracks, road trips, and everything in between. Choose your style—from embroidered classics to mesh truckers and specialty fabrics.',
 
@@ -148,8 +152,12 @@ export const products = [
     id: 'recaps-caps',
     slug: 'recaps-caps',
     name: 'ReCaps Corduroy & Trucker Hats',
+    category: 'Headwear',
+    collection: 'ReCaps',
+    optionLabels: { style: 'Hat type', color: 'Color', size: 'Size' },
     price: 3800, // $38.00
     active: true,
+    status: 'live',
     description:
       "We've partnered with ReCaps to bring some unique and fun styles of hats. Inspired by the outdoors, motivated by uniqueness, and focused on sustainability, ReCaps designs hats with a distinctive style that will take you from work to play and everywhere in between. Each hat features a slightly shorter brim and hand-printed block prints on reclaimed materials, so print fabric color and shade may vary but that's the beauty of one-of-a-kind.",
 
@@ -209,8 +217,12 @@ export const products = [
     id: 'recaps-beanies',
     slug: 'recaps-beanies',
     name: 'ReCaps Beanies & Poms',
+    category: 'Headwear',
+    collection: 'ReCaps',
+    optionLabels: { style: 'Hat type', color: 'Color', size: 'Size' },
     price: 3800, // $38.00
     active: true,
+    status: 'live',
     description:
       "Support The Avalanche Hour Podcast while staying cozy on the skin track and around town. We've partnered with ReCaps to bring you Pom and cuff beanies with a distinctive look and sustainable story. Each block print is hand printed on reclaimed materials, so print fabric color and shade will vary from hat to hat. Enjoy the surprise of a one-of-a-kind beanie.",
 
@@ -273,8 +285,12 @@ export const products = [
     id: 'voile-straps',
     slug: 'voile-straps',
     name: 'Voile Straps',
+    category: 'Field gear',
+    collection: 'Avalanche Hour',
+    optionLabels: { style: 'Length', color: 'Color', size: 'Size' },
     price: 800, // fallback $8.00
     active: true,
+    status: 'live',
     description:
       '“Sometimes I forget what holds my life together... and then I see another Voile strap.” – CM. Show your support of our community and The Avalanche Hour Podcast by grabbing a handful of ski straps so you never wonder where your last strap went. Perfect for first aid, gear repair, storage, and more.',
 
@@ -316,8 +332,12 @@ export const products = [
     id: 'hoodies',
     slug: 'hoodies',
     name: 'Season 10 Zip-Up Hoodie',
+    category: 'Apparel',
+    collection: 'Season layers',
+    optionLabels: { style: 'Color', color: 'Color', size: 'Size' },
     price: 5000, // $50.00
     active: true,
+    status: 'live',
     description:
       "For a limited time, we've printed Brooke Maushund’s Season 10 artwork on one of our favorite zip-up hooded sweatshirts: the Bella + Canvas Unisex Sponge Fleece Full Zip Hoodie. Choose from Dark Grey Heather or Blue Storm and bring The Avalanche Hour artwork from the skin track to the coffee shop.",
 
@@ -373,8 +393,11 @@ export const products = [
     id: 'free-range-tote',
     slug: 'free-range-tote',
     name: 'Free Range Canvas Tote',
+    category: 'Bags',
+    collection: 'Free Range Equipment',
     price: 5500, // $55.00
     active: true,
+    status: 'live',
     description:
       'Ahh yes — you remember these Free Range tote bags from the Bend ISSW. You see them everywhere now. We partnered with our friends at Free Range Equipment to bring you a limited edition tote featuring artwork from the artist Brooke Mochon. Carry ski gear, haul a pot of soup to the potluck, or use the zippered pocket for your valuables, all while showing your support for The Avalanche Hour Podcast.',
 
@@ -389,8 +412,11 @@ export const products = [
     id: 'ah-sticker-logo',
     slug: 'avalanche-hour-sticker',
     name: 'Avalanche Hour Sticker',
+    category: 'Accessories',
+    collection: 'Avalanche Hour',
     price: 200, // $2.00
     active: true,
+    status: 'live',
     description:
       'A fresh take on the Avalanche Hour logo—built for water bottles, ski boxes, laptops, and gear bins.',
 

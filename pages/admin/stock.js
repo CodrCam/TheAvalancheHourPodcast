@@ -1,7 +1,7 @@
 export async function getServerSideProps() {
   return {
     redirect: {
-      destination: '/admin/inventory',
+      destination: '/admin/products?view=stock',
       permanent: true,
     },
   };

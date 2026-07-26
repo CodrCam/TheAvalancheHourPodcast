@@ -16,6 +16,7 @@
     "seed:dynamo-sponsors": "node scripts/seedDynamoSponsors.js",
     "seed:dynamo-people": "node scripts/seedDynamoPeople.js",
     "update:dynamo-person-studio-roles": "node scripts/seedDynamoPeople.js",
+    "create:dynamo-products": "node scripts/createDynamoProductsTable.js",
     "create:dynamo-mic-kits": "node scripts/createDynamoMicKitsTable.js",
     "studio:reminders": "node scripts/runStudioReminders.mjs"
   },
@@ -31,7 +32,7 @@
     "@stripe/react-stripe-js": "^5.2.0",
     "@stripe/stripe-js": "^8.1.0",
     "dotenv": "^17.2.3",
-    "next": "^16.0.10",
+    "next": "16.2.11",
     "nodemailer": "^9.0.1",
     "pg": "^8.16.3",
     "react": "^19.2.3",
@@ -41,6 +42,10 @@
   },
   "devDependencies": {
     "eslint": "^9.39.4",
-    "eslint-config-next": "^16.2.9"
+    "eslint-config-next": "16.2.11"
+  },
+  "overrides": {
+    "postcss": "8.5.23",
+    "sharp": "0.35.3"
   }
 }

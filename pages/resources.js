@@ -31,7 +31,9 @@ import {
   Public,
 } from '@mui/icons-material';
 import Navbar from '../components/Navbar';
+import PublicPageHero from '../components/PublicPageHero';
 import SEO from '../components/SEO';
+import publicStyles from '../styles/PublicSite.module.css';
 
 export default function Resources() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -253,7 +255,7 @@ export default function Resources() {
           transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
           '&:hover': {
             transform: 'translateY(-4px)',
-            boxShadow: 4,
+            boxShadow: '0 18px 42px rgba(16,34,45,.11)',
           },
         }}
       >
@@ -316,32 +318,14 @@ export default function Resources() {
       />
 
       <Navbar />
+      <Box component="main" className={publicStyles.publicPage}>
+        <PublicPageHero
+          eyebrow="Forecasts · education · field information"
+          title="Know before you go."
+          description="A practical directory of avalanche forecasting centers, education, and safety resources. Find the people watching the snow in your region."
+        />
 
-      <Container maxWidth="lg" sx={{ mt: 4, mb: 6 }}>
-        <Typography
-          variant="h1"
-          component="h1"
-          gutterBottom
-          sx={{
-            fontSize: { xs: '2.5rem', md: '3.5rem' },
-            fontFamily: 'Amatic SC, cursive',
-            textAlign: 'center',
-            mb: 2,
-          }}
-        >
-          Avalanche Resources
-        </Typography>
-
-        <Typography
-          variant="h6"
-          component="p"
-          color="text.secondary"
-          align="center"
-          sx={{ mb: 4, maxWidth: '700px', mx: 'auto' }}
-        >
-          Essential resources for avalanche safety, forecasting, and education.
-          Find your local avalanche center and stay informed.
-        </Typography>
+        <Container maxWidth="lg" className={publicStyles.content}>
 
         {/* Search Box */}
         <Box sx={{ mb: 4, maxWidth: '600px', mx: 'auto' }}>
@@ -563,7 +547,8 @@ export default function Resources() {
             </Box>
           </Box>
         </Paper>
-      </Container>
+        </Container>
+      </Box>
     </>
   );
 }

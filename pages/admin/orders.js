@@ -63,8 +63,19 @@ function getStatusTone(status) {
   ) {
     return 'good';
   }
-  if (normalized === 'new' || normalized === 'requires_attention') return 'warn';
+  if (normalized === 'requires_attention') return 'danger';
+  if (normalized === 'new' || normalized === 'pending') return 'warn';
   return 'neutral';
+}
+
+function getInventoryStatus(order = {}) {
+  if (order.inventory_decremented) {
+    return { id: 'done', label: 'Stock recorded' };
+  }
+  if (order.inventory_decrement_status === 'requires_attention') {
+    return { id: 'requires_attention', label: 'Stock review needed' };
+  }
+  return { id: 'pending', label: 'Stock pending' };
 }
 
 function getOrderCustomer(order = {}) {
@@ -176,6 +187,7 @@ function StatusPill({ children, tone = 'neutral' }) {
   const colors = {
     good: ['#dcfce7', '#166534'],
     warn: ['#fef3c7', '#92400e'],
+    danger: ['#fee2e2', '#991b1b'],
     neutral: ['#f1f5f9', '#334155'],
   };
   const [background, color] = colors[tone] || colors.neutral;
@@ -303,6 +315,7 @@ function OrderCard({
 }) {
   const fulfillmentStatus = order.fulfillment_status || 'new';
   const paymentStatus = order.status || '—';
+  const inventoryStatus = getInventoryStatus(order);
   const deleteArmed = deleteArmedId === order.order_id;
   const isDeleting = deletingId === order.order_id;
 
@@ -341,6 +354,9 @@ function OrderCard({
             </StatusPill>
             <StatusPill tone={getStatusTone(paymentStatus)}>
               {paymentStatus}
+            </StatusPill>
+            <StatusPill tone={getStatusTone(inventoryStatus.id)}>
+              {inventoryStatus.label}
             </StatusPill>
           </div>
           <strong style={{ fontSize: 18, color: '#1e293b' }}>
@@ -404,6 +420,22 @@ function OrderCard({
           ) : null}
         </div>
       </div>
+
+      {inventoryStatus.id === 'requires_attention' ? (
+        <div
+          role="alert"
+          style={{
+            borderBottom: '1px solid #fecaca',
+            background: '#fff1f2',
+            color: '#991b1b',
+            fontWeight: 700,
+            padding: '11px 16px',
+          }}
+        >
+          Payment succeeded, but stock could not be deducted safely. Reconcile
+          these items before fulfillment.
+        </div>
+      ) : null}
 
       <div
         style={{
@@ -549,6 +581,7 @@ export default function AdminOrdersPage() {
       processing: 0,
       shipped: 0,
       unshipped: 0,
+      stockAttention: 0,
       revenueCents: 0,
     };
 
@@ -558,6 +591,9 @@ export default function AdminOrdersPage() {
       if (status === 'processing') counts.processing += 1;
       if (status === 'shipped') counts.shipped += 1;
       if (status !== 'shipped') counts.unshipped += 1;
+      if (getInventoryStatus(order).id === 'requires_attention') {
+        counts.stockAttention += 1;
+      }
       counts.revenueCents += Number(order.amount_cents) || 0;
     });
 
@@ -585,6 +621,7 @@ export default function AdminOrdersPage() {
         o.shipping_city,
         o.shipping_state,
         o.shipping_postal_code,
+        o.inventory_decrement_status,
         ...(Array.isArray(o.items) ? o.items.map(formatItemSearchLabel) : []),
       ]
         .filter(Boolean)
@@ -645,6 +682,12 @@ export default function AdminOrdersPage() {
           value={summary.unshipped}
           detail={summary.unshipped ? 'Needs attention' : 'Clear'}
           tone={summary.unshipped ? 'warn' : 'good'}
+        />
+        <SummaryCard
+          label="Stock Review"
+          value={summary.stockAttention}
+          detail={summary.stockAttention ? 'Resolve before fulfillment' : 'Clear'}
+          tone={summary.stockAttention ? 'danger' : 'good'}
         />
         <SummaryCard
           label="New"

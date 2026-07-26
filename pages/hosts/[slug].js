@@ -3,10 +3,12 @@ import React from 'react';
 import Head from 'next/head';
 import { Container, Box, Typography, Grid, CardMedia, Breadcrumbs, Link as MLink, Chip, Alert } from '@mui/material';
 import Navbar from '../../components/Navbar';
+import PublicPageHero from '../../components/PublicPageHero';
 import SEO from '../../components/SEO';
 import { getPersonBySlug, getStaticPeopleSeed } from '../../lib/peopleStore';
 import { profileBioToPlainText } from '../../lib/peoplePresentation.mjs';
 import { safeJsonLdStringify } from '../../lib/structuredData.mjs';
+import publicStyles from '../../styles/PublicSite.module.css';
 
 const PLACEHOLDER_IMG = '/images/placeholder-person.svg';
 const SITE_ORIGIN = 'https://www.theavalanchehour.com';
@@ -107,35 +109,51 @@ export default function HostProfile({ person }) {
         />
       </Head>
       <Navbar />
-      <Container maxWidth="lg" sx={{ mt: 4, mb: 8 }}>
-        <Breadcrumbs sx={{ mb: 2 }}>
-          <MLink href="/about">About</MLink>
-          <Typography color="text.primary">{name}</Typography>
-        </Breadcrumbs>
-
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1, flexWrap: 'wrap' }}>
-          <Typography variant="h3" sx={{ fontWeight: 700, lineHeight: 1.2 }}>{name}</Typography>
-          <Chip label={roleLabel} />
-          {additionalLabels.map((roleName) => (
-            <Chip key={roleName} label={roleName} variant="outlined" />
-          ))}
-        </Box>
-
-        {displayTitle ? (
+      <Box component="main" className={publicStyles.publicPage}>
+        <PublicPageHero
+          compact
+          eyebrow="Voices of The Avalanche Hour"
+          title={name}
+          description={bioShort || displayTitle || `${roleLabel} with The Avalanche Hour.`}
+        >
           <Typography
-            variant="h6"
-            color="text.secondary"
-            sx={{ mb: 1.5, fontWeight: 600 }}
+            component="p"
+            sx={{
+              color: '#c8e4ed',
+              fontSize: '.68rem',
+              fontWeight: 900,
+              letterSpacing: '.17em',
+              textTransform: 'uppercase',
+            }}
           >
-            {displayTitle}
+            Field role
           </Typography>
-        ) : null}
+          <Typography
+            component="p"
+            sx={{
+              mt: 1,
+              color: '#fff',
+              fontFamily: 'Amatic SC, cursive',
+              fontSize: '2.6rem',
+              fontWeight: 700,
+              lineHeight: 1,
+            }}
+          >
+            {displayTitle || roleLabel}
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: 2 }}>
+            <Chip label={roleLabel} />
+            {additionalLabels.map((roleName) => (
+              <Chip key={roleName} label={roleName} variant="outlined" />
+            ))}
+          </Box>
+        </PublicPageHero>
 
-        {bioShort && (
-          <Typography variant="subtitle1" color="text.secondary" sx={{ mb: 3 }}>
-            {bioShort}
-          </Typography>
-        )}
+        <Container maxWidth="lg" className={publicStyles.content}>
+          <Breadcrumbs sx={{ mb: 4 }}>
+            <MLink href="/about">About the team</MLink>
+            <Typography color="text.primary">{name}</Typography>
+          </Breadcrumbs>
 
         {/* Image gallery */}
         {imgList?.length > 0 && (
@@ -150,7 +168,12 @@ export default function HostProfile({ person }) {
                       ? `Profile photo coming soon for ${name}`
                       : `${name} ${i + 1}`
                   }
-                  sx={{ height: 260, objectFit: 'cover', borderRadius: 2 }}
+                  sx={{
+                    height: { xs: 300, md: 370 },
+                    objectFit: 'cover',
+                    border: '1px solid rgba(16,34,45,.18)',
+                    borderRadius: 0,
+                  }}
                 />
               </Grid>
             ))}
@@ -160,14 +183,20 @@ export default function HostProfile({ person }) {
         {plainBioFull ? (
           <Typography
             variant="body1"
-            sx={{ lineHeight: 1.7, whiteSpace: 'pre-line' }}
+            sx={{
+              maxWidth: 820,
+              fontSize: { xs: '1rem', md: '1.08rem' },
+              lineHeight: 1.85,
+              whiteSpace: 'pre-line',
+            }}
           >
             {plainBioFull}
           </Typography>
         ) : (
           <Typography variant="body1">Bio coming soon.</Typography>
         )}
-      </Container>
+        </Container>
+      </Box>
     </>
   );
 }

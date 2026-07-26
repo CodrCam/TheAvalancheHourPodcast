@@ -16,7 +16,6 @@ import {
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
-import { products } from '../../src/data/products';
 import Navbar from '../../components/Navbar';
 import {
   getProductSkuEntries,
@@ -28,7 +27,15 @@ import {
   getUnitPrice,
   getVariantImage,
 } from '../../lib/productCatalog';
+import {
+  getProductInventorySummary,
+} from '../../lib/productCatalogPresentation.mjs';
+import {
+  getProductMediaForSku,
+  getProductTaxonomy,
+} from '../../lib/productCatalogStructure.mjs';
 import { ecommerceEvent } from '../../lib/gtag';
+import styles from '../../styles/Storefront.module.css';
 
 const CART_KEY = 'ah_cart';
 const LOW_STOCK_THRESHOLD = 5;
@@ -83,14 +90,12 @@ function lineKey(id, options = {}) {
   return v.length ? `${parts[0]}|${v.join('|')}` : parts[0];
 }
 
-export default function ProductSlugPage({ initialProduct = null }) {
+export default function ProductSlugPage({
+  initialProduct = null,
+  catalogSource = 'unknown',
+}) {
   const router = useRouter();
-  const { slug } = router.query;
-
-  const product = React.useMemo(
-    () => initialProduct || products.find((p) => p.slug === slug),
-    [initialProduct, slug]
-  );
+  const product = initialProduct;
 
   // Variant state (initialized once product is known)
   const [style, setStyle] = React.useState('');
@@ -105,12 +110,22 @@ export default function ProductSlugPage({ initialProduct = null }) {
     () => getProductSkuEntries(product),
     [product]
   );
+  const productSkus = React.useMemo(
+    () => getProductSkus(product),
+    [product]
+  );
   const selectableEntries = React.useMemo(() => {
     if (!stockKnown) return productEntries;
     return productEntries.filter(
-      (entry) => readStockQuantity(stockMap[entry.sku]) > 0
+      (entry) => stockMap[entry.sku]?.hidden !== true
     );
   }, [productEntries, stockKnown, stockMap]);
+  const purchasableEntries = React.useMemo(() => {
+    if (!stockKnown) return productEntries;
+    return selectableEntries.filter(
+      (entry) => readStockQuantity(stockMap[entry.sku]) > 0
+    );
+  }, [productEntries, selectableEntries, stockKnown, stockMap]);
   const selectableStyles = React.useMemo(
     () => getSelectableStyles(product, selectableEntries),
     [product, selectableEntries]
@@ -152,7 +167,7 @@ export default function ProductSlugPage({ initialProduct = null }) {
     if (!product) return;
 
     let ignore = false;
-    const skus = getProductSkus(product);
+    const skus = productSkus;
     setStockLoaded(false);
     setStockError(false);
 
@@ -196,7 +211,7 @@ export default function ProductSlugPage({ initialProduct = null }) {
     return () => {
       ignore = true;
     };
-  }, [product]);
+  }, [product, productSkus]);
 
   React.useEffect(() => {
     if (!product || !stockKnown) return;
@@ -207,9 +222,18 @@ export default function ProductSlugPage({ initialProduct = null }) {
     if (selectableColors.length && color) currentOptions.color = color;
 
     const currentSku = getSkuForOptions(product, currentOptions);
-    if (currentSku && readStockQuantity(stockMap[currentSku]) > 0) return;
+    const currentRecord = currentSku ? stockMap[currentSku] : null;
+    const currentIsListed =
+      Boolean(currentSku) && currentRecord?.hidden !== true;
+    if (
+      currentIsListed &&
+      (readStockQuantity(currentRecord) > 0 || !purchasableEntries.length)
+    ) {
+      return;
+    }
 
-    const firstAvailable = selectableEntries[0];
+    const firstAvailable =
+      purchasableEntries[0] || selectableEntries[0];
 
     if (!firstAvailable) {
       router.replace('/store');
@@ -224,6 +248,7 @@ export default function ProductSlugPage({ initialProduct = null }) {
   }, [
     color,
     product,
+    purchasableEntries,
     router,
     selectableColors.length,
     selectableEntries,
@@ -279,16 +304,28 @@ export default function ProductSlugPage({ initialProduct = null }) {
   const selectedSku = getSkuForOptions(product, options);
   const selectedRecord = selectedSku ? stockMap[selectedSku] : null;
   const selectedStock = readStockQuantity(selectedRecord);
-  const productAvailableQuantity = getProductSkus(product).reduce(
-    (sum, sku) => sum + readStockQuantity(stockMap[sku]),
-    0
+  const inventorySummary = getProductInventorySummary(
+    productSkus,
+    stockMap
   );
+  const productIsStandby = stockKnown && inventorySummary.isStandby;
   const isHidden = stockKnown && selectedRecord?.hidden === true;
   const isSoldOut = stockKnown && !isHidden && selectedStock <= 0;
   const isUnavailable = !stockKnown || isHidden || isSoldOut;
 
   const computedVariantImage = getVariantImage(product, options);
-  const heroImage = selectedImage || computedVariantImage || product.image;
+  const allImages = getProductMediaForSku(product, selectedSku);
+  const selectedImageIsRelevant =
+    selectedImage && allImages.includes(selectedImage);
+  const heroImage =
+    (selectedImageIsRelevant ? selectedImage : null) ||
+    computedVariantImage ||
+    allImages[0] ||
+    product.image;
+  const taxonomy = getProductTaxonomy(product);
+  const showColorSelector =
+    selectableColors.length > 1 ||
+    selectableColors.some((candidate) => candidate !== style);
 
   const handleStyleChange = (nextStyle) => {
     if (!nextStyle) return;
@@ -316,17 +353,14 @@ export default function ProductSlugPage({ initialProduct = null }) {
       setSize(nextSizes[0]);
     }
     setQty(1);
-    const img = getVariantImage(product, {
-      color: nextColor,
-      style,
-    });
-    setSelectedImage(img || null);
+    setSelectedImage(null);
   };
 
   const handleSizeChange = (nextSize) => {
     if (!nextSize) return;
     setSize(nextSize);
     setQty(1);
+    setSelectedImage(null);
   };
 
   function addToCart(goCheckout = false) {
@@ -375,12 +409,7 @@ export default function ProductSlugPage({ initialProduct = null }) {
     if (goCheckout) router.push('/store/checkout');
   }
 
-  const allImages =
-    Array.isArray(product.images) && product.images.length
-      ? product.images
-      : [product.image];
-
-  if (stockKnown && productAvailableQuantity <= 0) {
+  if (productIsStandby) {
     return (
       <>
         <Head>
@@ -411,51 +440,50 @@ export default function ProductSlugPage({ initialProduct = null }) {
 
       <Navbar />
 
-      <Container maxWidth="lg" sx={{ py: { xs: 2, md: 4 } }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-          <IconButton
-            aria-label="Back to store"
-            onClick={() => router.push('/store')}
-            size="small"
-          >
-            <ArrowBackIcon />
-          </IconButton>
-          <Box sx={{ flexGrow: 1 }} />
-          <Button
-            component={Link}
-            href="/store/checkout"
-            startIcon={<ShoppingCartIcon />}
-            variant="outlined"
-            size="small"
-          >
-            Cart
-          </Button>
+      <Box
+        component="main"
+        className={styles.detailPage}
+        data-catalog-source={catalogSource}
+      >
+        <Box className={styles.detailUtility}>
+          <Container maxWidth="lg" className={styles.detailUtilityInner}>
+            <Button
+              component={Link}
+              href="/store"
+              startIcon={<ArrowBackIcon />}
+              className={styles.detailBack}
+            >
+              Current drop
+            </Button>
+            <span className={styles.detailUtilityLabel}>
+              {taxonomy.category} / {taxonomy.collection}
+            </span>
+            <Button
+              component={Link}
+              href="/store/cart"
+              startIcon={<ShoppingCartIcon />}
+              className={styles.detailCart}
+            >
+              Cart
+            </Button>
+          </Container>
         </Box>
 
-        <Grid container spacing={3}>
+        <Container maxWidth="lg" className={styles.detailContainer}>
+          <Grid container spacing={{ xs: 4, md: 7 }} className={styles.detailGrid}>
           {/* Gallery */}
           <Grid item xs={12} md={6}>
             <Paper
               elevation={0}
-              sx={{
-                p: 2,
-                border: '1px solid',
-                borderColor: 'divider',
-                borderRadius: 2
-              }}
+              className={styles.galleryPanel}
             >
               <Box
                 component="img"
                 src={heroImage}
                 alt={product.name}
-                sx={{
-                  width: '100%',
-                  height: 'auto',
-                  borderRadius: 2,
-                  display: 'block'
-                }}
+                className={styles.detailHeroImage}
               />
-              <Box sx={{ display: 'flex', gap: 1, mt: 1, flexWrap: 'wrap' }}>
+              <Box className={styles.thumbnailRail}>
                 {allImages.map((src) => (
                   <Box
                     key={src}
@@ -463,16 +491,9 @@ export default function ProductSlugPage({ initialProduct = null }) {
                     src={src}
                     alt={product.name}
                     onClick={() => setSelectedImage(src)}
-                    sx={{
-                      width: 96,
-                      height: 96,
-                      objectFit: 'cover',
-                      borderRadius: 1,
-                      border: '2px solid',
-                      borderColor:
-                        heroImage === src ? 'primary.main' : 'divider',
-                      cursor: 'pointer'
-                    }}
+                    className={`${styles.thumbnail} ${
+                      heroImage === src ? styles.thumbnailActive : ''
+                    }`}
                   />
                 ))}
               </Box>
@@ -480,21 +501,23 @@ export default function ProductSlugPage({ initialProduct = null }) {
           </Grid>
 
           {/* Details */}
-          <Grid item xs={12} md={6}>
-            <Typography variant="h4" sx={{ mb: 1 }}>
+          <Grid item xs={12} md={6} className={styles.detailInfoColumn}>
+            <Typography component="p" className={styles.detailEyebrow}>
+              {taxonomy.category} / {taxonomy.collection}
+            </Typography>
+            <Typography component="h1" className={styles.detailTitle}>
               {product.name}
             </Typography>
-            <Typography variant="h6" sx={{ mb: 2 }}>
-              {money(unitPrice)}   {/* <<-- SHOW VARIANT PRICE */}
+            <Typography className={styles.detailPrice}>
+              {money(unitPrice)}
             </Typography>
             <Typography
-              variant="body2"
-              sx={{
-                color: isUnavailable ? 'error.main' : 'success.main',
-                fontWeight: 700,
-                mb: 2,
-              }}
+              component="p"
+              className={`${styles.detailStock} ${
+                isUnavailable ? styles.detailStockUnavailable : ''
+              }`}
             >
+              <span className={styles.statusDot} aria-hidden="true" />
               {stockError
                 ? 'Inventory unavailable'
                 : stockLoaded
@@ -512,32 +535,55 @@ export default function ProductSlugPage({ initialProduct = null }) {
                   : 'Checking inventory...'}
             </Typography>
             <Typography
-              variant="body1"
-              paragraph
-              sx={{ whiteSpace: 'pre-line' }}
+              component="div"
+              className={styles.detailDescription}
             >
               {product.description}
             </Typography>
+            <Box className={styles.supportNote}>
+              <span>What this supports</span>
+              Independent conversations about avalanches, snow, decisions, and
+              the people doing the work.
+            </Box>
 
             {/* Style */}
             {selectableStyles.length ? (
-              <Box sx={{ mb: 2 }}>
+              <Box className={styles.optionBlock}>
                 <Typography
-                  variant="overline"
-                  sx={{ letterSpacing: 1, color: 'text.secondary' }}
+                  component="p"
+                  className={styles.optionLabel}
                 >
-                  Style
+                  {product.optionLabels?.style || 'Style'}
                 </Typography>
                 <ToggleButtonGroup
                   exclusive
                   size="small"
                   value={style}
                   onChange={(_, v) => handleStyleChange(v)}
-                  sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 1 }}
+                  className={styles.optionGroup}
                 >
                   {selectableStyles.map((st) => (
-                    <ToggleButton key={st} value={st} disabled={!stockKnown}>
-                      {st}
+                    <ToggleButton
+                      key={st}
+                      value={st}
+                      disabled={!stockKnown}
+                      className={styles.visualOption}
+                    >
+                      <img
+                        src={
+                          getVariantImage(product, {
+                            style: st,
+                            color:
+                              getSelectableColors(
+                                product,
+                                selectableEntries,
+                                st
+                              )[0] || '',
+                          }) || product.image
+                        }
+                        alt=""
+                      />
+                      <span>{st}</span>
                     </ToggleButton>
                   ))}
                 </ToggleButtonGroup>
@@ -545,13 +591,13 @@ export default function ProductSlugPage({ initialProduct = null }) {
             ) : null}
 
             {/* Color */}
-            {selectableColors.length ? (
-              <Box sx={{ mb: 2 }}>
+            {showColorSelector ? (
+              <Box className={styles.optionBlock}>
                 <Typography
-                  variant="overline"
-                  sx={{ letterSpacing: 1, color: 'text.secondary' }}
+                  component="p"
+                  className={styles.optionLabel}
                 >
-                  Color
+                  {product.optionLabels?.color || 'Color'}
                 </Typography>
                 <ToggleButtonGroup
                   exclusive
@@ -560,11 +606,26 @@ export default function ProductSlugPage({ initialProduct = null }) {
                   onChange={(_, v) => {
                     handleColorChange(v);
                   }}
-                  sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 1 }}
+                  className={styles.optionGroup}
                 >
                   {selectableColors.map((c) => (
-                    <ToggleButton key={c} value={c} disabled={!stockKnown}>
-                      {c}
+                    <ToggleButton
+                      key={c}
+                      value={c}
+                      disabled={!stockKnown}
+                      className={styles.visualOption}
+                    >
+                      <img
+                        src={
+                          getVariantImage(product, {
+                            color: c,
+                            style,
+                            size,
+                          }) || product.image
+                        }
+                        alt=""
+                      />
+                      <span>{c}</span>
                     </ToggleButton>
                   ))}
                 </ToggleButtonGroup>
@@ -573,19 +634,19 @@ export default function ProductSlugPage({ initialProduct = null }) {
 
             {/* Size */}
             {selectableSizes.length ? (
-              <Box sx={{ mb: 2 }}>
+              <Box className={styles.optionBlock}>
                 <Typography
-                  variant="overline"
-                  sx={{ letterSpacing: 1, color: 'text.secondary' }}
+                  component="p"
+                  className={styles.optionLabel}
                 >
-                  Size
+                  {product.optionLabels?.size || 'Size'}
                 </Typography>
                 <ToggleButtonGroup
                   exclusive
                   size="small"
                   value={size}
                   onChange={(_, v) => handleSizeChange(v)}
-                  sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 1 }}
+                  className={styles.optionGroup}
                 >
                   {selectableSizes.map((s) => (
                     <ToggleButton key={s} value={s} disabled={!stockKnown}>
@@ -597,7 +658,10 @@ export default function ProductSlugPage({ initialProduct = null }) {
             ) : null}
 
             {/* Quantity */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, my: 2 }}>
+            <Box className={styles.quantityRow}>
+              <Typography component="p" className={styles.optionLabel}>
+                Quantity
+              </Typography>
               <Button
                 variant="outlined"
                 size="small"
@@ -644,7 +708,7 @@ export default function ProductSlugPage({ initialProduct = null }) {
             </Box>
 
             {/* Actions */}
-            <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
+            <Box className={styles.detailActions}>
               <Button
                 variant="contained"
                 size="large"
@@ -679,44 +743,47 @@ export default function ProductSlugPage({ initialProduct = null }) {
               </Button>
             </Box>
 
-            <Box sx={{ mt: 3 }}>
-              <Button
-                component={Link}
-                href="/store"
-                startIcon={<ArrowBackIcon />}
-                size="small"
-              >
-                Back to store
-              </Button>
-            </Box>
           </Grid>
-        </Grid>
-      </Container>
+          </Grid>
+        </Container>
+      </Box>
     </>
   );
 }
 
 export async function getStaticPaths() {
+  const { loadStorefrontCatalog } = await import(
+    '../../lib/storefrontCatalog.mjs'
+  );
+  const result = await loadStorefrontCatalog();
+
   return {
-    paths: products
-      .filter((product) => product.active)
-      .map((product) => ({
-        params: { slug: product.slug },
-      })),
-    fallback: false,
+    paths: result.products.map((product) => ({
+      params: { slug: product.slug },
+    })),
+    fallback: 'blocking',
   };
 }
 
 export async function getStaticProps({ params }) {
-  const product = products.find((item) => item.slug === params?.slug);
+  const {
+    loadStorefrontProduct,
+    STOREFRONT_CATALOG_REVALIDATE_SECONDS,
+  } = await import('../../lib/storefrontCatalog.mjs');
+  const result = await loadStorefrontProduct(params?.slug);
 
-  if (!product || !product.active) {
-    return { notFound: true };
+  if (!result.product) {
+    return {
+      notFound: true,
+      revalidate: STOREFRONT_CATALOG_REVALIDATE_SECONDS,
+    };
   }
 
   return {
     props: {
-      initialProduct: product,
+      initialProduct: result.product,
+      catalogSource: result.source,
     },
+    revalidate: STOREFRONT_CATALOG_REVALIDATE_SECONDS,
   };
 }

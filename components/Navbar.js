@@ -2,25 +2,20 @@
 import React, { useState, useEffect } from 'react';
 import {
   AppBar, Toolbar, Typography, Button, IconButton, Drawer, List, ListItem, ListItemText,
-  Box, Menu, MenuItem, ListItemIcon, Badge, Popover, Divider, Tooltip
+  Box, Menu, MenuItem, ListItemIcon, Badge, Popover, Tooltip
 } from '@mui/material';
 import {
   Menu as MenuIcon, ExpandMore, PlayArrow, TrendingUp, History, Email, Mic, Home,
-  ShoppingCart, Storefront, Instagram
+  ShoppingCart, Storefront, Instagram, AddRounded, RemoveRounded, CloseRounded,
+  ArrowForwardRounded
 } from '@mui/icons-material';
-import { styled } from '@mui/material/styles';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { products } from '../src/data/products';
 import { SOCIAL_LINKS, SUPPORT_LINKS } from '../lib/siteLinks';
+import styles from '../styles/Navbar.module.css';
 
 const CART_KEY = 'ah_cart';
-
-const Logo = styled('img')({ height: '40px', marginRight: '16px' });
-const HomeLink = styled(Link)({
-  display: 'flex', alignItems: 'center', textDecoration: 'none', color: 'inherit', flexGrow: 1,
-  '&:hover': { opacity: 0.8 },
-});
 
 // ---- cart helpers (variant-aware) ----
 const keyOf = (id, options = {}) => JSON.stringify({ id, ...options });
@@ -42,6 +37,11 @@ export default function Navbar() {
   const cartOpen = Boolean(cartAnchor);
 
   const router = useRouter();
+  const routeIsActive = (path) =>
+    path === '/' ? router.pathname === '/' : router.pathname.startsWith(path);
+  const episodeRouteActive = routeIsActive('/episodes');
+  const contactRouteActive =
+    routeIsActive('/contact') || routeIsActive('/be-a-guest');
 
   useEffect(() => {
     const load = () => setCart(loadCart());
@@ -123,18 +123,25 @@ export default function Navbar() {
   const display = cart.map((item) => {
     const { id, options, qty } = item;
     const p = products.find(x => x.id === id);
-    return p
-      ? {
-          ...p,
-          key: cartLineKey(item),
-          options: options || {},
-          price: item.price || p.price,
-          qty,
-          sku: item.sku,
-          available: getAvailableForItem(item),
-        }
-      : null;
-  }).filter(Boolean);
+    return {
+      ...(p || {}),
+      id,
+      name: item.name || p?.name || id,
+      image: item.image || p?.image || '',
+      key: cartLineKey(item),
+      options: options || {},
+      price: typeof item.price === 'number' && Number.isFinite(item.price)
+        ? item.price
+        : p?.price || 0,
+      qty,
+      sku: item.sku,
+      available: getAvailableForItem(item),
+    };
+  });
+  const cartSubtotal = display.reduce(
+    (sum, item) => sum + item.price * item.qty,
+    0
+  );
 
   // Variant-aware +/- handlers
   const inc = (lineKey) => {
@@ -177,19 +184,34 @@ export default function Navbar() {
   ];
 
   return (
-    <AppBar position="sticky">
-      <Toolbar>
-        <HomeLink href="/">
-          <Logo src="/images/logo.png" alt="The Avalanche Hour Logo" />
-          <Typography variant="h4" sx={{ fontFamily: 'Amatic SC, sans-serif' }}>
-            The Avalanche Hour Podcast
-          </Typography>
-        </HomeLink>
+    <AppBar position="sticky" className={styles.navbar}>
+      <Toolbar className={styles.navToolbar}>
+        <Link href="/" className={styles.brand}>
+          <img
+            src="/images/avalanche-hour-podcast-logo-white.png"
+            alt="The Avalanche Hour Logo"
+            className={styles.brandLogo}
+          />
+        </Link>
 
         {/* Desktop */}
         <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', gap: 1 }}>
-          <Button color="inherit" onClick={handleEpisodeMenuOpen} endIcon={<ExpandMore />} sx={{ textTransform: 'none' }}>Episodes</Button>
-          <Menu anchorEl={episodeMenuAnchor} open={Boolean(episodeMenuAnchor)} onClose={handleEpisodeMenuClose} PaperProps={{ sx: { mt: 1, minWidth: 250 } }}>
+          <Button
+            color="inherit"
+            onClick={handleEpisodeMenuOpen}
+            endIcon={<ExpandMore />}
+            className={`${styles.navLink} ${
+              episodeRouteActive ? styles.navLinkActive : ''
+            }`}
+          >
+            Episodes
+          </Button>
+          <Menu
+            anchorEl={episodeMenuAnchor}
+            open={Boolean(episodeMenuAnchor)}
+            onClose={handleEpisodeMenuClose}
+            PaperProps={{ className: styles.navMenu }}
+          >
             {episodeMenuItems.map((item) => (
               <MenuItem key={item.text} onClick={() => handleMenuItemClick(item.link)} sx={{ py: 1.5 }}>
                 <ListItemIcon sx={{ minWidth: 40 }}>{item.icon}</ListItemIcon>
@@ -201,8 +223,22 @@ export default function Navbar() {
             ))}
           </Menu>
 
-          <Button color="inherit" onClick={handleContactMenuOpen} endIcon={<ExpandMore />} sx={{ textTransform: 'none' }}>Contact</Button>
-          <Menu anchorEl={contactMenuAnchor} open={Boolean(contactMenuAnchor)} onClose={handleContactMenuClose} PaperProps={{ sx: { mt: 1, minWidth: 250 } }}>
+          <Button
+            color="inherit"
+            onClick={handleContactMenuOpen}
+            endIcon={<ExpandMore />}
+            className={`${styles.navLink} ${
+              contactRouteActive ? styles.navLinkActive : ''
+            }`}
+          >
+            Contact
+          </Button>
+          <Menu
+            anchorEl={contactMenuAnchor}
+            open={Boolean(contactMenuAnchor)}
+            onClose={handleContactMenuClose}
+            PaperProps={{ className: styles.navMenu }}
+          >
             {contactMenuItems.map((item) => (
               <MenuItem key={item.text} onClick={() => handleMenuItemClick(item.link)} sx={{ py: 1.5 }}>
                 <ListItemIcon sx={{ minWidth: 40 }}>{item.icon}</ListItemIcon>
@@ -226,7 +262,11 @@ export default function Navbar() {
                   ? 'Donate (opens in a new tab)'
                   : undefined
               }
-              sx={{ textTransform: 'none' }}
+              className={`${styles.navLink} ${
+                item.text !== 'Donate' && routeIsActive(item.link)
+                  ? styles.navLinkActive
+                  : ''
+              } ${item.text === 'Donate' ? styles.donateLink : ''}`}
             >
               {item.text}
             </Button>
@@ -240,15 +280,22 @@ export default function Navbar() {
               href={SOCIAL_LINKS.instagram}
               target="_blank"
               rel="noopener noreferrer"
-              sx={{ ml: 0.25 }}
+              className={styles.navIcon}
             >
               <Instagram />
             </IconButton>
           </Tooltip>
 
           {/* Quick cart popover (variant-aware) */}
-          <IconButton color="inherit" aria-label="Cart" onClick={(e) => setCartAnchor(e.currentTarget)}>
-            <Badge badgeContent={totalItems} color="primary"><ShoppingCart /></Badge>
+          <IconButton
+            color="inherit"
+            aria-label="Cart"
+            onClick={(e) => setCartAnchor(e.currentTarget)}
+            className={styles.navIcon}
+          >
+            <Badge badgeContent={totalItems} className={styles.cartBadge}>
+              <ShoppingCart />
+            </Badge>
           </IconButton>
           <Popover
             open={cartOpen}
@@ -256,72 +303,181 @@ export default function Navbar() {
             onClose={() => setCartAnchor(null)}
             anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
             transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-            PaperProps={{ sx: { width: 360, p: 1 } }}
+            PaperProps={{ className: styles.cartPopover }}
           >
-            <Typography sx={{ px: 1.5, py: 1, fontWeight: 700 }}>Cart</Typography>
-            <Divider />
+            <Box className={styles.cartHeader}>
+              <Box>
+                <Typography component="p" className={styles.cartEyebrow}>
+                  Current field kit
+                </Typography>
+                <Box className={styles.cartTitleRow}>
+                  <Typography component="h2" className={styles.cartTitle}>
+                    Your cart
+                  </Typography>
+                  <span className={styles.cartCount}>
+                    {totalItems} {totalItems === 1 ? 'item' : 'items'}
+                  </span>
+                </Box>
+              </Box>
+              <IconButton
+                aria-label="Close cart"
+                onClick={() => setCartAnchor(null)}
+                className={styles.cartClose}
+              >
+                <CloseRounded />
+              </IconButton>
+            </Box>
+
             {display.length === 0 ? (
-              <Typography variant="body2" color="text.secondary" sx={{ p: 2 }}>Your cart is empty.</Typography>
+              <Box className={styles.cartEmpty}>
+                <ShoppingCart className={styles.emptyCartIcon} />
+                <Typography component="h3">Nothing packed yet.</Typography>
+                <Typography>
+                  Pick something from the current drop and it will show up here.
+                </Typography>
+                <Button
+                  component={Link}
+                  href="/store"
+                  endIcon={<ArrowForwardRounded />}
+                  onClick={() => setCartAnchor(null)}
+                  className={styles.emptyCartButton}
+                >
+                  Explore the shop
+                </Button>
+              </Box>
             ) : (
-              <List dense>
+              <Box className={styles.cartItems}>
                 {display.map((i) => {
                   const optionLabel = [
                     i.options?.color ? i.options.color : null,
                     i.options?.size ? i.options.size : null
                   ].filter(Boolean).join(' · ');
                   return (
-                    <ListItem key={i.key} sx={{ alignItems: 'flex-start' }}>
-                      <ListItemText
-                        disableTypography
-                        primary={
-                          <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 1 }}>
-                            <Typography sx={{ fontWeight: 600, mr: 1 }}>
+                    <Box key={i.key} className={styles.cartLine}>
+                      <Box className={styles.cartImageWrap}>
+                        {i.image ? (
+                          <Box
+                            component="img"
+                            src={i.image}
+                            alt=""
+                            className={styles.cartImage}
+                          />
+                        ) : (
+                          <ShoppingCart className={styles.cartImageFallback} />
+                        )}
+                      </Box>
+                      <Box className={styles.cartLineBody}>
+                        <Box className={styles.cartLineTop}>
+                          <Box>
+                            <Typography component="h3" className={styles.cartName}>
                               {i.name}
-                              {optionLabel ? (
-                                <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: .5 }}>
-                                  {' '}{optionLabel}
-                                </Typography>
-                              ) : null}
                             </Typography>
-                            <Typography>${(i.price / 100).toFixed(2)}</Typography>
+                            {optionLabel ? (
+                              <Typography className={styles.cartOptions}>
+                                {optionLabel}
+                              </Typography>
+                            ) : null}
                           </Box>
-                        }
-                        secondary={
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
-                            <Button size="small" variant="outlined" onClick={() => dec(i.key)}>-</Button>
-                            <Typography variant="body2">Qty: {i.qty}</Typography>
-                            <Button
-                              size="small"
-                              variant="outlined"
+                          <Typography className={styles.cartLinePrice}>
+                            ${((i.price * i.qty) / 100).toFixed(2)}
+                          </Typography>
+                        </Box>
+                        <Box className={styles.quantityRow}>
+                          <span className={styles.quantityLabel}>Quantity</span>
+                          <Box className={styles.quantityControl}>
+                            <IconButton
+                              aria-label={`Remove one ${i.name}`}
+                              onClick={() => dec(i.key)}
+                              className={styles.quantityButton}
+                            >
+                              <RemoveRounded fontSize="small" />
+                            </IconButton>
+                            <span className={styles.quantityValue}>{i.qty}</span>
+                            <IconButton
+                              aria-label={`Add one ${i.name}`}
                               onClick={() => inc(i.key)}
                               disabled={i.qty >= i.available}
+                              className={styles.quantityButton}
                             >
-                              +
-                            </Button>
+                              <AddRounded fontSize="small" />
+                            </IconButton>
                           </Box>
-                        }
-                      />
-                    </ListItem>
+                        </Box>
+                      </Box>
+                    </Box>
                   );
                 })}
-              </List>
+              </Box>
             )}
-            <Box sx={{ display: 'flex', gap: 1, p: 1 }}>
-              <Button component={Link} href="/store/cart" fullWidth variant="outlined" onClick={() => setCartAnchor(null)}>View Cart</Button>
-              <Button component={Link} href="/store/checkout" fullWidth variant="contained" onClick={() => setCartAnchor(null)}>Checkout</Button>
-            </Box>
+
+            {display.length > 0 ? (
+              <Box className={styles.cartFooter}>
+                <Box className={styles.subtotalRow}>
+                  <Box>
+                    <Typography className={styles.subtotalLabel}>
+                      Subtotal
+                    </Typography>
+                    <Typography className={styles.supportNote}>
+                      Shipping calculated at checkout
+                    </Typography>
+                  </Box>
+                  <Typography className={styles.subtotal}>
+                    ${(cartSubtotal / 100).toFixed(2)}
+                  </Typography>
+                </Box>
+                <Box className={styles.cartActions}>
+                  <Button
+                    component={Link}
+                    href="/store/cart"
+                    fullWidth
+                    variant="outlined"
+                    onClick={() => setCartAnchor(null)}
+                    className={styles.viewCart}
+                  >
+                    Review cart
+                  </Button>
+                  <Button
+                    component={Link}
+                    href="/store/checkout"
+                    fullWidth
+                    variant="contained"
+                    endIcon={<ArrowForwardRounded />}
+                    onClick={() => setCartAnchor(null)}
+                    className={styles.checkout}
+                  >
+                    Checkout
+                  </Button>
+                </Box>
+              </Box>
+            ) : null}
           </Popover>
         </Box>
 
         {/* Mobile drawer */}
-        <IconButton color="inherit" edge="start" sx={{ display: { xs: 'flex', md: 'none' } }} onClick={toggleDrawer(true)}>
+        <IconButton
+          color="inherit"
+          edge="end"
+          className={styles.mobileMenuButton}
+          sx={{ display: { xs: 'flex', md: 'none' } }}
+          onClick={toggleDrawer(true)}
+          aria-label="Open navigation"
+        >
           <MenuIcon />
         </IconButton>
       </Toolbar>
 
       {/* Drawer for mobile */}
-      <Drawer anchor="right" open={isDrawerOpen} onClose={toggleDrawer(false)}>
-        <Box sx={{ width: 280, pt: 2 }}>
+      <Drawer
+        anchor="right"
+        open={isDrawerOpen}
+        onClose={toggleDrawer(false)}
+        PaperProps={{ className: styles.drawerPaper }}
+      >
+        <Box className={styles.drawerHeader}>
+          <Typography component="p">The Avalanche Hour</Typography>
+          <Typography component="span">Field navigation</Typography>
+        </Box>
+        <Box sx={{ width: 300, pt: 1 }}>
           <List>
             <ListItem button component="a" href="/" onClick={toggleDrawer(false)}>
               <ListItemIcon sx={{ minWidth: 36 }}><Home /></ListItemIcon>
