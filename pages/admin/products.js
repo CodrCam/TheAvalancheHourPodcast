@@ -20,6 +20,13 @@ import {
   getProductTaxonomy,
   groupProductsByTaxonomy,
 } from '../../lib/productCatalogStructure.mjs';
+import {
+  formatProductPriceInput,
+  isProductPriceInput,
+  isProductStockInput,
+  productPriceInputToCents,
+  productStockInputToQuantity,
+} from '../../lib/productNumberInputs.mjs';
 import styles from '../../styles/AdminProducts.module.css';
 
 const STATUS_COPY = {
@@ -105,18 +112,25 @@ function editableProduct(product) {
 
 function cleanPayload(product) {
   const { _new, _slugTouched, ...clean } = product;
-  const entries = clean.skuEntries.map((entry) => ({
-    ...entry,
-    sku: String(entry.sku || '').trim(),
-    label: String(entry.label || '').trim(),
-    price: Math.max(0, Math.trunc(Number(entry.price) || 0)),
-    quantity: Math.max(0, Math.trunc(Number(entry.quantity) || 0)),
-    options: Object.fromEntries(
-      Object.entries(entry.options || {}).filter(([, value]) =>
-        String(value || '').trim()
-      )
-    ),
-  }));
+  const entries = clean.skuEntries.map((entry) => {
+    const {
+      _priceInput,
+      _quantityInput,
+      ...cleanEntry
+    } = entry;
+    return {
+      ...cleanEntry,
+      sku: String(entry.sku || '').trim(),
+      label: String(entry.label || '').trim(),
+      price: Math.max(0, Math.trunc(Number(entry.price) || 0)),
+      quantity: Math.max(0, Math.trunc(Number(entry.quantity) || 0)),
+      options: Object.fromEntries(
+        Object.entries(entry.options || {}).filter(([, value]) =>
+          String(value || '').trim()
+        )
+      ),
+    };
+  });
   return {
     ...clean,
     price: entries.find((entry) => entry.active)?.price || 0,
@@ -423,6 +437,40 @@ export default function AdminProductsPage() {
   function updateVariantOption(index, key, value) {
     updateVariant(index, {
       options: { ...(draft.skuEntries[index].options || {}), [key]: value },
+    });
+  }
+
+  function updateVariantPriceInput(index, value) {
+    if (!isProductPriceInput(value)) return;
+    const cents = productPriceInputToCents(value);
+    updateVariant(index, {
+      _priceInput: value,
+      ...(cents === null ? {} : { price: cents }),
+    });
+  }
+
+  function finishVariantPriceInput(index, value) {
+    const cents = productPriceInputToCents(value) ?? 0;
+    updateVariant(index, {
+      price: cents,
+      _priceInput: undefined,
+    });
+  }
+
+  function updateVariantStockInput(index, value) {
+    if (!isProductStockInput(value)) return;
+    const quantity = productStockInputToQuantity(value);
+    updateVariant(index, {
+      _quantityInput: value,
+      ...(quantity === null ? {} : { quantity }),
+    });
+  }
+
+  function finishVariantStockInput(index, value) {
+    const quantity = productStockInputToQuantity(value) ?? 0;
+    updateVariant(index, {
+      quantity,
+      _quantityInput: undefined,
     });
   }
 
@@ -1305,33 +1353,62 @@ export default function AdminProductsPage() {
                               />
                             </Field>
                           ))}
-                          <Field label="Price">
+                          <Field
+                            label="Price"
+                            hint="Enter dollars with up to two decimal places."
+                          >
                             <div className={styles.moneyInput}>
                               <span>$</span>
                               <input
-                                type="number"
-                                min="0"
-                                step="0.01"
-                                value={(selectedVariant.price / 100).toFixed(2)}
+                                type="text"
+                                inputMode="decimal"
+                                autoComplete="off"
+                                value={
+                                  selectedVariant._priceInput ??
+                                  formatProductPriceInput(
+                                    selectedVariant.price
+                                  )
+                                }
+                                onFocus={(event) => event.target.select()}
                                 onChange={(event) =>
-                                  updateVariant(selectedVariantIndex, {
-                                    price: Math.round(
-                                      Number(event.target.value) * 100
-                                    ),
-                                  })
+                                  updateVariantPriceInput(
+                                    selectedVariantIndex,
+                                    event.target.value
+                                  )
+                                }
+                                onBlur={(event) =>
+                                  finishVariantPriceInput(
+                                    selectedVariantIndex,
+                                    event.target.value
+                                  )
                                 }
                               />
                             </div>
                           </Field>
-                          <Field label="Stock on hand">
+                          <Field
+                            label="Stock on hand"
+                            hint="Enter a whole number."
+                          >
                             <input
-                              type="number"
-                              min="0"
-                              value={selectedVariant.quantity}
+                              type="text"
+                              inputMode="numeric"
+                              autoComplete="off"
+                              value={
+                                selectedVariant._quantityInput ??
+                                String(selectedVariant.quantity)
+                              }
+                              onFocus={(event) => event.target.select()}
                               onChange={(event) =>
-                                updateVariant(selectedVariantIndex, {
-                                  quantity: Number(event.target.value),
-                                })
+                                updateVariantStockInput(
+                                  selectedVariantIndex,
+                                  event.target.value
+                                )
+                              }
+                              onBlur={(event) =>
+                                finishVariantStockInput(
+                                  selectedVariantIndex,
+                                  event.target.value
+                                )
                               }
                             />
                           </Field>
