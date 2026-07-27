@@ -6,7 +6,7 @@
     "predev": "npm run images:optimize",
     "dev": "WATCHPACK_POLLING=true WATCHPACK_POLLING_INTERVAL=1000 next dev --webpack",
     "prebuild": "npm run images:optimize",
-    "build": "next build",
+    "build": "next build --webpack",
     "start": "next start",
     "test": "node --test",
     "lint": "eslint .",

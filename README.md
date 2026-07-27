@@ -1,98 +1,317 @@
-# The Avalanche Hour Podcast Website
+# The Avalanche Hour
 
-Welcome to the official repository for **The Avalanche Hour Podcast Website**. This project is designed to provide an engaging platform for sharing episodes, organizing them into seasons, and offering a seamless user experience with dynamic search and Spotify API integration.
+The Avalanche Hour website is both the public home of the podcast and the
+private operating workspace used by hosts, producers, and logistics support.
+It brings publishing, episode handoff, team guidance, merchandise, sponsor
+management, mic-kit logistics, and day-to-day follow-ups into one system
+without trying to replace specialist tools such as audio editors or recording
+platforms.
 
----
+Production: [theavalanchehour.com](https://theavalanchehour.com)
 
-## 🌟 Features
+## What the project includes
 
-- **Episodes Page**: Browse all podcast episodes with details like description, release date, and guest information.
-- **Season Organization**: Automatically groups episodes into seasons based on release date.
-- **Global Search**: Search episodes across all seasons by title or description.
-- **Spotify Integration**: Dynamically fetches podcast episodes using the Spotify API.
-- **Responsive Design**: Optimized for viewing on desktops, tablets, and mobile devices.
+### Public website
 
----
+- Current episodes, archive browsing, search, season organization, and Spotify
+  data
+- Public host profiles and sponsor presentation
+- Guest application and contact workflows
+- A contextual Slabs and Sluffs voicemail campaign controlled through site
+  content
+- A Stripe-powered merchandise store with catalog, variants, inventory,
+  checkout, order recording, and confirmation pages
+- Search-engine metadata, structured data, RSS, sitemap, and robots endpoints
 
-## 🛠️ Tech Stack
+### Team Studio
 
-- **Framework**: [Next.js](https://nextjs.org/)
-- **UI Library**: [Material-UI (MUI)](https://mui.com/)
-- **API Integration**: [Spotify Web API](https://developer.spotify.com/documentation/web-api/)
-- **Language**: JavaScript
-- **Hosting**: [https://www.theavalanchehour.com](https://www.theavalanchehour.com)
+The authenticated Team Studio starts at `/studio` and adapts to the signed-in
+person’s role.
 
----
+- A priority-based home view for episode, order, inventory, mic-kit, and
+  follow-up work
+- Episode Studios with schedules, host assignments, host-facing instructions,
+  plain-text responses, file uploads, producer notes, discussion, approval,
+  change requests, and host preview
+- Safe Episode Studio creation and deliberate permanent deletion, including
+  removal of attached S3 objects
+- Team resources and a publishable host field manual
+- Personal profile and public-host content management
+- Sponsor-read library and episode assignments
+- Shared follow-ups for blockers, questions, decisions, and durable next steps
+- Notifications and production reminders
+- Mic-kit requests, inventory, handoff planning, tracking, shipping presets,
+  and a USPS Click-N-Ship CSV export
+- Product catalog, stock, product images, orders, homepage content, people,
+  sponsors, and system-health administration
+- A technical-support contact available throughout the signed-in workspace
 
-## 🚀 Installation
+Direct USPS label creation is intentionally not connected yet. The shipping
+layer is separated so account-based USPS API support can be added later without
+changing the host request workflow.
 
-### Prerequisites
+## Roles and access
 
-- Node.js installed ([Download](https://nodejs.org/))
-- Git installed ([Download](https://git-scm.com/))
+Amazon Cognito groups are translated into application permissions. A person may
+belong to more than one group.
 
-### Steps
+| Group | Primary use |
+| --- | --- |
+| `host` | Personal episodes, responses, uploads, resources, profile, mic-kit requests, follow-ups, and notifications |
+| `studio_manager` | Host capabilities plus scheduling, producer tools, approvals, resources, sponsor reads, access management, and team follow-up triage |
+| `logistics` | Orders, inventory, products, sponsors, mic kits, and operational follow-ups |
+| `admin` | Full Team Studio and operations access |
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/CodrCam/the-avalanche-hour.git
-   cd the-avalanche-hour
+The permission definitions live in `lib/accessControl.mjs`; navigation is
+derived from those permissions in `lib/studioNavigation.mjs`.
 
-	2.	Install dependencies:
+## Technical architecture
 
+| Area | Technology |
+| --- | --- |
+| Application | Next.js Pages Router, React, JavaScript |
+| Interface | CSS Modules and Material UI icons/components |
+| Hosting | Netlify with `@netlify/plugin-nextjs` |
+| Authentication | Amazon Cognito OAuth with PKCE |
+| Operational data | Amazon DynamoDB |
+| Episode and product files | Amazon S3 with short-lived signed uploads and downloads |
+| Commerce | Stripe |
+| Podcast catalog | Spotify Web API |
+| Email | Nodemailer-backed transactional notifications |
+| Tests | Node’s built-in test runner |
+
+The production build uses Webpack explicitly. Next.js 16 defaults to Turbopack,
+but the Webpack build is retained here for consistent fresh-page behavior in
+both Safari and Chrome.
+
+## Local development
+
+### Requirements
+
+- Node.js 22.13 or newer
+- npm
+- Access to the required development services and environment variables
+
+### Start the application
+
+```bash
 npm install
-
-
-	3.	Add your .env.local file with the following variables:
-
-SPOTIFY_CLIENT_ID=your_spotify_client_id
-SPOTIFY_CLIENT_SECRET=your_spotify_client_secret
-NEXT_PUBLIC_GA_MEASUREMENT_ID=G-XXXXXXXXXX
-
-
-	4.	Start the development server:
-
 npm run dev
+```
 
+Open [http://localhost:3000](http://localhost:3000).
 
-	5.	Open the application in your browser at http://localhost:3000.
+`npm run dev` uses Webpack and regenerates optimized public images before
+starting Next.js.
 
-📚 Usage
+### Environment configuration
 
-Spotify Integration
+Create `.env.local` for local development. Never commit credentials or copy
+production secrets into source files.
 
-The app dynamically fetches podcast episodes using the Spotify API. Make sure to set up your Spotify Developer Account and configure the SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET in the .env.local file.
+The application reads environment variables in these groups:
 
-Search and Seasons
+#### Public site
 
-	•	Use the season dropdown menu to filter episodes by season.
-	•	Enter keywords in the search bar to find episodes across all seasons.
+```text
+NEXT_PUBLIC_BASE_URL
+NEXT_PUBLIC_GA_MEASUREMENT_ID
+SPOTIFY_CLIENT_ID
+SPOTIFY_CLIENT_SECRET
+CONTACT_EMAIL
+```
 
-🛡️ Deployment
+#### Cognito authentication
 
-This project is hosted on Vercel.
+```text
+COGNITO_DOMAIN
+COGNITO_APP_CLIENT_ID
+COGNITO_APP_CLIENT_SECRET
+COGNITO_REDIRECT_URI
+COGNITO_OAUTH_SCOPES
+COGNITO_REGION
+COGNITO_USER_POOL_ID
+COGNITO_ISSUER
+COGNITO_COOKIE_NAME
+COGNITO_ADMIN_GROUP
+COGNITO_STUDIO_MANAGER_GROUP
+COGNITO_LOGISTICS_GROUP
+COGNITO_HOST_GROUP
+```
 
-	1.	Deploy the repository to Vercel:
-	•	Connect the GitHub repository to your Vercel account.
-	•	Add your .env variables in the Vercel dashboard.
-	•	Add `NEXT_PUBLIC_GA_MEASUREMENT_ID` to enable Google Analytics 4 tracking.
-	2.	The site will be available at your Vercel-provided URL (e.g., https://the-avalanche-hour.vercel.app).
+For production, the Cognito callback must be:
 
-👥 Contributors
+```text
+https://theavalanchehour.com/admin/auth/callback
+```
 
-	•	CodrCam - Lead Developer (GitHub)
-	•	Special thanks to Spotify and Material-UI for their tools and documentation.
+The app client must allow that exact callback URL and the corresponding
+sign-out URL.
 
-📝 License
+#### DynamoDB
 
-This project is licensed under the MIT License. See the LICENSE file for details.
+```text
+DYNAMODB_REGION
+DYNAMODB_ACCESS_KEY_ID
+DYNAMODB_SECRET_ACCESS_KEY
+DYNAMODB_SESSION_TOKEN
+DYNAMODB_INVENTORY_TABLE
+DYNAMODB_ORDERS_TABLE
+DYNAMODB_PRODUCTS_TABLE
+DYNAMODB_PEOPLE_TABLE
+DYNAMODB_SITE_CONTENT_TABLE
+DYNAMODB_SPONSORS_TABLE
+DYNAMODB_MIC_KITS_TABLE
+DYNAMODB_STUDIO_NOTIFICATIONS_INDEX
+```
 
-🌐 Live Demo
+The DynamoDB client can fall back to the standard `AWS_ACCESS_KEY_ID`,
+`AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN`, and `AWS_REGION` variables when
+dedicated DynamoDB credentials are not supplied.
 
-Check out the live version of the website: The Avalanche Hour Podcast.
+#### S3 uploads
 
-🛠️ Future Enhancements
+```text
+EPISODE_ASSETS_S3_BUCKET
+EPISODE_ASSETS_S3_REGION
+EPISODE_ASSETS_ACCESS_KEY_ID
+EPISODE_ASSETS_SECRET_ACCESS_KEY
+EPISODE_ASSETS_SESSION_TOKEN
+EPISODE_ASSETS_UPLOAD_TOKEN_SECRET
+```
 
-	•	Add user accounts for saving favorite episodes.
-	•	Implement advanced analytics for tracking user engagement.
-	•	Enhance SEO for better discoverability of episodes.
+Product images use the episode-asset configuration by default. They may use
+separate values when these variables are set:
+
+```text
+PRODUCT_IMAGES_S3_BUCKET
+PRODUCT_IMAGES_S3_REGION
+PRODUCT_IMAGES_ACCESS_KEY_ID
+PRODUCT_IMAGES_SECRET_ACCESS_KEY
+PRODUCT_IMAGES_SESSION_TOKEN
+PRODUCT_IMAGES_UPLOAD_TOKEN_SECRET
+```
+
+The S3 bucket CORS policy must allow the production and local-development
+origins to perform the signed upload method used by the application.
+
+#### Stripe and email
+
+```text
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+STRIPE_SECRET_KEY
+STRIPE_WEBHOOK_SECRET
+EMAIL_USER
+EMAIL_PASS
+STUDIO_PRODUCER_EMAILS
+```
+
+#### Team operations
+
+```text
+STUDIO_PRODUCTION_LEAD_PERSON_IDS
+STUDIO_MIC_KIT_MANAGER_PERSON_IDS
+STUDIO_NOTIFICATION_RETENTION_DAYS
+STUDIO_REMINDER_RUN_SECRET
+STUDIO_SUPPORT_NAME
+STUDIO_SUPPORT_EMAIL
+STUDIO_SUPPORT_PHONE
+```
+
+`SUPABASE_DB_URL` remains available to the legacy export/migration scripts; the
+live operational stores use DynamoDB.
+
+## Useful commands
+
+| Command | Purpose |
+| --- | --- |
+| `npm run dev` | Optimize images and start the local Webpack development server |
+| `npm test` | Run the unit and security test suite |
+| `npm run lint` | Run ESLint across the project |
+| `npm run build` | Create the production-style Webpack build used by Netlify |
+| `npm run images:optimize` | Regenerate optimized public image variants |
+| `npm run studio:reminders` | Run the production reminder service manually |
+| `npm run migrate:studio-notifications` | Migrate Studio notification records |
+| `npm run seed:dynamo-inventory` | Seed inventory data |
+| `npm run seed:dynamo-orders` | Seed order data |
+| `npm run seed:dynamo-site-content` | Seed managed site content |
+| `npm run seed:dynamo-sponsors` | Seed sponsor data |
+| `npm run seed:dynamo-people` | Seed people and role data |
+| `npm run create:dynamo-products` | Create the products table |
+| `npm run create:dynamo-mic-kits` | Create the mic-kit table |
+
+Treat all create, seed, migration, and reminder commands as operational tools.
+Confirm the target environment before running them.
+
+## Important routes
+
+| Route | Purpose |
+| --- | --- |
+| `/` | Public homepage |
+| `/episodes` | Public episode hub |
+| `/store` | Public merchandise catalog |
+| `/admin/login` | Team authentication |
+| `/studio` | Role-aware Team Studio home |
+| `/studio/episodes` | Personal episode work |
+| `/studio/manage/episodes` | Episode calendar and Studio creation |
+| `/studio/resources` | Team field guide |
+| `/studio/inbox` | Shared team follow-ups |
+| `/studio/mic-kits` | Requests, locations, and handoffs |
+| `/admin/products` | Product catalog and inventory |
+| `/admin/orders` | Fulfillment and shipping |
+| `/admin/system-health` | Live operational diagnostics |
+
+Older `/admin/studios` and related admin routes remain for compatibility, but
+the Team Studio is the primary operational interface.
+
+## Testing and QA
+
+Before a production handoff:
+
+```bash
+npm test
+npm run lint
+npm run build
+```
+
+Then perform a signed-in smoke test in both Safari and Chrome:
+
+1. Open `/studio` directly and refresh it.
+2. Open an Episode Studio from a direct URL.
+3. Switch between producer view and “View as host.”
+4. Confirm producer notes save and approval blockers explain what is missing.
+5. Open a file-upload control without submitting a test file.
+6. Enter a sample product price and stock count, then discard the unsaved
+   product.
+7. Open a mic kit and verify the status menu.
+8. Run System Health.
+9. Sign out and confirm the Team Sign In page appears.
+
+Safari and Chrome should both complete fresh-page loads; client-side navigation
+alone is not a sufficient browser test.
+
+## Deployment
+
+The site is deployed through Netlify using `netlify.toml`.
+
+- Build command: `npm run build`
+- Publish directory: `.next`
+- Node.js: 22.13.0
+- Next.js integration: `@netlify/plugin-nextjs`
+
+Production secrets and table names belong in the Netlify environment, not in
+the repository. After a deployment, verify the published deploy, run System
+Health, and complete the two-browser smoke test above.
+
+## Data and deletion safety
+
+- Episode and product uploads use signed S3 operations; clients do not receive
+  long-lived AWS credentials.
+- Episode Studio deletion is permanent and removes the Studio’s attached S3
+  objects as part of the deletion workflow.
+- Product, order, and people administration should preserve identifiers used by
+  Stripe, DynamoDB, and historical records.
+- Never run seed or migration scripts against production without reviewing the
+  configured environment first.
+- Never commit `.env.local`, AWS credentials, Stripe secrets, Cognito secrets,
+  or upload-token secrets.

@@ -69,6 +69,21 @@ function formatGroup(group) {
     .join(' ');
 }
 
+function clearCompletedAuthParams() {
+  if (typeof window === 'undefined') return;
+
+  const url = new URL(window.location.href);
+  const hadAuthParams =
+    url.searchParams.has('code') || url.searchParams.has('state');
+
+  if (!hadAuthParams) return;
+
+  url.searchParams.delete('code');
+  url.searchParams.delete('state');
+  const cleanUrl = `${url.pathname}${url.search}${url.hash}`;
+  window.history.replaceState(window.history.state, '', cleanUrl);
+}
+
 export default function StudioLayout({
   children,
   hasUnsavedChanges = false,
@@ -111,6 +126,7 @@ export default function StudioLayout({
         setSession(data.user);
         setSupportContact(data.support_contact || null);
         setSessionState('ready');
+        clearCompletedAuthParams();
       } catch {
         if (!alive) return;
         setSessionState('denied');

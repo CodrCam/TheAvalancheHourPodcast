@@ -213,6 +213,15 @@ export default function StudioInboxPage({ previewData = null }) {
     }
   }
 
+  function openCreateForm() {
+    setShowCreate(true);
+    window.requestAnimationFrame(() =>
+      document
+        .getElementById('follow-up-detail')
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    );
+  }
+
   async function createItem(event) {
     event.preventDefault();
     if (saving) return;
@@ -333,15 +342,11 @@ export default function StudioInboxPage({ previewData = null }) {
           type="button"
           className={styles.primaryButton}
           onClick={() => {
-            const opening = !showCreate;
-            setShowCreate(opening);
-            if (opening) {
-              window.requestAnimationFrame(() =>
-                document
-                  .getElementById('follow-up-detail')
-                  ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-              );
+            if (showCreate) {
+              setShowCreate(false);
+              return;
             }
+            openCreateForm();
           }}
         >
           <AddRoundedIcon aria-hidden="true" />
@@ -480,8 +485,16 @@ export default function StudioInboxPage({ previewData = null }) {
           ) : (
             <div className={styles.intakeEmpty}>
               <InboxRoundedIcon aria-hidden="true" />
-              <strong>No items match these filters.</strong>
-              <span>Try another filter or add the first item.</span>
+              <strong>
+                {items.length
+                  ? 'No follow-ups match these filters.'
+                  : 'The follow-up queue is clear.'}
+              </strong>
+              <span>
+                {items.length
+                  ? 'Adjust the search or filters to see another item.'
+                  : 'New blockers, questions, and decisions will appear here.'}
+              </span>
             </div>
           )}
         </section>
@@ -822,9 +835,30 @@ export default function StudioInboxPage({ previewData = null }) {
               </section>
             </>
           ) : (
-            <div className={styles.intakeEmpty}>
+            <div
+              className={`${styles.intakeEmpty} ${styles.intakeEmptyDetail}`}
+            >
               <InboxRoundedIcon aria-hidden="true" />
-              <strong>Select a follow-up to see its full context.</strong>
+              <strong>
+                {items.length
+                  ? 'Choose a follow-up from the queue.'
+                  : 'Nothing is waiting on the team.'}
+              </strong>
+              <span>
+                {items.length
+                  ? 'Its owner, context, decisions, and updates will appear here.'
+                  : 'Create a follow-up when something needs an owner, answer, or durable next step.'}
+              </span>
+              {!items.length && !loading ? (
+                <button
+                  type="button"
+                  className={styles.primaryButton}
+                  onClick={openCreateForm}
+                >
+                  <AddRoundedIcon aria-hidden="true" />
+                  Create the first follow-up
+                </button>
+              ) : null}
             </div>
           )}
         </section>

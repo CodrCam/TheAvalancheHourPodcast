@@ -54,13 +54,24 @@ const PREVIEW_DATA = {
   episode_roles: ['host', 'producer'],
   viewer_person_id: 'cam-griffin',
   available_sponsor_reads: [],
-  asset_uploads_configured: false,
+  asset_uploads_configured: true,
   canUploadAssets: true,
   canUseHostPreview: true,
 };
 
-export async function getServerSideProps() {
-  if (process.env.NODE_ENV === 'production') return { notFound: true };
+export async function getServerSideProps({ req }) {
+  const forwardedHost = String(req.headers['x-forwarded-host'] || '')
+    .split(',')[0]
+    .trim();
+  const requestHost = forwardedHost || String(req.headers.host || '').trim();
+  const isLocalPreview = /^(localhost|127\.0\.0\.1)(:\d+)?$/i.test(
+    requestHost
+  );
+
+  if (process.env.NODE_ENV === 'production' && !isLocalPreview) {
+    return { notFound: true };
+  }
+
   return { props: {} };
 }
 
