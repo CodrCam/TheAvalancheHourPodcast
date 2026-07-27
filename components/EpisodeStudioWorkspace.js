@@ -15,8 +15,10 @@ import CloudUploadRoundedIcon from '@mui/icons-material/CloudUploadRounded';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import ArrowUpwardRoundedIcon from '@mui/icons-material/ArrowUpwardRounded';
 import ArrowDownwardRoundedIcon from '@mui/icons-material/ArrowDownwardRounded';
+import VisibilityRoundedIcon from '@mui/icons-material/VisibilityRounded';
 import AdminLayout from './AdminLayout';
 import FriendlyDateField from './FriendlyDateField';
+import PlainTextArea from './PlainTextArea';
 import StudioLayout from './StudioLayout';
 import {
   EpisodeRecordingFields,
@@ -24,13 +26,11 @@ import {
 } from './EpisodeRecordingSchedule';
 import EpisodeStudioDeletionControl from './EpisodeStudioDeletionControl';
 import {
-  areProducerDirectionsComplete,
   EPISODE_ASSET_RETENTION_DAYS,
   getEpisodeCompletion,
   isEpisodeAssetExpired,
   isDeliverableComplete,
   mergeEpisodeStudioServerFields,
-  PRODUCER_DIRECTIONS_MIN_LENGTH,
 } from '../lib/episodeStudioPresentation.mjs';
 import { getEpisodeStudioActionBlockers } from '../lib/episodeStudioActionReadiness.mjs';
 import {
@@ -68,18 +68,6 @@ const LOCKED_HOST_STATUSES = [
   'submitted_with_gaps',
   'accepted',
 ];
-
-const PRODUCER_DIRECTIONS_PLACEHOLDER = `FINAL CUT
-Describe the intended pace, tone, story arc, and any moments that must stay.
-
-AUDIO / EDITS
-mission-ridge_interview_jordan_raw.wav | 00:18:42–00:19:07 | CUT | Duplicate answer; join to “Our morning starts…”
-
-IMAGES
-mission-ridge_photo-01_jordan-ridgeline.jpg | COVER | Crop 16:9; keep Jordan and the full ridgeline visible | Photo: Alex Rivera | Permission confirmed
-
-FACT CHECK / PRONUNCIATION / DO NOT USE
-List anything the producer must verify, pronounce carefully, or leave out.`;
 
 const DELIVERY_HEALTH_FIELDS = [
   'delivery_health',
@@ -146,16 +134,6 @@ function formatRetentionDate(value) {
     day: 'numeric',
     year: 'numeric',
   });
-}
-
-function materialPlaceholder(deliverable) {
-  if (deliverable.id === 'guest-details') {
-    return 'Guest name, title or affiliation, contact information, and short biography';
-  }
-  if (deliverable.type === 'url') {
-    return 'Paste an optional secure working-source link';
-  }
-  return 'Fill this in for the producer…';
 }
 
 function formatBytes(value) {
@@ -316,6 +294,15 @@ export default function EpisodeStudioWorkspace({
   const [canUploadAssets, setCanUploadAssets] = useState(
     () => previewData?.canUploadAssets === true
   );
+  const [canUseHostPreview, setCanUseHostPreview] = useState(
+    () => previewData?.canUseHostPreview === true
+  );
+  const [hostPreviewActive, setHostPreviewActive] = useState(
+    () => previewData?.hostPreview === true
+  );
+  const [hostPreviewReadOnly, setHostPreviewReadOnly] = useState(
+    () => previewData?.hostPreviewReadOnly === true
+  );
   const [uploadingAsset, setUploadingAsset] = useState('');
   const [uploadingDeliverableId, setUploadingDeliverableId] = useState('');
   const [deletingAssetId, setDeletingAssetId] = useState('');
@@ -339,8 +326,10 @@ export default function EpisodeStudioWorkspace({
       setLoading(true);
       setError('');
       try {
+        const viewQuery =
+          router.query.view === 'host' ? '?view=host' : '';
         const response = await fetch(
-          `/api/studio/episodes/${encodeURIComponent(episodeId)}`,
+          `/api/studio/episodes/${encodeURIComponent(episodeId)}${viewQuery}`,
           { credentials: 'same-origin' }
         );
         const data = await response.json();
@@ -367,6 +356,9 @@ export default function EpisodeStudioWorkspace({
         setAvailableSponsorReads(data.available_sponsor_reads || []);
         setAssetUploadsConfigured(data.asset_uploads_configured === true);
         setCanUploadAssets(data.canUploadAssets === true);
+        setCanUseHostPreview(data.canUseHostPreview === true);
+        setHostPreviewActive(data.hostPreview === true);
+        setHostPreviewReadOnly(data.hostPreviewReadOnly === true);
         setBaseline(JSON.stringify(data.episode));
       } catch (err) {
         if (alive) setError(err.message || 'Could not open this Episode Studio.');
@@ -379,25 +371,22 @@ export default function EpisodeStudioWorkspace({
     return () => {
       alive = false;
     };
-  }, [episodeId, previewData, router.isReady]);
+  }, [episodeId, previewData, router.isReady, router.query.view]);
 
   const completion = useMemo(
     () => getEpisodeCompletion(episode || {}),
     [episode]
   );
-  const producerDirectionsComplete = areProducerDirectionsComplete(
-    episode?.producer_directions
-  );
-  const producerDirectionsLength = String(
-    episode?.producer_directions || ''
-  ).trim().length;
   const healthLocked = episode?.status === 'accepted';
   const offTrack =
     !healthLocked && episode?.delivery_health === 'off_track';
   const dirty = Boolean(episode && JSON.stringify(episode) !== baseline);
   const lockedForHost =
-    !canHost || LOCKED_HOST_STATUSES.includes(episode?.status);
+    hostPreviewReadOnly ||
+    !canHost ||
+    LOCKED_HOST_STATUSES.includes(episode?.status);
   const canUploadForCurrentStatus =
+    !hostPreviewReadOnly &&
     canUploadAssets &&
     episode?.status !== 'accepted' &&
     (canReview || !LOCKED_HOST_STATUSES.includes(episode?.status));
@@ -420,13 +409,52 @@ export default function EpisodeStudioWorkspace({
     uploading: Boolean(uploadingAsset),
     productionHandoffAvailable,
   });
-  const hostEditBlocker = !canHost
+  const hostEditBlocker = hostPreviewReadOnly
+    ? 'Host preview is read-only. Exit preview to make changes.'
+    : !canHost
     ? 'Host production fields are read-only because you are not assigned to this episode as a host.'
     : episode?.status === 'accepted'
       ? 'The producer accepted this package, so host production fields are locked.'
       : LOCKED_HOST_STATUSES.includes(episode?.status)
         ? 'The package is with the producer. A producer must request changes before hosts can edit it again.'
         : '';
+
+  function setHostPreview(enabled) {
+    if (previewData) {
+      setCanManage(enabled ? false : previewData.canManage === true);
+      setCanHost(enabled ? true : previewData.canHost === true);
+      setCanReview(enabled ? false : previewData.canReview === true);
+      setCanConfigure(enabled ? false : previewData.canConfigure === true);
+      setCanAdminOverride(
+        enabled ? false : previewData.canAdminOverride === true
+      );
+      setCanAdvanceProduction(
+        enabled ? false : previewData.canAdvanceProduction === true
+      );
+      setPeople(enabled ? [] : previewData.people || []);
+      setProducers(enabled ? [] : previewData.producers || []);
+      setAvailableSponsorReads(
+        enabled ? [] : previewData.available_sponsor_reads || []
+      );
+      setCanUploadAssets(
+        enabled ? false : previewData.canUploadAssets === true
+      );
+      setHostPreviewActive(enabled);
+      setHostPreviewReadOnly(enabled);
+      return;
+    }
+    const nextQuery = { ...router.query };
+    if (enabled) {
+      nextQuery.view = 'host';
+    } else {
+      delete nextQuery.view;
+    }
+    router.replace(
+      { pathname: router.pathname, query: nextQuery },
+      undefined,
+      { shallow: true }
+    );
+  }
 
   function replaceEpisode(nextEpisode) {
     setEpisode(nextEpisode);
@@ -499,7 +527,7 @@ export default function EpisodeStudioWorkspace({
     successMessage,
     { mergeFields = [] } = {}
   ) {
-    if (!episode || saving) return null;
+    if (!episode || saving || hostPreviewReadOnly) return null;
     setSaving(true);
     setError('');
     setMessage('');
@@ -562,7 +590,7 @@ export default function EpisodeStudioWorkspace({
   }
 
   async function setDeliveryHealth(deliveryHealth) {
-    if (!episode || saving || healthLocked) return;
+    if (!episode || saving || healthLocked || hostPreviewReadOnly) return;
     setSaving(true);
     setError('');
     setMessage('');
@@ -614,7 +642,6 @@ export default function EpisodeStudioWorkspace({
       {
         action: 'save',
         deliverables: episode.deliverables,
-        producer_directions: episode.producer_directions,
       },
       'Draft saved.'
     );
@@ -634,7 +661,6 @@ export default function EpisodeStudioWorkspace({
         action: 'submit',
         submission_mode: submissionMode,
         deliverables: episode.deliverables,
-        producer_directions: episode.producer_directions,
       },
       provisional
         ? 'The producer has been notified about this episode and its known gaps.'
@@ -689,6 +715,7 @@ export default function EpisodeStudioWorkspace({
 
   async function postMessage(event) {
     event.preventDefault();
+    if (hostPreviewReadOnly) return;
     const body = messageDraft.trim();
     if (!body) return;
     const data = await sendUpdate(
@@ -828,6 +855,7 @@ export default function EpisodeStudioWorkspace({
   }
 
   async function uploadEpisodeAssets(fileList, deliverable) {
+    if (hostPreviewReadOnly) return;
     const files = Array.from(fileList || []);
     if (
       !files.length ||
@@ -1171,6 +1199,7 @@ export default function EpisodeStudioWorkspace({
   }
 
   function viewerCanDeleteAsset(asset) {
+    if (hostPreviewReadOnly) return false;
     return canDeleteEpisodeAsset({
       roles: episodeRoles,
       status: episode?.status,
@@ -1303,17 +1332,51 @@ export default function EpisodeStudioWorkspace({
                   {episode.season || 'Season 11'}
                 </p>
               </div>
-              <span
-                className={`${styles.statusPill} ${
-                  styles[`status_${episode.status}`] || ''
-                }`}
-              >
-                {episode.status === 'accepted' &&
-                episode.production_stage === 'lead_review'
-                  ? `Awaiting ${productionLeadName || 'production lead'}`
-                  : STATUS_LABELS[episode.status] || episode.status}
-              </span>
+              <div className={styles.workspaceHeaderActions}>
+                {canUseHostPreview ? (
+                  <button
+                    type="button"
+                    className={
+                      hostPreviewActive
+                        ? styles.exitHostPreviewButton
+                        : styles.hostPreviewButton
+                    }
+                    onClick={() => setHostPreview(!hostPreviewActive)}
+                  >
+                    <VisibilityRoundedIcon aria-hidden="true" />
+                    {hostPreviewActive
+                      ? 'Return to team view'
+                      : 'View as host'}
+                  </button>
+                ) : null}
+                <span
+                  className={`${styles.statusPill} ${
+                    styles[`status_${episode.status}`] || ''
+                  }`}
+                >
+                  {episode.status === 'accepted' &&
+                  episode.production_stage === 'lead_review'
+                    ? `Awaiting ${productionLeadName || 'production lead'}`
+                    : STATUS_LABELS[episode.status] || episode.status}
+                </span>
+              </div>
             </header>
+
+            {hostPreviewActive ? (
+              <section className={styles.hostPreviewBanner} role="status">
+                <VisibilityRoundedIcon aria-hidden="true" />
+                <div>
+                  <strong>Viewing this Studio as a host</strong>
+                  <span>
+                    This is the host-facing form and it is read-only while you
+                    QA it. Your AWS roles and account access have not changed.
+                  </span>
+                </div>
+                <button type="button" onClick={() => setHostPreview(false)}>
+                  Exit preview
+                </button>
+              </section>
+            ) : null}
 
             <section
               className={`${styles.healthPanel} ${
@@ -1356,8 +1419,15 @@ export default function EpisodeStudioWorkspace({
                 className={`${styles.healthSwitch} ${
                   offTrack ? styles.healthSwitchActive : ''
                 }`}
-                disabled={Boolean(actionBlockers.deliveryHealth)}
-                title={actionBlockers.deliveryHealth || undefined}
+                disabled={
+                  hostPreviewReadOnly ||
+                  Boolean(actionBlockers.deliveryHealth)
+                }
+                title={
+                  hostPreviewReadOnly
+                    ? 'Exit host preview to change the delivery outlook.'
+                    : actionBlockers.deliveryHealth || undefined
+                }
                 onClick={() =>
                   setDeliveryHealth(offTrack ? 'on_track' : 'off_track')
                 }
@@ -1427,13 +1497,16 @@ export default function EpisodeStudioWorkspace({
                 </div>
                 <label htmlFor="producer-feedback">
                   <span>Producer notes and revision guidance</span>
-                  <textarea
+                  <small>
+                    Write the exact change the host needs to make. This is not
+                    the place for timestamps, finished copy, or file notes.
+                  </small>
+                  <PlainTextArea
                     id="producer-feedback"
                     value={episode.producer_feedback || ''}
-                    onChange={(event) =>
-                      updateEpisode({ producer_feedback: event.target.value })
+                    onValueChange={(producerFeedback) =>
+                      updateEpisode({ producer_feedback: producerFeedback })
                     }
-                    placeholder="Call out the exact section, what needs to change, and what the finished result should be…"
                     maxLength={4000}
                   />
                 </label>
@@ -1448,7 +1521,9 @@ export default function EpisodeStudioWorkspace({
             ) : episode.producer_feedback ? (
               <section className={styles.feedbackBanner}>
                 <strong>Producer notes for the hosts</strong>
-                <p>{episode.producer_feedback}</p>
+                <p className={styles.plainTextContent}>
+                  {episode.producer_feedback}
+                </p>
               </section>
             ) : null}
 
@@ -1606,18 +1681,24 @@ export default function EpisodeStudioWorkspace({
                       ) : null}
                       <div className={styles.approvedScript}>
                         <span>Exact approved text</span>
-                        <p>{assignment.approved_text}</p>
+                        <p className={styles.plainTextContent}>
+                          {assignment.approved_text}
+                        </p>
                       </div>
                       {assignment.pronunciation_guidance ? (
                         <div className={styles.sponsorGuidance}>
                           <strong>Pronunciation</strong>
-                          <p>{assignment.pronunciation_guidance}</p>
+                          <p className={styles.plainTextContent}>
+                            {assignment.pronunciation_guidance}
+                          </p>
                         </div>
                       ) : null}
                       {assignment.host_instructions ? (
                         <div className={styles.sponsorGuidance}>
                           <strong>Host instructions</strong>
-                          <p>{assignment.host_instructions}</p>
+                          <p className={styles.plainTextContent}>
+                            {assignment.host_instructions}
+                          </p>
                         </div>
                       ) : null}
                       <div className={styles.sponsorReadFooter}>
@@ -1712,7 +1793,6 @@ export default function EpisodeStudioWorkspace({
                                     ),
                                 }));
                               }}
-                              placeholder="Optional legacy HTTPS audio link"
                               aria-label={`${assignment.sponsor_name} sponsor audio link`}
                             />
                             {canHost && !lockedForHost ? (
@@ -1796,37 +1876,47 @@ export default function EpisodeStudioWorkspace({
                             : ''}
                         </time>
                       </div>
-                      <p>{entry.body}</p>
+                      <p className={styles.plainTextContent}>{entry.body}</p>
                     </article>
                   ))}
                 </div>
               ) : (
                 <p className={styles.discussionEmpty}>
-                  No updates yet. Use this space for questions, decisions, and
-                  anything the next person needs to know.
+                  No updates yet. Use this space only for questions and team
+                  decisions.
                 </p>
               )}
               <form
                 className={styles.messageComposer}
                 onSubmit={postMessage}
               >
-                <label htmlFor="episode-message">Add an update</label>
+                <label htmlFor="episode-message">
+                  Add a question or decision
+                  <small>
+                    Put finished copy, timestamps, and files in their matching
+                    form step—not in the discussion.
+                  </small>
+                </label>
                 <div>
-                  <textarea
+                  <PlainTextArea
                     id="episode-message"
                     value={messageDraft}
-                    onChange={(event) =>
-                      setMessageDraft(event.target.value)
-                    }
-                    placeholder="Ask a question, record a decision, or leave context for the team…"
+                    disabled={hostPreviewReadOnly}
+                    onValueChange={setMessageDraft}
                     maxLength={2400}
                   />
                   <button
                     type="submit"
                     className={styles.secondaryButton}
-                    disabled={saving || messageDraft.trim().length < 2}
+                    disabled={
+                      hostPreviewReadOnly ||
+                      saving ||
+                      messageDraft.trim().length < 2
+                    }
                     title={
-                      saving
+                      hostPreviewReadOnly
+                        ? 'Exit host preview to post an update.'
+                        : saving
                         ? 'Wait for the current Studio update to finish.'
                         : messageDraft.trim().length < 2
                           ? 'Write a short update first.'
@@ -2020,92 +2110,39 @@ export default function EpisodeStudioWorkspace({
               </p>
             ) : null}
 
-            <section
-              className={`${styles.handoffPanel} ${
-                producerDirectionsComplete ? styles.handoffPanelComplete : ''
-              }`}
-            >
-              <div className={styles.handoffHeading}>
-                <div>
-                  <span className={styles.eyebrow}>Required producer brief</span>
-                  <h2>Make the final cut unambiguous</h2>
-                  <p>
-                    A link says where the files live. This brief tells the
-                    producer exactly which files to use and what the finished
-                    episode should become.
-                  </p>
-                </div>
-                <span className={styles.handoffStatus}>
-                  {producerDirectionsComplete ? (
-                    <CheckCircleRoundedIcon aria-hidden="true" />
-                  ) : (
-                    <RadioButtonUncheckedRoundedIcon aria-hidden="true" />
-                  )}
-                  {producerDirectionsComplete
-                    ? 'Brief ready'
-                    : 'Brief required'}
-                </span>
+            <section className={styles.formRoutingGuide}>
+              <div>
+                <strong>Finished words</strong>
+                <span>Put copy and written answers in the matching step.</span>
               </div>
-
-              <div className={styles.handoffStandards}>
-                <div>
-                  <strong>Find it</strong>
-                  <span>Exact filename, version, and source folder</span>
-                </div>
-                <div>
-                  <strong>Edit it</strong>
-                  <span>Timestamp range, action, and intended result</span>
-                </div>
-                <div>
-                  <strong>Place it</strong>
-                  <span>Image order, use, crop, caption, and credit</span>
-                </div>
-                <div>
-                  <strong>Protect it</strong>
-                  <span>Permission, restrictions, facts, and pronunciation</span>
-                </div>
+              <div>
+                <strong>Timestamps</strong>
+                <span>Use only “First cut or timestamped edit notes.”</span>
               </div>
-
-              <label className={styles.handoffField}>
-                <span>
-                  Producer handoff brief and asset map
-                  <small>Required for every submission</small>
-                </span>
-                <textarea
-                  value={episode.producer_directions || ''}
-                  disabled={lockedForHost}
-                  title={lockedForHost ? hostEditBlocker : undefined}
-                  onChange={(event) =>
-                    updateEpisode({
-                      producer_directions: event.target.value,
-                    })
-                  }
-                  placeholder={PRODUCER_DIRECTIONS_PLACEHOLDER}
-                  aria-label="Producer handoff brief and asset map"
-                  maxLength={6000}
-                />
-              </label>
-              <div className={styles.handoffFooter}>
-                <span>
-                  Never write “the good photo” or “latest cut.” Name the exact
-                  asset.
-                </span>
-                <span
-                  className={
-                    producerDirectionsComplete
-                      ? styles.handoffCountComplete
-                      : ''
-                  }
-                >
-                  {producerDirectionsLength < PRODUCER_DIRECTIONS_MIN_LENGTH
-                    ? `${
-                        PRODUCER_DIRECTIONS_MIN_LENGTH -
-                        producerDirectionsLength
-                      } more characters for a usable brief`
-                    : 'Enough detail to submit'}
-                </span>
+              <div>
+                <strong>Files and documents</strong>
+                <span>Upload them directly inside the matching step.</span>
+              </div>
+              <div>
+                <strong>Questions and decisions</strong>
+                <span>Use the episode discussion above.</span>
               </div>
             </section>
+
+            {episode.producer_directions ? (
+              <section className={styles.legacyHandoffPanel}>
+                <span className={styles.eyebrow}>Previous form preserved</span>
+                <h3>Existing episode-wide handoff brief</h3>
+                <p>
+                  This was entered in the earlier form and remains available
+                  for this episode. Put new or revised information in the
+                  matching step below.
+                </p>
+                <div className={styles.plainTextContent}>
+                  {episode.producer_directions}
+                </div>
+              </section>
+            ) : null}
 
             <div className={styles.deliverableList}>
               {episode.deliverables.map((deliverable, index) => {
@@ -2176,13 +2213,13 @@ export default function EpisodeStudioWorkspace({
                             </label>
                             <label>
                               <span>Instructions shown above the response</span>
-                              <textarea
+                              <PlainTextArea
                                 value={deliverable.description}
                                 aria-label={`${deliverable.label} instructions`}
                                 maxLength={800}
-                                onChange={(event) =>
+                                onValueChange={(description) =>
                                   updateDeliverable(deliverable.id, {
-                                    description: event.target.value,
+                                    description,
                                   })
                                 }
                               />
@@ -2292,14 +2329,24 @@ export default function EpisodeStudioWorkspace({
                           </div>
                           <div className={styles.stepPreviewCopy}>
                             <h3>{deliverable.label}</h3>
-                            <p>{deliverable.description}</p>
+                            <span className={styles.producerGuidanceLabel}>
+                              Producer guidance
+                            </span>
+                            <p className={styles.plainTextContent}>
+                              {deliverable.description}
+                            </p>
                           </div>
                         </section>
                       ) : (
                         <div className={styles.deliverableHeading}>
                           <div>
                             <h3>{deliverable.label}</h3>
-                            <p>{deliverable.description}</p>
+                            <span className={styles.producerGuidanceLabel}>
+                              Producer guidance
+                            </span>
+                            <p className={styles.plainTextContent}>
+                              {deliverable.description}
+                            </p>
                           </div>
                           <span>
                             {deliverable.required ? 'Required' : 'Optional'}
@@ -2308,39 +2355,37 @@ export default function EpisodeStudioWorkspace({
                       )}
 
                       <section
-                        className={
-                          canConfigure ? styles.hostResponseZone : undefined
-                        }
-                        aria-label={
-                          canConfigure
-                            ? `${deliverable.label} host response`
-                            : undefined
-                        }
+                        className={styles.hostResponseZone}
+                        aria-label={`${deliverable.label} host response`}
                       >
-                        {canConfigure ? (
-                          <div className={styles.stepZoneHeading}>
-                            <div>
-                              <span className={styles.hostResponseKicker}>
-                                Host response
-                              </span>
-                              <strong>What the host submits</strong>
-                              <small>
-                                {deliverable.type === 'asset'
-                                  ? 'This is the host’s actual upload area, not the instructions above.'
-                                  : 'This is the host’s actual answer field, not the instructions above.'}
-                              </small>
-                            </div>
-                            <span
-                              className={`${styles.stepResponseStatus} ${
-                                complete
-                                  ? styles.stepResponseStatusComplete
-                                  : ''
-                              }`}
-                            >
-                              {complete ? 'Response complete' : 'No response yet'}
+                        <div className={styles.stepZoneHeading}>
+                          <div>
+                            <span className={styles.hostResponseKicker}>
+                              Host response
                             </span>
+                            <strong>
+                              {deliverable.type === 'asset'
+                                ? 'Files the host submits'
+                                : deliverable.type === 'url'
+                                  ? 'Link the host submits'
+                                  : 'What the host writes'}
+                            </strong>
+                            <small>
+                              {deliverable.type === 'asset'
+                                ? 'Upload the actual files here.'
+                                : 'The field starts empty; use the producer guidance above.'}
+                            </small>
                           </div>
-                        ) : null}
+                          <span
+                            className={`${styles.stepResponseStatus} ${
+                              complete
+                                ? styles.stepResponseStatusComplete
+                                : ''
+                            }`}
+                          >
+                            {complete ? 'Response complete' : 'No response yet'}
+                          </span>
+                        </div>
 
                       {deliverable.type === 'asset' ? null : deliverable.type ===
                         'url' ? (
@@ -2355,7 +2400,6 @@ export default function EpisodeStudioWorkspace({
                                 value: event.target.value,
                               })
                             }
-                            placeholder={materialPlaceholder(deliverable)}
                             aria-label={deliverable.label}
                           />
                           {complete ? (
@@ -2370,34 +2414,45 @@ export default function EpisodeStudioWorkspace({
                           ) : null}
                         </div>
                       ) : (
-                        <textarea
+                        <PlainTextArea
                           value={deliverable.value}
                           disabled={lockedForHost}
                           title={lockedForHost ? hostEditBlocker : undefined}
-                          onChange={(event) =>
+                          onValueChange={(value) =>
                             updateDeliverable(deliverable.id, {
-                              value: event.target.value,
+                              value,
                             })
                           }
-                          placeholder={materialPlaceholder(deliverable)}
                           aria-label={deliverable.label}
+                          maxLength={12000}
                         />
                       )}
+
+                      {deliverable.type === 'textarea' ? (
+                        <p className={styles.plainTextHint}>
+                          Plain text only. Line breaks and pasted lists stay as
+                          entered—no Markdown needed.
+                        </p>
+                      ) : null}
 
                       {deliverable.id === 'guest-details' ? (
                         <label className={styles.guestSocialField}>
                           <span>Guest social profiles and handles</span>
-                          <textarea
+                          <small>
+                            Add public handles or links, one per line. If there
+                            are none, write “None.”
+                          </small>
+                          <PlainTextArea
                             value={deliverable.social_profiles || ''}
                             disabled={lockedForHost}
                             title={lockedForHost ? hostEditBlocker : undefined}
-                            onChange={(event) =>
+                            onValueChange={(socialProfiles) =>
                               updateDeliverable(deliverable.id, {
-                                social_profiles: event.target.value,
+                                social_profiles: socialProfiles,
                               })
                             }
-                            placeholder="Instagram: @guest · LinkedIn: https://… · Website: https://… · or “None provided”"
                             aria-label="Guest social profiles and handles"
+                            maxLength={3000}
                           />
                           <small>
                             Public profiles only—never include passwords or
@@ -2745,6 +2800,10 @@ export default function EpisodeStudioWorkspace({
                             <div className={styles.gapFields}>
                               <label>
                                 Resolution plan
+                                <small>
+                                  Explain what is missing and how it will be
+                                  delivered.
+                                </small>
                                 <input
                                   value={deliverable.missing_note}
                                   onChange={(event) =>
@@ -2752,7 +2811,6 @@ export default function EpisodeStudioWorkspace({
                                       missing_note: event.target.value,
                                     })
                                   }
-                                  placeholder="What is missing, and how will it be delivered?"
                                 />
                               </label>
                               <label>
@@ -2776,7 +2834,7 @@ export default function EpisodeStudioWorkspace({
                       deliverable.missing_acknowledged ? (
                         <div className={styles.gapPanel}>
                           <strong>Known gap acknowledged by the host</strong>
-                          <p>
+                          <p className={styles.plainTextContent}>
                             {deliverable.missing_note}
                             {deliverable.expected_by
                               ? ` Expected by ${formatDate(
@@ -3147,7 +3205,9 @@ export default function EpisodeStudioWorkspace({
             <section className={styles.actionDock}>
               <div className={styles.actionDockCopy}>
                 <strong>
-                  {dirty
+                  {hostPreviewActive
+                    ? 'Host preview is read-only'
+                    : dirty
                     ? 'You have unpublished episode material'
                     : canHost && lockedForHost
                       ? episode.status === 'accepted'

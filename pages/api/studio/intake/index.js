@@ -138,7 +138,7 @@ export default async function handler(req, res) {
     if (!current.item || current.item.archived) {
       return res
         .status(404)
-        .json({ ok: false, error: 'Team Inbox item not found.' });
+        .json({ ok: false, error: 'Team follow-up not found.' });
     }
     const expectedUpdatedAt = String(
       req.body?.expected_updated_at || ''
@@ -213,12 +213,12 @@ export default async function handler(req, res) {
 
     return res.status(400).json({
       ok: false,
-      error: 'Choose a valid Team Inbox action.',
+      error: 'Choose a valid follow-up action.',
     });
   } catch (error) {
     console.error('studio intake error:', error);
     const conflict = isConflict(error);
-    const validation = /Team Inbox:|choose a current/i.test(
+    const validation = /Team follow-up:|choose a current/i.test(
       String(error?.message || '')
     );
     return res.status(conflict ? 409 : validation ? 400 : 500).json({
@@ -227,7 +227,7 @@ export default async function handler(req, res) {
         ? error.message
         : validation
           ? error.message
-          : 'Could not update the Team Inbox.',
+          : 'Could not update the team follow-up.',
     });
   }
 }

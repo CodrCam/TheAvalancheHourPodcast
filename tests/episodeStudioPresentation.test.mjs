@@ -102,18 +102,20 @@ test('allows a provisional handoff only when every gap is acknowledged', () => {
   assert.equal(completion.acknowledged_missing, 2);
 });
 
-test('requires a usable producer brief for complete and known-gap submissions', () => {
+test('does not require a redundant episode-wide brief for submission', () => {
   const episode = sampleEpisode();
   episode.deliverables = episode.deliverables.map((deliverable) => ({
     ...deliverable,
     value: 'Ready',
+    social_profiles:
+      deliverable.id === 'guest-details' ? 'Website: https://example.com' : '',
   }));
 
   const withoutBrief = getEpisodeCompletion(episode);
-  assert.equal(withoutBrief.can_submit, false);
+  assert.equal(withoutBrief.can_submit, true);
   assert.equal(
-    withoutBrief.missing[0].id,
-    'producer-directions'
+    withoutBrief.missing.some((item) => item.id === 'producer-directions'),
+    false
   );
 
   episode.deliverables = episode.deliverables.map((deliverable) => ({
@@ -123,7 +125,7 @@ test('requires a usable producer brief for complete and known-gap submissions', 
     missing_note: 'The guest will send this tomorrow.',
   }));
   const acknowledgedWithoutBrief = getEpisodeCompletion(episode);
-  assert.equal(acknowledgedWithoutBrief.can_submit_with_gaps, false);
+  assert.equal(acknowledgedWithoutBrief.can_submit_with_gaps, true);
 
   episode.producer_directions = clearProducerBrief;
   const acknowledgedWithBrief = getEpisodeCompletion(episode);
@@ -391,8 +393,8 @@ test('viewer-safe uploaded files satisfy their checklist steps without exposing 
     true
   );
   const completion = getEpisodeCompletion(viewerEpisode);
-  assert.equal(completion.required, 4);
-  assert.equal(completion.completed, 4);
+  assert.equal(completion.required, 3);
+  assert.equal(completion.completed, 3);
   assert.deepEqual(completion.missing, []);
   assert.equal(completion.can_submit, true);
 });
@@ -533,7 +535,10 @@ test('legacy link-based episode steps migrate to step-owned uploads without losi
   });
 
   assert.equal(episode.schema_version, 3);
-  assert.equal(episode.deliverables[0].label, 'Episode source files');
+  assert.equal(
+    episode.deliverables[0].label,
+    'Previous general source files'
+  );
   assert.equal(episode.deliverables[0].type, 'asset');
   assert.equal(episode.deliverables[0].asset_category, 'other');
   assert.equal(

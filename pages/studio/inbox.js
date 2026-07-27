@@ -10,6 +10,7 @@ import InboxRoundedIcon from '@mui/icons-material/InboxRounded';
 import LightbulbOutlinedIcon from '@mui/icons-material/LightbulbOutlined';
 import SendRoundedIcon from '@mui/icons-material/SendRounded';
 import TuneRoundedIcon from '@mui/icons-material/TuneRounded';
+import PlainTextArea from '../../components/PlainTextArea';
 import StudioLayout from '../../components/StudioLayout';
 import {
   STUDIO_INTAKE_KIND_LABELS,
@@ -114,7 +115,7 @@ export default function StudioInboxPage({ previewData = null }) {
         });
         const data = await response.json();
         if (!response.ok) {
-          throw new Error(data.error || 'Could not open the Team Inbox.');
+          throw new Error(data.error || 'Could not open team follow-ups.');
         }
         if (!alive) return;
         const nextItems = data.items || [];
@@ -134,7 +135,7 @@ export default function StudioInboxPage({ previewData = null }) {
         });
       } catch (loadError) {
         if (alive) {
-          setError(loadError.message || 'Could not open the Team Inbox.');
+          setError(loadError.message || 'Could not open team follow-ups.');
         }
       } finally {
         if (alive) setLoading(false);
@@ -198,6 +199,7 @@ export default function StudioInboxPage({ previewData = null }) {
 
   function selectItem(itemId) {
     setSelectedId(itemId);
+    setShowCreate(false);
     setManagerNote('');
     setComment('');
     setMessage('');
@@ -226,20 +228,20 @@ export default function StudioInboxPage({ previewData = null }) {
       });
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.error || 'Could not add this Team Inbox item.');
+        throw new Error(data.error || 'Could not create this follow-up.');
       }
       setItems((current) => [data.item, ...current]);
       setForm(EMPTY_ITEM);
       setShowCreate(false);
       setSelectedId(data.item.item_id);
-      setMessage('Added to the Team Inbox.');
+      setMessage('Follow-up created. It will stay visible until it is resolved.');
       router.replace(
         { pathname: '/studio/inbox', query: { item: data.item.item_id } },
         undefined,
         { shallow: true }
       );
     } catch (createError) {
-      setError(createError.message || 'Could not add this Team Inbox item.');
+      setError(createError.message || 'Could not create this follow-up.');
     } finally {
       setSaving(false);
     }
@@ -319,22 +321,48 @@ export default function StudioInboxPage({ previewData = null }) {
     <InboxFrame preview={Boolean(previewData)}>
       <header className={styles.pageHeader}>
         <div>
-          <span className={styles.eyebrow}>One shared place to ask</span>
-          <h1>Team Inbox</h1>
+          <span className={styles.eyebrow}>Work that needs a next step</span>
+          <h1>Team follow-ups</h1>
           <p>
-            Capture blockers, requests, questions, and good ideas where the
-            whole team can see the answer and the next step.
+            Keep blockers, unanswered questions, decisions, and useful ideas
+            visible beside the work. Use the team chat for ordinary
+            conversation.
           </p>
         </div>
         <button
           type="button"
           className={styles.primaryButton}
-          onClick={() => setShowCreate((current) => !current)}
+          onClick={() => {
+            const opening = !showCreate;
+            setShowCreate(opening);
+            if (opening) {
+              window.requestAnimationFrame(() =>
+                document
+                  .getElementById('follow-up-detail')
+                  ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+              );
+            }
+          }}
         >
           <AddRoundedIcon aria-hidden="true" />
-          {showCreate ? 'Close form' : 'Add to inbox'}
+          {showCreate ? 'Cancel new follow-up' : 'Create follow-up'}
         </button>
       </header>
+
+      <section className={styles.intakePurpose}>
+        <div>
+          <strong>Put it here</strong>
+          <span>
+            When someone needs to own it, answer it, remember it, or resolve it.
+          </span>
+        </div>
+        <div>
+          <strong>Keep it in team chat</strong>
+          <span>
+            When it is casual conversation or does not need a tracked next step.
+          </span>
+        </div>
+      </section>
 
       <section className={styles.intakeMetrics} aria-label="Inbox summary">
         <div>
@@ -355,131 +383,9 @@ export default function StudioInboxPage({ previewData = null }) {
         </div>
       </section>
 
-      {showCreate ? (
-        <form className={styles.intakeCreate} onSubmit={createItem}>
-          <div className={styles.intakeSectionHeading}>
-            <div>
-              <span className={styles.eyebrow}>New team item</span>
-              <h2>What should the team know?</h2>
-            </div>
-            <span>Visible to the signed-in team.</span>
-          </div>
-          <div className={styles.intakeKindPicker}>
-            {Object.keys(KIND_COPY).map((kind) => {
-              const Icon = KIND_ICONS[kind];
-              return (
-                <label
-                  key={kind}
-                  className={
-                    form.kind === kind ? styles.intakeKindActive : ''
-                  }
-                >
-                  <input
-                    type="radio"
-                    name="inbox-kind"
-                    value={kind}
-                    checked={form.kind === kind}
-                    onChange={() =>
-                      setForm((current) => ({ ...current, kind }))
-                    }
-                  />
-                  <Icon aria-hidden="true" />
-                  <span>
-                    <strong>{STUDIO_INTAKE_KIND_LABELS[kind]}</strong>
-                    <small>{KIND_COPY[kind]}</small>
-                  </span>
-                </label>
-              );
-            })}
-          </div>
-          <div className={styles.intakeFormGrid}>
-            <label>
-              Short title
-              <input
-                value={form.title}
-                maxLength={180}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    title: event.target.value,
-                  }))
-                }
-                placeholder="What needs attention?"
-                required
-              />
-            </label>
-            <label>
-              Starting priority
-              <select
-                value={form.kind === 'blocker' ? 'high' : form.priority}
-                disabled={form.kind === 'blocker'}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    priority: event.target.value,
-                  }))
-                }
-              >
-                <option value="normal">Normal</option>
-                <option value="high">High</option>
-              </select>
-            </label>
-            <label className={styles.intakeFullField}>
-              Details and desired outcome
-              <textarea
-                value={form.details}
-                maxLength={6000}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    details: event.target.value,
-                  }))
-                }
-                placeholder="Give enough context for someone else to understand the issue, what you have tried, and what a useful answer would look like."
-                required
-              />
-            </label>
-          </div>
-          <div className={styles.intakeFormActions}>
-            <button
-              type="button"
-              className={styles.secondaryButton}
-              onClick={() => {
-                setForm(EMPTY_ITEM);
-                setShowCreate(false);
-              }}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className={styles.primaryButton}
-              disabled={
-                saving ||
-                form.title.trim().length < 3 ||
-                form.details.trim().length < 10
-              }
-            >
-              <SendRoundedIcon aria-hidden="true" />
-              {saving ? 'Adding…' : 'Add to Team Inbox'}
-            </button>
-          </div>
-        </form>
-      ) : null}
-
-      {error ? (
-        <p className={styles.intakeError} role="alert">
-          {error}
-        </p>
-      ) : null}
-      {message ? (
-        <p className={styles.intakeSuccess} role="status">
-          {message}
-        </p>
-      ) : null}
       {!configured ? (
         <p className={styles.intakeError}>
-          Team Inbox storage is not configured yet.
+          Team follow-up storage is not configured yet.
         </p>
       ) : null}
 
@@ -526,7 +432,7 @@ export default function StudioInboxPage({ previewData = null }) {
         <section className={styles.intakeListPanel}>
           <div className={styles.intakePanelTitle}>
             <span>{filteredItems.length} showing</span>
-            <h2>Shared queue</h2>
+            <h2>Follow-up queue</h2>
           </div>
           {loading ? (
             <p className={styles.intakeEmpty}>Opening the shared queue…</p>
@@ -580,8 +486,137 @@ export default function StudioInboxPage({ previewData = null }) {
           )}
         </section>
 
-        <section className={styles.intakeDetailPanel}>
-          {selected ? (
+        <section className={styles.intakeDetailPanel} id="follow-up-detail">
+          {error ? (
+            <p className={styles.intakeError} role="alert">
+              {error}
+            </p>
+          ) : null}
+          {message ? (
+            <p className={styles.intakeSuccess} role="status">
+              {message}
+            </p>
+          ) : null}
+          {showCreate ? (
+            <form className={styles.intakeCreateInline} onSubmit={createItem}>
+              <div className={styles.intakeSectionHeading}>
+                <div>
+                  <span className={styles.eyebrow}>New follow-up</span>
+                  <h2>What needs a tracked next step?</h2>
+                </div>
+                <span>Visible to the signed-in team.</span>
+              </div>
+              <p className={styles.intakeCreateGuidance}>
+                You do not need to choose a recipient. This enters the shared
+                queue; a manager can assign an owner and target date afterward.
+              </p>
+              <div className={styles.intakeKindPicker}>
+                {Object.keys(KIND_COPY).map((kind) => {
+                  const Icon = KIND_ICONS[kind];
+                  return (
+                    <label
+                      key={kind}
+                      className={
+                        form.kind === kind ? styles.intakeKindActive : ''
+                      }
+                    >
+                      <input
+                        type="radio"
+                        name="inbox-kind"
+                        value={kind}
+                        checked={form.kind === kind}
+                        onChange={() =>
+                          setForm((current) => ({ ...current, kind }))
+                        }
+                      />
+                      <Icon aria-hidden="true" />
+                      <span>
+                        <strong>{STUDIO_INTAKE_KIND_LABELS[kind]}</strong>
+                        <small>{KIND_COPY[kind]}</small>
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+              <div className={styles.intakeFormGrid}>
+                <label>
+                  Short title
+                  <small>Name the thing that needs attention.</small>
+                  <input
+                    value={form.title}
+                    maxLength={180}
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        title: event.target.value,
+                      }))
+                    }
+                    required
+                  />
+                </label>
+                <label>
+                  Starting priority
+                  <small>Blockers start high automatically.</small>
+                  <select
+                    value={form.kind === 'blocker' ? 'high' : form.priority}
+                    disabled={form.kind === 'blocker'}
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        priority: event.target.value,
+                      }))
+                    }
+                  >
+                    <option value="normal">Normal</option>
+                    <option value="high">High</option>
+                  </select>
+                </label>
+                <label className={styles.intakeFullField}>
+                  Context and desired outcome
+                  <small>
+                    Explain what happened, what has already been tried, and what
+                    answer or action would resolve it.
+                  </small>
+                  <PlainTextArea
+                    value={form.details}
+                    maxLength={6000}
+                    onValueChange={(details) =>
+                      setForm((current) => ({ ...current, details }))
+                    }
+                    required
+                  />
+                  <small>
+                    Line breaks and pasted lists stay as entered—no Markdown
+                    needed.
+                  </small>
+                </label>
+              </div>
+              <div className={styles.intakeFormActions}>
+                <button
+                  type="button"
+                  className={styles.secondaryButton}
+                  onClick={() => {
+                    setForm(EMPTY_ITEM);
+                    setShowCreate(false);
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className={styles.primaryButton}
+                  disabled={
+                    saving ||
+                    form.title.trim().length < 3 ||
+                    form.details.trim().length < 10
+                  }
+                >
+                  <SendRoundedIcon aria-hidden="true" />
+                  {saving ? 'Creating…' : 'Create follow-up'}
+                </button>
+              </div>
+            </form>
+          ) : selected ? (
             <>
               <div className={styles.intakeDetailHeader}>
                 <div>
@@ -706,14 +741,15 @@ export default function StudioInboxPage({ previewData = null }) {
                       />
                     </label>
                     <label className={styles.intakeFullField}>
-                      Optional update for the team
-                      <textarea
+                      Optional decision note
+                      <small>
+                        Record the owner, timing, decision, or next step if it
+                        changed.
+                      </small>
+                      <PlainTextArea
                         value={managerNote}
                         maxLength={2400}
-                        onChange={(event) =>
-                          setManagerNote(event.target.value)
-                        }
-                        placeholder="Share the decision, owner, timing, or what happens next."
+                        onValueChange={setManagerNote}
                       />
                     </label>
                   </div>
@@ -732,8 +768,8 @@ export default function StudioInboxPage({ previewData = null }) {
               <section className={styles.intakeDiscussion}>
                 <div className={styles.intakeSectionHeading}>
                   <div>
-                    <span className={styles.eyebrow}>Shared context</span>
-                    <h3>Updates and answers</h3>
+                    <span className={styles.eyebrow}>Follow-up history</span>
+                    <h3>Answers, decisions, and next steps</h3>
                   </div>
                   <ChatBubbleOutlineRoundedIcon aria-hidden="true" />
                 </div>
@@ -753,20 +789,26 @@ export default function StudioInboxPage({ previewData = null }) {
                   </div>
                 ) : (
                   <p className={styles.intakeNoComments}>
-                    No updates yet. Add context, an answer, or the next step.
+                    No updates yet. Add the answer, decision, or next step when
+                    one exists.
                   </p>
                 )}
                 <form
                   className={styles.intakeCommentForm}
                   onSubmit={postComment}
                 >
-                  <label htmlFor="team-inbox-comment">Add an update</label>
-                  <textarea
+                  <label htmlFor="team-inbox-comment">
+                    Add a follow-up update
+                    <small>
+                      Keep casual conversation in team chat. Record only the
+                      durable answer, decision, or change here.
+                    </small>
+                  </label>
+                  <PlainTextArea
                     id="team-inbox-comment"
                     value={comment}
                     maxLength={2400}
-                    onChange={(event) => setComment(event.target.value)}
-                    placeholder="Answer the question, add context, or record a decision…"
+                    onValueChange={setComment}
                   />
                   <button
                     type="submit"
@@ -774,7 +816,7 @@ export default function StudioInboxPage({ previewData = null }) {
                     disabled={saving || comment.trim().length < 2}
                   >
                     <SendRoundedIcon aria-hidden="true" />
-                    Post update
+                    Save update
                   </button>
                 </form>
               </section>
@@ -782,7 +824,7 @@ export default function StudioInboxPage({ previewData = null }) {
           ) : (
             <div className={styles.intakeEmpty}>
               <InboxRoundedIcon aria-hidden="true" />
-              <strong>Select an item to see the full context.</strong>
+              <strong>Select a follow-up to see its full context.</strong>
             </div>
           )}
         </section>

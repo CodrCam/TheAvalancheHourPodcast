@@ -20,8 +20,8 @@ import styles from '../../styles/Studio.module.css';
 const QUICK_LINKS = [
   {
     href: '/studio/inbox',
-    label: 'Team Inbox',
-    detail: 'Share a blocker, request, or idea',
+    label: 'Team Follow-ups',
+    detail: 'Track a blocker, question, or decision',
     icon: InboxRoundedIcon,
     permission: 'intake:read',
   },
@@ -550,8 +550,8 @@ export function TodayWorkspace({
               <div>
                 <h3>You are caught up</h3>
                 <p>
-                  There are no episode, mic-kit, operations, or Team Inbox
-                  follow-ups in your queue right now.
+                  There are no episode, mic-kit, operations, or team follow-ups
+                  in your queue right now.
                 </p>
               </div>
             </div>

@@ -2638,6 +2638,36 @@
   margin-bottom: 20px;
 }
 
+.intakePurpose {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 18px;
+  padding: 12px;
+  border: 1px solid rgba(53, 107, 131, 0.16);
+  border-radius: 14px;
+  background: #edf4f5;
+}
+
+.intakePurpose > div {
+  display: grid;
+  gap: 3px;
+  padding: 11px 12px;
+  border-left: 3px solid rgba(53, 107, 131, 0.52);
+  background: rgba(255, 255, 255, 0.76);
+}
+
+.intakePurpose strong {
+  color: #315c70;
+  font-size: 0.75rem;
+}
+
+.intakePurpose span {
+  color: #667980;
+  font-size: 0.68rem;
+  line-height: 1.42;
+}
+
 .intakeMetrics > div {
   padding: 17px 18px;
   border: 1px solid var(--studio-line);
@@ -2689,6 +2719,24 @@
   background:
     linear-gradient(rgba(248, 251, 251, 0.96), rgba(248, 251, 251, 0.96)),
     radial-gradient(circle at 100% 0, #cfe4ea, transparent 28rem);
+}
+
+.intakeCreateInline {
+  min-height: 100%;
+}
+
+.intakeCreateInline .intakeKindPicker {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.intakeCreateGuidance {
+  margin: -6px 0 17px;
+  padding: 11px 12px;
+  color: #4f6873;
+  font-size: 0.72rem;
+  line-height: 1.5;
+  border-left: 3px solid #6e96a7;
+  background: #edf5f7;
 }
 
 .intakeSectionHeading {
@@ -2807,6 +2855,15 @@
   color: #3e5966;
   font-size: 0.71rem;
   font-weight: 780;
+}
+
+.intakeFormGrid label > small,
+.intakeTriageGrid label > small,
+.intakeCommentForm label > small {
+  color: var(--studio-muted);
+  font-size: 0.65rem;
+  font-weight: 520;
+  line-height: 1.42;
 }
 
 .intakeFormGrid input,
@@ -3211,6 +3268,11 @@
   gap: 9px;
 }
 
+.intakeCommentForm label small {
+  display: block;
+  margin-top: 3px;
+}
+
 .intakeCommentForm textarea {
   min-height: 88px;
 }
@@ -3458,7 +3520,9 @@
     padding: 14px;
   }
 
+  .intakePurpose,
   .intakeKindPicker,
+  .intakeCreateInline .intakeKindPicker,
   .intakeFormGrid,
   .intakeTriageGrid,
   .intakeFacts {

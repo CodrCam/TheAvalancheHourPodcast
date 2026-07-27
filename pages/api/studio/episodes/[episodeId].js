@@ -53,6 +53,7 @@ import {
   getNextProductionLeadPersonId,
   getProductionLeadPersonIds,
 } from '../../../../lib/productionEscalation.mjs';
+import { getEpisodeStudioViewCapabilities } from '../../../../lib/episodeStudioHostPreview.mjs';
 import crypto from 'crypto';
 
 const HOST_LOCKED_STATUSES = [
@@ -398,6 +399,18 @@ export default async function handler(req, res) {
       result.episode.production_lead_person_id === binding.person_id;
 
     if (req.method === 'GET') {
+      const viewCapabilities = getEpisodeStudioViewCapabilities(
+        {
+          canManage,
+          canHost,
+          canReview,
+          canUploadAssets,
+          canConfigure,
+          canAdminOverride,
+          canAdvanceProduction,
+        },
+        String(req.query.view || '')
+      );
       const sponsorData = await sponsorReadResponseData(
         resolveMessageAuthors(
           result.episode,
@@ -405,18 +418,12 @@ export default async function handler(req, res) {
           principal,
           currentAuthorName
         ),
-        canConfigure
+        viewCapabilities.canConfigure
       );
       return res.status(200).json({
         ok: true,
         configured: result.configured,
-        canManage,
-        canHost,
-        canReview,
-        canUploadAssets,
-        canConfigure,
-        canAdminOverride,
-        canAdvanceProduction,
+        ...viewCapabilities,
         production_handoff_available: productionLeadPersonIds.length > 0,
         production_lead_name:
           peopleById.get(result.episode.production_lead_person_id)?.name ||
@@ -428,13 +435,13 @@ export default async function handler(req, res) {
         asset_uploads_configured: isEpisodeAssetStorageConfigured(),
         completion: getEpisodeCompletion(result.episode),
         host_names: hostNames,
-        people: canManage
+        people: viewCapabilities.canManage
           ? directory.hosts.map(({ person_id, name }) => ({
               person_id,
               name,
             }))
           : [],
-        producers: canManage
+        producers: viewCapabilities.canManage
           ? directory.producers.map(
               ({ person_id, name, account_email }) => ({
                 person_id,
@@ -903,8 +910,8 @@ export default async function handler(req, res) {
             ok: false,
             code: 'EPISODE_INCOMPLETE',
             error: provisional
-              ? 'Complete the producer handoff brief, then acknowledge every missing item and explain the plan to resolve it.'
-              : 'Complete every required item and the producer handoff brief before sending this episode to the producer.',
+              ? 'Acknowledge every missing item and explain the plan to resolve it before sending this package.'
+              : 'Complete every required item before sending this episode to the producer.',
             completion,
           });
         }

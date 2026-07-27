@@ -9,7 +9,7 @@ test('host submission blocker names the first missing items', () => {
       can_submit: false,
       can_submit_with_gaps: false,
       missing: [
-        { label: 'Producer handoff brief' },
+        { label: 'Episode pitch' },
         { label: 'Guest details' },
         { label: 'Episode images' },
       ],
@@ -18,7 +18,7 @@ test('host submission blocker names the first missing items', () => {
 
   assert.match(
     blockers.submit,
-    /Producer handoff brief, Guest details, and 1 more required item/
+    /Episode pitch, Guest details, and 1 more required item/
   );
   assert.match(blockers.submitWithGaps, /acknowledge every missing/i);
 });

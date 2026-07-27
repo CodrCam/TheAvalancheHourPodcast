@@ -56,6 +56,7 @@ const PREVIEW_DATA = {
   available_sponsor_reads: [],
   asset_uploads_configured: false,
   canUploadAssets: true,
+  canUseHostPreview: true,
 };
 
 export async function getServerSideProps() {
