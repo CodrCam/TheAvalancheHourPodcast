@@ -23,8 +23,11 @@ import GroupsRoundedIcon from '@mui/icons-material/GroupsRounded';
 import HandshakeRoundedIcon from '@mui/icons-material/HandshakeRounded';
 import HealthAndSafetyRoundedIcon from '@mui/icons-material/HealthAndSafetyRounded';
 import InboxRoundedIcon from '@mui/icons-material/InboxRounded';
+import EmailRoundedIcon from '@mui/icons-material/EmailRounded';
 import OpenInNewRoundedIcon from '@mui/icons-material/OpenInNewRounded';
 import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
+import PhoneRoundedIcon from '@mui/icons-material/PhoneRounded';
+import SupportAgentRoundedIcon from '@mui/icons-material/SupportAgentRounded';
 import NotificationBell from './NotificationBell';
 import {
   getVisibleStudioNavigationItems,
@@ -76,6 +79,7 @@ export default function StudioLayout({
 }) {
   const router = useRouter();
   const [session, setSession] = useState(null);
+  const [supportContact, setSupportContact] = useState(null);
   const [sessionState, setSessionState] = useState('loading');
 
   useEffect(() => {
@@ -105,6 +109,7 @@ export default function StudioLayout({
         }
 
         setSession(data.user);
+        setSupportContact(data.support_contact || null);
         setSessionState('ready');
       } catch {
         if (!alive) return;
@@ -272,6 +277,36 @@ export default function StudioLayout({
             data-future-messaging-slot
             aria-hidden="true"
           />
+          {supportContact ? (
+            <details className={styles.technicalHelp}>
+              <summary>
+                <SupportAgentRoundedIcon aria-hidden="true" />
+                Technical help
+              </summary>
+              <div className={styles.technicalHelpCard}>
+                <span>Recording or website issue?</span>
+                <strong>Contact {supportContact.name}</strong>
+                <p>
+                  Technology should never obstruct the recording process. Email,
+                  call, or text as soon as something gets in the way.
+                </p>
+                <a href={`mailto:${supportContact.email}`}>
+                  <EmailRoundedIcon aria-hidden="true" />
+                  <span>
+                    <small>Email</small>
+                    {supportContact.email}
+                  </span>
+                </a>
+                <a href={`tel:${supportContact.phone_href}`}>
+                  <PhoneRoundedIcon aria-hidden="true" />
+                  <span>
+                    <small>Call or text</small>
+                    {supportContact.phone}
+                  </span>
+                </a>
+              </div>
+            </details>
+          ) : null}
           {session.permissions?.includes('notifications:read') ? (
             <NotificationBell href="/studio/notifications" />
           ) : null}

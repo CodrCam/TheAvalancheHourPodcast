@@ -295,6 +295,118 @@
   height: 42px;
 }
 
+.technicalHelp {
+  position: relative;
+}
+
+.technicalHelp summary {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  color: #48636f;
+  font-size: 0.76rem;
+  font-weight: 760;
+  list-style: none;
+  border: 1px solid rgba(20, 38, 56, 0.12);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  cursor: pointer;
+}
+
+.technicalHelp summary::-webkit-details-marker {
+  display: none;
+}
+
+.technicalHelp summary svg {
+  width: 19px;
+  height: 19px;
+  color: #2f6c82;
+}
+
+.technicalHelp[open] summary,
+.technicalHelp summary:hover {
+  color: #183b4b;
+  border-color: rgba(47, 108, 130, 0.28);
+  background: #fff;
+}
+
+.technicalHelpCard {
+  position: absolute;
+  z-index: 60;
+  top: calc(100% + 10px);
+  right: 0;
+  display: grid;
+  width: min(340px, calc(100vw - 32px));
+  gap: 10px;
+  padding: 18px;
+  color: var(--studio-ink);
+  border: 1px solid rgba(20, 38, 56, 0.13);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 22px 60px rgba(22, 48, 61, 0.2);
+}
+
+.technicalHelpCard > span {
+  color: #397086;
+  font-size: 0.67rem;
+  font-weight: 820;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.technicalHelpCard > strong {
+  font-size: 1.02rem;
+}
+
+.technicalHelpCard p {
+  margin: 0 0 3px;
+  color: var(--studio-muted);
+  font-size: 0.8rem;
+  line-height: 1.55;
+}
+
+.technicalHelpCard a {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  padding: 11px 12px;
+  color: #254f61;
+  font-size: 0.78rem;
+  font-weight: 740;
+  text-decoration: none;
+  border: 1px solid rgba(47, 108, 130, 0.14);
+  border-radius: 11px;
+  background: #f3f8f9;
+}
+
+.technicalHelpCard a:hover {
+  border-color: rgba(47, 108, 130, 0.3);
+  background: #eaf3f5;
+}
+
+.technicalHelpCard a > svg {
+  width: 19px;
+  height: 19px;
+  color: #397086;
+}
+
+.technicalHelpCard a span {
+  display: grid;
+  gap: 2px;
+  overflow-wrap: anywhere;
+}
+
+.technicalHelpCard a small {
+  color: #71858e;
+  font-size: 0.61rem;
+  font-weight: 760;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .mainInner {
   width: min(1180px, calc(100% - 48px));
   margin: 0 auto;

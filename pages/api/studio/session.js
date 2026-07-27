@@ -2,6 +2,7 @@ import {
   ADMIN_PERMISSIONS,
   requirePermissionAsync,
 } from '../../../lib/adminAuth';
+import { getStudioSupportContact } from '../../../lib/studioSupportContact.mjs';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -16,7 +17,9 @@ export default async function handler(req, res) {
   );
   if (!principal) return;
 
+  res.setHeader('Cache-Control', 'private, no-store');
   return res.status(200).json({
+    support_contact: getStudioSupportContact(),
     user: {
       username: principal.username,
       display_name: principal.displayName,
