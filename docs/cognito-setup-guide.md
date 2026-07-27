@@ -64,7 +64,7 @@ give internal users AWS credentials.
 2. Use a public client if the browser will complete login directly.
 3. Do not generate a client secret for browser-based login.
 4. Enable the hosted login page if you want Cognito to handle the login/MFA UI.
-5. Add callback and logout URLs after the website URL is known.
+5. Add callback URLs after the website URL is known.
 
 In the newer AWS console, the callback settings are not on the **User pool
 information** card. Use this path instead:
@@ -75,7 +75,7 @@ information** card. Use this path instead:
 4. Select the Avalanche Hour app client.
 5. Open the **Login pages** tab.
 6. Click **Edit** in **Managed login pages configuration**.
-7. Add the local callback and sign-out URLs below.
+7. Add the local callback URLs below.
 
 For local development, likely callback URLs:
 
@@ -83,6 +83,7 @@ For local development, likely callback URLs:
 
 For production, likely callback URLs:
 
+- `https://theavalanchehour.com/admin/auth/callback`
 - `https://www.theavalanchehour.com/admin/auth/callback`
 
 ## 5. Create users
@@ -114,7 +115,6 @@ COGNITO_USER_POOL_ID=us-east-2_grcrw7ZX6
 COGNITO_APP_CLIENT_ID=698vs3tcd0oi8m5lvcgq39uq75
 COGNITO_APP_CLIENT_SECRET=your-client-secret-if-the-app-client-has-one
 COGNITO_DOMAIN=your-cognito-domain.auth.us-east-2.amazoncognito.com
-COGNITO_LOGOUT_URI=http://localhost:3000/admin/login
 
 COGNITO_ADMIN_GROUP=admin
 COGNITO_LOGISTICS_GROUP=logistics
@@ -143,12 +143,6 @@ Optional override if Cognito needs an exact callback URL:
 
 ```bash
 COGNITO_REDIRECT_URI=http://localhost:3000/admin/auth/callback
-```
-
-Optional override if Cognito needs an exact sign-out URL:
-
-```bash
-COGNITO_LOGOUT_URI=http://localhost:3000/admin/login
 ```
 
 If the app client has a client secret, add `COGNITO_APP_CLIENT_SECRET`.

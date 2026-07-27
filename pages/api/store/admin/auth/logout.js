@@ -1,11 +1,10 @@
 // pages/api/store/admin/auth/logout.js
 import {
   authCookieOptions,
-  buildLogoutUrl,
   getCognitoOAuthConfig,
   getOAuthCookieNames,
   serializeCookie,
-} from '../../../../../lib/cognitoOAuth';
+} from '../../../../../lib/cognitoOAuth.js';
 
 function clearCookie(req, name) {
   return serializeCookie(name, '', authCookieOptions(req, 0));
@@ -20,7 +19,6 @@ export default function handler(req, res) {
 
   const oauthCookies = getOAuthCookieNames();
   const config = getCognitoOAuthConfig(req);
-  const redirectTo = buildLogoutUrl(req);
 
   res.setHeader('Set-Cookie', [
     clearCookie(req, config.cookieName),
@@ -30,5 +28,5 @@ export default function handler(req, res) {
     clearCookie(req, oauthCookies.verifier),
   ]);
 
-  res.redirect(302, redirectTo);
+  res.redirect(303, '/admin/login?signed_out=1');
 }

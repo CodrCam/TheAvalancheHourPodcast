@@ -10,7 +10,7 @@ const ERROR_MESSAGES = {
     'Cognito expected an app client secret. Add COGNITO_APP_CLIENT_SECRET to the app environment, or use an app client without a secret.',
 };
 
-export default function AdminLogin({ configured, errorMessage }) {
+export default function AdminLogin({ configured, errorMessage, signedOut }) {
   return (
     <>
       <Head>
@@ -41,6 +41,22 @@ export default function AdminLogin({ configured, errorMessage }) {
           <p style={{ color: '#475467', lineHeight: 1.5 }}>
             Sign in with your Avalanche Hour team account.
           </p>
+
+          {signedOut && (
+            <p
+              role="status"
+              style={{
+                marginTop: 16,
+                padding: 12,
+                borderRadius: 6,
+                background: '#edf8f3',
+                color: '#245c49',
+                lineHeight: 1.45,
+              }}
+            >
+              You’re signed out of the Team Studio.
+            </p>
+          )}
 
           {errorMessage && (
             <p
@@ -110,6 +126,7 @@ export function getServerSideProps({ query }) {
     props: {
       configured,
       errorMessage,
+      signedOut: query.signed_out === '1',
     },
   };
 }

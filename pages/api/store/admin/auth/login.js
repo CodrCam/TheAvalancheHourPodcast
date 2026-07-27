@@ -14,7 +14,9 @@ export default function handler(req, res) {
   }
 
   try {
-    const { url, state, verifier } = buildAuthorizeUrl(req);
+    const { url, state, verifier } = buildAuthorizeUrl(req, {
+      prompt: 'login',
+    });
     const names = getOAuthCookieNames();
     const cookieOptions = authCookieOptions(req, 10 * 60);
 

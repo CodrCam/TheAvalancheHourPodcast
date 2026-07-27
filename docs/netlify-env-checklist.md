@@ -80,8 +80,7 @@ These are optional in code because the app can derive them from the current
 request host. Setting them explicitly in production removes ambiguity.
 
 ```txt
-COGNITO_REDIRECT_URI=https://www.theavalanchehour.com/admin/auth/callback
-COGNITO_LOGOUT_URI=https://www.theavalanchehour.com/admin/login
+COGNITO_REDIRECT_URI=https://theavalanchehour.com/admin/auth/callback
 COGNITO_OAUTH_SCOPES=openid
 ```
 
@@ -120,12 +119,9 @@ Do not add it to Netlify for the normal production site.
 1. Confirm the Cognito app client allows these callback URLs:
    - `https://www.theavalanchehour.com/admin/auth/callback`
    - `https://theavalanchehour.com/admin/auth/callback`
-2. Confirm the Cognito app client allows these sign-out URLs:
-   - `https://www.theavalanchehour.com/admin/login`
-   - `https://theavalanchehour.com/admin/login`
-3. Confirm the Stripe webhook endpoint points to:
-   - `https://www.theavalanchehour.com/api/webhook`
-4. Confirm the IAM user policy includes all seven tables:
+2. Confirm the Stripe webhook endpoint points to:
+   - `https://theavalanchehour.com/api/webhook`
+3. Confirm the IAM user policy includes all seven tables:
    - `AvalancheHourInventory`
    - `AvalancheHourOrders`
    - `AvalancheHourSiteContent`
@@ -133,13 +129,13 @@ Do not add it to Netlify for the normal production site.
    - `AvalancheHourPeople`
    - `AvalancheHourMicKits`
    - `AvalancheHourProducts`
-5. Confirm the policy also allows `dynamodb:Query` against both index paths:
+4. Confirm the policy also allows `dynamodb:Query` against both index paths:
    - `arn:aws:dynamodb:us-east-2:426018612622:table/AvalancheHourProducts/index/*`
    - `arn:aws:dynamodb:us-east-2:426018612622:table/AvalancheHourSiteContent/index/*`
-6. Confirm the IAM user policy allows the underlying `dynamodb:PutItem`,
+5. Confirm the IAM user policy allows the underlying `dynamodb:PutItem`,
    `dynamodb:UpdateItem`, and `dynamodb:DeleteItem` operations used inside
    transaction requests.
-7. Keep the episode-assets bucket private, enable default encryption, block all
+6. Keep the episode-assets bucket private, enable default encryption, block all
    public access, and grant its dedicated runtime identity only the required
    `s3:PutObject`, `s3:GetObject`, `s3:GetObjectVersion`, and
    `s3:DeleteObjectVersion` access under `episodes/*` (`HeadObject`

@@ -50,3 +50,13 @@ test('honors an explicit Cognito OAuth scope override', () => {
     assert.equal(new URL(url).searchParams.get('scope'), 'openid email');
   });
 });
+
+test('can require a fresh sign-in instead of silently reusing a browser session', () => {
+  withOAuthEnvironment(undefined, () => {
+    const { url } = buildAuthorizeUrl(
+      { headers: { host: 'localhost:3000' } },
+      { prompt: 'login' }
+    );
+    assert.equal(new URL(url).searchParams.get('prompt'), 'login');
+  });
+});
