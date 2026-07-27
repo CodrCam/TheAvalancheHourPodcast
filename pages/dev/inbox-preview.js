@@ -8,7 +8,7 @@ const previewData = {
   assignees: [
     { person_id: 'caleb-merrill', name: 'Caleb Merrill' },
     { person_id: 'dom-baker', name: 'Dom Baker' },
-    { person_id: 'angie-link', name: 'Angie Link' },
+    { person_id: 'angie-link', name: 'Angie Lake' },
   ],
   items: [
     {
@@ -48,7 +48,7 @@ const previewData = {
       priority: 'normal',
       target_date: '',
       assigned_to_person_id: 'angie-link',
-      assigned_to_name: 'Angie Link',
+      assigned_to_name: 'Angie Lake',
       created_by_person_id: 'host-two',
       created_by_name: 'Host Two',
       created_by_role: 'host',

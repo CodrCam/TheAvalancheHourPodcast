@@ -38,11 +38,11 @@ test('does not infer Studio access from unrelated public labels', () => {
   );
 });
 
-test('publishes Angie Link with host and producer Studio capabilities', () => {
+test('publishes Angie Lake with host and producer Studio capabilities', () => {
   const angie = people.find((person) => person.slug === 'angie-link');
 
   assert.ok(angie);
-  assert.equal(angie.name, 'Angie Link');
+  assert.equal(angie.name, 'Angie Lake');
   assert.equal(angie.role, 'producer');
   assert.equal(angie.active, true);
   assert.equal(getPeopleSectionId(angie), 'team');

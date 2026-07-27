@@ -79,7 +79,7 @@ const offTrackEntries = buildEpisodeNotificationEntries({
   episode: offTrackEpisode,
   action: 'set_delivery_health',
   actorPersonId: 'angie-link',
-  actorName: 'Angie Link',
+  actorName: 'Angie Lake',
   productionLeadPersonIds: ['angie-link', 'caleb-merrill'],
   adminPersonIds: ADMIN_PERSON_IDS,
 });

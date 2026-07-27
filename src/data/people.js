@@ -245,7 +245,7 @@ export const people = [
   {
     slug: 'angie-link',
     role: 'producer',
-    name: 'Angie Link',
+    name: 'Angie Lake',
     studioRoles: ['host', 'producer'],
     images: [],
     active: true,

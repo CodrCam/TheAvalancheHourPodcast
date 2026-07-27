@@ -315,12 +315,21 @@ async function main() {
   }
 
   const targetPersonId = readArgument('--person');
+  const nameArgument = readArgument('--name');
   const activeArgument = readArgument('--active');
   const studioRolesArgument = readArgument('--studio-roles');
-  if (targetPersonId || studioRolesArgument || activeArgument) {
-    if (!targetPersonId || (!studioRolesArgument && !activeArgument)) {
+  if (
+    targetPersonId ||
+    nameArgument ||
+    studioRolesArgument ||
+    activeArgument
+  ) {
+    if (
+      !targetPersonId ||
+      (!nameArgument && !studioRolesArgument && !activeArgument)
+    ) {
       throw new Error(
-        'Use --person <person-id> with --studio-roles <host,producer>, --active <true|false>, or both.'
+        'Use --person <person-id> with --name <display-name>, --studio-roles <host,producer>, --active <true|false>, or a combination.'
       );
     }
     let studioRoles = null;
@@ -351,6 +360,11 @@ async function main() {
 
     console.log(`DynamoDB table: ${tableName}`);
     console.log(`Region: ${region}`);
+    if (nameArgument) {
+      console.log(
+        `Targeted display name: ${targetPersonId} -> ${nameArgument}`
+      );
+    }
     if (studioRoles) {
       console.log(
         `Targeted Studio roles: ${targetPersonId} -> ${studioRoles.join(', ')}`
@@ -374,6 +388,11 @@ async function main() {
     const values = {
       ':updated_at': { S: new Date().toISOString() },
     };
+    if (nameArgument) {
+      updates.push('#name = :name');
+      names['#name'] = 'name';
+      values[':name'] = { S: nameArgument };
+    }
     if (studioRoles) {
       updates.push('#studio_roles_json = :studio_roles_json');
       names['#studio_roles_json'] = 'studio_roles_json';

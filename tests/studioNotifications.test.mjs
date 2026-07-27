@@ -366,7 +366,7 @@ test('production escalation routes outside producers to Angie and Angie to Caleb
     { episode_id: 'episode-one', production_stage: 'lead_review' },
     {
       actorPersonId: 'angie-link',
-      actorName: 'Angie Link',
+      actorName: 'Angie Lake',
       leadPersonIds: leads,
       advancedAt: '2026-07-25T12:00:00.000Z',
     }
@@ -403,7 +403,7 @@ test('producer approval creates the next actionable production-lead notification
     episode,
     action: 'review',
     actorPersonId: 'angie-link',
-    actorName: 'Angie Link',
+    actorName: 'Angie Lake',
     productionLeadPersonIds: ['angie-link', 'caleb-merrill'],
   });
   const leadEntry = entries.find(
