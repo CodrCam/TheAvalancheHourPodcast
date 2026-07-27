@@ -4,7 +4,6 @@ import {
   cleanSpotifyEpisodes,
   fetchSpotifyEpisodes,
   fetchSpotifyJson,
-  parseSpotifyEpisodeLimit,
 } from '../lib/spotifyEpisodes.mjs';
 
 function response(status, body, headers = {}) {
@@ -21,14 +20,6 @@ function response(status, body, headers = {}) {
     },
   };
 }
-
-test('accepts only bounded latest-episode limits', () => {
-  assert.equal(parseSpotifyEpisodeLimit('3'), 3);
-  assert.equal(parseSpotifyEpisodeLimit(['12']), 12);
-  assert.equal(parseSpotifyEpisodeLimit('0'), null);
-  assert.equal(parseSpotifyEpisodeLimit('51'), null);
-  assert.equal(parseSpotifyEpisodeLimit('all'), null);
-});
 
 test('retries temporary Spotify failures and honors Retry-After', async () => {
   const statuses = [503, 200];
@@ -68,31 +59,10 @@ test('does not retry a non-transient Spotify rejection', async () => {
   assert.equal(calls, 1);
 });
 
-test('latest episode requests use one bounded Spotify page', async () => {
-  const urls = [];
-  const episodes = await fetchSpotifyEpisodes('token', {
-    limit: 3,
-    requestTimeoutMs: 0,
-    fetchImpl: async (url) => {
-      urls.push(url);
-      return response(200, {
-        total: 250,
-        items: [{ id: '3' }, { id: '2' }, { id: '1' }],
-      });
-    },
-  });
-
-  assert.equal(urls.length, 1);
-  assert.match(urls[0], /limit=3/);
-  assert.deepEqual(
-    episodes.map((episode) => episode.id),
-    ['3', '2', '1']
-  );
-});
-
-test('full episode requests fetch the remaining bounded pages', async () => {
+test('episode requests always fetch the full bounded catalog', async () => {
   const offsets = [];
   const episodes = await fetchSpotifyEpisodes('token', {
+    limit: 3,
     requestTimeoutMs: 0,
     fetchImpl: async (url) => {
       const parsed = new URL(url);
@@ -112,6 +82,79 @@ test('full episode requests fetch the remaining bounded pages', async () => {
   assert.deepEqual(offsets.sort((a, b) => a - b), [0, 50, 100]);
   assert.equal(episodes.length, 120);
   assert.equal(episodes[119].id, '119');
+});
+
+test('public Spotify route ignores legacy limits and returns the full catalog', async () => {
+  const originalFetch = globalThis.fetch;
+  const originalClientId = process.env.SPOTIFY_CLIENT_ID;
+  const originalClientSecret = process.env.SPOTIFY_CLIENT_SECRET;
+  const offsets = [];
+
+  process.env.SPOTIFY_CLIENT_ID = 'test-client';
+  process.env.SPOTIFY_CLIENT_SECRET = 'test-secret';
+  globalThis.fetch = async (url) => {
+    if (url === 'https://accounts.spotify.com/api/token') {
+      return response(200, { access_token: 'token' });
+    }
+
+    const parsed = new URL(url);
+    const offset = Number(parsed.searchParams.get('offset'));
+    const limit = Number(parsed.searchParams.get('limit'));
+    offsets.push(offset);
+    return response(200, {
+      total: 120,
+      items: Array.from(
+        { length: Math.min(limit, 120 - offset) },
+        (_, index) => ({
+          id: String(offset + index),
+          release_date: '2026-01-01',
+        })
+      ),
+    });
+  };
+
+  try {
+    const { default: handler } = await import(
+      `../pages/api/spotify.js?full-catalog-test=${Date.now()}`
+    );
+    const result = {
+      headers: {},
+      statusCode: null,
+      body: null,
+    };
+    const res = {
+      setHeader(name, value) {
+        result.headers[name] = value;
+      },
+      status(statusCode) {
+        result.statusCode = statusCode;
+        return {
+          json(body) {
+            result.body = body;
+            return body;
+          },
+        };
+      },
+    };
+
+    await handler({ method: 'GET', query: { limit: '3' } }, res);
+
+    assert.equal(result.statusCode, 200);
+    assert.equal(result.body.length, 120);
+    assert.deepEqual(offsets.sort((a, b) => a - b), [0, 50, 100]);
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (originalClientId === undefined) {
+      delete process.env.SPOTIFY_CLIENT_ID;
+    } else {
+      process.env.SPOTIFY_CLIENT_ID = originalClientId;
+    }
+    if (originalClientSecret === undefined) {
+      delete process.env.SPOTIFY_CLIENT_SECRET;
+    } else {
+      process.env.SPOTIFY_CLIENT_SECRET = originalClientSecret;
+    }
+  }
 });
 
 test('cleans and sorts episode data for public responses', () => {

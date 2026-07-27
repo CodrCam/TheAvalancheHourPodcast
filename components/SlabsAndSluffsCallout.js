@@ -39,7 +39,7 @@ export default function SlabsAndSluffsCallout({
         fetch('/api/site-content/slabs-and-sluffs-campaign'),
         ...(Array.isArray(publishedEpisodes)
           ? []
-          : [fetch('/api/spotify?limit=10')]),
+          : [fetch('/api/spotify')]),
       ];
 
       try {

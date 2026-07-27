@@ -44,7 +44,7 @@ export default function Home() {
   useEffect(() => {
     async function fetchEpisodes() {
       try {
-        const response = await fetch('/api/spotify?limit=3');
+        const response = await fetch('/api/spotify');
         if (!response.ok) throw new Error('Failed to fetch episodes');
         const data = await response.json();
         setEpisodes(

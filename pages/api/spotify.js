@@ -2,31 +2,25 @@ import {
   cleanSpotifyEpisodes,
   fetchSpotifyAccessToken,
   fetchSpotifyEpisodes,
-  parseSpotifyEpisodeLimit,
 } from '../../lib/spotifyEpisodes.mjs';
 
 const CACHE_TTL_MS = 30 * 60 * 1000;
-const cacheByScope = new Map();
-const inFlightByScope = new Map();
+let episodeCache = null;
+let inFlightRequest = null;
 
-function scopeKey(limit) {
-  return limit ? `latest:${limit}` : 'all';
-}
-
-function getCachedEpisodes(limit, allowStale = false) {
-  const full = cacheByScope.get('all');
-  const exact = cacheByScope.get(scopeKey(limit));
-  const entry = full || exact;
-  if (!entry) return null;
-  if (!allowStale && Date.now() - entry.timestamp >= CACHE_TTL_MS) {
+function getCachedEpisodes(allowStale = false) {
+  if (!episodeCache) return null;
+  if (
+    !allowStale &&
+    Date.now() - episodeCache.timestamp >= CACHE_TTL_MS
+  ) {
     return null;
   }
-  return limit ? entry.data.slice(0, limit) : entry.data;
+  return episodeCache.data;
 }
 
-async function loadEpisodes(limit) {
-  const key = scopeKey(limit);
-  if (inFlightByScope.has(key)) return inFlightByScope.get(key);
+async function loadEpisodes() {
+  if (inFlightRequest) return inFlightRequest;
 
   const request = (async () => {
     const token = await fetchSpotifyAccessToken({
@@ -34,20 +28,20 @@ async function loadEpisodes(limit) {
       clientSecret: process.env.SPOTIFY_CLIENT_SECRET,
     });
     const episodes = cleanSpotifyEpisodes(
-      await fetchSpotifyEpisodes(token, { limit })
+      await fetchSpotifyEpisodes(token)
     );
-    cacheByScope.set(key, {
+    episodeCache = {
       data: episodes,
       timestamp: Date.now(),
-    });
+    };
     return episodes;
   })();
 
-  inFlightByScope.set(key, request);
+  inFlightRequest = request;
   try {
     return await request;
   } finally {
-    inFlightByScope.delete(key);
+    if (inFlightRequest === request) inFlightRequest = null;
   }
 }
 
@@ -64,17 +58,16 @@ export default async function handler(req, res) {
   }
 
   const apiStart = performance.now();
-  const limit = parseSpotifyEpisodeLimit(req.query?.limit);
   setEpisodeCacheHeaders(res);
 
   try {
-    const cached = getCachedEpisodes(limit);
+    const cached = getCachedEpisodes();
     if (cached) {
       res.setHeader('X-Spotify-Data-Source', 'memory-cache');
       return res.status(200).json(cached);
     }
 
-    const episodes = await loadEpisodes(limit);
+    const episodes = await loadEpisodes();
     res.setHeader('X-Spotify-Data-Source', 'spotify');
     res.setHeader(
       'Server-Timing',
@@ -82,7 +75,7 @@ export default async function handler(req, res) {
     );
     return res.status(200).json(episodes);
   } catch (error) {
-    const stale = getCachedEpisodes(limit, true);
+    const stale = getCachedEpisodes(true);
     if (stale) {
       res.setHeader('X-Spotify-Data-Source', 'stale-memory-cache');
       res.setHeader('Warning', '110 - "Response is stale"');
