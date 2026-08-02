@@ -161,7 +161,34 @@ Legacy username/password and admin-token fallback has been removed. Do not add
 `ALLOW_LEGACY_ADMIN_AUTH`, `ADMIN_USER`, `ADMIN_PASS`, `LOGISTICS_USER`,
 `LOGISTICS_PASS`, `ADMIN_TOKEN`, or `LOGISTICS_TOKEN` to production.
 
-## 7. Login flow
+## 7. Password recovery
+
+The Team Studio login page includes a local **Forgot your password?** flow. The
+website calls Cognito's `ForgotPassword` and `ConfirmForgotPassword` APIs on the
+server, so the app-client secret is never sent to the browser. Users receive a
+code through their verified recovery email address or phone number, enter that
+code on `/admin/login`, and choose a new password before continuing to the
+hosted Cognito sign-in page.
+
+Configure the user pool before deploying this flow:
+
+1. Open the Cognito user pool and choose **Sign-in**.
+2. Under **User account recovery**, enable self-service account recovery.
+3. Select the recovery methods and priority appropriate for the pool. Verified
+   email first with verified phone as a fallback is the usual choice.
+4. Confirm every Team Studio user has at least one verified recovery attribute.
+5. In the app-client settings, enable **Prevent user existence errors**.
+
+MFA and recovery cannot use the same email address or phone number for the same
+user. If SMS is the user's MFA method, use verified email for recovery; if email
+is the MFA method, provide verified phone recovery or an administrator-assisted
+reset process.
+
+No additional website environment variables are required. Password recovery
+uses the existing `COGNITO_REGION` (or `AWS_REGION`),
+`COGNITO_APP_CLIENT_ID`, and optional `COGNITO_APP_CLIENT_SECRET` values.
+
+## 8. Login flow
 
 The local login flow is:
 
@@ -199,7 +226,7 @@ requiring separate `email` or `profile` OAuth-scope enablement on the app client
 Users must sign out and sign in again after a scope or readable-attribute change
 so Cognito can issue a new token containing those attributes.
 
-## 8. Migration notes
+## 9. Migration notes
 
 The current code can verify Cognito JWTs server-side and supports the hosted UI
 callback flow. The old basic login credentials can remain during migration, but

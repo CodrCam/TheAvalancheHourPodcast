@@ -159,6 +159,124 @@
   font-size: 1.1rem;
 }
 
+.recoveryLink,
+.textButton {
+  display: block;
+  padding: 0;
+  color: #3f7084;
+  font: inherit;
+  font-size: 0.73rem;
+  font-weight: 760;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: rgba(63, 112, 132, 0.35);
+  text-underline-offset: 3px;
+}
+
+.recoveryLink {
+  margin: 13px auto 0;
+}
+
+.recoveryLink:hover,
+.textButton:hover {
+  color: #285b72;
+  text-decoration-color: currentColor;
+}
+
+.recoveryForm {
+  display: grid;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.recoveryHeading {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.recoveryHeading h2 {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.recoveryHeading span {
+  color: var(--login-muted);
+  font-size: 0.74rem;
+  line-height: 1.5;
+}
+
+.recoveryForm label {
+  margin-top: 4px;
+  color: #395b6a;
+  font-size: 0.71rem;
+  font-weight: 780;
+}
+
+.recoveryForm input {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  color: var(--login-ink);
+  font: inherit;
+  font-size: 0.84rem;
+  border: 1px solid rgba(20, 38, 56, 0.22);
+  border-radius: 9px;
+  outline: none;
+  background: #fff;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.recoveryForm input:focus {
+  border-color: #477f97;
+  box-shadow: 0 0 0 3px rgba(71, 127, 151, 0.14);
+}
+
+.recoveryForm > button[type='submit'] {
+  min-height: 46px;
+  margin-top: 8px;
+  padding: 10px 14px;
+  color: #fff;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 790;
+  border: 1px solid #285b72;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #356f89, #23556c);
+  cursor: pointer;
+}
+
+.recoveryForm button:disabled {
+  cursor: wait;
+  opacity: 0.62;
+}
+
+.secondaryButton {
+  min-height: 40px;
+  padding: 8px 12px;
+  color: #4d6975;
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 750;
+  border: 1px solid rgba(20, 38, 56, 0.15);
+  border-radius: 9px;
+  background: #f7f9f8;
+  cursor: pointer;
+}
+
+.recoveryActions {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 6px;
+}
+
+.recoveryComplete {
+  margin-top: 4px;
+}
+
 .note {
   display: grid;
   gap: 3px;

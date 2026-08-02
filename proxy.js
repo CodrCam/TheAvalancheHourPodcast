@@ -1,5 +1,6 @@
 // proxy.js
 import { NextResponse } from 'next/server';
+import { isPublicAuthPath } from './lib/publicAuthPaths.mjs';
 
 function isCognitoConfigured() {
   const region = process.env.COGNITO_REGION || process.env.AWS_REGION || '';
@@ -19,15 +20,6 @@ function hasCognitoTokenCandidate(req) {
       req.cookies.get(cookieName)?.value ||
       req.cookies.get('cognito_access_token')?.value ||
       req.cookies.get('cognito_id_token')?.value
-  );
-}
-
-function isPublicAuthPath(pathname) {
-  return (
-    pathname === '/admin/login' ||
-    pathname === '/admin/auth/callback' ||
-    pathname === '/api/store/admin/auth/login' ||
-    pathname === '/api/store/admin/auth/logout'
   );
 }
 
