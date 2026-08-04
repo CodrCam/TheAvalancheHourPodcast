@@ -77,11 +77,28 @@ function formatShortDate(value) {
   });
 }
 
-function dateDaysBefore(value, days = 7) {
+function dateDaysBefore(value, days = 10) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(String(value || ''))) return '';
   const date = new Date(`${value}T12:00:00`);
   date.setDate(date.getDate() - days);
   return dateKey(date);
+}
+
+function isEpisodeOffTrack(episode = {}) {
+  return (
+    (episode.effective_delivery_health || episode.delivery_health) ===
+    'off_track'
+  );
+}
+
+function nextWorkflowLabel(episode = {}) {
+  const nextTask = episode.workflow?.next_due_task;
+  if (!nextTask) {
+    return episode.workflow?.required_task_count
+      ? 'Production workflow complete'
+      : 'Host package workflow';
+  }
+  return `${nextTask.label} · ${formatShortDate(nextTask.due_date)}`;
 }
 
 export function EpisodeStudiosDashboard({ studioLayout = false }) {
@@ -185,14 +202,7 @@ export function EpisodeStudiosDashboard({ studioLayout = false }) {
 
     return [...matchingEpisodes].sort(
       (a, b) =>
-        Number(
-          b.status !== 'accepted' &&
-            b.delivery_health === 'off_track'
-        ) -
-          Number(
-            a.status !== 'accepted' &&
-              a.delivery_health === 'off_track'
-          ) ||
+        Number(isEpisodeOffTrack(b)) - Number(isEpisodeOffTrack(a)) ||
         String(a.target_release_date || '9999').localeCompare(
           String(b.target_release_date || '9999')
         )
@@ -210,9 +220,7 @@ export function EpisodeStudiosDashboard({ studioLayout = false }) {
       accepted: episodes.filter((episode) => episode.status === 'accepted')
         .length,
       offTrack: episodes.filter(
-        (episode) =>
-          episode.status !== 'accepted' &&
-          episode.delivery_health === 'off_track'
+        (episode) => isEpisodeOffTrack(episode)
       ).length,
     }),
     [episodes]
@@ -233,7 +241,7 @@ export function EpisodeStudiosDashboard({ studioLayout = false }) {
     setForm((current) => {
       const previousAutomaticDue = dateDaysBefore(
         current.target_release_date,
-        7
+        10
       );
       const shouldUpdateDue =
         !current.due_date || current.due_date === previousAutomaticDue;
@@ -241,7 +249,7 @@ export function EpisodeStudiosDashboard({ studioLayout = false }) {
         ...current,
         target_release_date: targetReleaseDate,
         due_date: shouldUpdateDue
-          ? dateDaysBefore(targetReleaseDate, 7)
+          ? dateDaysBefore(targetReleaseDate, 10)
           : current.due_date,
       };
     });
@@ -266,7 +274,7 @@ export function EpisodeStudiosDashboard({ studioLayout = false }) {
       !form.target_release_date ||
       !form.host_person_ids.length
     ) {
-      setError('Add a title, release date, and at least one host.');
+      setError('Add a title, air date, and at least one host.');
       return;
     }
     const recordingStarted = Boolean(
@@ -384,7 +392,7 @@ export function EpisodeStudiosDashboard({ studioLayout = false }) {
           >
             <h2>Create an Episode Studio</h2>
             <p>
-              The release date places it on the calendar. The assigned hosts
+              The air date places it on the calendar. The assigned hosts
               immediately share one production form.
             </p>
             <div className={styles.createGrid}>
@@ -416,13 +424,13 @@ export function EpisodeStudiosDashboard({ studioLayout = false }) {
                 />
               </label>
               <label>
-                Release date
+                Air date
                 <FriendlyDateField
                   value={form.target_release_date}
                   onChange={(event) =>
                     updateReleaseDate(event.target.value)
                   }
-                  ariaLabel="release date"
+                  ariaLabel="air date"
                   required
                 />
               </label>
@@ -609,10 +617,13 @@ export function EpisodeStudiosDashboard({ studioLayout = false }) {
                   {(episodesByDate.get(day.key) || []).map((episode) => (
                     <Link
                       key={episode.episode_id}
-                      href={`${detailBase}/${episode.episode_id}`}
+                      href={`${detailBase}/${episode.episode_id}${
+                        episode.workflow?.required_task_count
+                          ? '/production'
+                          : ''
+                      }`}
                       className={`${styles.calendarEpisode} ${
-                        episode.delivery_health === 'off_track' &&
-                        episode.status !== 'accepted'
+                        isEpisodeOffTrack(episode)
                           ? styles.calendarEpisodeOffTrack
                           : ''
                       }`}
@@ -621,12 +632,15 @@ export function EpisodeStudiosDashboard({ studioLayout = false }) {
                     >
                       <strong>{episode.title}</strong>
                       <span>
-                        {episode.delivery_health === 'off_track' &&
-                        episode.status !== 'accepted'
-                          ? 'Off track'
-                          : `${episode.completion.host_percent}% host-ready · ${
-                              STATUS_LABELS[episode.status] || episode.status
-                            }`}
+                        {episode.deletion_pending
+                          ? 'Deletion pending'
+                          : isEpisodeOffTrack(episode)
+                            ? 'Off track'
+                          : episode.workflow?.required_task_count
+                            ? `${episode.workflow.completion_percent}% workflow complete`
+                            : `${episode.completion.host_percent}% host-ready · ${
+                                STATUS_LABELS[episode.status] || episode.status
+                              }`}
                       </span>
                     </Link>
                   ))}
@@ -653,10 +667,11 @@ export function EpisodeStudiosDashboard({ studioLayout = false }) {
             filteredEpisodes.map((episode) => (
               <Link
                 key={episode.episode_id}
-                href={`${detailBase}/${episode.episode_id}`}
+                href={`${detailBase}/${episode.episode_id}${
+                  episode.workflow?.required_task_count ? '/production' : ''
+                }`}
                 className={`${styles.episodeRow} ${
-                  episode.delivery_health === 'off_track' &&
-                  episode.status !== 'accepted'
+                  isEpisodeOffTrack(episode)
                     ? styles.episodeRowOffTrack
                     : ''
                 }`}
@@ -664,37 +679,46 @@ export function EpisodeStudiosDashboard({ studioLayout = false }) {
                 <div>
                   <strong>{episode.title}</strong>
                   <span>{episode.host_names.join(' + ')}</span>
-                  {episode.delivery_health === 'off_track' &&
-                  episode.status !== 'accepted' ? (
+                  {isEpisodeOffTrack(episode) ? (
                     <span className={styles.healthBadge}>Off track</span>
                   ) : null}
                 </div>
                 <div>
                   <strong>{formatShortDate(episode.target_release_date)}</strong>
-                  <span>Release date</span>
+                  <span>Air date</span>
                 </div>
                 <div>
                   <strong>
-                    {STATUS_LABELS[episode.status] || episode.status}
+                    {episode.deletion_pending
+                      ? 'Deletion pending'
+                      : STATUS_LABELS[episode.status] || episode.status}
                   </strong>
                   <span>Status</span>
                 </div>
                 <div className={styles.rowProgress}>
                   <strong>
-                    {episode.completion.host_percent}% host-ready ·{' '}
-                    {episode.completion.producer_approved
-                      ? 'producer approved'
-                      : 'approval pending'}
+                    {episode.workflow?.required_task_count
+                      ? `${episode.workflow.completion_percent}% production complete`
+                      : `${episode.completion.host_percent}% host-ready`}
                   </strong>
+                  <span>{nextWorkflowLabel(episode)}</span>
                   <span className={styles.progressTrack}>
                     <span
                       style={{
-                        width: `${episode.completion.host_percent}%`,
+                        width: `${
+                          episode.workflow?.required_task_count
+                            ? episode.workflow.completion_percent
+                            : episode.completion.host_percent
+                        }%`,
                       }}
                     />
                   </span>
                 </div>
-                <span>Open Studio →</span>
+                <span>
+                  {episode.workflow?.required_task_count
+                    ? 'Open production →'
+                    : 'Open package →'}
+                </span>
               </Link>
             ))
           ) : (

@@ -67,6 +67,38 @@
   flex-wrap: wrap;
 }
 
+.episodeWorkspaceTabs {
+  display: inline-flex;
+  gap: 4px;
+  margin: -8px 0 22px;
+  padding: 4px;
+  border: 1px solid var(--episode-line);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.episodeWorkspaceTabs a {
+  min-width: 150px;
+  padding: 9px 13px;
+  color: #5c7078;
+  font-size: 0.74rem;
+  font-weight: 790;
+  text-align: center;
+  text-decoration: none;
+  border-radius: 7px;
+}
+
+.episodeWorkspaceTabs a:hover {
+  color: #254f61;
+  background: #edf4f5;
+}
+
+.episodeWorkspaceTabs .episodeWorkspaceTabActive {
+  color: #fff;
+  background: #356b83;
+  box-shadow: 0 4px 12px rgba(31, 78, 98, 0.18);
+}
+
 .hostPreviewButton,
 .exitHostPreviewButton {
   display: inline-flex;
@@ -517,28 +549,6 @@
   color: #775f33;
   font-size: 0.82rem;
   line-height: 1.45;
-}
-
-.guestSocialField {
-  margin-top: 12px;
-  display: grid;
-  gap: 6px;
-}
-
-.guestSocialField > span {
-  color: #334b48;
-  font-size: 0.78rem;
-  font-weight: 820;
-}
-
-.guestSocialField textarea {
-  min-height: 78px;
-}
-
-.guestSocialField small {
-  color: #737d7a;
-  font-size: 0.72rem;
-  line-height: 1.4;
 }
 
 .stepAssets {
@@ -1602,6 +1612,713 @@
 .producerNotesPanel textarea:focus {
   border-color: #9a7131;
   box-shadow: 0 0 0 4px rgba(181, 132, 55, 0.11);
+}
+
+.workflowPanel,
+.proofPanel {
+  margin: 28px 0;
+  padding: 24px;
+  border: 1px solid #cadbd8;
+  border-top: 4px solid #4f8b7f;
+  border-radius: 18px;
+  background: #f9fcfb;
+}
+
+.workflowPanel {
+  position: relative;
+  border-top-width: 1px;
+  background:
+    radial-gradient(circle at 100% 0, rgba(65, 126, 116, 0.09), transparent 30%),
+    linear-gradient(180deg, #fbfdfc 0%, #f5faf8 100%);
+  box-shadow:
+    0 18px 48px rgba(30, 66, 73, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.workflowPanel::before {
+  position: absolute;
+  top: -1px;
+  right: 24px;
+  left: 24px;
+  height: 3px;
+  content: '';
+  border-radius: 0 0 999px 999px;
+  background: linear-gradient(90deg, #4f8b7f, #5d91a5 68%, #c29a52);
+  opacity: 0.85;
+}
+
+.workflowPanel .panelHeading {
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.workflowPanel .panelHeading p,
+.proofPanel .panelHeading p {
+  max-width: 760px;
+  margin: 7px 0 0;
+  color: #5e6c69;
+  line-height: 1.5;
+}
+
+.workflowSummaryBadge {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 11px;
+  border: 1px solid #c7dcd6;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: 0 5px 16px rgba(35, 83, 75, 0.06);
+}
+
+.workflowSummaryBadge strong,
+.workflowSummaryBadge span {
+  display: inline;
+}
+
+.workflowSummaryBadge strong {
+  color: #2f6d62;
+  font-size: 0.92rem;
+}
+
+.workflowSummaryBadge span {
+  color: #687875;
+  font-size: 0.59rem;
+  font-weight: 760;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+}
+
+.workflowViewControls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.workflowViewToggle {
+  display: inline-flex;
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid #cadbd8;
+  border-radius: 999px;
+  background: rgba(238, 246, 243, 0.88);
+}
+
+.workflowViewToggle button {
+  min-height: 34px;
+  padding: 7px 13px;
+  color: #4c6863;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 790;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  cursor: pointer;
+  transition:
+    color 140ms ease,
+    background 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.workflowViewToggle button:hover:not([aria-pressed='true']) {
+  color: #2e5f56;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.workflowViewToggle button:focus-visible {
+  outline: 3px solid rgba(63, 117, 107, 0.2);
+  outline-offset: 2px;
+}
+
+.workflowViewToggle button[aria-pressed='true'] {
+  color: #fff;
+  background: #3f756b;
+  box-shadow: 0 3px 9px rgba(47, 109, 98, 0.2);
+}
+
+.checklistBuilderRequirement {
+  grid-column: 1 / -1;
+  display: flex !important;
+  align-items: center;
+  gap: 8px !important;
+  padding: 9px 10px;
+  border: 1px solid rgba(20, 38, 56, 0.12);
+  border-radius: 8px;
+  background: #f8faf9;
+}
+
+.checklistBuilderRequirement input {
+  width: auto !important;
+  margin: 0;
+}
+
+.proofSecurityNotice {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin: 18px 0;
+  padding: 14px 15px;
+  border: 1px solid #e8c5ab;
+  border-radius: 10px;
+  background: #fff4eb;
+  color: #87452f;
+}
+
+.proofSecurityNotice svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+
+.proofSecurityNotice strong {
+  display: block;
+}
+
+.proofSecurityNotice p {
+  margin: 4px 0 0;
+  color: #765b4e;
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.workflowManagerConsole {
+  margin: 18px 0 16px;
+  overflow: hidden;
+  border: 1px solid #bdd5cf;
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 14px 34px rgba(36, 77, 70, 0.08);
+}
+
+.workflowManagerConsoleHeader {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 13px 14px;
+  border-bottom: 1px solid #d8e5e2;
+  background:
+    linear-gradient(135deg, rgba(237, 246, 243, 0.98), rgba(246, 250, 249, 0.98));
+}
+
+.workflowManagerConsoleHeader > div {
+  display: grid;
+  min-width: 0;
+  gap: 1px;
+}
+
+.workflowManagerConsoleHeader span {
+  color: #52736c;
+  font-size: 0.58rem;
+  font-weight: 840;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.workflowManagerConsoleHeader strong {
+  color: #294a43;
+  font-size: 0.92rem;
+}
+
+.workflowManagerConsoleHeader small {
+  color: #657772;
+  font-size: 0.68rem;
+}
+
+.workflowManagerConsoleHeader button {
+  flex: 0 0 auto;
+  min-height: 34px;
+  padding: 7px 11px;
+  font-size: 0.7rem;
+}
+
+.workflowManagerColumnLabels,
+.workflowManagerRow {
+  display: grid;
+  grid-template-columns:
+    minmax(210px, 1.45fr) minmax(155px, 0.78fr)
+    minmax(175px, 1fr) minmax(112px, 0.55fr);
+  gap: 8px;
+  align-items: center;
+}
+
+.workflowManagerColumnLabels {
+  padding: 5px 10px;
+  color: #70807c;
+  font-size: 0.56rem;
+  font-weight: 820;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: #f8fbfa;
+}
+
+.workflowManagerRows {
+  max-height: min(56vh, 540px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.workflowManagerRow {
+  position: relative;
+  min-height: 45px;
+  padding: 5px 10px;
+  border-top: 1px solid #e0e9e7;
+  transition:
+    background 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.workflowManagerRow:hover {
+  background: #fbfdfc;
+}
+
+.workflowManagerRow[data-changed='true'] {
+  background: #fffcf5;
+  box-shadow: inset 3px 0 #c19242;
+}
+
+.workflowManagerRows .workflowManagerRow:first-child {
+  border-top-color: #d8e5e2;
+}
+
+.workflowManagerStep,
+.workflowManagerOwner,
+.workflowManagerOwnerReadOnly {
+  min-width: 0;
+}
+
+.workflowManagerStep span {
+  display: block;
+  color: #71827e;
+  font-size: 0.53rem;
+  font-weight: 820;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+
+.workflowManagerStep strong {
+  display: block;
+  margin-top: 1px;
+  overflow: hidden;
+  color: #304a45;
+  font-size: 0.72rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workflowManagerDate,
+.workflowManagerOwner,
+.workflowManagerOwnerReadOnly {
+  display: grid;
+  gap: 3px;
+}
+
+.workflowManagerDate > span,
+.workflowManagerOwner > span,
+.workflowManagerOwnerReadOnly > span {
+  display: none;
+  color: #70807c;
+  font-size: 0.56rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.workflowManagerDate .friendlyDateField input,
+.workflowManagerOwner select {
+  width: 100%;
+  min-height: 34px;
+  padding: 5px 37px 5px 8px;
+  color: #354f49;
+  font: inherit;
+  font-size: 0.7rem;
+  border: 1px solid #c4d6d2;
+  border-radius: 7px;
+  background: #fff;
+}
+
+.workflowManagerOwner select {
+  padding-right: 28px;
+}
+
+.workflowManagerDate .friendlyDateField button {
+  top: 3px;
+  right: 3px;
+  bottom: 3px;
+  width: 28px;
+  min-height: 28px;
+}
+
+.workflowManagerDate .friendlyDateField button svg {
+  width: 16px;
+  height: 16px;
+}
+
+.workflowManagerOwnerReadOnly strong {
+  display: block;
+  padding: 5px 8px;
+  overflow: hidden;
+  color: #4a625d;
+  font-size: 0.68rem;
+  font-weight: 690;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+
+.workflowManagerReset {
+  min-height: 32px;
+  padding: 5px 8px;
+  color: #396b61;
+  font: inherit;
+  font-size: 0.64rem;
+  font-weight: 780;
+  border: 1px solid #bfd4cf;
+  border-radius: 999px;
+  background: #f7fbfa;
+  cursor: pointer;
+  transition:
+    color 140ms ease,
+    border-color 140ms ease,
+    background 140ms ease;
+}
+
+.workflowManagerReset:hover:not(:disabled) {
+  border-color: #7fa99f;
+  background: #edf6f3;
+}
+
+.workflowManagerReset:disabled {
+  color: #84918e;
+  border-color: #dce5e3;
+  background: #f6f8f7;
+  cursor: default;
+}
+
+.workflowTaskList {
+  display: grid;
+  gap: 6px;
+  margin-top: 14px;
+}
+
+.workflowTask {
+  overflow: hidden;
+  border: 1px solid #d5e2df;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.workflowTaskComplete {
+  border-color: #bdd9cd;
+  background: #f8fcfa;
+}
+
+.workflowTaskState {
+  display: grid;
+  place-items: center;
+  color: #557d74;
+}
+
+.workflowTaskState svg {
+  width: 19px;
+  height: 19px;
+}
+
+.workflowTaskSummary {
+  display: grid;
+  grid-template-columns:
+    22px minmax(210px, 1.45fr) minmax(140px, 0.85fr) 86px auto
+    13px;
+  gap: 10px;
+  align-items: center;
+  min-height: 49px;
+  padding: 6px 10px;
+  list-style: none;
+  cursor: pointer;
+}
+
+.workflowTaskSummary::-webkit-details-marker {
+  display: none;
+}
+
+.workflowTaskSummary::after {
+  content: '›';
+  color: #6d827d;
+  font-size: 1.15rem;
+  line-height: 1;
+  transition: transform 160ms ease;
+}
+
+.workflowTask[open] .workflowTaskSummary::after {
+  transform: rotate(90deg);
+}
+
+.workflowTaskSummary:hover {
+  background: #f5faf8;
+}
+
+.workflowTaskSummary:focus-visible {
+  outline: 3px solid rgba(79, 139, 127, 0.2);
+  outline-offset: -3px;
+}
+
+.workflowTaskIdentity,
+.workflowTaskOwnerSummary,
+.workflowTaskDeadline {
+  min-width: 0;
+}
+
+.workflowTaskIdentity small,
+.workflowTaskOwnerSummary small,
+.workflowTaskDeadline small {
+  display: block;
+  color: #71827e;
+  font-size: 0.52rem;
+  font-weight: 820;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+
+.workflowTaskIdentity strong,
+.workflowTaskOwnerSummary > span,
+.workflowTaskDeadline time {
+  display: block;
+  margin-top: 1px;
+  overflow: hidden;
+  color: #304a45;
+  font-size: 0.72rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workflowTaskOwnerSummary > span,
+.workflowTaskDeadline time {
+  color: #566964;
+  font-size: 0.68rem;
+}
+
+.workflowStatus {
+  flex: 0 0 auto;
+  justify-self: end;
+  padding: 4px 7px;
+  color: #446f66;
+  font-size: 0.57rem;
+  font-weight: 820;
+  white-space: nowrap;
+  text-transform: uppercase;
+  border-radius: 999px;
+  background: #e9f4ef;
+}
+
+.workflowStatusOverdue {
+  color: #9d4d31;
+  background: #ffe7da;
+}
+
+.workflowTaskBody {
+  padding: 11px 14px 14px 46px;
+  border-top: 1px solid #e1eae8;
+  background: rgba(248, 251, 250, 0.72);
+}
+
+.workflowTaskDescription {
+  margin: 0;
+  color: #5e6c69;
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
+.workflowTaskContext {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 8px;
+}
+
+.workflowTaskContext span {
+  padding: 3px 7px;
+  color: #60736e;
+  font-size: 0.62rem;
+  font-weight: 680;
+  border-radius: 999px;
+  background: #eaf2f0;
+}
+
+.workflowChoicePanel > label,
+.proofApprovalZone > label {
+  display: grid;
+  gap: 6px;
+  color: #405a54;
+  font-size: 0.72rem;
+  font-weight: 760;
+}
+
+.workflowChoicePanel,
+.workflowSubtasks,
+.proofApprovalZone {
+  margin-top: 11px;
+  padding: 12px;
+  border: 1px solid #d4e2df;
+  border-radius: 9px;
+  background: #f8fbfa;
+}
+
+.workflowChoicePanel {
+  display: grid;
+  gap: 10px;
+}
+
+.workflowChoicePanel > .workflowChoiceOption,
+.workflowSubtasks label {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.workflowChoicePanel small {
+  color: #697a76;
+  font-weight: 520;
+  line-height: 1.45;
+}
+
+.workflowSubtasks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+}
+
+.workflowSubtasks legend {
+  padding: 0 5px;
+  color: #405a54;
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.workflowSubtasks label {
+  color: #4c625d;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.workflowBlockedNote {
+  color: #8d5a36 !important;
+  font-weight: 720;
+}
+
+.workflowAudit {
+  display: block;
+  margin-top: 9px;
+  color: #61736f;
+  font-size: 0.66rem;
+}
+
+.workflowTaskActions,
+.proofDecisionActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  align-items: center;
+  margin-top: 11px;
+}
+
+.workflowTaskActions button,
+.proofDecisionActions button {
+  min-height: 36px;
+}
+
+.workflowTaskLink {
+  display: inline-flex;
+  margin-top: 11px;
+  color: #2f6d62;
+  font-size: 0.72rem;
+  font-weight: 780;
+}
+
+.workflowEmptyState {
+  margin: 18px 0 0;
+  padding: 18px;
+  color: #62736f;
+  text-align: center;
+  border: 1px dashed #c6d8d4;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.workflowEmptyState p {
+  margin: 5px 0 12px;
+}
+
+.proofPanel {
+  border-color: #ddd3bd;
+  border-top-color: #aa823d;
+  background: #fffcf6;
+}
+
+.proofUploadZone {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 0.55fr);
+  gap: 14px;
+  align-items: center;
+  margin: 18px 0;
+  padding: 16px;
+  border: 1px solid #e4dbc9;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.proofUploadZone > div > strong,
+.proofUploadZone > div > span,
+.proofApprovalZone > div > strong,
+.proofApprovalZone > div > span {
+  display: block;
+}
+
+.proofUploadZone > div > span,
+.proofApprovalZone > div > span {
+  margin-top: 4px;
+  color: #6c6a62;
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+
+.proofUploadZone > p {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+.proofFileList {
+  display: grid;
+  gap: 9px;
+}
+
+.proofFileList article {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 13px 14px;
+  border: 1px solid #e1d8c6;
+  border-radius: 9px;
+  background: #fff;
+}
+
+.proofFileList article strong,
+.proofFileList article span {
+  display: block;
+}
+
+.proofFileList article span {
+  margin-top: 3px;
+  color: #716e64;
+  font-size: 0.72rem;
+}
+
+.proofApprovalZone {
+  display: grid;
+  gap: 13px;
 }
 
 .producerNotesPanel > small {
@@ -3047,6 +3764,23 @@
     grid-template-columns: 1fr;
   }
 
+  .workflowManagerColumnLabels,
+  .workflowManagerRow {
+    grid-template-columns:
+      minmax(175px, 1.3fr) minmax(145px, 0.8fr)
+      minmax(150px, 0.9fr) minmax(100px, 0.55fr);
+  }
+
+  .workflowTaskSummary {
+    grid-template-columns:
+      22px minmax(175px, 1.35fr) minmax(120px, 0.75fr) 76px auto
+      13px;
+  }
+
+  .proofUploadZone {
+    grid-template-columns: 1fr;
+  }
+
   .reviewActions {
     justify-self: start;
     max-width: 640px;
@@ -3054,6 +3788,21 @@
 }
 
 @media (max-width: 680px) {
+  .episodeWorkspaceTabs {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    width: 100%;
+  }
+
+  .episodeWorkspaceTabs a {
+    min-width: 0;
+  }
+
+  .workflowViewControls {
+    width: 100%;
+    justify-content: space-between;
+  }
+
   .uploadTransferStats {
     grid-template-columns: 1fr;
   }
@@ -3216,6 +3965,71 @@
   .messageComposer button {
     justify-self: start;
   }
+
+  .workflowManagerColumnLabels {
+    display: none;
+  }
+
+  .workflowManagerRow {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+    gap: 8px;
+    padding: 9px 10px;
+  }
+
+  .workflowManagerStep {
+    grid-column: 1 / -1;
+  }
+
+  .workflowManagerDate > span,
+  .workflowManagerOwner > span,
+  .workflowManagerOwnerReadOnly > span {
+    display: block;
+  }
+
+  .workflowManagerReset {
+    align-self: end;
+  }
+
+  .workflowTaskSummary {
+    grid-template-columns: 22px minmax(0, 1fr) auto 13px;
+    gap: 4px 9px;
+    min-height: 58px;
+    padding: 7px 9px;
+  }
+
+  .workflowTaskState {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+  }
+
+  .workflowTaskIdentity {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .workflowTaskOwnerSummary {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  .workflowTaskDeadline {
+    grid-column: 3;
+    grid-row: 2;
+  }
+
+  .workflowStatus {
+    grid-column: 3;
+    grid-row: 1;
+  }
+
+  .workflowTaskSummary::after {
+    grid-column: 4;
+    grid-row: 1 / span 2;
+  }
+
+  .workflowTaskBody {
+    padding: 11px 12px 13px 40px;
+  }
 }
 
 @media (max-width: 430px) {
@@ -3239,6 +4053,51 @@
     grid-template-columns: 1fr;
   }
 
+  .workflowPanel,
+  .proofPanel {
+    padding: 19px 15px;
+  }
+
+  .workflowManagerConsoleHeader {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .workflowManagerConsoleHeader button {
+    width: 100%;
+  }
+
+  .workflowManagerRow {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .workflowManagerStep,
+  .workflowManagerReset {
+    grid-column: 1 / -1;
+  }
+
+  .workflowManagerDate {
+    grid-column: 1;
+  }
+
+  .workflowManagerOwner,
+  .workflowManagerOwnerReadOnly {
+    grid-column: 2;
+  }
+
+  .workflowManagerReset {
+    width: 100%;
+  }
+
+  .workflowTaskBody {
+    padding: 11px 12px 13px;
+  }
+
+  .proofFileList article {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
   .productionStrip > div,
   .productionStrip > div:nth-child(2) {
     border-right: 0;
@@ -3259,5 +4118,13 @@
 
   .formRoutingGuide {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .workflowViewToggle button,
+  .workflowManagerRow,
+  .workflowManagerReset {
+    transition: none;
   }
 }

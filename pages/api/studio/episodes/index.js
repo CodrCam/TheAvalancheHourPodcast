@@ -22,8 +22,9 @@ import {
 } from '../../../../lib/studioAccessStore';
 import { publishEpisodeNotifications } from '../../../../lib/episodeStudioEvents';
 import { isEpisodeAssetStorageConfigured } from '../../../../lib/episodeAssetStorage';
+import { createDefaultEpisodeProductionTasks } from '../../../../lib/episodeProductionPlan.mjs';
 
-function dateDaysBefore(value, days = 7) {
+function dateDaysBefore(value, days = 10) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(String(value || ''))) return '';
   const date = new Date(`${value}T12:00:00Z`);
   date.setUTCDate(date.getUTCDate() - days);
@@ -88,7 +89,9 @@ export default async function handler(req, res) {
     ]);
 
     if (req.method === 'GET') {
-      let visibleEpisodes = episodes;
+      let visibleEpisodes = episodes.filter(
+        (episode) => !episode.deletion_finalized_at
+      );
       let profileConnection = null;
       let membershipIdentity = null;
       const personalScope = !canManage || req.query.scope === 'mine';
@@ -116,9 +119,10 @@ export default async function handler(req, res) {
           account_email: binding.account_email,
           identifiers: [binding.user_sub],
         };
-        visibleEpisodes = episodes.filter(
+        visibleEpisodes = visibleEpisodes.filter(
           (episode) =>
-            getEpisodeStudioMembership(episode, membershipIdentity).length > 0
+            getEpisodeStudioMembership(episode, membershipIdentity).length > 0 &&
+            (canManage || !episode.deleted_at)
         );
         profileConnection = {
           connected: true,
@@ -200,7 +204,7 @@ export default async function handler(req, res) {
         season: input.season || 'Season 11',
         target_release_date: input.target_release_date,
         due_date:
-          input.due_date || dateDaysBefore(input.target_release_date, 7),
+          input.due_date || dateDaysBefore(input.target_release_date, 10),
         recording_date: input.recording_date,
         recording_time: input.recording_time,
         recording_time_zone: input.recording_time_zone,
@@ -219,6 +223,15 @@ export default async function handler(req, res) {
         delivery_health_updated_by_name: '',
         delivery_health_updated_by_role: '',
         deliverables: createDefaultEpisodeDeliverables(),
+        production_tasks: createDefaultEpisodeProductionTasks(
+          input.target_release_date
+        ),
+        production_workflow_updated_at: now,
+        production_workflow_updated_by_person_id:
+          creatorBinding?.person_id || '',
+        production_workflow_updated_by_name:
+          directory.peopleById.get(creatorBinding?.person_id || '')?.name ||
+          principal.username,
         created_by_person_id: creatorBinding?.person_id || '',
         created_by: principal.username,
         created_at: now,

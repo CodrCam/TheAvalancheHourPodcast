@@ -1,14 +1,66 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  ACTIVE_MIC_KIT_REQUEST_STATUSES,
   DEFAULT_MIC_KIT_TRACKER,
   MIC_KIT_STATUSES,
   applyMicKitStatus,
+  findActiveMicKitRequest,
   micKitTrackerSummary,
   normalizeMicKitTracker,
   sanitizeMicKitTrackerForViewer,
   validateMicKitTracker,
 } from '../lib/micKitPresentation.mjs';
+
+test('defines the request states that still cover an episode', () => {
+  assert.deepEqual(ACTIVE_MIC_KIT_REQUEST_STATUSES, [
+    'requested',
+    'approved',
+    'waitlisted',
+    'assigned',
+    'checked_out',
+  ]);
+});
+
+test('finds an active mic request only for the same host and episode', () => {
+  const tracker = {
+    requests: [
+      {
+        request_id: 'closed-request',
+        requester_person_id: 'host-one',
+        episode_id: 'episode-one',
+        status: 'cancelled',
+      },
+      {
+        request_id: 'other-host',
+        requester_person_id: 'host-two',
+        episode_id: 'episode-one',
+        status: 'requested',
+      },
+      {
+        request_id: 'active-request',
+        requester_person_id: 'host-one',
+        episode_id: 'episode-one',
+        status: 'approved',
+      },
+    ],
+  };
+
+  assert.equal(
+    findActiveMicKitRequest(tracker, {
+      requesterPersonId: 'host-one',
+      episodeId: 'episode-one',
+    })?.request_id,
+    'active-request'
+  );
+  assert.equal(
+    findActiveMicKitRequest(tracker, {
+      requesterPersonId: 'host-one',
+      episodeId: 'episode-two',
+    }),
+    null
+  );
+});
 
 test('uses a compact physical-status lifecycle', () => {
   assert.deepEqual(MIC_KIT_STATUSES, [

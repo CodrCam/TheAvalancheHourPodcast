@@ -680,7 +680,7 @@ export default function StudioInboxPage({ previewData = null }) {
                 >
                   <div className={styles.intakeSectionHeading}>
                     <div>
-                      <span className={styles.eyebrow}>Caleb / manager</span>
+                      <span className={styles.eyebrow}>Studio manager</span>
                       <h3>Triage and next step</h3>
                     </div>
                     <TuneRoundedIcon aria-hidden="true" />

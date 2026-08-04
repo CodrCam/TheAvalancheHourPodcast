@@ -19,8 +19,8 @@ The person performing an action is excluded. This keeps a host, producer, or
 admin from receiving a notification that merely repeats what they just did.
 Configured administrators still receive other people’s significant Episode
 Studio activity, and configured mic-kit managers receive other people’s
-request and circulation activity. Cameron and Caleb are the safe defaults for
-both admin observer lists; environment values can replace those defaults.
+request and circulation activity. Repository fallbacks seed both observer
+lists; environment values should define the current role owners.
 
 ## Backend event map and recipient matrix
 
@@ -28,10 +28,10 @@ both admin observer lists; environment values can replace those defaults.
 
 | Event | Server-selected recipients | Never sent to | Related record | Title / summary pattern | Destination | Intent | Duplicate and grouping rule | State |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Episode created or participant added | Newly assigned hosts, producer, creator, and configured admin observers except the actor | Unassigned hosts; removed participants | Episode | Episode added / review roles, dates, checklist, reads, discussion | Episode Studio | Actionable | Episode version + recipient; group by episode | Connected |
+| Episode created or participant added | Newly assigned hosts, producer, creator, and configured admin observers except the actor | Unassigned hosts; removed participants | Episode | Episode added / review roles, dates, checklist, reads, communication | Episode Package | Actionable | Episode version + recipient; group by episode | Connected |
 | Assignment role changed | Current participant whose host/producer/creator relationship changed | Removed and unrelated people | Episode | “Your assignment changed…” | Episode Studio | Actionable | Episode version + recipient; group by episode | Connected |
 | Due or release date changed | Current episode participants except actor | Unassigned users | Episode | “Schedule updated…” / current host-package date | Episode Studio | Actionable | Episode version + recipient; group by episode | Connected |
-| Discussion post | Current participants except author | Anyone who cannot currently open the episode | Episode / message | Actor posted / plain-text preview | Episode discussion anchor | Informational | Message ID + recipient; group by episode | Connected |
+| Communication Clipboard post | Current participants except author | Anyone who cannot currently open the episode | Episode / message | Actor posted / plain-text preview | Communication Clipboard anchor | Informational | Message ID + recipient; group by episode | Connected |
 | Checklist structure changed | Assigned hosts except actor | Unassigned hosts | Episode / checklist | “Checklist updated…” | Checklist anchor | Actionable | Episode version + recipient; group by episode | Connected |
 | Required or production file uploaded | Episode participants except uploader | Unassigned users | Episode / asset | Actor uploaded a file / required-deliverable context | Final assets anchor | Informational | Immutable asset ID + recipient; group by episode | Connected |
 | File removed | Episode participants except actor | Unassigned users | Episode / asset | “A file was removed…” / completion impact | Final assets anchor | Actionable when required | Asset ID + episode version + recipient; group by episode | Connected |
@@ -39,12 +39,12 @@ both admin observer lists; environment values can replace those defaults.
 | Producer requests changes | Assigned hosts except producer | Other hosts | Episode | “Changes requested…” / plain-text producer note | Episode Studio | Actionable, high | Episode version + host; group by episode | Connected |
 | Producer accepts | Hosts and creator; next production lead | Unrelated hosts; actor | Episode | Approved; next lead prompted to check the handoff | Producer-review anchor | Actionable for lead | Episode version + recipient; group by episode | Connected |
 | Production lead advances | Next configured lead; on completion, participants and production leads | Actor | Episode | Advanced to you / production chain complete | Production handoff anchor | Actionable or informational | Episode version + recipient; group by episode | Connected |
-| Episode flagged off track | Episode participants plus configured production leads, except actor | Unrelated users | Episode | “Episode was marked off track” | Episode discussion | Urgent | Transition into off-track + recipient; group by episode | Connected |
+| Episode flagged off track | Episode participants plus configured production leads, except actor | Unrelated users | Episode | “Episode was marked off track” | Production Board | Urgent | Transition into off-track + recipient; group by episode | Connected |
 | Spotify staged listen attached | No standalone notification; carried by the producer-accept or lead-advance event | Anyone without episode access; URL is never in the notification preview | Episode | Notification says a staged listen is available | Secured Episode Studio; Spotify link appears there | Actionable | Same handoff event; group by episode | Connected |
 | Sponsor read assigned, replaced, or removed | Episode participants except actor | Unassigned users | Episode / sponsor-read assignment | “Sponsor read updated…” | Sponsor-read anchor | Actionable | Episode version + recipient; group by episode | Connected |
 | Sponsor evidence completed or reopened | Assigned producer on completion; assigned hosts on reopen | Unassigned users | Episode / sponsor-read assignment | Evidence ready / sponsor read reopened | Sponsor-read anchor | Actionable | Assignment + completion timestamp/version; group by episode | Connected |
-| Deadline approaching | Assigned hosts | Unassigned users | Episode | Due today or in N days | Episode Studio | Actionable | Type + episode + due date + recipient | Connected |
-| Episode overdue | Hosts, producer, and creator | Unassigned users | Episode | Host package overdue | Episode Studio | Urgent | Type + episode + due date + recipient | Connected |
+| Deadline approaching | Assigned hosts | Unassigned users | Episode | Due today or in N days | Production Board step | Actionable | Type + episode + due date + recipient | Connected |
+| Episode overdue | Hosts, producer, and creator | Unassigned users | Episode | Host package overdue | Production Board step | Urgent | Type + episode + due date + recipient | Connected |
 | Asset retention approaching | Episode participants | Unassigned users | Episode / asset expiration group | N assets leave storage in N days | Final assets anchor | Actionable | Expiration date + recipient; group by episode | Connected |
 | Mic-kit request submitted | Configured mic-kit managers except the requester/actor | Other hosts and non-manager operations users | Mic-kit request | Host requested a kit | Manager request anchor | Administrative | Request creation + recipient; group by request | Connected |
 | Mic-kit response, assignment, direct handoff, or tracking | Request owner | Other hosts; tracking data is never copied into previews | Mic-kit request | Status, assignment, handoff, or tracking available | Owner request anchor | Actionable | Request/kit transition + recipient; group by request | Connected |
@@ -63,16 +63,18 @@ email, audit, and System Health behavior remains in place.
 
 ## Production escalation
 
-`STUDIO_PRODUCTION_LEAD_PERSON_IDS` is an ordered list. The default is
-`angie-link,caleb-merrill`.
+`STUDIO_PRODUCTION_LEAD_PERSON_IDS` is an ordered list of the current
+production-lead person IDs.
 
 1. Hosts submit to the episode’s assigned producer.
-2. When any producer outside the lead list accepts, the handoff goes to Angie.
-3. If Angie does not have an active connected producer account, the handoff
-   skips directly to Caleb.
-4. Angie advances it to Caleb.
-5. When Angie is the assigned producer, acceptance goes directly to Caleb.
-6. When Caleb is the assigned producer, acceptance completes the chain.
+2. When a producer outside the lead list accepts, the handoff goes to the first
+   active configured production lead.
+3. If that lead does not have an active connected producer account, the
+   handoff skips to the next configured lead.
+4. Each active lead advances the episode to the next configured lead.
+5. When the assigned producer is already in the lead list, acceptance skips
+   that same person and selects the next lead.
+6. Acceptance by the final configured lead completes the chain.
 7. Off-track transitions notify the active configured leads.
 
 Acceptance stops with a clear error if neither configured lead has an active
@@ -131,10 +133,11 @@ Do not deploy notification-query code until the index is active.
 6. Add Netlify values:
    `DYNAMODB_STUDIO_NOTIFICATIONS_INDEX=studio-notifications-index`,
    `STUDIO_NOTIFICATION_RETENTION_DAYS=120`, and
-   `STUDIO_PRODUCTION_LEAD_PERSON_IDS=angie-link,caleb-merrill`,
-   `STUDIO_ADMIN_NOTIFICATION_PERSON_IDS=cam-griffin,caleb-merrill`, and
-   `STUDIO_MIC_KIT_MANAGER_PERSON_IDS=cam-griffin,caleb-merrill`.
-7. Confirm Angie and Caleb have active person bindings and Cognito groups with
+   `STUDIO_PRODUCTION_LEAD_PERSON_IDS=producer-person-id,production-lead-person-id`,
+   `STUDIO_ADMIN_NOTIFICATION_PERSON_IDS=studio-manager-person-id,admin-person-id`,
+   and
+   `STUDIO_MIC_KIT_MANAGER_PERSON_IDS=logistics-person-id,studio-manager-person-id`.
+7. Confirm every configured production lead has an active person binding and Cognito groups with
    `episodes:manage`, `notifications:read`, and `notifications:update`.
 8. Keep the existing reminder schedule and
    `STUDIO_REMINDER_RUN_SECRET`; deterministic keys make retries safe.
@@ -146,7 +149,7 @@ data mutation is required by the code change itself.
 
 `/dev/notification-preview` exists only outside production. It calls the real
 Episode Studio and mic-kit recipient builders with fake records, renders the
-grouped bell and notification center for Cameron’s observer view, and lists the
+grouped bell and notification center for an administrator observer view, and lists the
 resolved person IDs. It never calls the notification store, writes DynamoDB, or
-sends a notification. Automated tests cover the same create, discussion,
+sends a notification. Automated tests cover the same create, communication,
 off-track, request, manager-update, kit-grouping, and self-exclusion rules.

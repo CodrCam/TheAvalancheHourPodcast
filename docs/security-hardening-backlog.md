@@ -20,8 +20,9 @@ as more people start using the backend.
   host account-to-profile bindings now live in DynamoDB-backed admin flows.
 - Episode Studios enforce assignment-based access, multi-host collaboration,
   required deliverables, and explicit acknowledgement of incomplete handoffs.
-- Episode discussions derive the author and host/producer role from the signed-in
-  account; the browser cannot post under an arbitrary profile name.
+- Communication Clipboard messages derive the author and host/producer role
+  from the signed-in account; the browser cannot post under an arbitrary
+  profile name.
 - Host self-service profile writes derive the target profile from the signed-in
   Cognito `sub`; the browser cannot choose another person's profile ID.
 
@@ -101,7 +102,8 @@ Recommended events:
 - Host Studio guide publishes and account-to-profile binding changes.
 - Host self-service biography and photo changes.
 - Episode Studio creation, assignment and schedule changes, host submissions,
-  discussion posts, producer change requests, and producer acceptance.
+  Communication Clipboard posts, producer change requests, and producer
+  acceptance.
 - Admin login/logout events if available from the app side.
 
 Suggested table shape:
@@ -133,8 +135,8 @@ Notes:
 
 ## Priority 4: Failure Alerts
 
-Goal: notify Cameron when something operationally important fails, before Caleb
-has to report that the store looks broken.
+Goal: notify the technical owner when something operationally important fails,
+before an operations manager has to report that the store looks broken.
 
 Recommended alert cases:
 
@@ -149,7 +151,7 @@ Recommended alert cases:
 
 Suggested approach:
 
-- Start with email alerts to Cameron for high-signal failures.
+- Start with email alerts to the technical owner for high-signal failures.
 - Add a short dedupe window so one outage does not send dozens of emails.
 - Include route, error type, timestamp, and a plain-language description.
 - Avoid including customer-sensitive data unless it is needed to resolve the
@@ -160,8 +162,9 @@ Notes:
 - The webhook currently acknowledges some database/inventory failures to avoid
   repeated Stripe retries. That is reasonable, but those failures should become
   visible through alerts.
-- This should be paired with the admin health panel so Caleb can report what he
-  sees and Cameron can receive the technical version automatically.
+- This should be paired with the admin health panel so an operations manager
+  can report what they see and the technical owner receives the detailed
+  version automatically.
 
 ## Priority 5: IAM And Secrets Hygiene
 
@@ -193,6 +196,19 @@ Recommended checks:
 - Review multi-group users periodically, especially people who combine
   `logistics` and `studio_manager`.
 - Review group membership after role changes.
+
+## Priority 7: Guest Upload Malware Quarantine
+
+Goal: add a managed malware verdict beyond the current immutable-version
+magic-byte/container checks and forced-download handling.
+
+Suggested approach:
+
+- Trigger a scanner from S3 object-created events.
+- Keep new guest documents quarantined until a clean verdict is stored.
+- Never let a failed or timed-out scan silently become downloadable.
+- Retain current signature validation as an early spoofing check; do not call it
+  antivirus scanning.
 
 ## Not Planned Right Now
 

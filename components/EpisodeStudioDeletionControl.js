@@ -33,6 +33,7 @@ export default function EpisodeStudioDeletionControl({
   );
   const confirmationMatches =
     confirmation === String(episode?.title || '');
+  const deletionPending = Boolean(episode?.deleted_at);
 
   function close() {
     if (deleting) return;
@@ -68,12 +69,19 @@ export default function EpisodeStudioDeletionControl({
         <summary>Danger zone</summary>
         <div>
           <div>
-            <strong>Delete this Episode Studio</strong>
+            <strong>
+              {deletionPending
+                ? 'Finish deleting this Episode Studio'
+                : 'Delete this Episode Studio'}
+            </strong>
             <p>
-              Permanently remove the Studio and all {assetCount}{' '}
-              {assetCount === 1 ? 'file' : 'files'} stored for it
-              {assetBytes ? ` (${formatBytes(assetBytes)})` : ''}. This cannot
-              be undone.
+              {deletionPending
+                ? 'The Studio is locked while previously issued upload links expire. Automatic cleanup will keep rechecking private storage; you can also return after the displayed safety window to finish now.'
+                : `Permanently remove the Studio and all ${assetCount} ${
+                    assetCount === 1 ? 'file' : 'files'
+                  } stored for it${
+                    assetBytes ? ` (${formatBytes(assetBytes)})` : ''
+                  }. This cannot be undone.`}
             </p>
           </div>
           <button
@@ -87,7 +95,7 @@ export default function EpisodeStudioDeletionControl({
             }}
           >
             <DeleteOutlineRoundedIcon aria-hidden="true" />
-            Delete Studio…
+            {deletionPending ? 'Finish deletion…' : 'Delete Studio…'}
           </button>
         </div>
       </details>
@@ -114,9 +122,9 @@ export default function EpisodeStudioDeletionControl({
               <span className={styles.eyebrow}>Permanent deletion</span>
               <h2 id="delete-studio-title">Delete this Studio?</h2>
               <p id="delete-studio-description">
-                The Studio record and every uploaded S3 file tied to it will
-                be permanently removed. If storage cleanup fails, the Studio
-                record will be kept so the deletion can be retried safely.
+                {deletionPending
+                  ? 'Finish the protected storage sweep after all previously issued upload links have expired. A minimal cleanup marker temporarily retains the episode storage identifier, which may contain words from an older episode title, so automatic sweeps can remove any transfer already underway. It is normally purged within 30 days; questionnaire answers, notes, files, assignments, and the full title are removed sooner.'
+                  : 'Deletion first locks the Studio until every previously issued upload link expires. After the safety window, the active Studio and questionnaire are removed. A minimal marker temporarily keeps the storage identifier, which may contain words from an older title, while automatic storage checks continue; it is normally purged within 30 days.'}
               </p>
             </div>
             <div className={styles.deleteSummary}>
@@ -166,8 +174,12 @@ export default function EpisodeStudioDeletionControl({
               >
                 <DeleteOutlineRoundedIcon aria-hidden="true" />
                 {deleting
-                  ? 'Deleting files and Studio…'
-                  : 'Permanently delete Studio'}
+                  ? deletionPending
+                    ? 'Finishing protected deletion…'
+                    : 'Locking Studio for deletion…'
+                  : deletionPending
+                    ? 'Finish permanent deletion'
+                    : 'Start protected deletion'}
               </button>
             </div>
           </section>

@@ -16,6 +16,7 @@ const RELATIONSHIP_LABELS = {
   host: 'Host',
   producer: 'Producer',
   creator: 'Created by you',
+  workflow_assignee: 'Workflow owner',
 };
 
 function formatDate(value) {
@@ -82,8 +83,8 @@ export default function HostEpisodesPage() {
         .length,
       offTrack: episodes.filter(
         (episode) =>
-          episode.status !== 'accepted' &&
-          episode.delivery_health === 'off_track'
+          (episode.effective_delivery_health || episode.delivery_health) ===
+          'off_track'
       ).length,
     }),
     [episodes]
@@ -164,10 +165,12 @@ export default function HostEpisodesPage() {
             episodes.map((episode) => (
               <Link
                 key={episode.episode_id}
-                href={`/studio/episodes/${episode.episode_id}`}
+                href={`/studio/episodes/${episode.episode_id}${
+                  episode.workflow?.required_task_count ? '/production' : ''
+                }`}
                 className={`${styles.episodeRow} ${
-                  episode.delivery_health === 'off_track' &&
-                  episode.status !== 'accepted'
+                  (episode.effective_delivery_health ||
+                    episode.delivery_health) === 'off_track'
                     ? styles.episodeRowOffTrack
                     : ''
                 }`}
@@ -187,37 +190,52 @@ export default function HostEpisodesPage() {
                       ))}
                     </div>
                   ) : null}
-                  {episode.delivery_health === 'off_track' &&
-                  episode.status !== 'accepted' ? (
+                  {(episode.effective_delivery_health ||
+                    episode.delivery_health) === 'off_track' ? (
                     <span className={styles.healthBadge}>Off track</span>
                   ) : null}
                 </div>
                 <div>
                   <strong>{formatDate(episode.target_release_date)}</strong>
-                  <span>Release date</span>
+                  <span>Air date</span>
                 </div>
                 <div>
                   <strong>
-                    {STATUS_LABELS[episode.status] || episode.status}
+                    {episode.deletion_pending
+                      ? 'Deletion pending'
+                      : STATUS_LABELS[episode.status] || episode.status}
                   </strong>
                   <span>Status</span>
                 </div>
                 <div className={styles.rowProgress}>
                   <strong>
-                    {episode.completion.host_percent}% host-ready ·{' '}
-                    {episode.completion.producer_approved
-                      ? 'producer approved'
-                      : 'approval pending'}
+                    {episode.workflow?.required_task_count
+                      ? `${episode.workflow.completion_percent}% production complete`
+                      : `${episode.completion.host_percent}% host-ready`}
                   </strong>
+                  {episode.workflow?.next_due_task ? (
+                    <span>
+                      Next: {episode.workflow.next_due_task.label} ·{' '}
+                      {formatDate(episode.workflow.next_due_task.due_date)}
+                    </span>
+                  ) : null}
                   <span className={styles.progressTrack}>
                     <span
                       style={{
-                        width: `${episode.completion.host_percent}%`,
+                        width: `${
+                          episode.workflow?.required_task_count
+                            ? episode.workflow.completion_percent
+                            : episode.completion.host_percent
+                        }%`,
                       }}
                     />
                   </span>
                 </div>
-                <span>Open form →</span>
+                <span>
+                  {episode.workflow?.required_task_count
+                    ? 'Open production →'
+                    : 'Open package →'}
+                </span>
               </Link>
             ))
           ) : (

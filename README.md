@@ -30,9 +30,11 @@ person’s role.
 
 - A priority-based home view for episode, order, inventory, mic-kit, and
   follow-up work
-- Episode Studios with schedules, host assignments, host-facing instructions,
-  plain-text responses, file uploads, producer notes, discussion, approval,
-  change requests, and host preview
+- Episode Studios split into a host **Package**, dedicated **Production Board**,
+  and editable **Guest Questionnaire**, with grouped Board/Schedule views,
+  air-date-relative deadlines, inline overdue warnings, a Communication
+  Clipboard, a Settings drawer, checklist View/Customize modes, private
+  proofs, uploads, and approval
 - Safe Episode Studio creation and deliberate permanent deletion, including
   removal of attached S3 objects
 - Team resources and a publishable host field manual
@@ -178,7 +180,12 @@ EPISODE_ASSETS_ACCESS_KEY_ID
 EPISODE_ASSETS_SECRET_ACCESS_KEY
 EPISODE_ASSETS_SESSION_TOKEN
 EPISODE_ASSETS_UPLOAD_TOKEN_SECRET
+GUEST_QUESTIONNAIRE_TOKEN_SECRET
 ```
+
+`GUEST_QUESTIONNAIRE_TOKEN_SECRET` must be a separate random value of at least
+32 characters. It signs expiring, revocable guest links and must not be the
+same value used for upload authorization.
 
 Product images use the episode-asset configuration by default. They may use
 separate values when these variables are set:
@@ -254,6 +261,8 @@ Confirm the target environment before running them.
 | `/studio` | Role-aware Team Studio home |
 | `/studio/episodes` | Personal episode work |
 | `/studio/manage/episodes` | Episode calendar and Studio creation |
+| `/studio/episodes/<episode-id>/questionnaire` | Host and producer questionnaire editor |
+| `/studio/guest-questionnaire#token=<private-token>` | Private guest response form |
 | `/studio/resources` | Team field guide |
 | `/studio/inbox` | Shared team follow-ups |
 | `/studio/mic-kits` | Requests, locations, and handoffs |
@@ -277,15 +286,23 @@ npm run build
 Then perform a signed-in smoke test in both Safari and Chrome:
 
 1. Open `/studio` directly and refresh it.
-2. Open an Episode Studio from a direct URL.
-3. Switch between producer view and “View as host.”
-4. Confirm producer notes save and approval blockers explain what is missing.
-5. Open a file-upload control without submitting a test file.
-6. Enter a sample product price and stock count, then discard the unsaved
+2. Open an Episode Studio Package from a direct URL, then open its Production
+   Board and switch between Board and Schedule.
+3. Open the Guest Questionnaire, edit a question without saving, and confirm
+   that navigation warns before discarding the change. Create a short-lived
+   private link only in a safe test Studio, open it in a signed-out browser,
+   and verify that guest uploads and submission appear back in the Studio.
+4. Switch between producer view and “View as host.”
+5. Confirm the Communication Clipboard note and message controls work, and that
+   approval blockers explain what is missing.
+6. Open Settings and the checklist Customize mode, then discard any unsaved
+   sample changes.
+7. Open a file-upload control without submitting a test file.
+8. Enter a sample product price and stock count, then discard the unsaved
    product.
-7. Open a mic kit and verify the status menu.
-8. Run System Health.
-9. Sign out and confirm the Team Sign In page appears.
+9. Open a mic kit and verify the status menu.
+10. Run System Health.
+11. Sign out and confirm the Team Sign In page appears.
 
 Safari and Chrome should both complete fresh-page loads; client-side navigation
 alone is not a sufficient browser test.
@@ -307,11 +324,23 @@ Health, and complete the two-browser smoke test above.
 
 - Episode and product uploads use signed S3 operations; clients do not receive
   long-lived AWS credentials.
-- Episode Studio deletion is permanent and removes the Studio’s attached S3
-  objects as part of the deletion workflow.
+- Guest-questionnaire links are episode-scoped, expiring, and revocable. The
+  plaintext token is not persisted server-side; the guest page keeps it only
+  in tab-scoped session storage after removing it from the URL. Guest shipping
+  answers are visible only to the assigned producer and Studio managers.
+- Episode Studio deletion uses a protected two-stage workflow: it first locks
+  the Studio until outstanding signed upload authorizations expire, then sweeps every S3
+  version under that episode prefix, removes the private questionnaire, and
+  leaves only a minimal cleanup marker containing the episode storage
+  identifier and cleanup timestamps. Older identifiers may contain title words,
+  so the marker is automatically purged after a 30-day resweep window once S3
+  confirms the prefix is empty. Questionnaire answers, production notes,
+  file metadata, assignments, and the episode title are removed. The included
+  hourly Studio maintenance job resweeps deleted prefixes so a large upload
+  already underway cannot become an orphan after the active Studio disappears.
 - Product, order, and people administration should preserve identifiers used by
   Stripe, DynamoDB, and historical records.
 - Never run seed or migration scripts against production without reviewing the
   configured environment first.
 - Never commit `.env.local`, AWS credentials, Stripe secrets, Cognito secrets,
-  or upload-token secrets.
+  questionnaire secrets, or upload-token secrets.

@@ -203,6 +203,8 @@ test('keeps both recovery endpoints public before Cognito sign-in', () => {
     true
   );
   assert.equal(isPublicAuthPath('/api/store/admin/session'), false);
+  assert.equal(isPublicAuthPath('/studio/guest-questionnaire'), true);
+  assert.equal(isPublicAuthPath('/studio/episodes'), false);
 });
 
 test('maps an incorrect confirmation code to a safe validation error', async () => {

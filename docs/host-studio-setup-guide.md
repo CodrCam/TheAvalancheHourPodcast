@@ -13,25 +13,20 @@ DynamoDB tables are already configured.
 | `host` | Read published resources, complete assigned episode forms, update only the public profile connected to the signed-in account, and request or view mic kits. |
 | `logistics` | Existing store and merchandise-fulfillment tools plus read/request access to the shared mic-kit catalog. |
 
-Group permissions are additive. Sierra can stay in both `logistics` and
-`studio_manager`; Cameron and Caleb can stay in `admin`.
+Group permissions are additive. A teammate can belong to both `logistics` and
+`studio_manager`, while administrators remain in `admin`.
 
 Public website roles and internal Episode Studio assignments are separate.
-For example, Cameron remains publicly listed as the Webmaster but has internal
-`host` and `producer` Studio capabilities. Those capabilities make a person
-available in episode assignment pickers; Cognito groups still decide which
-screens and APIs the signed-in account can use.
-
-The Season 11 production roster uses **Angie Lake** as the Producer
-responsible for editing interviews, shaping the narrative, and building the
-final audio file. Her People record carries both the internal `host` and
-`producer` capabilities. Her Cognito user should belong to both `host` and
-`studio_manager` so she can work in either capacity.
+A public team role does not automatically grant Studio access. Internal
+`host` and `producer` capabilities make a person available in episode
+assignment pickers; Cognito groups still decide which screens and APIs the
+signed-in account can use. A teammate working in both capacities should carry
+both capabilities and the appropriate Cognito groups.
 
 ## Launch the resource guide
 
 1. Deploy the Host Studio code.
-2. Sign in as Cameron or Caleb, open **Host Resources** from Admin Studio, and
+2. Sign in as an administrator, open **Host Resources** from Admin Studio, and
    switch from **View** to **Edit**.
 3. Review the built-in Season 11 draft against the current production process.
 4. Replace the inactive Season 10 source links with current host-safe links.
@@ -57,7 +52,7 @@ and active links. It never includes manager notes or inactive links.
 
 1. Hosts and every other signed-in role open **Mic Kits** in Host Studio to see
    current availability and submit a request.
-2. Caleb and Cameron open **Mic Kit Checkout** in Admin Studio to manage the
+2. Mic-kit coordinators open **Mic Kit Checkout** in Admin Studio to manage the
    circulation desk.
 3. The starter board shows four reported kits and one possible newer kit. The
    Season 11 guide describes the handoff process but does not state a physical
@@ -71,7 +66,7 @@ and active links. It never includes manager notes or inactive links.
 7. Ask hosts to choose **I need a mic kit** rather than emailing the team. The
    shared queue shows their general location and need-by date; their street
    address is visible only to them and admins.
-8. Caleb or Cameron approves, waitlists, or declines the request with a direct
+8. A mic-kit coordinator approves, waitlists, or declines the request with a direct
    response the host can read in Studio.
 9. Assign the closest practical kit, enter its ship-by date, carrier, tracking
    details, and due-back date, then choose **Check out** when custody transfers.
@@ -86,29 +81,45 @@ shipments, or check kits out and in.
 
 1. Open **Episode Calendar** from either the Admin Studio sidebar or the Host
    Studio manager sidebar.
-2. Create an episode with a title, release date, producer email, and at least
+2. Create an episode with a title, air date, producer email, and at least
    one assigned host.
 3. Assign every co-host who should be able to edit and submit the episode.
-4. Review the standard deliverables and mark any episode-specific items
-   optional before hosts begin work.
-5. Ask the team to use **My Episodes**. It includes episodes where the connected
+4. Open the episode **Settings** drawer and verify the air date, due date,
+   producer, and host assignments.
+5. Open **Production Board**. Use **Board** for the grouped workflow or switch
+   to **Schedule** to confirm every deadline and accountable owner on one
+   screen before hosts begin work.
+6. Return to **Package**, choose **Customize checklist**, and review the
+   standard deliverables. Use the global **Add requirement**, **Save
+   checklist**, and **Done** controls for episode-specific changes.
+7. Ask the team to use **My Episodes**. It includes episodes where the connected
    profile is an assigned host, the selected producer, or the episode creator.
-6. Use the episode discussion for questions, decisions, and production context
-   that should remain beside the checklist.
-7. Ask hosts to label every asset with the shared episode filename convention
+8. Use the **Communication Clipboard** for the pinned producer note and dated
+   team conversation. For technical problems, the help menu directs the team
+   to the WhatsApp group chat; **Private text support** is the direct-contact option.
+9. Ask hosts to label every asset with the shared episode filename convention
    and enter producer directions that name exact files, timestamp ranges,
    requested actions, and image-use details. A host can save an incomplete
    draft at any time, but producer directions are required for submission.
-8. If production should begin before everything is ready, the host can submit
+10. If production should begin before everything is ready, the host can submit
    with known gaps only after completing the producer directions, acknowledging
    every missing deliverable, and entering a resolution plan and expected date.
-9. Submission emails the producer assigned to the episode. The producer can
+11. Submission emails the producer assigned to the episode. The producer can
    accept the handoff or return it with specific feedback.
-10. Use **Delivery outlook** for a quick schedule-risk signal. Assigned hosts,
+12. Use **Delivery outlook** for a quick schedule-risk signal. Assigned hosts,
     the assigned producer, Studio managers, and admins can switch between
     **On track** and **Off track** without writing a note. This signal is
-    independent of checklist completion, records who changed it, remains
-    available during producer review, and locks when the episode is accepted.
+    independent of checklist completion and records who changed it. A required
+    production-timeline step that passes its deadline also places the episode
+    Off track automatically until completed or manager-waived.
+13. The producer uploads the private program proof on **Production Board**.
+    The assigned host downloads and listens before approving it or recording
+    exact requested changes. A replacement proof reopens approval and its
+    dependent publishing checks automatically. Never share the private Episode
+    Studio proof, staged Spotify link, or internal publishing package with a
+    guest. An intentionally approved guest listen uses a separate
+    permission-controlled Google Drive copy containing only the approved
+    program.
 
 The full working procedure and status definitions are in
 `docs/episode-studio-workflow.md`.

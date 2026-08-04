@@ -1,21 +1,33 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { createDefaultEpisodeProductionTasks } from '../lib/episodeProductionPlan.mjs';
 import {
   areProducerDirectionsComplete,
   configureEpisodeDeliverables,
   createDefaultEpisodeDeliverables,
+  createEmptyGuestProfile,
   EPISODE_ASSET_RETENTION_DAYS,
+  EPISODE_STUDIO_SCHEMA_VERSION,
   episodeStudioSummary,
   getEpisodeAssetRetentionExpiresAt,
   getEpisodeCompletion,
+  getGuestProfileFieldErrors,
   getEpisodeStudioMembership,
   isEpisodeAssetExpired,
   isDeliverableComplete,
+  isGuestProfileValid,
+  isValidGuestContactEmail,
+  isValidGuestHttpsUrl,
+  isValidGuestProfileEntry,
+  isValidGuestSocialHandle,
+  MAX_EPISODE_DELIVERABLES,
   mergeEpisodeStudioManagerValues,
   mergeEpisodeStudioServerFields,
   mergeHostDeliverableValues,
   normalizeEpisodeStudio,
+  normalizeGuestProfile,
   PRODUCER_DIRECTIONS_MIN_LENGTH,
+  REQUIRED_EPISODE_DELIVERABLE_IDS,
   removeEpisodeAssetFromEpisode,
   sanitizeEpisodeStudioForViewer,
   validateEpisodeStudio,
@@ -24,18 +36,39 @@ import {
 const clearProducerBrief =
   'Use mission-ridge_interview_jordan_raw.wav for the final cut. Make mission-ridge_photo-01_jordan-ridgeline.jpg the cover image.';
 
+function resolvedMicPlan(hostPersonId = 'dom-baker') {
+  const deliverable = createDefaultEpisodeDeliverables().find(
+    (item) => item.id === 'mic-kit-plan'
+  );
+  return {
+    ...deliverable,
+    mic_kit_plans: [
+      {
+        host_person_id: hostPersonId,
+        choice: 'no_kit_needed',
+      },
+    ],
+  };
+}
+
 function sampleEpisode() {
   return {
     episode_id: 'episode-one',
     title: 'Episode One',
     target_release_date: '2026-10-15',
     host_person_ids: ['dom-baker'],
-    deliverables: createDefaultEpisodeDeliverables().slice(0, 2),
+    deliverables: [
+      ...createDefaultEpisodeDeliverables().slice(0, 2),
+      resolvedMicPlan(),
+    ],
   };
 }
 
 test('does not allow submission until every required deliverable is complete', () => {
-  const empty = getEpisodeCompletion(sampleEpisode());
+  const empty = getEpisodeCompletion({
+    ...sampleEpisode(),
+    deliverables: createDefaultEpisodeDeliverables().slice(0, 3),
+  });
   assert.equal(empty.can_submit, false);
   assert.equal(empty.can_submit_with_gaps, false);
   assert.equal(empty.percent, 0);
@@ -58,6 +91,7 @@ test('does not allow submission until every required deliverable is complete', (
         required: true,
         value: 'https://drive.google.com/example',
       },
+      resolvedMicPlan(),
     ],
   });
   assert.equal(complete.can_submit, true);
@@ -80,6 +114,7 @@ test('does not allow submission until every required deliverable is complete', (
             required: true,
             value: 'Ready',
           },
+          resolvedMicPlan(),
         ],
   });
   assert.equal(approved.percent, 100);
@@ -107,8 +142,18 @@ test('does not require a redundant episode-wide brief for submission', () => {
   episode.deliverables = episode.deliverables.map((deliverable) => ({
     ...deliverable,
     value: 'Ready',
-    social_profiles:
-      deliverable.id === 'guest-details' ? 'Website: https://example.com' : '',
+    ...(deliverable.id === 'guest-details'
+      ? {
+          social_profiles: 'Earlier profile notes remain preserved.',
+          guest_profile: {
+            name: 'Jordan Lee',
+            title_affiliation: 'Avalanche educator',
+            contact_email: 'jordan@example.com',
+            short_bio: 'Jordan teaches backcountry travelers.',
+            website: 'https://example.com',
+          },
+        }
+      : {}),
   }));
 
   const withoutBrief = getEpisodeCompletion(episode);
@@ -204,11 +249,71 @@ test('producer checklist configuration persists requirements and preserves host 
 
   assert.deepEqual(
     configured.deliverables.map((item) => item.id),
-    ['ad-confirmation', 'notes']
+    ['ad-confirmation', 'notes', 'guest-details', 'mic-kit-plan', 'photos']
   );
   assert.equal(configured.deliverables[0].required, true);
-  assert.equal(configured.deliverables[1].required, false);
-  assert.equal(configured.deliverables[1].value, 'Host response');
+  const notes = configured.deliverables.find((item) => item.id === 'notes');
+  assert.equal(notes.required, false);
+  assert.equal(notes.value, 'Host response');
+});
+
+test('checklist configuration preserves every item at the cap and rejects overflow', () => {
+  const defaults = createDefaultEpisodeDeliverables();
+  const required = REQUIRED_EPISODE_DELIVERABLE_IDS.map((id) =>
+    defaults.find((deliverable) => deliverable.id === id)
+  );
+  const configuration = [
+    ...required,
+    ...Array.from(
+      { length: MAX_EPISODE_DELIVERABLES - required.length },
+      (_, index) => ({
+        id: `custom-cap-${index + 1}`,
+        label: `Custom cap ${index + 1}`,
+        description: 'Preserve this checklist item.',
+        type: 'textarea',
+        required: false,
+      })
+    ),
+  ];
+  const configured = configureEpisodeDeliverables(
+    sampleEpisode(),
+    configuration
+  );
+
+  assert.equal(
+    configured.deliverables.length,
+    MAX_EPISODE_DELIVERABLES
+  );
+  assert.equal(
+    configured.deliverables.some(
+      (item) => item.id === `custom-cap-${MAX_EPISODE_DELIVERABLES - 3}`
+    ),
+    true
+  );
+  assert.throws(
+    () =>
+      configureEpisodeDeliverables(sampleEpisode(), [
+        ...configuration,
+        {
+          id: 'one-too-many',
+          label: 'One too many',
+          type: 'textarea',
+        },
+      ]),
+    /at most 40 items/i
+  );
+  assert.throws(
+    () =>
+      configureEpisodeDeliverables(
+        sampleEpisode(),
+        Array.from({ length: MAX_EPISODE_DELIVERABLES }, (_, index) => ({
+          id: `custom-only-${index + 1}`,
+          label: `Custom only ${index + 1}`,
+          type: 'textarea',
+        }))
+      ),
+    /keep the built-in guest details/i
+  );
 });
 
 test('manager required versus optional changes survive the manager merge', () => {
@@ -241,6 +346,64 @@ test('manager recording schedules are normalized and included in summaries', () 
   assert.equal(updated.recording_location, 'Riverside room');
   assert.equal(summary.recording_date, '2026-08-01');
   assert.equal(summary.recording_time_zone, 'America/Denver');
+});
+
+test('moving the air date preserves completed and manager-overridden task deadlines', () => {
+  const tasks = createDefaultEpisodeProductionTasks('2026-09-01');
+  tasks[0] = {
+    ...tasks[0],
+    status: 'complete',
+    completed_at: '2026-08-04T12:00:00.000Z',
+    completed_by_person_id: 'dom-baker',
+    completed_by_name: 'Dom Baker',
+  };
+  tasks[1] = {
+    ...tasks[1],
+    due_date: '2026-08-08',
+    due_date_overridden: true,
+  };
+  const episode = normalizeEpisodeStudio({
+    ...sampleEpisode(),
+    target_release_date: '2026-09-01',
+    production_tasks: tasks,
+  });
+
+  const updated = mergeEpisodeStudioManagerValues(episode, {
+    target_release_date: '2026-09-08',
+  });
+
+  assert.equal(updated.production_tasks[0].due_date, '2026-08-04');
+  assert.equal(updated.production_tasks[1].due_date, '2026-08-08');
+  assert.equal(updated.production_tasks[2].due_date, '2026-08-18');
+});
+
+test('moves the former seven-day host deadline to ten days without changing custom dates', () => {
+  const migrated = normalizeEpisodeStudio({
+    ...sampleEpisode(),
+    schema_version: 6,
+    due_date: '2026-10-08',
+  });
+  const customized = normalizeEpisodeStudio({
+    ...sampleEpisode(),
+    schema_version: 6,
+    due_date: '2026-10-06',
+  });
+  const current = normalizeEpisodeStudio({
+    ...sampleEpisode(),
+    schema_version: 8,
+    due_date: '2026-10-08',
+  });
+  const submitted = normalizeEpisodeStudio({
+    ...sampleEpisode(),
+    schema_version: 6,
+    status: 'submitted',
+    due_date: '2026-10-08',
+  });
+
+  assert.equal(migrated.due_date, '2026-10-05');
+  assert.equal(customized.due_date, '2026-10-06');
+  assert.equal(current.due_date, '2026-10-08');
+  assert.equal(submitted.due_date, '2026-10-05');
 });
 
 test('manager saves and can intentionally clear producer review drafts', () => {
@@ -286,7 +449,7 @@ test('canonical asset requirements block readiness until audio and images are at
     ...sampleEpisode(),
     canonical_assets_required: true,
     producer_directions: clearProducerBrief,
-    deliverables: [],
+    deliverables: [resolvedMicPlan()],
   };
   const missing = getEpisodeCompletion(base);
   assert.deepEqual(
@@ -344,6 +507,7 @@ test('viewer-safe uploaded files satisfy their checklist steps without exposing 
         required: true,
         asset_category: 'image',
       },
+      resolvedMicPlan(),
     ],
     assets: [
       {
@@ -393,8 +557,8 @@ test('viewer-safe uploaded files satisfy their checklist steps without exposing 
     true
   );
   const completion = getEpisodeCompletion(viewerEpisode);
-  assert.equal(completion.required, 3);
-  assert.equal(completion.completed, 3);
+  assert.equal(completion.required, 4);
+  assert.equal(completion.completed, 4);
   assert.deepEqual(completion.missing, []);
   assert.equal(completion.can_submit, true);
 });
@@ -499,6 +663,95 @@ test('removing an asset also clears sponsor-read completion tied to that file', 
   );
 });
 
+test('removing the current proof reopens its approval and downstream publishing work', () => {
+  const completedAt = '2026-08-10T12:00:00.000Z';
+  const productionTasks = createDefaultEpisodeProductionTasks(
+    '2026-08-19'
+  ).map((task) => {
+    if (task.task_id === 'producer-proof-upload') {
+      return {
+        ...task,
+        status: 'complete',
+        evidence_asset_id: 'proof-current',
+        completed_at: completedAt,
+        completed_by_person_id: 'angie-link',
+        completed_by_name: 'Angie Lake',
+      };
+    }
+    if (task.task_id === 'proof-listen-approval') {
+      return {
+        ...task,
+        status: 'complete',
+        proof_decision: 'approved',
+        evidence_asset_id: 'proof-current',
+        completed_at: completedAt,
+        completed_by_person_id: 'dom-baker',
+        completed_by_name: 'Dom Baker',
+      };
+    }
+    if (task.task_id === 'publishing-package') {
+      return {
+        ...task,
+        status: 'complete',
+        completed_at: completedAt,
+        completed_by_person_id: 'sierra-bishop',
+        completed_by_name: 'Sierra Bishop',
+        subtasks: task.subtasks.map((subtask) => ({
+          ...subtask,
+          completed: true,
+          completed_at: completedAt,
+          completed_by_person_id: 'sierra-bishop',
+          completed_by_name: 'Sierra Bishop',
+        })),
+      };
+    }
+    return task;
+  });
+  const proofAsset = (assetId, uploadedAt) => ({
+    asset_id: assetId,
+    object_key: `episodes/episode-one/recording/${assetId}.wav`,
+    object_version_id: `version-${assetId}`,
+    file_name: `${assetId}.wav`,
+    content_type: 'audio/wav',
+    size: 100,
+    category: 'recording',
+    deliverable_id: 'producer-proof-audio',
+    uploaded_at: uploadedAt,
+    retention_expires_at: '2027-02-01T00:00:00.000Z',
+    status: 'uploaded',
+  });
+  const episode = normalizeEpisodeStudio({
+    ...sampleEpisode(),
+    target_release_date: '2026-08-19',
+    deliverables: createDefaultEpisodeDeliverables(),
+    production_tasks: productionTasks,
+    assets: [
+      proofAsset('proof-older', '2026-08-09T12:00:00.000Z'),
+      proofAsset('proof-current', completedAt),
+    ],
+  });
+
+  const updated = removeEpisodeAssetFromEpisode(episode, 'proof-current');
+  const task = (taskId) =>
+    updated.production_tasks.find((item) => item.task_id === taskId);
+
+  assert.deepEqual(
+    updated.assets.map((asset) => asset.asset_id),
+    ['proof-older']
+  );
+  assert.equal(task('producer-proof-upload').status, 'in_progress');
+  assert.equal(task('producer-proof-upload').evidence_asset_id, '');
+  assert.equal(task('proof-listen-approval').status, 'in_progress');
+  assert.equal(task('proof-listen-approval').proof_decision, 'pending');
+  assert.equal(task('publishing-package').status, 'in_progress');
+  assert.equal(
+    task('publishing-package').subtasks.every(
+      (subtask) => subtask.completed === false
+    ),
+    true
+  );
+});
+
 test('legacy link-based episode steps migrate to step-owned uploads without losing links', () => {
   const episode = normalizeEpisodeStudio({
     ...sampleEpisode(),
@@ -534,21 +787,27 @@ test('legacy link-based episode steps migrate to step-owned uploads without losi
     ],
   });
 
-  assert.equal(episode.schema_version, 3);
+  assert.equal(episode.schema_version, EPISODE_STUDIO_SCHEMA_VERSION);
+  const legacyFolder = episode.deliverables.find(
+    (deliverable) => deliverable.id === 'episode-folder'
+  );
+  const legacyRecording = episode.deliverables.find(
+    (deliverable) => deliverable.id === 'recording-files'
+  );
   assert.equal(
-    episode.deliverables[0].label,
+    legacyFolder.label,
     'Previous general source files'
   );
-  assert.equal(episode.deliverables[0].type, 'asset');
-  assert.equal(episode.deliverables[0].asset_category, 'other');
+  assert.equal(legacyFolder.type, 'asset');
+  assert.equal(legacyFolder.asset_category, 'other');
   assert.equal(
-    episode.deliverables[0].legacy_source_url,
+    legacyFolder.legacy_source_url,
     'https://drive.google.com/example'
   );
-  assert.equal(episode.deliverables[1].label, 'Raw recording tracks');
-  assert.equal(episode.deliverables[1].type, 'asset');
+  assert.equal(legacyRecording.label, 'Raw recording tracks');
+  assert.equal(legacyRecording.type, 'asset');
   assert.equal(
-    episode.deliverables[1].legacy_source_url,
+    legacyRecording.legacy_source_url,
     'https://riverside.fm/studio/example'
   );
   assert.equal(
@@ -578,7 +837,702 @@ test('keeps the canonical Episode Source Files step on the mixed safe-file polic
   }
 });
 
-test('guest details require labeled social profiles and asset steps complete only from their own files', () => {
+test('keeps the default Episode Studio checklist role-based', () => {
+  assert.doesNotMatch(
+    JSON.stringify(createDefaultEpisodeDeliverables()),
+    /\b(?:Angie|Sierra|Caleb|Cameron|Cam)\b/
+  );
+});
+
+test('updates exact legacy built-in instructions without rewriting custom copy', () => {
+  const episode = normalizeEpisodeStudio({
+    ...sampleEpisode(),
+    schema_version: 8,
+    deliverables: [
+      {
+        id: 'intro-audio',
+        label: 'Record with Angie',
+        description: 'Send the script to Angie, then give Sierra the assets.',
+        type: 'asset',
+        required: false,
+      },
+      {
+        id: 'show-notes',
+        label: 'Confirm Angie interview references for this episode',
+        description:
+          'Keep this custom Sierra interview note exactly as the Studio manager wrote it.',
+        type: 'textarea',
+        required: false,
+      },
+      {
+        id: 'custom-guest-note',
+        label: 'Confirm Angie guest note',
+        description: 'A custom episode-specific instruction.',
+        type: 'textarea',
+        required: false,
+      },
+    ],
+  });
+  const intro = episode.deliverables.find(
+    (deliverable) => deliverable.id === 'intro-audio'
+  );
+  const custom = episode.deliverables.find(
+    (deliverable) => deliverable.id === 'custom-guest-note'
+  );
+  const customizedBuiltIn = episode.deliverables.find(
+    (deliverable) => deliverable.id === 'show-notes'
+  );
+
+  assert.equal(intro.label, 'Record with the assigned producer');
+  assert.equal(
+    intro.description,
+    'Send the script to the assigned producer, then give the publishing owner the assets.'
+  );
+  assert.equal(custom.label, 'Confirm Angie guest note');
+  assert.equal(
+    customizedBuiltIn.label,
+    'Confirm Angie interview references for this episode'
+  );
+  assert.equal(
+    customizedBuiltIn.description,
+    'Keep this custom Sierra interview note exactly as the Studio manager wrote it.'
+  );
+});
+
+test('adds the questionnaire and microphone dependencies to every Episode Studio', () => {
+  const defaultMicPlan = createDefaultEpisodeDeliverables().find(
+    (deliverable) => deliverable.id === 'mic-kit-plan'
+  );
+  assert.ok(defaultMicPlan);
+  assert.equal(defaultMicPlan.required, true);
+  assert.deepEqual(defaultMicPlan.mic_kit_plans, []);
+  const normalizedNewEpisodeMicPlan = normalizeEpisodeStudio({
+    ...sampleEpisode(),
+    deliverables: createDefaultEpisodeDeliverables(),
+  }).deliverables.find((deliverable) => deliverable.id === 'mic-kit-plan');
+  assert.equal(normalizedNewEpisodeMicPlan.required, true);
+
+  const migrated = normalizeEpisodeStudio({
+    ...sampleEpisode(),
+    schema_version: 5,
+    status: 'submitted',
+    deliverables: [
+      {
+        id: 'notes',
+        label: 'Legacy required notes',
+        type: 'textarea',
+        required: true,
+        value: 'Complete legacy package',
+      },
+    ],
+  });
+  const migratedMicPlan = migrated.deliverables.find(
+    (deliverable) => deliverable.id === 'mic-kit-plan'
+  );
+  const migratedGuestDetails = migrated.deliverables.find(
+    (deliverable) => deliverable.id === 'guest-details'
+  );
+  const migratedPhotos = migrated.deliverables.find(
+    (deliverable) => deliverable.id === 'photos'
+  );
+  assert.equal(migrated.schema_version, EPISODE_STUDIO_SCHEMA_VERSION);
+  assert.equal(migratedMicPlan.required, true);
+  assert.equal(migratedGuestDetails.type, 'textarea');
+  assert.equal(migratedGuestDetails.asset_category, 'document');
+  assert.equal(migratedGuestDetails.required, false);
+  assert.equal(migratedPhotos.type, 'asset');
+  assert.equal(migratedPhotos.asset_category, 'image');
+  assert.equal(migratedPhotos.required, false);
+  const migratedCompletion = getEpisodeCompletion(migrated);
+  assert.equal(migratedCompletion.can_submit, false);
+  assert.equal(
+    migratedCompletion.missing.some((item) => item.id === 'mic-kit-plan'),
+    true
+  );
+
+  const currentSchemaMissingPlan = normalizeEpisodeStudio({
+    ...sampleEpisode(),
+    schema_version: 6,
+    deliverables: [
+      {
+        id: 'notes',
+        label: 'Current notes',
+        type: 'textarea',
+        required: false,
+        value: '',
+      },
+    ],
+  }).deliverables.find((deliverable) => deliverable.id === 'mic-kit-plan');
+  assert.equal(currentSchemaMissingPlan.required, true);
+});
+
+test('keeps questionnaire dependencies when a legacy checklist reaches its limit', () => {
+  const normalized = normalizeEpisodeStudio({
+    ...sampleEpisode(),
+    deliverables: Array.from({ length: 40 }, (_, index) => ({
+      id: `legacy-custom-${index + 1}`,
+      label: `Legacy custom ${index + 1}`,
+      type: 'textarea',
+      required: false,
+      sort_order: (index + 1) * 10,
+    })),
+  });
+  const ids = new Set(normalized.deliverables.map((item) => item.id));
+
+  assert.equal(normalized.deliverables.length, 40);
+  assert.equal(ids.has('guest-details'), true);
+  assert.equal(ids.has('mic-kit-plan'), true);
+  assert.equal(ids.has('photos'), true);
+});
+
+test('requires every assigned host to resolve a required microphone plan', () => {
+  const episode = normalizeEpisodeStudio({
+    ...sampleEpisode(),
+    schema_version: 6,
+    host_person_ids: ['host-one', 'host-two'],
+    deliverables: [
+      {
+        id: 'mic-kit-plan',
+        label: 'Microphone plan',
+        type: 'textarea',
+        required: true,
+        mic_kit_plans: [
+          {
+            host_person_id: 'host-one',
+            choice: 'request_kit',
+            request_id: 'request-one',
+          },
+        ],
+      },
+    ],
+  });
+  const micPlan = episode.deliverables.find(
+    (deliverable) => deliverable.id === 'mic-kit-plan'
+  );
+
+  assert.equal(
+    isDeliverableComplete(micPlan, [], episode.host_person_ids),
+    false
+  );
+  assert.equal(getEpisodeCompletion(episode).can_submit, false);
+
+  const completedEpisode = normalizeEpisodeStudio({
+    ...episode,
+    deliverables: episode.deliverables.map((deliverable) =>
+      deliverable.id === 'mic-kit-plan'
+        ? {
+            ...deliverable,
+            mic_kit_plans: [
+              ...deliverable.mic_kit_plans,
+              {
+                host_person_id: 'host-two',
+                choice: 'use_own_equipment',
+                equipment_note: 'Shure MV7 and wired headphones',
+              },
+            ],
+          }
+        : deliverable
+    ),
+  });
+  const completedMicPlan = completedEpisode.deliverables.find(
+    (deliverable) => deliverable.id === 'mic-kit-plan'
+  );
+  assert.equal(
+    isDeliverableComplete(
+      completedMicPlan,
+      [],
+      completedEpisode.host_person_ids
+    ),
+    true
+  );
+  assert.equal(getEpisodeCompletion(completedEpisode).can_submit, true);
+
+  const liveUnresolved = getEpisodeCompletion(completedEpisode, {
+    deliverableCompletion: { 'mic-kit-plan': false },
+  });
+  assert.equal(liveUnresolved.can_submit, false);
+  assert.equal(
+    liveUnresolved.missing.some((item) => item.id === 'mic-kit-plan'),
+    true
+  );
+
+  const liveResolved = getEpisodeCompletion(episode, {
+    deliverableCompletion: { 'mic-kit-plan': true },
+  });
+  assert.equal(liveResolved.can_submit, true);
+  assert.equal(
+    liveResolved.missing.some((item) => item.id === 'mic-kit-plan'),
+    false
+  );
+});
+
+test('generic host saves cannot forge another host microphone plan', () => {
+  const episode = normalizeEpisodeStudio({
+    ...sampleEpisode(),
+    schema_version: 6,
+    host_person_ids: ['host-one', 'host-two'],
+    deliverables: [
+      {
+        id: 'mic-kit-plan',
+        label: 'Microphone plan',
+        type: 'textarea',
+        required: true,
+        mic_kit_plans: [
+          {
+            host_person_id: 'host-one',
+            choice: 'no_kit_needed',
+          },
+        ],
+      },
+    ],
+  });
+  const updated = mergeHostDeliverableValues(episode, [
+    {
+      id: 'mic-kit-plan',
+      mic_kit_plans: [
+        {
+          host_person_id: 'host-two',
+          choice: 'no_kit_needed',
+        },
+      ],
+      required: false,
+    },
+  ]);
+  const micPlan = updated.deliverables.find(
+    (deliverable) => deliverable.id === 'mic-kit-plan'
+  );
+
+  assert.equal(micPlan.required, true);
+  assert.deepEqual(micPlan.mic_kit_plans, [
+    {
+      host_person_id: 'host-one',
+      choice: 'no_kit_needed',
+      request_id: '',
+      equipment_note: '',
+    },
+  ]);
+});
+
+test('checklist configuration cannot remove or erase the microphone plan', () => {
+  const episode = normalizeEpisodeStudio({
+    ...sampleEpisode(),
+    schema_version: 5,
+    host_person_ids: ['host-one'],
+    deliverables: [
+      {
+        id: 'mic-kit-plan',
+        label: 'Microphone plan',
+        type: 'textarea',
+        required: false,
+        mic_kit_plans: [
+          {
+            host_person_id: 'host-one',
+            choice: 'use_own_equipment',
+            equipment_note: 'Shure MV7 and wired headphones',
+          },
+        ],
+      },
+      {
+        id: 'notes',
+        label: 'Notes',
+        type: 'textarea',
+        required: false,
+      },
+    ],
+  });
+  const configured = configureEpisodeDeliverables(episode, [
+    {
+      id: 'notes',
+      label: 'Updated notes',
+      type: 'textarea',
+      required: false,
+    },
+  ]);
+  const micPlan = configured.deliverables.find(
+    (deliverable) => deliverable.id === 'mic-kit-plan'
+  );
+
+  assert.ok(micPlan);
+  assert.equal(micPlan.required, true);
+  assert.equal(
+    micPlan.mic_kit_plans[0].equipment_note,
+    'Shure MV7 and wired headphones'
+  );
+});
+
+test('creates a structured guest profile only for the guest-details deliverable', () => {
+  const deliverables = createDefaultEpisodeDeliverables();
+  const guest = deliverables.find((item) => item.id === 'guest-details');
+  const pitch = deliverables.find((item) => item.id === 'episode-pitch');
+
+  assert.deepEqual(guest.guest_profile, createEmptyGuestProfile());
+  assert.equal(
+    Object.prototype.hasOwnProperty.call(pitch, 'guest_profile'),
+    false
+  );
+});
+
+test('normalizes guest profile fields, limits their size, and strips unknown nested data', () => {
+  const guestProfile = normalizeGuestProfile({
+    name: '  Jordan Lee  ',
+    title_affiliation: '  Avalanche educator · Mission Ridge  ',
+    contact_email: '  Jordan@Example.com  ',
+    contact_phone: '  +1 555 0100  ',
+    short_bio: `  ${'b'.repeat(4100)}  `,
+    website: '  https://example.com  ',
+    instagram: '  @jordanlee  ',
+    facebook: '  https://facebook.com/jordanlee  ',
+    linkedin: '  https://linkedin.com/in/jordanlee  ',
+    x_twitter: '  @jordan_on_snow  ',
+    youtube: '  https://youtube.com/@jordanlee  ',
+    tiktok: '  @jordanlee  ',
+    other: `  ${'o'.repeat(2100)}  `,
+    no_public_profiles: 'true',
+    private_password: 'must not survive normalization',
+  });
+
+  assert.equal(guestProfile.name, 'Jordan Lee');
+  assert.equal(
+    guestProfile.title_affiliation,
+    'Avalanche educator · Mission Ridge'
+  );
+  assert.equal(guestProfile.contact_email, 'Jordan@Example.com');
+  assert.equal(guestProfile.contact_phone, '+1 555 0100');
+  assert.equal(guestProfile.short_bio.length, 4000);
+  assert.equal(guestProfile.website, 'https://example.com');
+  assert.equal(guestProfile.instagram, '@jordanlee');
+  assert.equal(guestProfile.other.length, 2000);
+  assert.equal(guestProfile.no_public_profiles, false);
+  assert.equal(
+    Object.prototype.hasOwnProperty.call(guestProfile, 'private_password'),
+    false
+  );
+
+  const normalized = normalizeEpisodeStudio({
+    ...sampleEpisode(),
+    deliverables: [
+      {
+        id: 'episode-pitch',
+        label: 'Episode pitch',
+        type: 'textarea',
+        value: '',
+        guest_profile: { name: 'Injected guest' },
+      },
+    ],
+  }).deliverables[0];
+  assert.equal(
+    Object.prototype.hasOwnProperty.call(normalized, 'guest_profile'),
+    false
+  );
+});
+
+test('validates guest email, HTTPS links, and platform handles consistently', () => {
+  assert.equal(isValidGuestContactEmail(''), true);
+  assert.equal(isValidGuestContactEmail('jordan@example.com'), true);
+  assert.equal(isValidGuestContactEmail('jordan at example.com'), false);
+
+  assert.equal(isValidGuestHttpsUrl('https://example.com/profile'), true);
+  assert.equal(isValidGuestHttpsUrl('HTTPS://example.com/profile'), true);
+  assert.equal(isValidGuestHttpsUrl('http://example.com/profile'), false);
+  assert.equal(isValidGuestHttpsUrl('javascript:alert(1)'), false);
+  assert.equal(
+    isValidGuestHttpsUrl('https://username:password@example.com'),
+    false
+  );
+
+  assert.equal(isValidGuestSocialHandle('@jordan_on_snow'), true);
+  assert.equal(isValidGuestSocialHandle('@jordan-on-snow'), true);
+  assert.equal(isValidGuestSocialHandle('jordan on snow'), false);
+  assert.equal(isValidGuestProfileEntry('instagram', '@jordan'), true);
+  assert.equal(
+    isValidGuestProfileEntry('instagram', 'https://instagram.com/jordan'),
+    true
+  );
+  assert.equal(isValidGuestProfileEntry('instagram', 'http://instagram.com'), false);
+  assert.equal(isValidGuestProfileEntry('facebook', '@jordan'), true);
+  assert.equal(
+    isValidGuestProfileEntry('facebook', 'https://facebook.com/jordan'),
+    true
+  );
+  assert.equal(isValidGuestProfileEntry('other', 'Bluesky: jordan'), false);
+});
+
+test('reports the same structured guest field errors used for completion', () => {
+  const malformedProfile = {
+    name: 'Jordan Lee',
+    title_affiliation: 'Avalanche educator',
+    contact_email: 'not-an-email',
+    contact_phone: '+1 555 0100',
+    short_bio: 'Jordan teaches backcountry travelers.',
+    website: 'http://example.com',
+    instagram: 'jordan with spaces',
+    linkedin: '@jordan',
+  };
+  assert.deepEqual(getGuestProfileFieldErrors(malformedProfile), {
+    contact_email: 'Enter a valid email address.',
+    website: 'Use a complete HTTPS link.',
+    linkedin: 'Use a complete HTTPS link.',
+    instagram: 'Use an @handle or a complete HTTPS link.',
+  });
+  assert.equal(isGuestProfileValid(malformedProfile), false);
+  assert.equal(
+    isGuestProfileValid({
+      ...malformedProfile,
+      contact_email: '',
+      no_public_profiles: true,
+    }),
+    true
+  );
+  assert.equal(
+    isGuestProfileValid({
+      ...malformedProfile,
+      no_public_profiles: true,
+    }),
+    false
+  );
+});
+
+test('host saves accept structured guest fields without allowing deliverable configuration changes', () => {
+  const episode = sampleEpisode();
+  const updated = mergeHostDeliverableValues(episode, [
+    {
+      id: 'guest-details',
+      value: 'Earlier guest notes remain available.',
+      social_profiles: 'Earlier social notes remain available.',
+      guest_profile: {
+        name: 'Jordan Lee',
+        title_affiliation: 'Avalanche educator',
+        contact_phone: '+1 555 0100',
+        short_bio: 'Jordan teaches backcountry travelers.',
+        instagram: '@jordanlee',
+        unknown: 'drop me',
+      },
+      label: 'Forged label',
+      required: false,
+    },
+  ]);
+  const guest = updated.deliverables.find(
+    (deliverable) => deliverable.id === 'guest-details'
+  );
+
+  assert.equal(guest.label, 'Guest details');
+  assert.equal(guest.required, true);
+  assert.equal(guest.value, 'Earlier guest notes remain available.');
+  assert.equal(
+    guest.social_profiles,
+    'Earlier social notes remain available.'
+  );
+  assert.equal(guest.guest_profile.name, 'Jordan Lee');
+  assert.equal(guest.guest_profile.contact_phone, '+1 555 0100');
+  assert.equal(
+    Object.prototype.hasOwnProperty.call(guest.guest_profile, 'unknown'),
+    false
+  );
+
+  const legacyOnlyUpdate = mergeHostDeliverableValues(updated, [
+    {
+      id: 'guest-details',
+      value: 'Updated additional notes.',
+    },
+  ]).deliverables.find((deliverable) => deliverable.id === 'guest-details');
+  assert.deepEqual(legacyOnlyUpdate.guest_profile, guest.guest_profile);
+  assert.equal(
+    legacyOnlyUpdate.social_profiles,
+    'Earlier social notes remain available.'
+  );
+
+  const partialProfileUpdate = mergeHostDeliverableValues(updated, [
+    {
+      id: 'guest-details',
+      guest_profile: { instagram: '@jordan_updated' },
+    },
+  ]).deliverables.find((deliverable) => deliverable.id === 'guest-details');
+  assert.equal(partialProfileUpdate.guest_profile.name, 'Jordan Lee');
+  assert.equal(
+    partialProfileUpdate.guest_profile.instagram,
+    '@jordan_updated'
+  );
+});
+
+test('checklist configuration preserves structured and legacy guest responses', () => {
+  const episode = mergeHostDeliverableValues(sampleEpisode(), [
+    {
+      id: 'guest-details',
+      value: 'Legacy guest notes',
+      social_profiles: 'Legacy profile notes',
+      guest_profile: {
+        name: 'Jordan Lee',
+        title_affiliation: 'Avalanche educator',
+        contact_email: 'jordan@example.com',
+        short_bio: 'Jordan teaches backcountry travelers.',
+        website: 'https://example.com',
+      },
+    },
+  ]);
+  const configured = configureEpisodeDeliverables(episode, [
+    {
+      id: 'guest-details',
+      label: 'Featured guest details',
+      description: 'Provide the final guest information.',
+      type: 'textarea',
+      required: true,
+    },
+  ]);
+  const guest = configured.deliverables[0];
+
+  assert.equal(guest.value, 'Legacy guest notes');
+  assert.equal(guest.social_profiles, 'Legacy profile notes');
+  assert.equal(guest.guest_profile.name, 'Jordan Lee');
+  assert.equal(guest.guest_profile.website, 'https://example.com');
+});
+
+test('structured guest completion requires core contact details and a public-profile response', () => {
+  const structuredGuest = {
+    id: 'guest-details',
+    type: 'textarea',
+    value: '',
+    social_profiles: '',
+    guest_profile: {
+      name: 'Jordan Lee',
+      title_affiliation: 'Avalanche educator',
+      contact_email: 'jordan@example.com',
+      short_bio: 'Jordan teaches backcountry travelers.',
+      website: 'https://example.com',
+    },
+  };
+
+  assert.equal(isDeliverableComplete(structuredGuest), true);
+  assert.equal(
+    isDeliverableComplete({
+      ...structuredGuest,
+      guest_profile: {
+        ...structuredGuest.guest_profile,
+        contact_email: '',
+        contact_phone: '+1 555 0100',
+      },
+    }),
+    true
+  );
+  assert.equal(
+    isDeliverableComplete({
+      ...structuredGuest,
+      guest_profile: {
+        ...structuredGuest.guest_profile,
+        contact_email: 'not-an-email',
+        contact_phone: '+1 555 0100',
+      },
+    }),
+    false
+  );
+  assert.equal(
+    isDeliverableComplete({
+      ...structuredGuest,
+      guest_profile: {
+        ...structuredGuest.guest_profile,
+        instagram: 'not a valid handle',
+      },
+    }),
+    false
+  );
+  assert.equal(
+    isDeliverableComplete({
+      ...structuredGuest,
+      guest_profile: {
+        ...structuredGuest.guest_profile,
+        website: 'http://example.com',
+      },
+    }),
+    false
+  );
+  assert.equal(
+    isDeliverableComplete({
+      ...structuredGuest,
+      guest_profile: {
+        ...structuredGuest.guest_profile,
+        contact_email: '',
+        contact_phone: '',
+      },
+    }),
+    false
+  );
+  assert.equal(
+    isDeliverableComplete({
+      ...structuredGuest,
+      guest_profile: {
+        ...structuredGuest.guest_profile,
+        title_affiliation: '',
+      },
+    }),
+    false
+  );
+  assert.equal(
+    isDeliverableComplete({
+      ...structuredGuest,
+      guest_profile: {
+        ...structuredGuest.guest_profile,
+        website: '',
+      },
+    }),
+    false
+  );
+  assert.equal(
+    isDeliverableComplete({
+      ...structuredGuest,
+      guest_profile: {
+        ...structuredGuest.guest_profile,
+        website: '',
+        no_public_profiles: true,
+      },
+    }),
+    true
+  );
+});
+
+test('legacy guest responses remain preserved but do not replace current structured requirements', () => {
+  assert.equal(
+    isDeliverableComplete({
+      id: 'guest-details',
+      type: 'textarea',
+      value: 'Jordan Lee, avalanche educator and guide.',
+      social_profiles: '',
+      guest_profile: { instagram: '@jordanlee' },
+    }),
+    false
+  );
+  assert.equal(
+    isDeliverableComplete({
+      id: 'guest-details',
+      type: 'textarea',
+      value: '',
+      social_profiles: 'Instagram: @jordanlee',
+      guest_profile: {
+        name: 'Jordan Lee',
+        title_affiliation: 'Avalanche educator',
+        contact_email: 'jordan@example.com',
+        short_bio: 'Jordan teaches backcountry travelers.',
+      },
+    }),
+    false
+  );
+  assert.equal(
+    isDeliverableComplete({
+      id: 'guest-details',
+      type: 'textarea',
+      value: 'Earlier guest notes remain preserved.',
+      social_profiles: 'Earlier profile notes remain preserved.',
+      guest_profile: {
+        name: 'Jordan Lee',
+        title_affiliation: 'Avalanche educator',
+        contact_email: 'jordan@example.com',
+        short_bio: 'Jordan teaches backcountry travelers.',
+        instagram: '@jordanlee',
+      },
+    }),
+    true
+  );
+});
+
+test('legacy guest notes cannot bypass current requirements and asset steps use only their own files', () => {
   const guest = normalizeEpisodeStudio({
     ...sampleEpisode(),
     schema_version: 2,
@@ -599,7 +1553,7 @@ test('guest details require labeled social profiles and asset steps complete onl
       ...guest,
       social_profiles: 'Instagram: @jordanlee',
     }),
-    true
+    false
   );
 
   const recordingStep = {

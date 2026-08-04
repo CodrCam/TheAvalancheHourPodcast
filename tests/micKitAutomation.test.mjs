@@ -119,6 +119,50 @@ test('surfaces overdue returns and upcoming episode hosts without requests', () 
   );
 });
 
+test('treats a resolved episode microphone plan as covered without a kit request', () => {
+  const automation = buildMicKitAutomation(
+    { kits: [], requests: [] },
+    [
+      {
+        episode_id: 'own-equipment-episode',
+        title: 'Own Equipment Episode',
+        status: 'planning',
+        recording_date: '2026-08-03',
+        host_person_ids: [
+          'own-equipment-host',
+          'no-kit-host',
+          'unresolved-host',
+        ],
+        deliverables: [
+          {
+            id: 'mic-kit-plan',
+            mic_kit_plans: [
+              {
+                host_person_id: 'own-equipment-host',
+                choice: 'use_own_equipment',
+                equipment_note: 'Shure MV7 and wired headphones',
+              },
+              {
+                host_person_id: 'no-kit-host',
+                choice: 'no_kit_needed',
+              },
+            ],
+          },
+        ],
+      },
+    ],
+    { today: '2026-08-01' }
+  );
+
+  assert.equal(automation.metrics.uncovered_episode_hosts, 1);
+  assert.match(
+    automation.actions.find(
+      (action) => action.kind === 'episode_coverage'
+    )?.detail || '',
+    /1 assigned host/
+  );
+});
+
 test('uses the recording date ahead of release deadlines for mic coverage', () => {
   const automation = buildMicKitAutomation(
     {

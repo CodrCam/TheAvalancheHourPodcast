@@ -74,8 +74,9 @@ AWS references:
 
 ## 2. Add the browser-upload CORS rule
 
-The bucket stays private. CORS permits the bounded signed `POST` forms generated
-for Episode Studio files and product images; it does not make objects public.
+The bucket stays private. CORS permits one-write signed `PUT` requests for
+Episode Studio and guest files plus bounded signed `POST` forms for product
+images; it does not make objects public.
 
 1. In the bucket, open **Permissions**.
 2. Scroll to **Cross-origin resource sharing (CORS)**.
@@ -86,10 +87,12 @@ for Episode Studio files and product images; it does not make objects public.
 [
   {
     "AllowedHeaders": [
-      "content-type"
+      "content-type",
+      "if-none-match"
     ],
     "AllowedMethods": [
-      "POST"
+      "POST",
+      "PUT"
     ],
     "AllowedOrigins": [
       "http://localhost:3000",
@@ -107,17 +110,19 @@ for Episode Studio files and product images; it does not make objects public.
 
 5. Select **Save changes**.
 
-Every upload uses a signed S3 form policy that fixes the object key and
-canonical content type. Product images are capped at 12 MB. Episode Studio
-forms require the exact authorized byte length and retain the existing 30 MB
-image and 75 MB document limits, allow audio files up to 1.5 GB, and retain the
-750 MB video limit.
+Episode and guest uploads use a conditional signed `PUT`: the signature binds
+the exact object key, canonical content type, and byte length, while the signed
+`If-None-Match: *` header lets S3 accept that key only once. Product images keep
+their signed `POST` policy and 12 MB cap. Episode validation retains the 30 MB
+image and 75 MB document limits, allows audio files up to 1.5 GB, and retains
+the 750 MB video limit.
 Episode Studio reports upload bytes, percentage, transfer rate, and an
 estimated time remaining. Registering browser upload-progress events causes a
 CORS preflight; S3 handles that preflight from this same explicit-origin,
-`POST`, and `content-type` rule. Do not add `OPTIONS` or a wildcard origin.
+`PUT`, `content-type`, and `if-none-match` rule. Do not add `OPTIONS` or a
+wildcard origin.
 6. Verify there is no wildcard (`*`) origin.
-7. Do not add public `GET`, `POST`, or `DELETE` access. Downloads use
+7. Do not add public `GET`, `POST`, `PUT`, or `DELETE` access. Downloads use
    short-lived, server-authorized signed URLs.
 
 AWS references:
@@ -189,6 +194,17 @@ AWS reference:
       "Resource": "arn:aws:s3:::theavalanchehourepisodeassetsprod/episodes/*"
     },
     {
+      "Sid": "ListEpisodeVersionsForProtectedDeletion",
+      "Effect": "Allow",
+      "Action": "s3:ListBucketVersions",
+      "Resource": "arn:aws:s3:::theavalanchehourepisodeassetsprod",
+      "Condition": {
+        "StringLike": {
+          "s3:prefix": "episodes/*"
+        }
+      }
+    },
+    {
       "Sid": "ProductImageObjectsOnly",
       "Effect": "Allow",
       "Action": [
@@ -208,8 +224,15 @@ AWS reference:
    `episodes/*` and store images under `products/*`.
 9. Select **Create policy**.
 
-Do not grant `s3:*`, `AmazonS3FullAccess`, `s3:DeleteObject`, bucket listing, or
-access to other buckets. S3 `HEAD` verification is authorized by
+Do not grant `s3:*`, `AmazonS3FullAccess`, `s3:DeleteObject`, general bucket
+listing, or access to other buckets. The one bucket-level permission above is
+`s3:ListBucketVersions`, restricted by `s3:prefix` to `episodes/*`; it lets a
+protected whole-Studio delete and its scheduled durable cleanup find late or
+replayed signed uploads while a minimal deletion tombstone remains. That marker
+retains the storage-prefix identifier, which may reflect a legacy title-derived
+episode ID, but removes the episode title and all questionnaire, note, file,
+and assignment data. S3 `HEAD`
+verification is authorized by
 `s3:GetObject`; `s3:GetObjectVersion` lets downloads stay pinned to the exact
 version that completion verified. `s3:DeleteObjectVersion` lets the confirmed
 Episode Studio delete action remove only that same recorded version.
@@ -235,7 +258,8 @@ Do not remove `versionId` from the download, make the bucket public, add a
 public bucket-policy exception, or replace this with `s3:*`. The application
 also still needs `s3:GetObject` for upload-completion `HeadObject` requests and
 `s3:PutObject` for signed uploads. It does not need `s3:ListBucket` or
-`s3:GetObjectVersionAcl`.
+`s3:GetObjectVersionAcl`; the narrowly scoped `s3:ListBucketVersions` statement
+is only for protected whole-Studio deletion.
 
 ### Enable confirmed deletion of one uploaded file
 
@@ -257,6 +281,17 @@ a delete marker while the version-pinned object can remain retrievable.
 `s3:DeleteObjectVersion` is the least-privilege permission that makes a
 confirmed file deletion final for the recorded version. This is a server-side
 request, so it does not require `DELETE` in the browser CORS rule.
+
+Whole-Studio deletion is deliberately two-stage. The first confirmation locks
+the Studio and waits the latest conditionally recorded upload-form expiry plus
+a safety buffer. The second confirmation lists and removes every version and
+delete marker under that exact `episodes/<episode-id>/` prefix, deletes the
+private questionnaire, and replaces the active Studio with a minimal cleanup
+tombstone. The included hourly Studio maintenance job resweeps every tombstoned prefix on each
+run. That durable pass matters because S3 checks a signed form when a transfer
+starts; a very large transfer can finish after the form's expiry. Do not ship
+whole-Studio deletion until a published Netlify deploy confirms the scheduled
+and background maintenance functions are active.
 
 An IAM policy update takes effect for the existing access key, so no Netlify
 environment change or redeploy is required unless the access key itself is
@@ -335,7 +370,7 @@ values for:
 | `EPISODE_ASSETS_SESSION_TOKEN` | Leave unset for an IAM user | Yes |
 | `EPISODE_ASSETS_UPLOAD_TOKEN_SECRET` | Generated app secret | Yes |
 | `STUDIO_REMINDER_RUN_SECRET` | Generated reminder secret | Yes |
-| `STUDIO_MIC_KIT_MANAGER_PERSON_IDS` | `caleb-merrill,cam-griffin` | No |
+| `STUDIO_MIC_KIT_MANAGER_PERSON_IDS` | Comma-separated role-holder person IDs | No |
 
 Use the **Production** deploy context for the S3 credentials. Do not give
 deploy previews production-bucket credentials.
@@ -420,10 +455,12 @@ AWS references:
 - [ ] Bucket is private and Block Public Access is fully enabled.
 - [ ] ACLs are disabled.
 - [ ] Default encryption is SSE-S3.
-- [ ] CORS has only the four explicit application origins and signed `POST`
-      uploads.
+- [ ] CORS has only the four explicit application origins, signed conditional
+      `PUT` uploads for episode assets, and signed `POST` uploads for product
+      images.
 - [ ] IAM user has only `GetObject`, `GetObjectVersion`,
-      `DeleteObjectVersion`, and `PutObject` under `episodes/*`.
+      `DeleteObjectVersion`, and `PutObject` under `episodes/*`, plus
+      prefix-restricted `ListBucketVersions` for `episodes/*`.
 - [ ] Current versions expire after 180 days under the `episodes/` prefix.
 - [ ] Noncurrent versions are permanently removed after 180 days.
 - [ ] Expired delete markers are removed by the second lifecycle rule.

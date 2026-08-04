@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/router';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import CalendarMonthRoundedIcon from '@mui/icons-material/CalendarMonthRounded';
 import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded';
@@ -116,6 +117,21 @@ function comparableName(value) {
     .replace(/[^a-z0-9]+/g, ' ');
 }
 
+function safeEpisodeStudioReturnPath(value, requestId = '') {
+  const rawValue = Array.isArray(value) ? value[0] : value;
+  const path = String(rawValue || '').trim();
+  if (!path.startsWith('/') || path.startsWith('//')) return '';
+
+  try {
+    const parsed = new URL(path, 'https://episode-studio.local');
+    if (!parsed.pathname.startsWith('/studio/episodes/')) return '';
+    if (requestId) parsed.searchParams.set('mic_request_id', requestId);
+    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+  } catch {
+    return '';
+  }
+}
+
 function episodePriority(episode, today) {
   const priorityDate = episode.due_date || episode.target_release_date;
   if (!priorityDate) {
@@ -133,6 +149,8 @@ function episodePriority(episode, today) {
 }
 
 export default function MicKitsPage({ adminMode = false }) {
+  const router = useRouter();
+  const appliedEpisodePrefill = useRef(false);
   const [tracker, setTracker] = useState(null);
   const [automation, setAutomation] = useState({
     recommendations: [],
@@ -240,6 +258,52 @@ export default function MicKitsPage({ adminMode = false }) {
     };
   }, [adminMode, canManage]);
 
+  useEffect(() => {
+    if (
+      adminMode ||
+      !router.isReady ||
+      episodesLoading ||
+      appliedEpisodePrefill.current
+    ) {
+      return;
+    }
+
+    const queryEpisodeId = Array.isArray(router.query.episode_id)
+      ? router.query.episode_id[0]
+      : router.query.episode_id;
+    const episodeId = String(queryEpisodeId || '').trim();
+    if (!episodeId) {
+      appliedEpisodePrefill.current = true;
+      return;
+    }
+
+    const episode = episodes.find(
+      (candidate) => candidate.episode_id === episodeId
+    );
+    appliedEpisodePrefill.current = true;
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (cancelled) return;
+      if (!episode) {
+        setError(
+          'That episode is not available for a mic kit request from this account.'
+        );
+        return;
+      }
+
+      setRequestDraft((current) => ({
+        ...current,
+        episode_id: current.episode_id || episode.episode_id,
+        recording_date:
+          current.recording_date || episode.recording_date || '',
+      }));
+      setShowRequestForm(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [adminMode, episodes, episodesLoading, router.isReady, router.query]);
+
   const today = new Date().toISOString().slice(0, 10);
   const summary = useMemo(() => kitSummary(tracker), [tracker]);
   const showManage = canManage;
@@ -326,6 +390,18 @@ export default function MicKitsPage({ adminMode = false }) {
       ),
     [episodes]
   );
+  const requestEpisodeOptions = useMemo(() => {
+    const selected = episodesById.get(requestDraft.episode_id);
+    if (
+      !selected ||
+      upcomingEpisodes.some(
+        (episode) => episode.episode_id === selected.episode_id
+      )
+    ) {
+      return upcomingEpisodes;
+    }
+    return [selected, ...upcomingEpisodes];
+  }, [episodesById, requestDraft.episode_id, upcomingEpisodes]);
   const activeRequestPeople = useMemo(
     () =>
       new Set(
@@ -397,7 +473,7 @@ export default function MicKitsPage({ adminMode = false }) {
           metrics: {},
         }
       );
-      return true;
+      return data;
     } catch (err) {
       setError(err.message || 'Could not update the mic kit board.');
       return false;
@@ -427,6 +503,14 @@ export default function MicKitsPage({ adminMode = false }) {
     if (!saved) return;
     setRequestDraft(EMPTY_REQUEST);
     setShowRequestForm(false);
+    const returnPath = safeEpisodeStudioReturnPath(
+      router.query.return_to,
+      saved.created_request_id
+    );
+    if (returnPath) {
+      await router.push(returnPath);
+      return;
+    }
     setMessage(
       'Your request is on the shared board. A coordinator can now assign the best kit without a group email.'
     );
@@ -752,14 +836,14 @@ export default function MicKitsPage({ adminMode = false }) {
                   onChange={(event) =>
                     updateRequestDraft('episode_id', event.target.value)
                   }
-                  disabled={episodesLoading || !upcomingEpisodes.length}
+                  disabled={episodesLoading || !requestEpisodeOptions.length}
                 >
                   <option value="">
                     {episodesLoading
                       ? 'Loading your upcoming episodes…'
                       : 'Not tied to a specific episode'}
                   </option>
-                  {upcomingEpisodes.map((episode) => (
+                  {requestEpisodeOptions.map((episode) => (
                     <option
                       key={episode.episode_id}
                       value={episode.episode_id}
@@ -1373,7 +1457,7 @@ export default function MicKitsPage({ adminMode = false }) {
           <div className={styles.automationHeader}>
             <div>
               <span>Showrunner operations</span>
-              <h2>Caleb’s next actions</h2>
+              <h2>Mic-kit coordinator actions</h2>
               <p>
                 Dates, episode assignments, kit locations, and request status
                 are combined into one prioritized work list.

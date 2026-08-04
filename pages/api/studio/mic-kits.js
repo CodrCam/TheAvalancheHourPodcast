@@ -8,6 +8,7 @@ import { buildMicKitAutomation } from '../../../lib/micKitAutomation.mjs';
 import {
   MIC_KIT_REQUEST_STATUSES,
   MIC_KIT_STATUSES,
+  findActiveMicKitRequest,
   normalizeMicKitTracker,
   sanitizeMicKitTrackerForViewer,
 } from '../../../lib/micKitPresentation.mjs';
@@ -289,6 +290,7 @@ export default async function handler(req, res) {
     const tracker = normalizeMicKitTracker(result.tracker);
     const expectedUpdatedAt = cleanText(req.body?.expected_updated_at, 40);
     const now = new Date().toISOString();
+    let createdRequestId = '';
     const actorBinding = await getStudioBindingForSubject(
       principal.subject
     );
@@ -313,8 +315,23 @@ export default async function handler(req, res) {
               'Mic kit request: choose one of your assigned upcoming episodes.',
           });
         }
+
+        const activeRequest = findActiveMicKitRequest(tracker, {
+          requesterPersonId: actorBinding.person_id,
+          episodeId: request.episode_id,
+        });
+        if (activeRequest) {
+          return res.status(409).json({
+            ok: false,
+            code: 'ACTIVE_MIC_KIT_REQUEST_EXISTS',
+            existing_request_id: activeRequest.request_id,
+            error:
+              'You already have an active mic kit request for this episode.',
+          });
+        }
       }
       tracker.requests.push(request);
+      createdRequestId = request.request_id;
       logAdminAction(req, principal, 'mic_kit.request_create', {
         request_id: request.request_id,
         country: request.country,
@@ -778,16 +795,17 @@ export default async function handler(req, res) {
         notificationError
       );
     }
-    return res
-      .status(req.method === 'POST' ? 201 : 200)
-      .json(
-        responsePayload(
-          saved,
-          principal,
-          micKitAccess,
-          automationEpisodes
-        )
-      );
+    return res.status(req.method === 'POST' ? 201 : 200).json({
+      ...responsePayload(
+        saved,
+        principal,
+        micKitAccess,
+        automationEpisodes
+      ),
+      ...(createdRequestId
+        ? { created_request_id: createdRequestId }
+        : {}),
+    });
   } catch (error) {
     console.error('mic kit tracker error:', error);
     const message = String(error.message || '');

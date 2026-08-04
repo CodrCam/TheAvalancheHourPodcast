@@ -56,7 +56,7 @@ export default function SystemHealthPage() {
           <span>Admin diagnostics</span>
           <h1>System Health</h1>
           <p>
-            A quiet place for Cameron and Caleb to verify the website systems
+            A quiet place for Studio managers to verify the website systems
             without crowding the daily operations overview.
           </p>
         </div>

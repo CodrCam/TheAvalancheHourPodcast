@@ -2,9 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { getStudioSupportContact } from '../lib/studioSupportContact.mjs';
 
-test('provides Cameron’s technical support contact for signed-in team pages', () => {
+test('provides a role-based technical support contact for signed-in team pages', () => {
   assert.deepEqual(getStudioSupportContact({}), {
-    name: 'Cameron Griffin',
+    name: 'Technical support',
     email: 'ct.griffin7@gmail.com',
     phone: '425-786-4328',
     phone_href: '+14257864328',
@@ -32,7 +32,7 @@ test('accepts safe deployment overrides and rejects malformed contact values', (
       STUDIO_SUPPORT_PHONE: '911',
     }),
     {
-      name: 'Cameron Griffin',
+      name: 'Technical support',
       email: 'ct.griffin7@gmail.com',
       phone: '425-786-4328',
       phone_href: '+14257864328',

@@ -1,0 +1,59 @@
+.field {
+  display: block;
+  width: 100%;
+  min-width: 0;
+}
+
+.field textarea {
+  display: block;
+  box-sizing: border-box;
+  max-width: 100%;
+  resize: vertical;
+}
+
+.controlRow {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+
+.expandControl {
+  display: inline-flex;
+  min-height: 26px;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 7px;
+  color: #526b77;
+  font-family: inherit;
+  font-size: 0.68rem;
+  font-weight: 720;
+  line-height: 1.2;
+  text-decoration: underline;
+  text-decoration-color: rgba(82, 107, 119, 0.35);
+  text-underline-offset: 2px;
+  border-radius: 6px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.expandControl:hover {
+  color: #2f596b;
+  background: rgba(79, 128, 149, 0.08);
+}
+
+.expandControl:focus-visible {
+  color: #244b5d;
+  outline: 2px solid #4f8095;
+  outline-offset: 2px;
+  background: rgba(79, 128, 149, 0.09);
+}
+
+.expanded textarea {
+  width: 100%;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .field textarea {
+    transition: min-height 160ms ease;
+  }
+}

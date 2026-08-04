@@ -67,6 +67,26 @@ test('keeps an explicit schema version for stored guide migrations', () => {
   );
 });
 
+test('updates legacy named workflow guidance to durable role language', () => {
+  const guide = normalizeStudioGuide({
+    title: 'Legacy guide',
+    sections: [
+      {
+        id: 'legacy-copy',
+        title: 'Publishing',
+        summary: 'Give Angie and Sierra accurate source material.',
+        body:
+          "By 14 days before air, confirm the Angie recording session no later than seven days before air. Angie adds the outro. Give Sierra and Angie the facts. Sierra or the episode's assigned publishing owner schedules the package.",
+      },
+    ],
+  });
+  const serialized = JSON.stringify(guide);
+
+  assert.doesNotMatch(serialized, /Angie|Sierra/);
+  assert.match(serialized, /assigned producer|publishing owner/);
+  assert.match(serialized, /ten days before air/);
+});
+
 test('hides draft sections, inactive links, and manager notes from hosts', () => {
   const guide = sanitizeStudioGuideForHosts(sampleGuide);
 
@@ -133,6 +153,10 @@ test('default host manual is durable, complete, and valid', () => {
   assert.equal(sectionIds.includes('riverside-upload-and-recovery'), true);
   assert.equal(sectionIds.includes('riverside-download'), true);
   assert.equal(serialized.includes('August 5, 2026'), false);
+  assert.doesNotMatch(
+    serialized,
+    /\b(?:Angie|Sierra|Caleb|Cameron|Cam)\b/
+  );
   assert.equal(
     serialized.includes('people with a curious fascination with avalanches'),
     true

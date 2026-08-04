@@ -2,12 +2,18 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   EPISODE_ASSET_MAX_BYTES,
+  PRODUCER_PROOF_DELIVERABLE_ID,
   canDeleteEpisodeAsset,
+  canReadEpisodeAsset,
+  canUploadEpisodeAssetToDeliverable,
   canUploadEpisodeAssets,
   episodeAssetMatchesUploadAuthorization,
   findDuplicateEpisodeAsset,
+  filterEpisodeAssetsForViewer,
   getEpisodeAssetAccept,
   getEpisodeAssetTypeLabel,
+  getProducerProofUploadDependencyBlockers,
+  resetProducerProofApprovalForNewAsset,
   sanitizeEpisodeAssetFileName,
   validateEpisodeAssetInput,
 } from '../lib/episodeAssetPolicy.mjs';
@@ -328,6 +334,306 @@ test('limits asset deletion to managers, assigned producers, and the active host
       canManage: true,
     }),
     true
+  );
+  assert.equal(
+    canDeleteEpisodeAsset({
+      roles: ['workflow_assignee'],
+      status: 'accepted',
+      viewerPersonId: 'angie-link',
+      uploaderPersonId: 'angie-link',
+    }),
+    true
+  );
+  assert.equal(
+    canDeleteEpisodeAsset({
+      roles: ['workflow_assignee'],
+      status: 'accepted',
+      viewerPersonId: 'sierra-bishop',
+      uploaderPersonId: 'angie-link',
+    }),
+    false
+  );
+});
+
+test('limits asset reads to episode leads or the assignee of a linked task', () => {
+  const assets = [
+    {
+      asset_id: 'guest-photo',
+      deliverable_id: 'photos',
+    },
+    {
+      asset_id: 'private-proof',
+      deliverable_id: PRODUCER_PROOF_DELIVERABLE_ID,
+    },
+  ];
+  const episode = {
+    assets,
+    production_tasks: [
+      {
+        task_id: 'show-notes-brief',
+        assigned_person_ids: ['photo-assignee'],
+        linked_deliverable_ids: ['photos'],
+      },
+      {
+        task_id: 'proof-listen',
+        assigned_person_ids: ['proof-assignee'],
+        linked_deliverable_ids: [],
+        evidence_asset_id: 'private-proof',
+      },
+    ],
+  };
+
+  for (const roles of [['host'], ['producer']]) {
+    assert.equal(canReadEpisodeAsset({ roles, episode, asset: assets[0] }), true);
+  }
+  assert.equal(
+    canReadEpisodeAsset({ canManage: true, episode, asset: assets[1] }),
+    true
+  );
+  assert.equal(
+    canReadEpisodeAsset({ roles: ['creator'], episode, asset: assets[0] }),
+    false
+  );
+  assert.equal(
+    canReadEpisodeAsset({
+      roles: ['workflow_assignee'],
+      viewerPersonId: 'photo-assignee',
+      episode,
+      asset: assets[0],
+    }),
+    true
+  );
+  assert.equal(
+    canReadEpisodeAsset({
+      roles: ['workflow_assignee'],
+      viewerPersonId: 'photo-assignee',
+      episode,
+      asset: assets[1],
+    }),
+    false
+  );
+  assert.equal(
+    canReadEpisodeAsset({
+      roles: ['workflow_assignee'],
+      viewerPersonId: 'proof-assignee',
+      episode,
+      asset: assets[1],
+    }),
+    true
+  );
+  assert.deepEqual(
+    filterEpisodeAssetsForViewer(episode, {
+      roles: ['workflow_assignee'],
+      viewerPersonId: 'photo-assignee',
+    }).assets,
+    [assets[0]]
+  );
+});
+
+test('reserves private proof uploads for the assigned producer or a manager across production stages', () => {
+  const deliverable = {
+    id: PRODUCER_PROOF_DELIVERABLE_ID,
+    allowed_uploader: 'producer',
+  };
+
+  assert.equal(
+    canUploadEpisodeAssetToDeliverable({
+      deliverable,
+      roles: ['host'],
+      status: 'in_progress',
+    }),
+    false
+  );
+  assert.equal(
+    canUploadEpisodeAssetToDeliverable({
+      deliverable,
+      roles: ['producer'],
+      status: 'accepted',
+    }),
+    true
+  );
+  assert.equal(
+    canUploadEpisodeAssetToDeliverable({
+      deliverable,
+      roles: [],
+      status: 'accepted',
+      canManage: true,
+    }),
+    true
+  );
+  assert.equal(
+    canUploadEpisodeAssetToDeliverable({
+      deliverable,
+      roles: ['workflow_assignee'],
+      status: 'accepted',
+      viewerPersonId: 'angie-link',
+      episode: {
+        production_tasks: [
+          {
+            task_id: 'producer-proof-upload',
+            assigned_person_ids: ['angie-link'],
+          },
+        ],
+      },
+    }),
+    true
+  );
+  assert.equal(
+    canUploadEpisodeAssetToDeliverable({
+      deliverable,
+      roles: ['workflow_assignee'],
+      status: 'accepted',
+      viewerPersonId: 'another-person',
+      episode: {
+        production_tasks: [
+          {
+            task_id: 'producer-proof-upload',
+            assigned_person_ids: ['angie-link'],
+          },
+        ],
+      },
+    }),
+    false
+  );
+  assert.equal(
+    canUploadEpisodeAssetToDeliverable({
+      deliverable: { id: 'recording-files' },
+      roles: ['host'],
+      status: 'in_progress',
+    }),
+    true
+  );
+  assert.equal(
+    canUploadEpisodeAssetToDeliverable({
+      deliverable: { id: 'recording-files' },
+      roles: [],
+      status: 'in_progress',
+      canManage: true,
+    }),
+    false
+  );
+});
+
+test('a replacement proof invalidates approval and all downstream publishing evidence', () => {
+  const tasks = [
+    {
+      task_id: 'producer-proof-upload',
+      status: 'complete',
+      evidence_asset_id: 'asset-new',
+    },
+    {
+      task_id: 'proof-listen-approval',
+      status: 'complete',
+      proof_decision: 'approved',
+      note: 'Prior listening note',
+      completed_at: '2026-08-01T12:00:00.000Z',
+      completed_by_person_id: 'host-1',
+      completed_by_name: 'Host One',
+      evidence_asset_id: 'asset-old',
+    },
+    {
+      task_id: 'publishing-package',
+      status: 'complete',
+      completed_at: '2026-08-02T12:00:00.000Z',
+      completed_by_person_id: 'sierra-bishop',
+      completed_by_name: 'Sierra Bishop',
+      evidence_note: 'Spotify draft ready',
+      evidence_url: 'https://example.com/publishing',
+      evidence_asset_id: 'asset-old',
+      subtasks: [
+        {
+          id: 'spotify',
+          required: true,
+          completed: true,
+          completed_at: '2026-08-02T12:00:00.000Z',
+          completed_by_person_id: 'sierra-bishop',
+          completed_by_name: 'Sierra Bishop',
+        },
+      ],
+    },
+    {
+      task_id: 'promotion-scheduled',
+      status: 'waived',
+      completed_at: '2026-08-03T12:00:00.000Z',
+      completed_by_person_id: 'manager-one',
+      completed_by_name: 'Manager One',
+      subtasks: [{ id: 'email', required: true, completed: true }],
+    },
+    {
+      task_id: 'guest-assets-shared',
+      status: 'complete',
+      completed_at: '2026-08-03T13:00:00.000Z',
+      completed_by_person_id: 'host-1',
+      completed_by_name: 'Host One',
+      evidence_note: 'Shared old artwork',
+      evidence_url: 'https://drive.google.com/old-assets',
+    },
+    {
+      task_id: 'unrelated-task',
+      status: 'complete',
+      completed_at: '2026-08-01T10:00:00.000Z',
+    },
+  ];
+
+  const reset = resetProducerProofApprovalForNewAsset(tasks);
+
+  assert.equal(reset[0], tasks[0]);
+  assert.equal(reset[1].status, 'in_progress');
+  assert.equal(reset[1].proof_decision, 'pending');
+  assert.equal(reset[1].completed_at, '');
+  assert.equal(reset[1].evidence_asset_id, '');
+  assert.equal(reset[1].note, '');
+
+  for (const task of reset.slice(2, 5)) {
+    assert.equal(task.status, 'in_progress');
+    assert.equal(task.completed_at, '');
+    assert.equal(task.completed_by_person_id, '');
+    assert.equal(task.completed_by_name, '');
+    assert.equal(task.evidence_note, '');
+    assert.equal(task.evidence_url, '');
+    assert.equal(task.evidence_asset_id, '');
+    assert.equal(
+      (task.subtasks || []).every(
+        (subtask) =>
+          subtask.completed === false &&
+          subtask.completed_at === '' &&
+          subtask.completed_by_person_id === '' &&
+          subtask.completed_by_name === ''
+      ),
+      true
+    );
+  }
+  assert.equal(reset[5], tasks[5]);
+});
+
+test('producer proof upload stays gated until its workflow dependencies are complete', () => {
+  const episode = {
+    production_tasks: [
+      {
+        task_id: 'edit-package-delivered',
+        kind: 'standard',
+        status: 'not_started',
+      },
+      {
+        task_id: 'producer-proof-upload',
+        dependencies: ['edit-package-delivered'],
+      },
+    ],
+  };
+
+  assert.deepEqual(getProducerProofUploadDependencyBlockers(episode), [
+    'edit-package-delivered',
+  ]);
+  assert.deepEqual(
+    getProducerProofUploadDependencyBlockers({
+      ...episode,
+      production_tasks: episode.production_tasks.map((task) =>
+        task.task_id === 'edit-package-delivered'
+          ? { ...task, status: 'complete' }
+          : task
+      ),
+    }),
+    []
   );
 });
 

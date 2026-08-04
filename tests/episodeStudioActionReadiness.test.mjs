@@ -48,7 +48,7 @@ test('producer review blockers explain status, feedback, link, and handoff requi
     episode: { status: 'submitted', producer_feedback: '' },
     productionHandoffAvailable: false,
   });
-  assert.match(noLead.accept, /Activate Angie or Caleb/i);
+  assert.match(noLead.accept, /Assign an active production lead/i);
 });
 
 test('busy work takes precedence and ready actions have no blocker', () => {

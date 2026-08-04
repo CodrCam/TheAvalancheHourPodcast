@@ -7,6 +7,7 @@ import {
   isEpisodeAssetUploadReadyForCompletion,
   isEpisodeAssetBrowserNetworkError,
   isSafariEpisodeAssetUploadBrowser,
+  shouldReconcileEpisodeAssetUpload,
   uploadAuthorizedFile,
 } from '../lib/episodeAssetUploadClient.mjs';
 
@@ -46,6 +47,27 @@ test('recognizes Safari and other browser fetch failures without treating API er
     isEpisodeAssetBrowserNetworkError(
       new Error('This file type is not supported.')
     ),
+    false
+  );
+});
+
+test('reconciles uncertain or conditional storage results through completion', () => {
+  assert.equal(
+    shouldReconcileEpisodeAssetUpload({
+      error: new TypeError('Failed to fetch'),
+    }),
+    true
+  );
+  assert.equal(
+    shouldReconcileEpisodeAssetUpload({ response: { status: 412 } }),
+    true
+  );
+  assert.equal(
+    shouldReconcileEpisodeAssetUpload({ response: { status: 409 } }),
+    true
+  );
+  assert.equal(
+    shouldReconcileEpisodeAssetUpload({ response: { status: 403 } }),
     false
   );
 });
@@ -235,7 +257,11 @@ test('reports bounded browser upload progress before returning the S3 response',
     }
 
     open(method, url, async) {
-      requests.push({ method, url, async });
+      requests.push({ method, url, async, headers: {} });
+    }
+
+    setRequestHeader(name, value) {
+      requests[0].headers[name] = value;
     }
 
     addEventListener(name, listener) {
@@ -261,9 +287,10 @@ test('reports bounded browser upload progress before returning the S3 response',
   const response = await uploadAuthorizedFile(
     file,
     {
-      upload_url: 'https://episode-assets.s3.us-east-2.amazonaws.com',
-      upload_method: 'POST',
-      upload_fields: { key: 'test-key', policy: 'signed-policy' },
+      upload_url:
+        'https://episode-assets.s3.us-east-2.amazonaws.com/test-key?signed=true',
+      upload_method: 'PUT',
+      upload_headers: { 'If-None-Match': '*' },
       content_type: 'audio/wav',
     },
     {
@@ -272,8 +299,12 @@ test('reports bounded browser upload progress before returning the S3 response',
     }
   );
 
-  assert.deepEqual(requests[0].method, 'POST');
-  assert.equal(requests[0].body.get('file').name, 'interview.wav');
+  assert.deepEqual(requests[0].method, 'PUT');
+  assert.equal(requests[0].body.name, 'interview.wav');
+  assert.deepEqual(requests[0].headers, {
+    'If-None-Match': '*',
+    'Content-Type': 'audio/wav',
+  });
   assert.deepEqual(progress, [
     { loaded: 3, total: 10, percent: 30 },
     { loaded: 10, total: 10, percent: 100 },
@@ -334,7 +365,7 @@ test('turns an interrupted progress upload into the existing network guidance', 
   );
 });
 
-test('keeps legacy signed PUT behavior readable without no-cors mode', async () => {
+test('sends one-write signed PUT headers without no-cors mode', async () => {
   const file = new File(['audio bytes'], 'interview.wav', {
     type: 'audio/wav',
   });
@@ -346,6 +377,8 @@ test('keeps legacy signed PUT behavior readable without no-cors mode', async () 
         'https://episode-assets.s3.us-east-2.amazonaws.com/test-key',
       upload_method: 'PUT',
       content_type: 'audio/wav',
+      upload_headers: { 'If-None-Match': '*' },
+      size: file.size,
     },
     {
       currentOrigin: 'http://localhost:3000',
@@ -360,7 +393,36 @@ test('keeps legacy signed PUT behavior readable without no-cors mode', async () 
   assert.equal(requests[0].options.method, 'PUT');
   assert.equal(requests[0].options.mode, undefined);
   assert.equal(requests[0].options.headers['Content-Type'], 'audio/wav');
+  assert.equal(requests[0].options.headers['If-None-Match'], '*');
   assert.equal(isEpisodeAssetUploadReadyForCompletion(response), true);
+});
+
+test('does not send a file whose bytes differ from the signed upload size', async () => {
+  const file = new File(['audio bytes'], 'interview.wav', {
+    type: 'audio/wav',
+  });
+  let requestSent = false;
+  await assert.rejects(
+    uploadAuthorizedFile(
+      file,
+      {
+        upload_url:
+          'https://episode-assets.s3.us-east-2.amazonaws.com/test-key',
+        upload_method: 'PUT',
+        upload_headers: { 'If-None-Match': '*' },
+        content_type: 'audio/wav',
+        size: file.size + 1,
+      },
+      {
+        fetchImpl: async () => {
+          requestSent = true;
+          return { ok: true, status: 200 };
+        },
+      }
+    ),
+    /no longer matches its upload authorization/i
+  );
+  assert.equal(requestSent, false);
 });
 
 test('retries an interrupted completion with the same idempotent token', async () => {

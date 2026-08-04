@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  generateEpisodeReminderEntries,
   generateStudioReminderEntries,
 } from '../lib/studioReminderGenerator.mjs';
 
@@ -102,6 +103,45 @@ test('warns episode participants before accepted-episode assets expire', () => {
   assert.equal(JSON.stringify(entries).includes('private-master.wav'), false);
 });
 
+test('does not generate reminders for a deleted episode', () => {
+  const entries = generateEpisodeReminderEntries(
+    [
+      {
+        episode_id: 'deleted-episode',
+        title: 'Deleted Episode',
+        status: 'in_progress',
+        deleted_at: '2026-08-01T08:00:00.000Z',
+        due_date: '2026-08-02',
+        host_person_ids: ['host-1'],
+        producer_person_id: 'producer-1',
+        assets: [
+          {
+            asset_id: 'asset-one',
+            retention_expires_at: '2026-08-10T12:00:00.000Z',
+          },
+        ],
+        production_tasks: [
+          {
+            task_id: 'overdue-task',
+            label: 'Overdue production task',
+            owner_type: 'hosts',
+            due_date: '2026-08-02',
+            required: true,
+            status: 'not_started',
+          },
+        ],
+      },
+    ],
+    {
+      today: '2026-08-04',
+      generatedAt: '2026-08-04T08:00:00.000Z',
+      adminPersonIds: ['admin-1'],
+    }
+  );
+
+  assert.deepEqual(entries, []);
+});
+
 test('includes configured admins in episode reminders with grouped observer records', () => {
   const entries = generateStudioReminderEntries(
     {
@@ -141,5 +181,126 @@ test('includes configured admins in episode reminders with grouped observer reco
           entry.notification.audit.recipient_reason ===
           'studio_admin_observer'
       )
+  );
+});
+
+test('uses task deadlines for configured production workflows without legacy duplicate reminders', () => {
+  const entries = generateStudioReminderEntries(
+    {
+      episodes: [
+        {
+          episode_id: 'workflow-episode',
+          title: 'Workflow Episode',
+          status: 'accepted',
+          due_date: '2026-08-03',
+          host_person_ids: ['host-1'],
+          producer_person_id: 'producer-1',
+          created_by_person_id: 'creator-1',
+          production_tasks: [
+            {
+              task_id: 'intro-ready',
+              label: 'Introduction ready',
+              owner_type: 'hosts',
+              assigned_person_ids: [],
+              due_date: '2026-08-03',
+              required: true,
+              status: 'not_started',
+            },
+            {
+              task_id: 'producer-proof-upload',
+              label: 'Private producer proof uploaded',
+              owner_type: 'person',
+              assigned_person_ids: ['angie-link'],
+              due_date: '2026-08-02',
+              required: true,
+              status: 'in_progress',
+            },
+            {
+              task_id: 'already-done',
+              label: 'Already done',
+              owner_type: 'producer',
+              assigned_person_ids: [],
+              due_date: '2026-08-01',
+              required: true,
+              status: 'completed',
+            },
+            {
+              task_id: 'proof-listen-approval',
+              label: 'Proof approval missing its proof',
+              owner_type: 'hosts',
+              assigned_person_ids: [],
+              due_date: '2026-08-02',
+              required: true,
+              status: 'complete',
+              kind: 'proof',
+              proof_decision: 'approved',
+              completed_at: '2026-08-01T08:00:00.000Z',
+            },
+          ],
+        },
+      ],
+    },
+    {
+      today: '2026-08-03',
+      generatedAt: '2026-08-03T08:00:00.000Z',
+      adminPersonIds: ['admin-1'],
+    }
+  );
+
+  assert.equal(
+    entries.some((entry) =>
+      ['episode_host_deadline_approaching', 'episode_overdue'].includes(
+        entry.notification.type
+      )
+    ),
+    false
+  );
+  assert.deepEqual(
+    entries
+      .filter(
+        (entry) =>
+          entry.notification.entity_id ===
+          'workflow-episode:intro-ready'
+      )
+      .map((entry) => entry.notification.recipient_person_id)
+      .sort(),
+    ['admin-1', 'host-1']
+  );
+  const overdue = entries.filter(
+    (entry) =>
+      entry.notification.entity_id ===
+      'workflow-episode:producer-proof-upload'
+  );
+  assert.deepEqual(
+    overdue
+      .map((entry) => entry.notification.recipient_person_id)
+      .sort(),
+    ['admin-1', 'angie-link', 'creator-1', 'host-1', 'producer-1']
+  );
+  assert.ok(
+    overdue.every(
+      (entry) =>
+        entry.notification.type ===
+          'episode_production_task_overdue' &&
+        entry.notification.urgency === 'urgent' &&
+        /automatically off track/i.test(entry.notification.preview) &&
+        entry.notification.deep_link ===
+          '/studio/episodes/workflow-episode/production#production-workflow'
+    )
+  );
+  assert.equal(
+    entries.some((entry) =>
+      entry.notification.entity_id.endsWith(':already-done')
+    ),
+    false
+  );
+  assert.equal(
+    entries.some(
+      (entry) =>
+        entry.notification.entity_id ===
+          'workflow-episode:proof-listen-approval' &&
+        entry.notification.type === 'episode_production_task_overdue'
+    ),
+    true
   );
 });

@@ -26,8 +26,9 @@ import InboxRoundedIcon from '@mui/icons-material/InboxRounded';
 import EmailRoundedIcon from '@mui/icons-material/EmailRounded';
 import OpenInNewRoundedIcon from '@mui/icons-material/OpenInNewRounded';
 import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
-import PhoneRoundedIcon from '@mui/icons-material/PhoneRounded';
+import SmsRoundedIcon from '@mui/icons-material/SmsRounded';
 import SupportAgentRoundedIcon from '@mui/icons-material/SupportAgentRounded';
+import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 import NotificationBell from './NotificationBell';
 import {
   getVisibleStudioNavigationItems,
@@ -303,9 +304,16 @@ export default function StudioLayout({
                 <span>Recording or website issue?</span>
                 <strong>Contact {supportContact.name}</strong>
                 <p>
-                  Technology should never obstruct the recording process. Email,
-                  call, or text as soon as something gets in the way.
+                  Start in the WhatsApp group so the answer can help everyone.
+                  For a private or urgent issue, use the direct support contact.
                 </p>
+                <div className={styles.technicalHelpOption}>
+                  <WhatsAppIcon aria-hidden="true" />
+                  <span>
+                    <small>Start here</small>
+                    Seek technical help in the team WhatsApp chat
+                  </span>
+                </div>
                 <a href={`mailto:${supportContact.email}`}>
                   <EmailRoundedIcon aria-hidden="true" />
                   <span>
@@ -313,10 +321,10 @@ export default function StudioLayout({
                     {supportContact.email}
                   </span>
                 </a>
-                <a href={`tel:${supportContact.phone_href}`}>
-                  <PhoneRoundedIcon aria-hidden="true" />
+                <a href={`sms:${supportContact.phone_href}`}>
+                  <SmsRoundedIcon aria-hidden="true" />
                   <span>
-                    <small>Call or text</small>
+                    <small>Private text support</small>
                     {supportContact.phone}
                   </span>
                 </a>

@@ -417,6 +417,10 @@ test('producer approval creates the next actionable production-lead notification
   assert.equal(leadEntry.notification.intent, 'actionable');
   assert.match(leadEntry.notification.preview, /staged Spotify listen/);
   assert.equal(
+    leadEntry.notification.deep_link,
+    '/studio/episodes/episode-one/production#production-handoff'
+  );
+  assert.equal(
     entries.some(
       (entry) => entry.notification.recipient_person_id === 'angie-link'
     ),
@@ -481,6 +485,84 @@ test('episode events fan out to configured admins while keeping the actor quiet'
       .map((entry) => entry.notification.recipient_person_id)
       .sort(),
     ['angie-link', 'caleb-merrill', 'host-1']
+  );
+  assert.ok(
+    offTrack.every(
+      (entry) =>
+        entry.notification.deep_link ===
+        '/studio/episodes/episode-admin-watch/production#production-workflow'
+    )
+  );
+});
+
+test('proof file notifications open Production without moving ordinary assets', () => {
+  const episode = {
+    episode_id: 'asset-links',
+    title: 'Asset Links',
+    host_person_ids: ['host-1'],
+    producer_person_id: 'producer-1',
+    updated_at: '2026-07-25T12:00:00.000Z',
+  };
+  const proofEntries = buildEpisodeNotificationEntries({
+    previousEpisode: episode,
+    episode,
+    action: 'asset_uploaded',
+    actorPersonId: 'producer-1',
+    event: {
+      asset: {
+        asset_id: 'proof-one',
+        deliverable_id: 'producer-proof-audio',
+      },
+    },
+  });
+  const packageEntries = buildEpisodeNotificationEntries({
+    previousEpisode: episode,
+    episode,
+    action: 'asset_uploaded',
+    actorPersonId: 'producer-1',
+    event: {
+      asset: {
+        asset_id: 'host-audio',
+        deliverable_id: 'audio-files',
+      },
+    },
+  });
+  const deletedProofEntries = buildEpisodeNotificationEntries({
+    previousEpisode: episode,
+    episode,
+    action: 'asset_deleted',
+    actorPersonId: 'producer-1',
+    event: {
+      asset: {
+        asset_id: 'proof-one',
+        deliverable_id: 'producer-proof-audio',
+      },
+    },
+  });
+
+  assert.equal(proofEntries.length, 1);
+  assert.ok(
+    proofEntries.every(
+      (entry) =>
+        entry.notification.deep_link ===
+        '/studio/episodes/asset-links/production#producer-proof'
+    )
+  );
+  assert.equal(packageEntries.length, 1);
+  assert.ok(
+    packageEntries.every(
+      (entry) =>
+        entry.notification.deep_link ===
+        '/studio/episodes/asset-links#final-assets'
+    )
+  );
+  assert.equal(deletedProofEntries.length, 1);
+  assert.ok(
+    deletedProofEntries.every(
+      (entry) =>
+        entry.notification.deep_link ===
+        '/studio/episodes/asset-links/production#producer-proof'
+    )
   );
 });
 

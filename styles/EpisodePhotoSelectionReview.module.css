@@ -1,0 +1,366 @@
+.review {
+  margin-top: 1.25rem;
+  padding: clamp(1rem, 2vw, 1.5rem);
+  border: 1px solid rgba(60, 101, 119, 0.2);
+  border-radius: 1.25rem;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(63, 132, 151, 0.12), transparent 34%),
+    linear-gradient(145deg, #f9fcfc 0%, #f3f8f7 100%);
+  box-shadow: 0 18px 46px rgba(27, 59, 72, 0.08);
+}
+
+.heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.25rem;
+  margin-bottom: 1.1rem;
+}
+
+.heading h4 {
+  margin: 0.2rem 0 0.35rem;
+  color: #10263a;
+  font-size: clamp(1.15rem, 2vw, 1.45rem);
+}
+
+.heading p,
+.emptyState p,
+.previewFallback small {
+  margin: 0;
+  color: #657883;
+  line-height: 1.5;
+}
+
+.eyebrow {
+  color: #39748b;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.countBadge {
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: center;
+  gap: 0.05rem 0.35rem;
+  min-width: 7.5rem;
+  padding: 0.65rem 0.8rem;
+  border: 1px solid rgba(55, 99, 116, 0.2);
+  border-radius: 0.9rem;
+  background: rgba(255, 255, 255, 0.8);
+  color: #294c5c;
+}
+
+.countBadge[data-confirmed='true'] {
+  border-color: rgba(48, 128, 99, 0.3);
+  background: #e8f5ef;
+  color: #235f49;
+}
+
+.countBadge svg {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+.countBadge strong {
+  font-size: 1rem;
+}
+
+.countBadge span {
+  grid-column: 1 / -1;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.emptyState {
+  display: flex;
+  gap: 0.85rem;
+  align-items: center;
+  padding: 1rem;
+  border: 1px dashed rgba(59, 102, 119, 0.28);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.emptyState > svg {
+  flex: 0 0 auto;
+  color: #6b8995;
+}
+
+.emptyState strong {
+  display: block;
+  margin-bottom: 0.15rem;
+  color: #213c4b;
+}
+
+.assetGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+  gap: 1rem;
+}
+
+.assetCard {
+  overflow: hidden;
+  border: 1px solid rgba(66, 99, 113, 0.18);
+  border-radius: 1rem;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(22, 54, 68, 0.06);
+}
+
+.assetCard[data-selected='true'] {
+  border-color: #3f8096;
+  box-shadow: 0 0 0 2px rgba(63, 128, 150, 0.12), 0 14px 30px rgba(22, 54, 68, 0.1);
+}
+
+.preview {
+  position: relative;
+  display: grid;
+  min-height: 11rem;
+  place-items: center;
+  overflow: hidden;
+  background: #dfe9ea;
+}
+
+.preview img {
+  display: block;
+  width: 100%;
+  height: 13rem;
+  object-fit: contain;
+  background: #e8efef;
+}
+
+.previewFallback {
+  display: grid;
+  gap: 0.25rem;
+  max-width: 14rem;
+  padding: 1rem;
+  place-items: center;
+  color: #57727e;
+  text-align: center;
+}
+
+.previewFallback svg {
+  width: 2rem;
+  height: 2rem;
+}
+
+.previewFallback span {
+  font-weight: 800;
+}
+
+.orderBadge {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+  display: grid;
+  width: 2.25rem;
+  height: 2.25rem;
+  place-items: center;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  background: #275e74;
+  color: #fff;
+  font-weight: 900;
+  box-shadow: 0 5px 14px rgba(11, 39, 52, 0.25);
+}
+
+.assetMeta {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.85rem 0.9rem 0.65rem;
+}
+
+.assetMeta strong,
+.assetMeta span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.assetMeta strong {
+  color: #183447;
+}
+
+.assetMeta span {
+  color: #71828a;
+  font-size: 0.78rem;
+}
+
+.assetMeta a {
+  display: inline-flex;
+  gap: 0.25rem;
+  align-items: center;
+  width: fit-content;
+  margin-top: 0.2rem;
+  color: #356a7f;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.assetMeta a svg {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.assetActions {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0 0.9rem 0.85rem;
+}
+
+.assetActions button,
+.footerActions button {
+  min-height: 2.55rem;
+  border-radius: 0.75rem;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.assetActions button:disabled,
+.footerActions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.pickButton,
+.confirmButton {
+  border: 1px solid #316e85;
+  background: #316e85;
+  color: #fff;
+}
+
+.removeButton,
+.secondaryButton {
+  border: 1px solid rgba(53, 102, 122, 0.28);
+  background: #fff;
+  color: #315e71;
+}
+
+.orderActions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.45rem;
+}
+
+.orderActions button {
+  display: inline-flex;
+  gap: 0.25rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(66, 99, 113, 0.18);
+  background: #f5f8f8;
+  color: #456775;
+}
+
+.orderActions svg,
+.confirmButton svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.editingPanel {
+  padding: 0.85rem 0.9rem 1rem;
+  border-top: 1px solid rgba(60, 101, 119, 0.14);
+  background: #f7faf9;
+}
+
+.editFlags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-bottom: 0.75rem;
+}
+
+.editFlags label {
+  display: inline-flex;
+  gap: 0.35rem;
+  align-items: center;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid rgba(60, 101, 119, 0.18);
+  border-radius: 0.65rem;
+  background: #fff;
+  color: #365766;
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.editFlags svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.notesField,
+.generalNotes {
+  display: grid;
+  gap: 0.35rem;
+  color: #294957;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.generalNotes {
+  margin-top: 1rem;
+}
+
+.generalNotes small {
+  color: #71828a;
+  font-weight: 500;
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(60, 101, 119, 0.15);
+}
+
+.status {
+  color: #5e747f;
+  font-size: 0.82rem;
+}
+
+.status strong {
+  color: #285f4c;
+}
+
+.footerActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  justify-content: flex-end;
+}
+
+.footerActions button {
+  display: inline-flex;
+  gap: 0.35rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0.55rem 0.85rem;
+}
+
+@media (max-width: 680px) {
+  .heading,
+  .footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .countBadge {
+    width: fit-content;
+  }
+
+  .footerActions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+}

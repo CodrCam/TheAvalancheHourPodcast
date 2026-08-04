@@ -160,15 +160,15 @@ Each team member item includes:
 
 ```json
 {
-  "person_id": "caleb-merrill",
-  "slug": "caleb-merrill",
+  "person_id": "example-producer",
+  "slug": "example-producer",
   "role": "host",
-  "name": "Caleb Merrill",
+  "name": "Example Producer",
   "title": "",
   "roles_json": "[]",
   "studio_roles_json": "[\"host\",\"producer\"]",
-  "images_json": "[\"/images/hosts/caleb1.JPG\"]",
-  "bio_short": "Founder/host of The Avalanche Hour...",
+  "images_json": "[\"/images/hosts/example-producer.jpg\"]",
+  "bio_short": "Host and producer biography...",
   "bio_full": "Full profile text...",
   "active": true,
   "needs_bio": false,
@@ -539,6 +539,10 @@ npm run seed:dynamo-orders -- --apply --overwrite
 - Host resources, host-profile bindings, and Episode Studios use that same
   site-content table. Episode Studio writes fail safely when it is not
   configured rather than falling back to browser storage.
+- Episode guest questionnaires also use the site-content table under a
+  separate `guest_questionnaire#<episodeId>` key. Guest shipping answers and
+  private upload metadata stay in that record and are deleted with the
+  Episode Studio rather than being copied into its general JSON.
 - Sponsors use DynamoDB when `DYNAMODB_SPONSORS_TABLE` is set. Public sponsor
   sections keep the static sponsor list as a fallback if managed sponsors are
   unavailable.

@@ -2,14 +2,18 @@ import { ADMIN_PERMISSIONS } from '../../../../../../lib/adminAuth';
 import { logAdminAction } from '../../../../../../lib/adminAudit';
 import {
   deleteEpisodeAssetObject,
+  sealEpisodeAssetObjectKey,
   verifyEpisodeAssetObject,
   verifyEpisodeAssetUploadToken,
 } from '../../../../../../lib/episodeAssetStorage';
 import {
-  canUploadEpisodeAssets,
+  canUploadEpisodeAssetToDeliverable,
   episodeAssetMatchesUploadAuthorization,
   findDuplicateEpisodeAsset,
+  getProducerProofUploadDependencyBlockers,
+  isProducerProofDeliverable,
   MAX_EPISODE_ASSETS,
+  resetProducerProofApprovalForNewAsset,
 } from '../../../../../../lib/episodeAssetPolicy.mjs';
 import { requireEpisodeStudioAccess } from '../../../../../../lib/episodeStudioAccess';
 import {
@@ -23,6 +27,17 @@ import { listPeople } from '../../../../../../lib/peopleStore';
 import {
   publishEpisodeNotifications,
 } from '../../../../../../lib/episodeStudioEvents';
+import {
+  applyEpisodeProductionTaskUpdate,
+} from '../../../../../../lib/episodeProductionPlan.mjs';
+
+const PRODUCER_PROOF_DELIVERABLE_ID = 'producer-proof-audio';
+const PRODUCER_PROOF_TASK_ID = 'producer-proof-upload';
+const PROOF_APPROVAL_TASK_ID = 'proof-listen-approval';
+
+function productionTaskId(task = {}) {
+  return String(task.task_id || task.id || '').trim();
+}
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -53,6 +68,50 @@ export default async function handler(req, res) {
         error: 'This upload authorization belongs to another Studio profile.',
       });
     }
+    const requestedDeliverableId = String(
+      req.body?.deliverable_id || ''
+    ).trim();
+    const deliverable = access.episode.deliverables.find(
+      (candidate) => candidate.id === payload.deliverable_id
+    );
+    if (
+      !requestedDeliverableId ||
+      requestedDeliverableId !== payload.deliverable_id ||
+      !deliverable
+    ) {
+      return res.status(400).json({
+        ok: false,
+        error:
+          'This upload authorization does not match the selected episode step. Start the upload again.',
+      });
+    }
+    if (
+      !canUploadEpisodeAssetToDeliverable({
+        deliverable,
+        roles: access.roles,
+        status: access.episode.status,
+        canManage: access.canManage,
+        episode: access.episode,
+        viewerPersonId: access.binding?.person_id || '',
+      })
+    ) {
+      if (isProducerProofDeliverable(deliverable)) {
+        return res.status(403).json({
+          ok: false,
+          error:
+            'Only the assigned producer or a Studio manager can complete the private producer proof upload.',
+        });
+      }
+      const assignedUploader = access.roles.some((role) =>
+        ['host', 'producer'].includes(role)
+      );
+      return res.status(assignedUploader ? 409 : 403).json({
+        ok: false,
+        error: assignedUploader
+          ? 'Episode source files are locked at this stage of production.'
+          : 'Only an assigned host or producer can complete an episode upload.',
+      });
+    }
     const existingAsset = access.episode.assets.find(
       (candidate) => candidate.asset_id === payload.asset_id
     );
@@ -77,44 +136,24 @@ export default async function handler(req, res) {
         ),
       });
     }
-    if (
-      !canUploadEpisodeAssets({
-        roles: access.roles,
-        status: access.episode.status,
-      })
-    ) {
-      const assignedUploader = access.roles.some((role) =>
-        ['host', 'producer'].includes(role)
+    if (isProducerProofDeliverable(deliverable)) {
+      const dependencyBlockers = getProducerProofUploadDependencyBlockers(
+        access.episode
       );
-      return res.status(assignedUploader ? 409 : 403).json({
-        ok: false,
-        error: assignedUploader
-          ? 'Episode source files are locked at this stage of production.'
-          : 'Only an assigned host or producer can complete an episode upload.',
-      });
+      if (dependencyBlockers.length) {
+        return res.status(409).json({
+          ok: false,
+          code: 'EPISODE_PROOF_PREREQUISITES_INCOMPLETE',
+          error:
+            'Complete the recording package and intro workflow steps before attaching the private producer proof.',
+        });
+      }
     }
     if (access.episode.assets.length >= MAX_EPISODE_ASSETS) {
       return res.status(409).json({
         ok: false,
         code: 'EPISODE_ASSET_LIMIT_REACHED',
         error: `This episode already has the maximum of ${MAX_EPISODE_ASSETS} source files. The uploaded object was not attached.`,
-      });
-    }
-    const requestedDeliverableId = String(
-      req.body?.deliverable_id || ''
-    ).trim();
-    const deliverable = access.episode.deliverables.find(
-      (candidate) => candidate.id === payload.deliverable_id
-    );
-    if (
-      !requestedDeliverableId ||
-      requestedDeliverableId !== payload.deliverable_id ||
-      !deliverable
-    ) {
-      return res.status(400).json({
-        ok: false,
-        error:
-          'This upload authorization does not match the selected episode step. Start the upload again.',
       });
     }
     const deliverableCategory = deliverable.asset_category || 'other';
@@ -132,6 +171,9 @@ export default async function handler(req, res) {
     if (duplicate) {
       try {
         const duplicateObject = await verifyEpisodeAssetObject(payload);
+        await sealEpisodeAssetObjectKey(payload.object_key, {
+          episodeId,
+        });
         await deleteEpisodeAssetObject(payload.object_key, {
           episodeId,
           versionId: duplicateObject.object_version_id,
@@ -183,7 +225,7 @@ export default async function handler(req, res) {
       ),
       status: 'uploaded',
     };
-    const episode = normalizeEpisodeStudio({
+    let episode = normalizeEpisodeStudio({
       ...access.episode,
       assets: [
         ...access.episode.assets.filter(
@@ -192,6 +234,50 @@ export default async function handler(req, res) {
         asset,
       ],
     });
+    if (deliverable.id === PRODUCER_PROOF_DELIVERABLE_ID) {
+      const actor = {
+        personId: access.binding?.person_id || '',
+        personName: asset.uploaded_by_name,
+        roles: access.roles,
+        canManage: access.canManage,
+      };
+      if (
+        episode.production_tasks.some(
+          (task) => productionTaskId(task) === PRODUCER_PROOF_TASK_ID
+        )
+      ) {
+        episode = applyEpisodeProductionTaskUpdate(
+          episode,
+          PRODUCER_PROOF_TASK_ID,
+          {
+            status: 'complete',
+            evidence_asset_id: asset.asset_id,
+            note: `Private proof uploaded: ${asset.file_name}`,
+          },
+          actor,
+          { now: uploadedAt }
+        );
+      }
+
+      // A replacement proof invalidates any earlier host approval. This reset
+      // is unconditional so an old approval can never cover a new audio file.
+      if (
+        episode.production_tasks.some(
+          (task) => productionTaskId(task) === PROOF_APPROVAL_TASK_ID
+        )
+      ) {
+        episode = normalizeEpisodeStudio({
+          ...episode,
+          production_tasks: resetProducerProofApprovalForNewAsset(
+            episode.production_tasks
+          ),
+          production_workflow_updated_at: uploadedAt,
+          production_workflow_updated_by_person_id:
+            access.binding?.person_id || '',
+          production_workflow_updated_by_name: asset.uploaded_by_name,
+        });
+      }
+    }
     if (
       episode.assets.length > MAX_EPISODE_ASSETS ||
       !episode.assets.some(

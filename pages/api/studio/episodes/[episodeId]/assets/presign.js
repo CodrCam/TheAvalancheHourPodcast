@@ -4,9 +4,13 @@ import {
   createEpisodeAssetUpload,
   isEpisodeAssetStorageConfigured,
 } from '../../../../../../lib/episodeAssetStorage';
+import { recordEpisodeAssetUploadGrant } from '../../../../../../lib/episodeAssetGrantLifecycle.mjs';
+import { saveEpisodeStudio } from '../../../../../../lib/episodeStudioStore';
 import {
-  canUploadEpisodeAssets,
+  canUploadEpisodeAssetToDeliverable,
   findDuplicateEpisodeAsset,
+  getProducerProofUploadDependencyBlockers,
+  isProducerProofDeliverable,
   MAX_EPISODE_ASSETS,
   validateEpisodeAssetInput,
 } from '../../../../../../lib/episodeAssetPolicy.mjs';
@@ -29,12 +33,34 @@ export default async function handler(req, res) {
     ADMIN_PERMISSIONS.EPISODES_UPDATE
   );
   if (!access) return;
+  const deliverableId = String(req.body?.deliverable_id || '').trim();
+  const deliverable = access.episode.deliverables.find(
+    (candidate) => candidate.id === deliverableId
+  );
+  if (!deliverable) {
+    return res.status(400).json({
+      ok: false,
+      error:
+        'Choose the episode step this file belongs to before starting the upload.',
+    });
+  }
   if (
-    !canUploadEpisodeAssets({
+    !canUploadEpisodeAssetToDeliverable({
+      deliverable,
       roles: access.roles,
       status: access.episode.status,
+      canManage: access.canManage,
+      episode: access.episode,
+      viewerPersonId: access.binding?.person_id || '',
     })
   ) {
+    if (isProducerProofDeliverable(deliverable)) {
+      return res.status(403).json({
+        ok: false,
+        error:
+          'Only the assigned producer or a Studio manager can upload the private producer proof.',
+      });
+    }
     const assignedUploader = access.roles.some((role) =>
       ['host', 'producer'].includes(role)
     );
@@ -44,6 +70,19 @@ export default async function handler(req, res) {
         ? 'Episode source files are locked at this stage of production.'
         : 'Only an assigned host or producer can upload episode source files.',
     });
+  }
+  if (isProducerProofDeliverable(deliverable)) {
+    const dependencyBlockers = getProducerProofUploadDependencyBlockers(
+      access.episode
+    );
+    if (dependencyBlockers.length) {
+      return res.status(409).json({
+        ok: false,
+        code: 'EPISODE_PROOF_PREREQUISITES_INCOMPLETE',
+        error:
+          'Complete the recording package and intro workflow steps before uploading the private producer proof.',
+      });
+    }
   }
   if (access.episode.assets.length >= MAX_EPISODE_ASSETS) {
     return res.status(409).json({
@@ -58,17 +97,6 @@ export default async function handler(req, res) {
       code: 'EPISODE_ASSET_STORAGE_NOT_CONFIGURED',
       error:
         'Direct episode uploads are ready but object storage is not configured for this environment.',
-    });
-  }
-  const deliverableId = String(req.body?.deliverable_id || '').trim();
-  const deliverable = access.episode.deliverables.find(
-    (candidate) => candidate.id === deliverableId
-  );
-  if (!deliverable) {
-    return res.status(400).json({
-      ok: false,
-      error:
-        'Choose the episode step this file belongs to before starting the upload.',
     });
   }
   try {
@@ -98,14 +126,27 @@ export default async function handler(req, res) {
       deliverableId: deliverable.id,
       file: input,
     });
-    return res.status(200).json({ ok: true, upload });
+    const grant = await saveEpisodeStudio(
+      recordEpisodeAssetUploadGrant(access.episode, upload.expires_at),
+      { expectedUpdatedAt: access.episode.updated_at }
+    );
+    return res.status(200).json({
+      ok: true,
+      upload,
+      episode_updated_at: grant.episode.updated_at,
+      asset_upload_grants_expire_at:
+        grant.episode.asset_upload_grants_expire_at,
+    });
   } catch (error) {
     const validation = /Episode asset:/i.test(String(error.message || ''));
-    return res.status(validation ? 400 : 500).json({
+    const conflict = /conditional/i.test(String(error.message || ''));
+    return res.status(validation ? 400 : conflict ? 409 : 500).json({
       ok: false,
       error: validation
         ? error.message
-        : 'Could not authorize the episode upload.',
+        : conflict
+          ? 'This Episode Studio changed while the upload was being authorized. Refresh and try again.'
+          : 'Could not authorize the episode upload.',
     });
   }
 }

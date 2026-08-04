@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/router';
 import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded';
 import RadioButtonUncheckedRoundedIcon from '@mui/icons-material/RadioButtonUncheckedRounded';
@@ -8,14 +8,11 @@ import SaveRoundedIcon from '@mui/icons-material/SaveRounded';
 import SendRoundedIcon from '@mui/icons-material/SendRounded';
 import WarningAmberRoundedIcon from '@mui/icons-material/WarningAmberRounded';
 import ArrowBackRoundedIcon from '@mui/icons-material/ArrowBackRounded';
-import ForumRoundedIcon from '@mui/icons-material/ForumRounded';
 import CampaignRoundedIcon from '@mui/icons-material/CampaignRounded';
 import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded';
 import CloudUploadRoundedIcon from '@mui/icons-material/CloudUploadRounded';
-import AddRoundedIcon from '@mui/icons-material/AddRounded';
-import ArrowUpwardRoundedIcon from '@mui/icons-material/ArrowUpwardRounded';
-import ArrowDownwardRoundedIcon from '@mui/icons-material/ArrowDownwardRounded';
 import VisibilityRoundedIcon from '@mui/icons-material/VisibilityRounded';
+import SettingsRoundedIcon from '@mui/icons-material/SettingsRounded';
 import AdminLayout from './AdminLayout';
 import FriendlyDateField from './FriendlyDateField';
 import PlainTextArea from './PlainTextArea';
@@ -25,13 +22,29 @@ import {
   EpisodeRecordingSummary,
 } from './EpisodeRecordingSchedule';
 import EpisodeStudioDeletionControl from './EpisodeStudioDeletionControl';
+import EpisodeProductionBoard from './EpisodeProductionBoard';
+import EpisodeProductionTaskWorkspace from './EpisodeProductionTaskWorkspace';
+import EpisodeProductionTaskEditor from './EpisodeProductionTaskEditor';
+import EpisodeProductionWorkDrawer from './EpisodeProductionWorkDrawer';
+import EpisodeCommunicationClipboard from './EpisodeCommunicationClipboard';
+import EpisodeStudioSettingsDrawer from './EpisodeStudioSettingsDrawer';
+import EpisodeGuestDetailsFields from './EpisodeGuestDetailsFields';
+import EpisodeMicKitStep from './EpisodeMicKitStep';
+import EpisodePhotoSelectionReview from './EpisodePhotoSelectionReview';
+import EpisodeChecklistWorkspace, {
+  EpisodeChecklistBuilderList,
+  EpisodeChecklistBuilderRow,
+} from './EpisodeChecklistWorkspace';
 import {
   EPISODE_ASSET_RETENTION_DAYS,
+  MAX_EPISODE_DELIVERABLES,
+  REQUIRED_EPISODE_DELIVERABLE_IDS,
   getEpisodeCompletion,
   isEpisodeAssetExpired,
   isDeliverableComplete,
   mergeEpisodeStudioServerFields,
 } from '../lib/episodeStudioPresentation.mjs';
+import { getEpisodeProductionPlanSummary } from '../lib/episodeProductionPlan.mjs';
 import { getEpisodeStudioActionBlockers } from '../lib/episodeStudioActionReadiness.mjs';
 import {
   canDeleteEpisodeAsset,
@@ -46,6 +59,7 @@ import {
   episodeAssetStorageRejectionMessage,
   episodeAssetUploadStageError,
   isEpisodeAssetUploadReadyForCompletion,
+  shouldReconcileEpisodeAssetUpload,
   uploadAuthorizedFile,
 } from '../lib/episodeAssetUploadClient.mjs';
 import {
@@ -67,6 +81,13 @@ const LOCKED_HOST_STATUSES = [
   'submitted',
   'submitted_with_gaps',
   'accepted',
+];
+
+const PRODUCTION_BOARD_PHASE_IDS = [
+  'host_preparation',
+  'producer_review',
+  'publishing',
+  'release_coordination',
 ];
 
 const DELIVERY_HEALTH_FIELDS = [
@@ -93,6 +114,24 @@ const REVIEW_RESPONSE_FIELDS = [
 ];
 
 const MESSAGE_RESPONSE_FIELDS = ['messages', 'updated_at'];
+const COMMUNICATION_NOTE_RESPONSE_FIELDS = ['producer_feedback', 'updated_at'];
+const CHECKLIST_RESPONSE_FIELDS = [
+  'deliverables',
+  'canonical_assets_required',
+  'updated_at',
+];
+
+const WORKFLOW_TASK_RESPONSE_FIELDS = [
+  'production_workflow_updated_at',
+  'production_workflow_updated_by_person_id',
+  'production_workflow_updated_by_name',
+  'updated_at',
+];
+
+const WORKFLOW_DEFINITION_RESPONSE_FIELDS = [
+  'production_tasks',
+  ...WORKFLOW_TASK_RESPONSE_FIELDS,
+];
 
 const ASSET_CATEGORY_LABELS = {
   recording: 'Final voice and episode audio',
@@ -100,6 +139,12 @@ const ASSET_CATEGORY_LABELS = {
   document: 'Notes and production documents',
   sponsor_audio: 'Separate sponsor and ad spots',
   other: 'Other final assets',
+};
+
+const CHECKLIST_RESPONSE_TYPE_LABELS = {
+  textarea: 'Written response',
+  asset: 'File upload',
+  url: 'Optional working-source link',
 };
 
 function formatDate(value) {
@@ -111,6 +156,139 @@ function formatDate(value) {
     day: 'numeric',
     year: 'numeric',
   });
+}
+
+function formatShortDate(value) {
+  if (!value) return 'Not set';
+  const date = new Date(`${value}T12:00:00`);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
+function dateDaysBefore(value, days = 0) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(value || ''))) return '';
+  const date = new Date(`${value}T12:00:00Z`);
+  date.setUTCDate(date.getUTCDate() - Number(days || 0));
+  return date.toISOString().slice(0, 10);
+}
+
+function workflowTaskIsComplete(task = {}) {
+  return ['complete', 'waived'].includes(task.status);
+}
+
+function workflowTaskIsOverdue(task = {}, today = '') {
+  const now = new Date();
+  const localToday = `${now.getFullYear()}-${String(
+    now.getMonth() + 1
+  ).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  const comparisonDate = /^\d{4}-\d{2}-\d{2}$/.test(String(today || ''))
+    ? today
+    : localToday;
+  return (
+    task.required !== false &&
+    !workflowTaskIsComplete(task) &&
+    /^\d{4}-\d{2}-\d{2}$/.test(String(task.due_date || '')) &&
+    task.due_date < comparisonDate
+  );
+}
+
+function mergeWorkflowTaskResponse(currentEpisode, serverEpisode, taskId) {
+  if (!currentEpisode || !serverEpisode || !taskId) return currentEpisode;
+  const serverTask = (serverEpisode.production_tasks || []).find(
+    (task) => task.task_id === taskId
+  );
+  if (!serverTask) return currentEpisode;
+
+  const merged = {
+    ...currentEpisode,
+    production_tasks: (currentEpisode.production_tasks || []).map((task) =>
+      task.task_id === taskId ? serverTask : task
+    ),
+  };
+  for (const field of WORKFLOW_TASK_RESPONSE_FIELDS) {
+    if (Object.prototype.hasOwnProperty.call(serverEpisode, field)) {
+      merged[field] = serverEpisode[field];
+    }
+  }
+  return merged;
+}
+
+function formatWorkflowPhase(value = '') {
+  const label = String(value || 'Production').replace(/_/g, ' ');
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
+function moveProductionTaskTiles(
+  tasks = [],
+  taskId = '',
+  targetPhase = '',
+  targetIndex = 0
+) {
+  if (!PRODUCTION_BOARD_PHASE_IDS.includes(targetPhase)) return tasks;
+  const orderedTasks = [...tasks].sort(
+    (left, right) =>
+      Number(left.sort_order || 0) - Number(right.sort_order || 0)
+  );
+  const movingTask = orderedTasks.find((task) => task.task_id === taskId);
+  if (!movingTask) return tasks;
+
+  const phaseTasks = new Map(
+    PRODUCTION_BOARD_PHASE_IDS.map((phaseId) => [phaseId, []])
+  );
+  const historicalTasks = [];
+  orderedTasks.forEach((task) => {
+    if (task.task_id === taskId) return;
+    const matchingPhase = phaseTasks.get(task.phase);
+    if (matchingPhase) matchingPhase.push(task);
+    else historicalTasks.push(task);
+  });
+
+  const destinationTasks = phaseTasks.get(targetPhase);
+  const insertionIndex = Math.min(
+    Math.max(0, Math.trunc(Number(targetIndex) || 0)),
+    destinationTasks.length
+  );
+  destinationTasks.splice(insertionIndex, 0, {
+    ...movingTask,
+    phase: targetPhase,
+  });
+
+  return [
+    ...PRODUCTION_BOARD_PHASE_IDS.flatMap(
+      (phaseId) => phaseTasks.get(phaseId) || []
+    ),
+    ...historicalTasks,
+  ].map((task, index) => ({
+    ...task,
+    sort_order: (index + 1) * 10,
+  }));
+}
+
+function mergeEpisodeMicKitPlanResponse(currentEpisode, response = {}) {
+  if (!currentEpisode || !Array.isArray(response.plans)) {
+    return currentEpisode;
+  }
+  const micKitPlans = response.plans
+    .filter((plan) => Boolean(String(plan?.choice || '').trim()))
+    .map((plan) => ({
+      host_person_id: String(plan?.host_person_id || ''),
+      choice: String(plan?.choice || ''),
+      request_id: String(plan?.request_id || ''),
+      equipment_note: String(plan?.equipment_note || ''),
+    }));
+  return {
+    ...currentEpisode,
+    updated_at:
+      String(response.episode_updated_at || '') || currentEpisode.updated_at,
+    deliverables: (currentEpisode.deliverables || []).map((deliverable) =>
+      deliverable.id === 'mic-kit-plan'
+        ? { ...deliverable, mic_kit_plans: micKitPlans }
+        : deliverable
+    ),
+  };
 }
 
 function formatDateTime(value) {
@@ -240,6 +418,7 @@ function EpisodeStudioPreviewLayout({ children }) {
 export default function EpisodeStudioWorkspace({
   admin = false,
   previewData = null,
+  workspaceView = 'package',
 }) {
   const router = useRouter();
   const episodeId = String(router.query.episodeId || '');
@@ -316,6 +495,37 @@ export default function EpisodeStudioWorkspace({
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [messageDraft, setMessageDraft] = useState('');
+  const [workflowTaskDrafts, setWorkflowTaskDrafts] = useState({});
+  const [workflowTaskEditor, setWorkflowTaskEditor] = useState(null);
+  const [workflowTaskWorkId, setWorkflowTaskWorkId] = useState('');
+  const [workflowDisplay, setWorkflowDisplay] = useState('board');
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [checklistMode, setChecklistMode] = useState('view');
+  const [pendingChecklistFocusId, setPendingChecklistFocusId] = useState('');
+  const [micKitPlanDirty, setMicKitPlanDirty] = useState(false);
+  const [micKitLiveStatus, setMicKitLiveStatus] = useState(null);
+  const checklistFocusFrameRef = useRef(null);
+  const activeMicKitEpisodeId = String(
+    episode?.episode_id || episodeId || ''
+  );
+  const activeMicKitHostIdsKey = (episode?.host_person_ids || [])
+    .map((hostPersonId) => String(hostPersonId || ''))
+    .filter(Boolean)
+    .sort()
+    .join('|');
+
+  useEffect(() => {
+    if (!pendingChecklistFocusId || checklistMode !== 'customize') return;
+    checklistFocusFrameRef.current = window.requestAnimationFrame(() => {
+      const field = document.getElementById(
+        `checklist-label-${pendingChecklistFocusId}`
+      );
+      field?.focus();
+      field?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      setPendingChecklistFocusId('');
+    });
+    return () => window.cancelAnimationFrame(checklistFocusFrameRef.current);
+  }, [checklistMode, episode?.deliverables, pendingChecklistFocusId]);
 
   useEffect(() => {
     if (previewData) return undefined;
@@ -373,14 +583,86 @@ export default function EpisodeStudioWorkspace({
     };
   }, [episodeId, previewData, router.isReady, router.query.view]);
 
-  const completion = useMemo(
-    () => getEpisodeCompletion(episode || {}),
+  const completion = useMemo(() => {
+    if (!episode) return getEpisodeCompletion({});
+    const hasMicKitPlan = (episode.deliverables || []).some(
+      (deliverable) => deliverable.id === 'mic-kit-plan'
+    );
+    if (!hasMicKitPlan) return getEpisodeCompletion(episode);
+
+    const currentHostIdsKey = (episode.host_person_ids || [])
+      .map((hostPersonId) => String(hostPersonId || ''))
+      .filter(Boolean)
+      .sort()
+      .join('|');
+    const hasLiveStatus = Boolean(
+      micKitLiveStatus?.episodeId === episode.episode_id &&
+        micKitLiveStatus.hostIdsKey === currentHostIdsKey
+    );
+    return getEpisodeCompletion(episode, {
+      deliverableCompletion: {
+        'mic-kit-plan':
+          hasLiveStatus && micKitLiveStatus.complete === true,
+      },
+    });
+  }, [episode, micKitLiveStatus]);
+  const workflowSummary = useMemo(
+    () => getEpisodeProductionPlanSummary(episode || {}),
     [episode]
   );
-  const healthLocked = episode?.status === 'accepted';
+  const workflowTaskStateById = useMemo(
+    () =>
+      new Map(
+        (workflowSummary.task_states || []).map((state) => [
+          state.task_id,
+          state,
+        ])
+      ),
+    [workflowSummary]
+  );
+  const overdueWorkflowTaskIds = new Set(
+    workflowSummary.overdue_task_ids || []
+  );
+  const overdueWorkflowTasks = (episode?.production_tasks || []).filter(
+    (task) => overdueWorkflowTaskIds.has(task.task_id)
+  );
+  const automaticOffTrack = workflowSummary.off_track === true;
+  const healthLocked =
+    episode?.status === 'accepted' && !(episode?.production_tasks || []).length;
   const offTrack =
-    !healthLocked && episode?.delivery_health === 'off_track';
+    automaticOffTrack || (!healthLocked && episode?.delivery_health === 'off_track');
   const dirty = Boolean(episode && JSON.stringify(episode) !== baseline);
+  const baselineProductionTaskById = useMemo(() => {
+    try {
+      const savedEpisode = JSON.parse(baseline || '{}');
+      return new Map(
+        (savedEpisode.production_tasks || []).map((task) => [
+          task.task_id,
+          task,
+        ])
+      );
+    } catch {
+      return new Map();
+    }
+  }, [baseline]);
+  const workflowScheduleChangeCount = (episode?.production_tasks || []).filter(
+    workflowScheduleTaskChanged
+  ).length;
+  const workflowTaskDraftDirty = Object.keys(workflowTaskDrafts).length > 0;
+  const checklistDirty = useMemo(() => {
+    if (!episode || !baseline) return false;
+    try {
+      const savedEpisode = JSON.parse(baseline);
+      return (
+        JSON.stringify(savedEpisode.deliverables || []) !==
+          JSON.stringify(episode.deliverables || []) ||
+        Boolean(savedEpisode.canonical_assets_required) !==
+          Boolean(episode.canonical_assets_required)
+      );
+    } catch {
+      return false;
+    }
+  }, [baseline, episode]);
   const lockedForHost =
     hostPreviewReadOnly ||
     !canHost ||
@@ -390,6 +672,88 @@ export default function EpisodeStudioWorkspace({
     canUploadAssets &&
     episode?.status !== 'accepted' &&
     (canReview || !LOCKED_HOST_STATUSES.includes(episode?.status));
+  const photoSelectionRoleCanEdit =
+    !hostPreviewReadOnly &&
+    episode?.archived !== true &&
+    episode?.status !== 'accepted' &&
+    (canManage ||
+      canReview ||
+      (canHost && !LOCKED_HOST_STATUSES.includes(episode?.status)));
+  const canEditPhotoSelection = photoSelectionRoleCanEdit && !dirty;
+  const photoSelectionDisabledReason = dirty
+    ? 'Save or discard the other Episode Studio changes before reviewing the final photos.'
+    : episode?.status === 'accepted' || episode?.archived
+      ? 'The confirmed photo history is read-only for this episode.'
+      : !photoSelectionRoleCanEdit
+        ? 'An assigned host, assigned producer, or Studio manager reviews the final photo set.'
+        : '';
+  const producerProofDeliverable = episode?.deliverables?.find(
+    (deliverable) => deliverable.id === 'producer-proof-audio'
+  );
+  const hostDeliverables = (episode?.deliverables || []).filter(
+    (deliverable) => deliverable.section !== 'producer_proof'
+  );
+  const producerProofAssets = (episode?.assets || []).filter(
+    (asset) => asset.deliverable_id === 'producer-proof-audio'
+  );
+  const availableProducerProofAssets = producerProofAssets.filter(
+    (asset) => !isEpisodeAssetExpired(asset)
+  );
+  const producerProofUploadTask = episode?.production_tasks?.find(
+    (task) => task.task_id === 'producer-proof-upload'
+  );
+  const proofApprovalTask = episode?.production_tasks?.find(
+    (task) => task.task_id === 'proof-listen-approval'
+  );
+  const workflowPeople = useMemo(() => {
+    const directory = new Map();
+    [...people, ...producers].forEach((person) =>
+      directory.set(person.person_id, person)
+    );
+    return [...directory.values()];
+  }, [people, producers]);
+  const workflowTaskEditorTask = workflowTaskEditor?.taskId
+    ? workflowTaskWithDraft(
+        (episode?.production_tasks || []).find(
+          (task) => task.task_id === workflowTaskEditor.taskId
+        ) || {}
+      )
+    : null;
+  const workflowTaskEditorOwnerOptions = workflowOwnerOptions(
+    workflowTaskEditorTask || {}
+  );
+  const workflowTasksWithDrafts = (episode?.production_tasks || []).map(
+    workflowTaskWithDraft
+  );
+  const workflowTaskWorkTask = workflowTaskWorkId
+    ? workflowTasksWithDrafts.find(
+        (task) => task.task_id === workflowTaskWorkId
+      ) || null
+    : null;
+  const workflowTaskWorkContext = workflowTaskWorkTask
+    ? {
+        complete: workflowTaskIsEffectivelyComplete(workflowTaskWorkTask),
+        overdue: workflowTaskIsEffectivelyOverdue(workflowTaskWorkTask),
+        canUpdate: canUpdateWorkflowTask(workflowTaskWorkTask),
+        dependenciesComplete: workflowDependenciesComplete(
+          workflowTaskWorkTask
+        ),
+        dependencyLabels: workflowDependencyLabels(
+          workflowTaskWorkTask,
+          workflowTasksWithDrafts
+        ),
+        tasks: workflowTasksWithDrafts,
+      }
+    : null;
+  const canUploadProducerProof =
+    !hostPreviewReadOnly &&
+    assetUploadsConfigured &&
+    Boolean(producerProofDeliverable) &&
+    (canReview ||
+      canManage ||
+      (producerProofUploadTask?.assigned_person_ids || []).includes(
+        viewerPersonId
+      ));
   const Layout = previewData
     ? EpisodeStudioPreviewLayout
     : admin
@@ -400,6 +764,22 @@ export default function EpisodeStudioWorkspace({
     : canManage
       ? '/studio/manage/episodes'
       : '/studio/episodes';
+  const productionView = workspaceView === 'production';
+  const episodeRouteId = episode?.episode_id || episodeId;
+  const episodeBaseHref = previewData
+    ? '/dev/episode-studio-usability-preview'
+    : admin
+      ? `/admin/studios/${encodeURIComponent(episodeRouteId)}`
+      : `/studio/episodes/${encodeURIComponent(episodeRouteId)}`;
+  const packageHref = previewData
+    ? `${episodeBaseHref}?workspace=package`
+    : `${episodeBaseHref}${hostPreviewActive ? '?view=host' : ''}`;
+  const productionHref = previewData
+    ? `${episodeBaseHref}?workspace=production`
+    : `${episodeBaseHref}/production${hostPreviewActive ? '?view=host' : ''}`;
+  const questionnaireHref = previewData
+    ? `${episodeBaseHref}?workspace=questionnaire`
+    : `${episodeBaseHref}/questionnaire`;
 
   const actionBlockers = getEpisodeStudioActionBlockers({
     episode,
@@ -420,6 +800,8 @@ export default function EpisodeStudioWorkspace({
         : '';
 
   function setHostPreview(enabled) {
+    setWorkflowTaskWorkId('');
+    setWorkflowTaskEditor(null);
     if (previewData) {
       setCanManage(enabled ? false : previewData.canManage === true);
       setCanHost(enabled ? true : previewData.canHost === true);
@@ -454,6 +836,26 @@ export default function EpisodeStudioWorkspace({
       undefined,
       { shallow: true }
     );
+  }
+
+  function guardWorkspaceNavigation(event) {
+    if (
+      !dirty &&
+      !messageDraft.trim() &&
+      !workflowTaskDraftDirty &&
+      !micKitPlanDirty &&
+      !workflowTaskEditor
+    ) {
+      return;
+    }
+    if (
+      window.confirm(
+        'You have unsaved episode material. Leave this view and discard it?'
+      )
+    ) {
+      return;
+    }
+    event.preventDefault();
   }
 
   function replaceEpisode(nextEpisode) {
@@ -503,6 +905,327 @@ export default function EpisodeStudioWorkspace({
     setError('');
   }
 
+  function updateProductionTaskLocal(taskId, patch) {
+    setEpisode((current) => ({
+      ...current,
+      production_tasks: (current.production_tasks || []).map((task) =>
+        task.task_id === taskId ? { ...task, ...patch } : task
+      ),
+    }));
+    setMessage('');
+    setError('');
+  }
+
+  function updateWorkflowTaskDraft(taskId, patch) {
+    setWorkflowTaskDrafts((current) => ({
+      ...current,
+      [taskId]: { ...(current[taskId] || {}), ...patch },
+    }));
+    setMessage('');
+    setError('');
+  }
+
+  function clearWorkflowTaskDraft(taskId) {
+    setWorkflowTaskDrafts((current) => {
+      if (!Object.prototype.hasOwnProperty.call(current, taskId)) {
+        return current;
+      }
+      const next = { ...current };
+      delete next[taskId];
+      return next;
+    });
+  }
+
+  function workflowTaskWithDraft(task = {}) {
+    return { ...task, ...(workflowTaskDrafts[task.task_id] || {}) };
+  }
+
+  function workflowScheduleTaskChanged(task = {}) {
+    const savedTask = baselineProductionTaskById.get(task.task_id);
+    if (!savedTask) return true;
+    return (
+      (task.due_date || '') !== (savedTask.due_date || '') ||
+      (task.due_date_overridden === true) !==
+        (savedTask.due_date_overridden === true) ||
+      JSON.stringify(task.assigned_person_ids || []) !==
+        JSON.stringify(savedTask.assigned_person_ids || [])
+    );
+  }
+
+  function workflowTaskOwnerLabel(task = {}) {
+    if (task.owner_type === 'hosts') {
+      return hostNames.length ? hostNames.join(' + ') : 'Assigned host(s)';
+    }
+    if (task.owner_type === 'producer') {
+      return (
+        producers.find(
+          (person) => person.person_id === episode?.producer_person_id
+        )?.name || 'Assigned producer'
+      );
+    }
+    if (task.owner_type === 'hosts_and_producer') {
+      return `${hostNames.join(' + ') || 'Host(s)'} + assigned producer`;
+    }
+    const directory = [...people, ...producers];
+    const names = (task.assigned_person_ids || []).map(
+      (personId) =>
+        directory.find((person) => person.person_id === personId)?.name ||
+        personId
+    );
+    return names.join(' + ') || 'Choose an owner';
+  }
+
+  function workflowOwnerOptions(task = {}) {
+    const currentIds = new Set(task.assigned_person_ids || []);
+    return workflowPeople.filter(
+      (person) => person.account_active !== false || currentIds.has(person.person_id)
+    );
+  }
+
+  function canUpdateWorkflowTask(task = {}) {
+    if (hostPreviewReadOnly) return false;
+    if (canManage) return true;
+    if (
+      (task.assigned_person_ids || []).includes(viewerPersonId) ||
+      (task.owner_type === 'hosts' && canHost) ||
+      (task.owner_type === 'producer' && canReview) ||
+      (task.owner_type === 'hosts_and_producer' && (canHost || canReview))
+    ) {
+      return true;
+    }
+    return false;
+  }
+
+  function isWorkflowTaskMine(task = {}) {
+    if (!viewerPersonId || hostPreviewReadOnly) return false;
+    return (
+      (task.assigned_person_ids || []).includes(viewerPersonId) ||
+      (task.owner_type === 'hosts' && canHost) ||
+      (task.owner_type === 'producer' && canReview) ||
+      (task.owner_type === 'hosts_and_producer' && (canHost || canReview))
+    );
+  }
+
+  function workflowDependenciesComplete(task = {}) {
+    return (task.dependencies || []).every((dependencyId) => {
+      const effectiveState = workflowTaskStateById.get(dependencyId);
+      if (effectiveState) return effectiveState.complete === true;
+      return workflowTaskIsComplete(
+        (episode?.production_tasks || []).find(
+          (candidate) => candidate.task_id === dependencyId
+        )
+      );
+    });
+  }
+
+  function workflowTaskIsEffectivelyComplete(task = {}) {
+    const effectiveState = workflowTaskStateById.get(task.task_id);
+    return effectiveState
+      ? effectiveState.complete === true
+      : workflowTaskIsComplete(task);
+  }
+
+  function workflowTaskIsEffectivelyOverdue(task = {}) {
+    const effectiveState = workflowTaskStateById.get(task.task_id);
+    return effectiveState
+      ? effectiveState.overdue === true
+      : workflowTaskIsOverdue(task);
+  }
+
+  async function enableProductionWorkflow() {
+    await sendUpdate(
+      { action: 'configure_workflow', reset_to_default: true },
+      'The air-date production workflow is ready.'
+    );
+  }
+
+  async function saveProductionWorkflowConfiguration() {
+    await sendUpdate(
+      {
+        action: 'configure_workflow',
+        production_tasks: episode.production_tasks,
+      },
+      'Workflow deadlines and owners saved.'
+    );
+  }
+
+  async function moveProductionTaskOnBoard({
+    taskId,
+    targetPhase,
+    targetIndex,
+  } = {}) {
+    if (
+      !canConfigure ||
+      hostPreviewReadOnly ||
+      saving ||
+      workflowScheduleChangeCount > 0
+    ) {
+      if (workflowScheduleChangeCount > 0) {
+        setError('Save the Schedule changes before moving task tiles.');
+      }
+      return null;
+    }
+
+    const task = (episode.production_tasks || []).find(
+      (candidate) => candidate.task_id === taskId
+    );
+    if (!task) return null;
+    const previousTasks = episode.production_tasks;
+    const optimisticTasks = moveProductionTaskTiles(
+      previousTasks,
+      taskId,
+      targetPhase,
+      targetIndex
+    );
+    if (optimisticTasks === previousTasks) return null;
+
+    setEpisode((current) => ({
+      ...current,
+      production_tasks: moveProductionTaskTiles(
+        current.production_tasks || [],
+        taskId,
+        targetPhase,
+        targetIndex
+      ),
+    }));
+
+    const result = await sendUpdate(
+      {
+        action: 'move_workflow_task',
+        task_id: taskId,
+        target_phase: targetPhase,
+        target_index: targetIndex,
+      },
+      `${task.label} moved to ${formatWorkflowPhase(targetPhase)}.`,
+      { mergeFields: WORKFLOW_DEFINITION_RESPONSE_FIELDS }
+    );
+    if (!result) {
+      setEpisode((current) => ({
+        ...current,
+        production_tasks: previousTasks,
+      }));
+    }
+    return result;
+  }
+
+  async function updateProductionTask(taskId, patch, successMessage) {
+    return sendUpdate(
+      {
+        action: 'update_workflow_task',
+        task_id: taskId,
+        task: patch,
+      },
+      successMessage,
+      { workflowTaskId: taskId }
+    );
+  }
+
+  function openNewProductionTask(defaultPhaseId) {
+    if (!canConfigure || hostPreviewReadOnly) return;
+    setError('');
+    setMessage('');
+    setWorkflowTaskWorkId('');
+    setWorkflowTaskEditor({
+      mode: 'create',
+      taskId: '',
+      defaultPhaseId,
+    });
+  }
+
+  function openProductionTaskWorkspace(task = {}) {
+    if (!task.task_id) return;
+    setError('');
+    setMessage('');
+    setWorkflowTaskEditor(null);
+    setWorkflowTaskWorkId(task.task_id);
+  }
+
+  function openProductionTaskEditor(task = {}) {
+    if (!canConfigure || hostPreviewReadOnly || !task.task_id) return;
+    setError('');
+    setMessage('');
+    setWorkflowTaskWorkId('');
+    setWorkflowTaskEditor({
+      mode: 'edit',
+      taskId: task.task_id,
+      defaultPhaseId: task.phase,
+    });
+  }
+
+  function closeProductionTaskEditor() {
+    if (saving) return;
+    setWorkflowTaskEditor(null);
+    setError('');
+  }
+
+  function closeProductionTaskWorkspace() {
+    if (saving) return;
+    setWorkflowTaskWorkId('');
+    setError('');
+  }
+
+  async function saveProductionTaskDefinition(definition) {
+    if (!workflowTaskEditor) return null;
+    const editing = workflowTaskEditor.mode === 'edit';
+    const result = await sendUpdate(
+      {
+        action: editing ? 'edit_workflow_task' : 'add_workflow_task',
+        ...(editing ? { task_id: workflowTaskEditor.taskId } : null),
+        task: definition,
+      },
+      editing ? 'Production task updated.' : 'Task added to the production board.',
+      { mergeFields: WORKFLOW_DEFINITION_RESPONSE_FIELDS }
+    );
+    if (!result) return null;
+    if (editing) clearWorkflowTaskDraft(workflowTaskEditor.taskId);
+    setWorkflowTaskEditor(null);
+    return result;
+  }
+
+  function buildWorkflowTaskDetailPatch(task = {}, details = {}) {
+    const draft = workflowTaskDrafts[task.task_id] || {};
+    const patch = {
+      note:
+        details.evidence_note ??
+        draft.evidence_note ??
+        task.evidence_note ??
+        '',
+      evidence_url:
+        details.evidence_url ??
+        draft.evidence_url ??
+        task.evidence_url ??
+        '',
+    };
+
+    if (canManage) {
+      if (
+        Object.prototype.hasOwnProperty.call(draft, 'due_date') ||
+        Object.prototype.hasOwnProperty.call(draft, 'due_date_overridden')
+      ) {
+        patch.due_date = draft.due_date ?? task.due_date ?? '';
+        patch.due_date_overridden =
+          draft.due_date_overridden ?? task.due_date_overridden === true;
+      }
+      if (
+        Object.prototype.hasOwnProperty.call(draft, 'assigned_person_ids')
+      ) {
+        patch.assigned_person_ids = draft.assigned_person_ids;
+      }
+    }
+
+    return patch;
+  }
+
+  async function saveWorkflowTaskDetails(task, details = {}) {
+    const result = await updateProductionTask(
+      task.task_id,
+      buildWorkflowTaskDetailPatch(task, details),
+      `${task.label} details saved.`
+    );
+    if (result) clearWorkflowTaskDraft(task.task_id);
+    return result;
+  }
+
   function mergeServerFields(serverEpisode, fields) {
     setEpisode((current) =>
       mergeEpisodeStudioServerFields(current, serverEpisode, fields)
@@ -522,10 +1245,44 @@ export default function EpisodeStudioWorkspace({
     });
   }
 
+  function mergeMicKitPlanData(response) {
+    const responseEpisodeId = String(response?.episode_id || '');
+    if (
+      responseEpisodeId &&
+      responseEpisodeId === activeMicKitEpisodeId
+    ) {
+      const responseHostIdsKey = (response.plans || [])
+        .map((plan) => String(plan?.host_person_id || ''))
+        .filter(Boolean)
+        .sort()
+        .join('|');
+      setMicKitLiveStatus({
+        episodeId: responseEpisodeId,
+        hostIdsKey: responseHostIdsKey,
+        complete: response.complete === true,
+      });
+    }
+    setEpisode((current) =>
+      mergeEpisodeMicKitPlanResponse(current, response)
+    );
+    setBaseline((current) => {
+      try {
+        return JSON.stringify(
+          mergeEpisodeMicKitPlanResponse(
+            JSON.parse(current || '{}'),
+            response
+          )
+        );
+      } catch {
+        return current;
+      }
+    });
+  }
+
   async function sendUpdate(
     body,
     successMessage,
-    { mergeFields = [] } = {}
+    { mergeFields = [], workflowTaskId = '' } = {}
   ) {
     if (!episode || saving || hostPreviewReadOnly) return null;
     setSaving(true);
@@ -548,7 +1305,24 @@ export default function EpisodeStudioWorkspace({
       if (!response.ok) {
         throw new Error(data.error || 'Could not update this Episode Studio.');
       }
-      if (mergeFields.length) {
+      if (workflowTaskId) {
+        setEpisode((current) =>
+          mergeWorkflowTaskResponse(current, data.episode, workflowTaskId)
+        );
+        setBaseline((current) => {
+          try {
+            return JSON.stringify(
+              mergeWorkflowTaskResponse(
+                JSON.parse(current || '{}'),
+                data.episode,
+                workflowTaskId
+              )
+            );
+          } catch {
+            return current;
+          }
+        });
+      } else if (mergeFields.length) {
         mergeServerFields(data.episode, mergeFields);
       } else {
         replaceEpisode(data.episode);
@@ -587,6 +1361,24 @@ export default function EpisodeStudioWorkspace({
     } finally {
       setSaving(false);
     }
+  }
+
+  async function saveEpisodePhotoSelection(photoSelection) {
+    if (dirty) {
+      setError(
+        'Save or discard the other Episode Studio changes before reviewing the final photos.'
+      );
+      return null;
+    }
+    return sendUpdate(
+      {
+        action: 'update_photo_selection',
+        photo_selection: photoSelection,
+      },
+      photoSelection?.status === 'confirmed'
+        ? 'The final three images are confirmed for production.'
+        : 'The photo review draft is saved.'
+    );
   }
 
   async function setDeliveryHealth(deliveryHealth) {
@@ -632,13 +1424,12 @@ export default function EpisodeStudioWorkspace({
 
   async function saveDraft() {
     if (canManage) {
-      await sendUpdate(
+      return sendUpdate(
         { action: 'update', episode },
         'Episode Studio saved.'
       );
-      return;
     }
-    await sendUpdate(
+    return sendUpdate(
       {
         action: 'save',
         deliverables: episode.deliverables,
@@ -700,26 +1491,34 @@ export default function EpisodeStudioWorkspace({
   }
 
   async function advanceProduction() {
-    const nextStep =
-      viewerPersonId === 'angie-link'
-        ? 'send this episode to Caleb for the final listen'
-        : 'complete the production review chain';
-    if (!window.confirm(`Confirm you want to ${nextStep}?`)) return;
+    if (!window.confirm('Confirm you want to advance production review?')) {
+      return;
+    }
     await sendUpdate(
       { action: 'advance_production' },
-      viewerPersonId === 'angie-link'
-        ? 'Caleb has been notified for the final production listen.'
-        : 'The production review chain is complete.'
+      'Production review advanced; the next production lead was notified.'
     );
   }
 
-  async function postMessage(event) {
-    event.preventDefault();
+  async function saveCommunicationNote(note, event) {
+    event?.preventDefault();
+    await sendUpdate(
+      {
+        action: 'update_communication_note',
+        producer_feedback: String(note || '').slice(0, 4000),
+      },
+      'Pinned host direction saved.',
+      { mergeFields: COMMUNICATION_NOTE_RESPONSE_FIELDS }
+    );
+  }
+
+  async function postMessage(body, event) {
+    event?.preventDefault();
     if (hostPreviewReadOnly) return;
-    const body = messageDraft.trim();
-    if (!body) return;
+    const cleanBody = String(body || '').trim();
+    if (!cleanBody) return;
     const data = await sendUpdate(
-      { action: 'message', message: body },
+      { action: 'message', message: cleanBody },
       'Update posted to the episode discussion.',
       { mergeFields: MESSAGE_RESPONSE_FIELDS }
     );
@@ -779,6 +1578,9 @@ export default function EpisodeStudioWorkspace({
   }
 
   function addChecklistItem() {
+    if ((episode?.deliverables || []).length >= MAX_EPISODE_DELIVERABLES) {
+      return;
+    }
     const id = `custom-${Date.now().toString(36)}`;
     setEpisode((current) => ({
       ...current,
@@ -790,6 +1592,8 @@ export default function EpisodeStudioWorkspace({
           description: 'Describe what the host should provide.',
           type: 'textarea',
           asset_category: 'document',
+          section: 'host',
+          allowed_uploader: 'episode_participant',
           required: false,
           value: '',
           social_profiles: '',
@@ -801,16 +1605,29 @@ export default function EpisodeStudioWorkspace({
         },
       ],
     }));
+    setPendingChecklistFocusId(id);
   }
 
   function moveChecklistItem(deliverableId, offset) {
     setEpisode((current) => {
       const items = [...current.deliverables];
+      const movableIndexes = items
+        .map((item, index) =>
+          item.section === 'producer_proof' ? -1 : index
+        )
+        .filter((index) => index >= 0);
       const index = items.findIndex((item) => item.id === deliverableId);
-      const nextIndex = index + offset;
-      if (index < 0 || nextIndex < 0 || nextIndex >= items.length) {
+      const movablePosition = movableIndexes.indexOf(index);
+      const nextPosition = movablePosition + offset;
+      if (
+        index < 0 ||
+        movablePosition < 0 ||
+        nextPosition < 0 ||
+        nextPosition >= movableIndexes.length
+      ) {
         return current;
       }
+      const nextIndex = movableIndexes[nextPosition];
       [items[index], items[nextIndex]] = [items[nextIndex], items[index]];
       return { ...current, deliverables: items };
     });
@@ -820,8 +1637,27 @@ export default function EpisodeStudioWorkspace({
     const attachedFiles = (episode.assets || []).filter(
       (asset) => asset.deliverable_id === deliverable.id
     ).length;
+    const guestProfileHasResponse = Object.values(
+      deliverable.guest_profile || {}
+    ).some(
+      (value) =>
+        value === true ||
+        (typeof value === 'string' && Boolean(value.trim()))
+    );
+    const micKitPlanHasResponse = (
+      Array.isArray(deliverable.mic_kit_plans)
+        ? deliverable.mic_kit_plans
+        : []
+    ).some((plan) => Boolean(String(plan?.choice || '').trim()));
+    const hasCurrentResponse = Boolean(
+      String(deliverable.value || '').trim() ||
+        String(deliverable.social_profiles || '').trim() ||
+        guestProfileHasResponse ||
+        micKitPlanHasResponse ||
+        attachedFiles
+    );
     if (
-      (deliverable.value || attachedFiles) &&
+      hasCurrentResponse &&
       !window.confirm(
         `Remove “${deliverable.label}” and its current response${
           attachedFiles
@@ -843,26 +1679,29 @@ export default function EpisodeStudioWorkspace({
   }
 
   async function saveChecklistConfiguration() {
-    await sendUpdate(
+    return sendUpdate(
       {
         action: 'configure_checklist',
         deliverables: episode.deliverables,
         canonical_assets_required:
           episode.canonical_assets_required === true,
       },
-      'Episode-specific checklist saved.'
+      'Episode-specific checklist saved.',
+      { mergeFields: CHECKLIST_RESPONSE_FIELDS }
     );
   }
 
   async function uploadEpisodeAssets(fileList, deliverable) {
     if (hostPreviewReadOnly) return;
     const files = Array.from(fileList || []);
+    const producerProofUpload =
+      deliverable?.id === 'producer-proof-audio' && canUploadProducerProof;
     if (
       !files.length ||
       !episode ||
       !deliverable?.id ||
       uploadingAsset ||
-      !canUploadForCurrentStatus
+      (!canUploadForCurrentStatus && !producerProofUpload)
     ) {
       return;
     }
@@ -1049,16 +1888,33 @@ export default function EpisodeStudioWorkspace({
             'Episode Studio returned incomplete upload authorization. Try again.'
           );
         }
+        if (authorization.episode_updated_at) {
+          currentEpisode = {
+            ...currentEpisode,
+            updated_at: authorization.episode_updated_at,
+            asset_upload_grants_expire_at:
+              authorization.asset_upload_grants_expire_at ||
+              currentEpisode.asset_upload_grants_expire_at ||
+              '',
+          };
+          mergeServerFields(currentEpisode, [
+            'asset_upload_grants_expire_at',
+            'updated_at',
+          ]);
+        }
         activeUploadStage = 'storage';
         const uploadStartedAt = Date.now();
         let lastProgressRenderedAt = 0;
         let lastRateSampleAt = uploadStartedAt;
         let lastRateSampleBytes = 0;
         let smoothedBytesPerSecond = 0;
-        const uploadResponse = await uploadAuthorizedFile(
-          file,
-          authorization.upload,
-          {
+        let uploadResponse = null;
+        let uploadFailure = null;
+        try {
+          uploadResponse = await uploadAuthorizedFile(
+            file,
+            authorization.upload,
+            {
             onProgress: ({
               loaded,
               total,
@@ -1118,10 +1974,22 @@ export default function EpisodeStudioWorkspace({
                     : 'Keep this tab open while the file moves directly to secure storage.',
                 },
               }));
-            },
+              },
+            }
+          );
+        } catch (storageError) {
+          uploadFailure = storageError;
+          if (
+            !shouldReconcileEpisodeAssetUpload({ error: storageError })
+          ) {
+            throw storageError;
           }
-        );
-        if (!isEpisodeAssetUploadReadyForCompletion(uploadResponse)) {
+        }
+        if (
+          !uploadFailure &&
+          !isEpisodeAssetUploadReadyForCompletion(uploadResponse) &&
+          !shouldReconcileEpisodeAssetUpload({ response: uploadResponse })
+        ) {
           throw new Error(episodeAssetStorageRejectionMessage(uploadResponse));
         }
         activeUploadStage = 'completion';
@@ -1149,7 +2017,14 @@ export default function EpisodeStudioWorkspace({
           deliverableId: deliverable.id,
         });
         currentEpisode = completed.episode;
-        mergeServerFields(currentEpisode, ['assets', 'updated_at']);
+        mergeServerFields(currentEpisode, [
+          'assets',
+          'production_tasks',
+          'production_workflow_updated_at',
+          'production_workflow_updated_by_person_id',
+          'production_workflow_updated_by_name',
+          'updated_at',
+        ]);
         completedCount += 1;
       }
       setAssetUploadFeedback((current) => ({
@@ -1253,6 +2128,10 @@ export default function EpisodeStudioWorkspace({
       mergeServerFields(data.episode, [
         'assets',
         'sponsor_read_assignments',
+        'production_tasks',
+        'production_workflow_updated_at',
+        'production_workflow_updated_by_person_id',
+        'production_workflow_updated_by_name',
         'updated_at',
       ]);
       setMessage(
@@ -1289,9 +2168,30 @@ export default function EpisodeStudioWorkspace({
       );
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(
+        if (data.episode) {
+          mergeServerFields(data.episode, ['deleted_at', 'updated_at']);
+        }
+        setError(
           data.error || 'Could not permanently delete this Episode Studio.'
         );
+        return;
+      }
+
+      if (data.pending_deletion) {
+        if (data.episode) {
+          mergeServerFields(data.episode, ['deleted_at', 'updated_at']);
+        }
+        const readyAt = new Date(data.deletion_ready_at);
+        setMessage(
+          data.storage_cleanup_pending
+            ? 'This Studio remains locked while automatic cleanup removes private storage in bounded batches. You can retry now; hourly cleanup will also continue safely.'
+            : `This Studio is locked for protected deletion. Return after ${
+                Number.isNaN(readyAt.getTime())
+                  ? 'the upload-safety window closes'
+                  : readyAt.toLocaleString()
+              } to finish removing the active Studio. Automatic private-storage sweeps will continue catching any transfer that was already underway.`
+        );
+        return;
       }
 
       setBaseline(JSON.stringify(episode));
@@ -1306,9 +2206,397 @@ export default function EpisodeStudioWorkspace({
     }
   }
 
+  function workflowDependencyLabels(task = {}, tasks = []) {
+    return (task.dependencies || [])
+      .map(
+        (dependencyId) =>
+          tasks.find((candidate) => candidate.task_id === dependencyId)?.label
+      )
+      .filter(Boolean);
+  }
+
+  function renderWorkflowTaskDetails(task, context) {
+    const { canUpdate, complete } = context;
+    const taskDraft = workflowTaskDrafts[task.task_id] || {};
+    const taskDraftDirty = Object.keys(taskDraft).length > 0;
+    const calculatedDueDate = dateDaysBefore(
+      episode.target_release_date,
+      task.days_before_air
+    );
+    const baselineDeadlineLabel = Number(task.days_before_air) === 0
+      ? 'the air date'
+      : `${task.days_before_air} days before air`;
+    const linkedRequirements = (task.linked_deliverable_ids || []).map(
+      (deliverableId) => {
+        const deliverable = (episode.deliverables || []).find(
+          (candidate) => candidate.id === deliverableId
+        );
+        return {
+          id: deliverableId,
+          label: deliverable?.label || deliverableId,
+          complete: deliverable
+            ? isDeliverableComplete(deliverable, episode.assets || [])
+            : false,
+        };
+      }
+    );
+    const dependencies = (task.dependencies || []).map((dependencyId) => {
+      const dependency = (episode.production_tasks || []).find(
+        (candidate) => candidate.task_id === dependencyId
+      );
+      return {
+        id: dependencyId,
+        label: dependency?.label || dependencyId,
+        status: dependency?.status || 'not_started',
+      };
+    });
+    const invalidDraftDeadline =
+      canManage &&
+      Object.prototype.hasOwnProperty.call(taskDraft, 'due_date') &&
+      !/^\d{4}-\d{2}-\d{2}$/.test(String(task.due_date || ''));
+
+    return (
+      <EpisodeProductionTaskWorkspace
+        task={task}
+        context={context}
+        workingNote={task.evidence_note || ''}
+        evidenceUrl={task.evidence_url || ''}
+        canEditDetails={canUpdate}
+        saving={saving}
+        saveDisabled={!taskDraftDirty || invalidDraftDeadline}
+        statusMessage={taskDraftDirty ? 'Unsaved task details' : ''}
+        onWorkingNoteChange={(value) =>
+          updateWorkflowTaskDraft(task.task_id, { evidence_note: value })
+        }
+        onEvidenceUrlChange={(value) =>
+          updateWorkflowTaskDraft(task.task_id, { evidence_url: value })
+        }
+        onSaveDetails={(details) => saveWorkflowTaskDetails(task, details)}
+        evidenceHelp={
+          task.task_id === 'guest-assets-shared'
+            ? 'Use an approved Google Drive handoff link. Never share a private staged Spotify link or internal publishing package.'
+            : undefined
+        }
+        packageRequirements={linkedRequirements}
+        packageHref={packageHref}
+        onRequirementNavigate={(_requirement, event) =>
+          guardWorkspaceNavigation(event)
+        }
+        dependencies={dependencies}
+        dependenciesComplete={context.dependenciesComplete}
+        formatDateTime={formatDateTime}
+        renderDeadlineControl={
+          canManage
+            ? ({ disabled }) => (
+                <div>
+                  <strong>Task deadline</strong>
+                  <FriendlyDateField
+                    value={task.due_date || ''}
+                    onChange={(event) =>
+                      updateWorkflowTaskDraft(task.task_id, {
+                        due_date: event.target.value,
+                        due_date_overridden: true,
+                      })
+                    }
+                    ariaLabel={`${task.label} task deadline`}
+                    disabled={disabled}
+                  />
+                  <small>
+                    Rule: {baselineDeadlineLabel}.
+                  </small>
+                  {task.due_date_overridden === true ? (
+                    <button
+                      type="button"
+                      disabled={disabled || !calculatedDueDate}
+                      onClick={() =>
+                        updateWorkflowTaskDraft(task.task_id, {
+                          due_date: calculatedDueDate,
+                          due_date_overridden: false,
+                        })
+                      }
+                    >
+                      Use the air-date rule
+                    </button>
+                  ) : null}
+                </div>
+              )
+            : null
+        }
+        renderOwnerControl={
+          canManage && task.owner_type === 'person'
+            ? ({ disabled }) => (
+                <label>
+                  Accountable owner
+                  <select
+                    value={task.assigned_person_ids?.[0] || ''}
+                    disabled={disabled}
+                    onChange={(event) =>
+                      updateWorkflowTaskDraft(task.task_id, {
+                        assigned_person_ids: event.target.value
+                          ? [event.target.value]
+                          : [],
+                      })
+                    }
+                  >
+                    <option value="" disabled>
+                      Choose a teammate
+                    </option>
+                    {workflowOwnerOptions(task).map((person) => (
+                      <option key={person.person_id} value={person.person_id}>
+                        {person.name}
+                        {person.account_active === false ? ' (inactive)' : ''}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )
+            : null
+        }
+      >
+        {!canManage ? (
+          <div className={styles.workflowTaskContext}>
+            <span>Baseline: {baselineDeadlineLabel}</span>
+          </div>
+        ) : null}
+
+        {!previewData && [
+          'guest-prep-sent',
+          'guest-prep-received',
+          'guest-recording-plan-reviewed',
+        ].includes(task.task_id) ? (
+          <div className={styles.workflowChoicePanel}>
+            <strong>Connected guest questionnaire</strong>
+            <p>
+              {task.task_id === 'guest-prep-sent'
+                ? 'Customize the episode questionnaire and create its private guest link here.'
+                : task.task_id === 'guest-prep-received'
+                  ? 'Review the submitted guest intake and fill blank Episode Studio fields without overwriting team edits.'
+                  : 'Review the guest’s recording readiness and any restricted microphone-kit shipping request before completing this producer step.'}
+            </p>
+            <Link
+              href={questionnaireHref}
+              onClick={guardWorkspaceNavigation}
+            >
+              Open guest questionnaire
+            </Link>
+          </div>
+        ) : null}
+
+        {task.kind === 'intro' && canUpdate && !complete ? (
+          <div className={styles.workflowChoicePanel}>
+            <strong>Choose the completed intro path</strong>
+            <label className={styles.workflowChoiceOption}>
+              <input
+                type="radio"
+                name={`intro-method-${task.task_id}`}
+                checked={task.intro_method === 'recorded'}
+                onChange={() =>
+                  updateProductionTaskLocal(task.task_id, {
+                    intro_method: 'recorded',
+                    intro_scheduled_for: '',
+                  })
+                }
+              />
+              I recorded the intro and uploaded it
+            </label>
+            <label className={styles.workflowChoiceOption}>
+              <input
+                type="radio"
+                name={`intro-method-${task.task_id}`}
+                checked={task.intro_method === 'scheduled_with_producer'}
+                onChange={() =>
+                  updateProductionTaskLocal(task.task_id, {
+                    intro_method: 'scheduled_with_producer',
+                  })
+                }
+              />
+              I sent the script and scheduled the producer recording
+            </label>
+            {task.intro_method === 'recorded' ? (
+              <Link
+                href={`${packageHref}#deliverable-intro-audio`}
+                onClick={guardWorkspaceNavigation}
+              >
+                Go to the private intro upload
+              </Link>
+            ) : null}
+            {task.intro_method === 'scheduled_with_producer' ? (
+              <label>
+                Scheduled recording date
+                <FriendlyDateField
+                  value={task.intro_scheduled_for || ''}
+                  onChange={(event) =>
+                    updateProductionTaskLocal(task.task_id, {
+                      intro_scheduled_for: event.target.value,
+                    })
+                  }
+                  ariaLabel="scheduled producer intro recording date"
+                  max={dateDaysBefore(episode.target_release_date, 10)}
+                />
+                <small>
+                  Schedule the session at least ten days before air—on or
+                  before{' '}
+                  {formatDate(dateDaysBefore(episode.target_release_date, 10))}.
+                  Scheduling happens outside Episode Studio.
+                </small>
+              </label>
+            ) : null}
+          </div>
+        ) : null}
+
+        {task.kind === 'bundle' && canUpdate ? (
+          <fieldset className={styles.workflowSubtasks}>
+            <legend>Required substeps</legend>
+            {(task.subtasks || []).map((subtask) => (
+              <label key={subtask.id}>
+                <input
+                  type="checkbox"
+                  checked={subtask.completed === true}
+                  onChange={async (event) => {
+                    const subtasks = task.subtasks.map((candidate) =>
+                      candidate.id === subtask.id
+                        ? { ...candidate, completed: event.target.checked }
+                        : candidate
+                    );
+                    const result = await updateProductionTask(
+                      task.task_id,
+                      {
+                        ...buildWorkflowTaskDetailPatch(task),
+                        subtasks,
+                        status: subtasks
+                          .filter((candidate) => candidate.required !== false)
+                          .every((candidate) => candidate.completed)
+                          ? 'complete'
+                          : 'in_progress',
+                      },
+                      `${subtask.label} updated.`
+                    );
+                    if (result) clearWorkflowTaskDraft(task.task_id);
+                  }}
+                />
+                {subtask.label}
+              </label>
+            ))}
+          </fieldset>
+        ) : null}
+      </EpisodeProductionTaskWorkspace>
+    );
+  }
+
+  function renderWorkflowTaskActions(task, context) {
+    const proofControlled = [
+      'producer-proof-upload',
+      'proof-listen-approval',
+    ].includes(task.task_id);
+
+    if (proofControlled) {
+      return (
+        <a
+          className={styles.workflowTaskLink}
+          href="#producer-proof"
+          onClick={() => setWorkflowTaskWorkId('')}
+        >
+          Complete this in the private proof section
+        </a>
+      );
+    }
+    if (!context.canUpdate || task.kind === 'bundle') return null;
+
+    async function saveTaskStatus(status, successMessage) {
+      const result = await updateProductionTask(
+        task.task_id,
+        {
+          ...buildWorkflowTaskDetailPatch(task),
+          status,
+          ...(status === 'complete'
+            ? {
+                intro_method: task.intro_method,
+                intro_scheduled_for: task.intro_scheduled_for,
+              }
+            : null),
+        },
+        successMessage
+      );
+      if (result) clearWorkflowTaskDraft(task.task_id);
+    }
+
+    return (
+      <>
+        {context.complete ? (
+          <button
+            type="button"
+            className={styles.secondaryButton}
+            disabled={saving}
+            onClick={() =>
+              saveTaskStatus('in_progress', `${task.label} reopened.`)
+            }
+          >
+            Reopen step
+          </button>
+        ) : (
+          <>
+            {task.status === 'not_started' ? (
+              <button
+                type="button"
+                className={styles.secondaryButton}
+                disabled={saving || !context.dependenciesComplete}
+                onClick={() =>
+                  saveTaskStatus('in_progress', `${task.label} started.`)
+                }
+              >
+                Start work
+              </button>
+            ) : null}
+            <button
+              type="button"
+              className={styles.primaryButton}
+              disabled={
+                saving ||
+                !context.dependenciesComplete ||
+                (task.kind === 'intro' && !task.intro_method)
+              }
+              onClick={() =>
+                saveTaskStatus('complete', `${task.label} completed.`)
+              }
+            >
+              Mark complete
+            </button>
+          </>
+        )}
+        {canManage && !context.complete ? (
+          <button
+            type="button"
+            className={styles.secondaryButton}
+            disabled={saving}
+            onClick={async () => {
+              const result = await updateProductionTask(
+                task.task_id,
+                {
+                  ...buildWorkflowTaskDetailPatch(task),
+                  status: 'waived',
+                  note: task.evidence_note || 'Waived by a Studio manager.',
+                },
+                `${task.label} waived.`
+              );
+              if (result) clearWorkflowTaskDraft(task.task_id);
+            }}
+          >
+            Waive step
+          </button>
+        ) : null}
+      </>
+    );
+  }
+
   return (
     <Layout
-      hasUnsavedChanges={dirty || Boolean(messageDraft.trim())}
+      hasUnsavedChanges={
+        dirty ||
+        Boolean(messageDraft.trim()) ||
+        workflowTaskDraftDirty ||
+        micKitPlanDirty ||
+        Boolean(workflowTaskEditor)
+      }
       unsavedChangesMessage="You have unsaved episode material. Leave and discard it?"
     >
       <div className={styles.workspace}>
@@ -1333,6 +2621,16 @@ export default function EpisodeStudioWorkspace({
                 </p>
               </div>
               <div className={styles.workspaceHeaderActions}>
+                {canManage && !productionView ? (
+                  <button
+                    type="button"
+                    className={styles.hostPreviewButton}
+                    onClick={() => setSettingsOpen(true)}
+                  >
+                    <SettingsRoundedIcon aria-hidden="true" />
+                    Episode settings
+                  </button>
+                ) : null}
                 {canUseHostPreview ? (
                   <button
                     type="button"
@@ -1361,6 +2659,33 @@ export default function EpisodeStudioWorkspace({
                 </span>
               </div>
             </header>
+
+            <nav className={styles.episodeWorkspaceTabs} aria-label="Episode workspace">
+              <Link
+                href={packageHref}
+                onClick={productionView ? guardWorkspaceNavigation : undefined}
+                className={!productionView ? styles.episodeWorkspaceTabActive : ''}
+                aria-current={!productionView ? 'page' : undefined}
+              >
+                Episode package
+              </Link>
+              <Link
+                href={productionHref}
+                onClick={!productionView ? guardWorkspaceNavigation : undefined}
+                className={productionView ? styles.episodeWorkspaceTabActive : ''}
+                aria-current={productionView ? 'page' : undefined}
+              >
+                Production board
+              </Link>
+              {!previewData && !hostPreviewActive ? (
+                <Link
+                  href={questionnaireHref}
+                  onClick={guardWorkspaceNavigation}
+                >
+                  Guest questionnaire
+                </Link>
+              ) : null}
+            </nav>
 
             {hostPreviewActive ? (
               <section className={styles.hostPreviewBanner} role="status">
@@ -1395,8 +2720,14 @@ export default function EpisodeStudioWorkspace({
                 <p>
                   {healthLocked
                     ? 'The producer has accepted this episode package, so its delivery outlook is complete.'
+                    : automaticOffTrack
+                      ? `${overdueWorkflowTasks.length || 1} required workflow ${
+                          overdueWorkflowTasks.length === 1
+                            ? 'step is'
+                            : 'steps are'
+                        } overdue. Episode Studio automatically keeps this episode off track until the work is completed or waived by a manager.`
                     : offTrack
-                    ? 'The expected host-package date is at risk. This signal is visible to the production team; add details to the discussion when you are ready.'
+                    ? 'The expected production schedule is at risk. This signal is visible to the production team; add details to the discussion when you are ready.'
                     : 'The team currently expects this episode package to arrive by its planned due date.'}
                 </p>
                 {!healthLocked &&
@@ -1421,11 +2752,14 @@ export default function EpisodeStudioWorkspace({
                 }`}
                 disabled={
                   hostPreviewReadOnly ||
+                  automaticOffTrack ||
                   Boolean(actionBlockers.deliveryHealth)
                 }
                 title={
                   hostPreviewReadOnly
                     ? 'Exit host preview to change the delivery outlook.'
+                    : automaticOffTrack
+                      ? 'Complete or waive the overdue workflow step before returning this episode to on track.'
                     : actionBlockers.deliveryHealth || undefined
                 }
                 onClick={() =>
@@ -1452,7 +2786,7 @@ export default function EpisodeStudioWorkspace({
 
             <section className={styles.productionStrip}>
               <div>
-                <span>Release</span>
+                <span>Air date</span>
                 <strong>{formatDate(episode.target_release_date)}</strong>
               </div>
               <div>
@@ -1482,50 +2816,606 @@ export default function EpisodeStudioWorkspace({
               {completion.remaining_reason}
             </p>
 
-            {canReview || canAdminOverride ? (
-              <section
-                className={styles.producerNotesPanel}
-                id="producer-notes"
-                aria-labelledby="producer-notes-heading"
-              >
+            {productionView ? (
+              <>
+                <section
+                  className={styles.workflowPanel}
+                  id="production-workflow"
+                  aria-labelledby="production-workflow-heading"
+                >
+              <div className={styles.panelHeading}>
+                <div>
+                  <span className={styles.eyebrow}>Air-date workflow</span>
+                  <h2 id="production-workflow-heading">Production workflow</h2>
+                  <p>
+                    Scan the board, open a task to work it, or use Schedule to
+                    adjust every deadline and owner in one place.
+                  </p>
+                </div>
+                {(episode.production_tasks || []).length ? (
+                  <div className={styles.workflowViewControls}>
+                    {canManage ? (
+                      <div
+                        className={styles.workflowViewToggle}
+                        role="group"
+                        aria-label="Production workflow view"
+                      >
+                        <button
+                          type="button"
+                          aria-pressed={workflowDisplay === 'board'}
+                          onClick={() => setWorkflowDisplay('board')}
+                        >
+                          Board
+                        </button>
+                        <button
+                          type="button"
+                          aria-pressed={workflowDisplay === 'schedule'}
+                          onClick={() => setWorkflowDisplay('schedule')}
+                        >
+                          Schedule
+                        </button>
+                      </div>
+                    ) : null}
+                    <div className={styles.workflowSummaryBadge}>
+                      <strong>{workflowSummary.completion_percent || 0}%</strong>
+                        <span>workflow complete</span>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+
+              {(episode.production_tasks || []).length ? (
+                <>
+                  {canManage && workflowDisplay === 'schedule' ? (
+                    <section
+                      className={styles.workflowManagerConsole}
+                      aria-labelledby="workflow-manager-console-heading"
+                    >
+                      <div className={styles.workflowManagerConsoleHeader}>
+                        <div>
+                          <span>Production console</span>
+                          <strong id="workflow-manager-console-heading">
+                            Deadlines &amp; owners
+                          </strong>
+                          <small aria-live="polite">
+                            Air date {formatDate(episode.target_release_date)} ·
+                            {workflowScheduleChangeCount
+                              ? ` ${workflowScheduleChangeCount} unsaved ${
+                                  workflowScheduleChangeCount === 1
+                                    ? 'row'
+                                    : 'rows'
+                                }.`
+                              : ' all changes saved.'}
+                          </small>
+                        </div>
+                        <button
+                          type="button"
+                          className={styles.primaryButton}
+                          disabled={
+                            saving || workflowScheduleChangeCount === 0
+                          }
+                          onClick={saveProductionWorkflowConfiguration}
+                        >
+                          <SaveRoundedIcon aria-hidden="true" />
+                          {saving
+                            ? 'Saving…'
+                            : workflowScheduleChangeCount === 1
+                              ? 'Save 1 change'
+                              : `Save ${workflowScheduleChangeCount} changes`}
+                        </button>
+                      </div>
+                      <div
+                        className={styles.workflowManagerColumnLabels}
+                        aria-hidden="true"
+                      >
+                        <span>Step</span>
+                        <span>Deadline</span>
+                        <span>Accountable owner</span>
+                        <span>Air-date rule</span>
+                      </div>
+                      <div className={styles.workflowManagerRows}>
+                        {episode.production_tasks.map((task) => {
+                          const calculatedDueDate = dateDaysBefore(
+                            episode.target_release_date,
+                            task.days_before_air
+                          );
+                          const calculatedDateIsActive = Boolean(
+                            calculatedDueDate &&
+                              task.due_date === calculatedDueDate &&
+                              task.due_date_overridden !== true
+                          );
+                          const ruleLabel =
+                            Number(task.days_before_air) === 0
+                              ? 'Air date'
+                              : `Day ${task.days_before_air}`;
+                          const resetLabel = calculatedDueDate
+                            ? calculatedDateIsActive
+                              ? `Using ${ruleLabel}`
+                              : `Use ${ruleLabel}`
+                            : 'Air date needed';
+
+                          return (
+                            <div
+                              key={task.task_id}
+                              className={styles.workflowManagerRow}
+                              data-changed={
+                                workflowScheduleTaskChanged(task)
+                                  ? 'true'
+                                  : 'false'
+                              }
+                            >
+                              <div className={styles.workflowManagerStep}>
+                                <span>{formatWorkflowPhase(task.phase)}</span>
+                                <strong>{task.label}</strong>
+                              </div>
+                              <div className={styles.workflowManagerDate}>
+                                <span>Deadline</span>
+                                <FriendlyDateField
+                                  value={task.due_date || ''}
+                                  onChange={(event) =>
+                                    updateProductionTaskLocal(task.task_id, {
+                                      due_date: event.target.value,
+                                      due_date_overridden: true,
+                                    })
+                                  }
+                                  ariaLabel={`${task.label} deadline`}
+                                  disabled={saving}
+                                />
+                              </div>
+                              {task.owner_type === 'person' ? (
+                                <label className={styles.workflowManagerOwner}>
+                                  <span>Accountable owner</span>
+                                  <select
+                                    value={
+                                      task.assigned_person_ids?.[0] || ''
+                                    }
+                                    disabled={saving}
+                                    aria-label={`${task.label} accountable owner`}
+                                    onChange={(event) =>
+                                      updateProductionTaskLocal(task.task_id, {
+                                        assigned_person_ids: event.target.value
+                                          ? [event.target.value]
+                                          : [],
+                                      })
+                                    }
+                                  >
+                                    <option value="">Choose owner</option>
+                                    {workflowOwnerOptions(task).map((person) => (
+                                      <option
+                                        key={person.person_id}
+                                        value={person.person_id}
+                                      >
+                                        {person.name}
+                                        {person.account_active === false
+                                          ? ' (inactive)'
+                                          : ''}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </label>
+                              ) : (
+                                <div
+                                  className={styles.workflowManagerOwnerReadOnly}
+                                >
+                                  <span>Accountable owner</span>
+                                  <strong>
+                                    {workflowTaskOwnerLabel(task)}
+                                  </strong>
+                                </div>
+                              )}
+                              <button
+                                type="button"
+                                className={styles.workflowManagerReset}
+                                disabled={
+                                  saving ||
+                                  !calculatedDueDate ||
+                                  calculatedDateIsActive
+                                }
+                                title={
+                                  calculatedDueDate
+                                    ? `Use the calculated ${formatDate(
+                                        calculatedDueDate
+                                      )} deadline`
+                                    : 'Set an air date before calculating this deadline.'
+                                }
+                                onClick={() =>
+                                  updateProductionTaskLocal(task.task_id, {
+                                    due_date: calculatedDueDate,
+                                    due_date_overridden: false,
+                                  })
+                                }
+                              >
+                                {resetLabel}
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </section>
+                  ) : null}
+
+                  {workflowDisplay === 'board' ? (
+                    <EpisodeProductionBoard
+                      productionTasks={workflowTasksWithDrafts}
+                      canEditTasks={
+                        canConfigure && !hostPreviewReadOnly
+                      }
+                      canAddTasks={
+                        canConfigure && !hostPreviewReadOnly
+                      }
+                      canMoveTasks={
+                        canConfigure && !hostPreviewReadOnly
+                      }
+                      moveTaskDisabledReason={
+                        saving
+                          ? 'Wait for the current save to finish before moving a tile.'
+                          : workflowScheduleChangeCount > 0
+                            ? 'Save the Schedule changes before moving task tiles.'
+                            : ''
+                      }
+                      onAddTask={openNewProductionTask}
+                      onEditTask={openProductionTaskEditor}
+                      onOpenTask={openProductionTaskWorkspace}
+                      onMoveTask={moveProductionTaskOnBoard}
+                      editTaskLabel="Edit"
+                      getOwnerLabel={workflowTaskOwnerLabel}
+                      canUpdateTask={canUpdateWorkflowTask}
+                      isMyTask={isWorkflowTaskMine}
+                      areDependenciesComplete={workflowDependenciesComplete}
+                      getDependencyLabels={workflowDependencyLabels}
+                      getTaskSearchText={(task) =>
+                        [
+                          task.evidence_note,
+                          task.evidence_url,
+                          ...(task.linked_deliverable_ids || []).map(
+                            (deliverableId) =>
+                              episode.deliverables.find(
+                                (deliverable) =>
+                                  deliverable.id === deliverableId
+                              )?.label || deliverableId
+                          ),
+                        ]
+                          .filter(Boolean)
+                          .join(' ')
+                      }
+                      isTaskOverdue={workflowTaskIsEffectivelyOverdue}
+                      isTaskComplete={workflowTaskIsEffectivelyComplete}
+                      renderTaskDetails={renderWorkflowTaskDetails}
+                      renderTaskActions={renderWorkflowTaskActions}
+                    />
+                  ) : null}
+
+                  {workflowTaskWorkTask && workflowTaskWorkContext ? (
+                    <EpisodeProductionWorkDrawer
+                      open
+                      task={workflowTaskWorkTask}
+                      context={workflowTaskWorkContext}
+                      phaseLabel={formatWorkflowPhase(
+                        workflowTaskWorkTask.phase
+                      )}
+                      ownerLabel={workflowTaskOwnerLabel(
+                        workflowTaskWorkTask
+                      )}
+                      canEditDefinition={
+                        canConfigure && !hostPreviewReadOnly
+                      }
+                      saving={saving}
+                      actions={renderWorkflowTaskActions(
+                        workflowTaskWorkTask,
+                        workflowTaskWorkContext
+                      )}
+                      onEditDefinition={() =>
+                        openProductionTaskEditor(workflowTaskWorkTask)
+                      }
+                      onClose={closeProductionTaskWorkspace}
+                    >
+                      {renderWorkflowTaskDetails(
+                        workflowTaskWorkTask,
+                        workflowTaskWorkContext
+                      )}
+                    </EpisodeProductionWorkDrawer>
+                  ) : null}
+
+                  {workflowTaskEditor ? (
+                    <EpisodeProductionTaskEditor
+                      key={`${workflowTaskEditor.mode}-${
+                        workflowTaskEditor.taskId ||
+                        workflowTaskEditor.defaultPhaseId ||
+                        'task'
+                      }`}
+                      open
+                      mode={workflowTaskEditor.mode}
+                      task={workflowTaskEditorTask}
+                      tasks={episode.production_tasks.map(
+                        workflowTaskWithDraft
+                      )}
+                      defaultPhaseId={workflowTaskEditor.defaultPhaseId}
+                      ownerOptions={workflowTaskEditorOwnerOptions}
+                      airDate={episode.target_release_date}
+                      hasAssignedProducer={Boolean(
+                        episode.producer_person_id
+                      )}
+                      saving={saving}
+                      serverError={error}
+                      onClose={closeProductionTaskEditor}
+                      onSave={saveProductionTaskDefinition}
+                    />
+                  ) : null}
+
+                </>
+              ) : canManage ? (
+                <div className={styles.workflowEmptyState}>
+                  <strong>This older episode does not have a timeline yet.</strong>
+                  <p>
+                    Add the current air-date workflow without changing its
+                    existing host answers or files.
+                  </p>
+                  <button
+                    type="button"
+                    className={styles.primaryButton}
+                    disabled={saving}
+                    onClick={enableProductionWorkflow}
+                  >
+                    Add production timeline
+                  </button>
+                </div>
+              ) : (
+                <p className={styles.workflowEmptyState}>
+                  The production manager has not added the air-date workflow
+                  to this episode yet.
+                </p>
+              )}
+                </section>
+
+                {producerProofUploadTask || proofApprovalTask ? (
+                  <section
+                    className={styles.proofPanel}
+                    id="producer-proof"
+                    aria-labelledby="producer-proof-heading"
+                  >
                 <div className={styles.panelHeading}>
                   <div>
-                    <span className={styles.eyebrow}>Producer workspace</span>
-                    <h2 id="producer-notes-heading">Notes for the hosts</h2>
+                    <span className={styles.eyebrow}>Private producer proof</span>
+                    <h2 id="producer-proof-heading">
+                      Upload, listen, and approve
+                    </h2>
+                    <p>
+                      The producer places the proof here. Assigned hosts can
+                      download the secured file, listen outside the browser,
+                      and record approval or requested changes.
+                    </p>
                   </div>
-                  <span>Saved with the Episode Studio</span>
+                  <span>
+                    Approval due {formatDate(proofApprovalTask?.due_date)}
+                  </span>
                 </div>
-                <label htmlFor="producer-feedback">
-                  <span>Producer notes and revision guidance</span>
-                  <small>
-                    Write the exact change the host needs to make. This is not
-                    the place for timestamps, finished copy, or file notes.
-                  </small>
-                  <PlainTextArea
-                    id="producer-feedback"
-                    value={episode.producer_feedback || ''}
-                    onValueChange={(producerFeedback) =>
-                      updateEpisode({ producer_feedback: producerFeedback })
-                    }
-                    maxLength={4000}
-                  />
-                </label>
-                <small>
-                  {canManage
-                    ? 'Save Studio keeps these notes as a draft. '
-                    : ''}
-                  Requesting changes sends them with the episode; the approval
-                  controls stay at the bottom.
-                </small>
-              </section>
-            ) : episode.producer_feedback ? (
-              <section className={styles.feedbackBanner}>
-                <strong>Producer notes for the hosts</strong>
-                <p className={styles.plainTextContent}>
-                  {episode.producer_feedback}
-                </p>
-              </section>
+
+                <div className={styles.proofSecurityNotice}>
+                  <WarningAmberRoundedIcon aria-hidden="true" />
+                  <div>
+                    <strong>Internal production material</strong>
+                    <p>
+                      Never send this secured proof, a staged Spotify link, or
+                      the internal publishing package to a guest. If the host
+                      and producer deliberately approve an optional guest
+                      listen, create a separate permission-controlled Google
+                      Drive copy containing only the approved program.
+                    </p>
+                  </div>
+                </div>
+
+                {canUploadProducerProof ? (
+                  <div className={styles.proofUploadZone}>
+                    <div>
+                      <strong>Producer upload</strong>
+                      <span>
+                        Upload the current proof or replacement master. Clear
+                        versioned filenames make host approval auditable.
+                      </span>
+                    </div>
+                    <label className={styles.assetFilePicker}>
+                      <CloudUploadRoundedIcon aria-hidden="true" />
+                      {uploadingDeliverableId === 'producer-proof-audio'
+                        ? 'Uploading proof…'
+                        : 'Choose private proof audio'}
+                      <input
+                        type="file"
+                        accept={getEpisodeAssetAccept('recording')}
+                        disabled={
+                          Boolean(uploadingAsset) ||
+                          !producerProofDeliverable
+                        }
+                        onChange={(event) => {
+                          uploadEpisodeAssets(
+                            event.target.files,
+                            producerProofDeliverable
+                          );
+                          event.target.value = '';
+                        }}
+                      />
+                    </label>
+                    {assetUploadFeedback['producer-proof-audio'] ? (
+                      <p
+                        className={
+                          assetUploadFeedback['producer-proof-audio'].tone ===
+                          'error'
+                            ? styles.errorCard
+                            : styles.successCard
+                        }
+                        role="status"
+                      >
+                        {assetUploadFeedback['producer-proof-audio'].message}
+                      </p>
+                    ) : null}
+                  </div>
+                ) : null}
+
+                <div className={styles.proofFileList}>
+                  {producerProofAssets.length ? (
+                    producerProofAssets.map((asset) => {
+                      const expired = isEpisodeAssetExpired(asset);
+                      return (
+                        <article key={asset.asset_id}>
+                          <div>
+                            <strong>{asset.label || asset.file_name}</strong>
+                            <span>
+                              {asset.file_name} · {formatBytes(asset.size)}
+                              {asset.uploaded_by_name
+                                ? ` · uploaded by ${asset.uploaded_by_name}`
+                                : ''}
+                            </span>
+                          </div>
+                          <div className={styles.assetActions}>
+                            {expired ? (
+                              <span className={styles.assetExpiredBadge}>
+                                Storage window ended
+                              </span>
+                            ) : (
+                              <a
+                                href={`/api/studio/episodes/${encodeURIComponent(
+                                  episode.episode_id
+                                )}/assets/${encodeURIComponent(asset.asset_id)}`}
+                              >
+                                Download proof
+                              </a>
+                            )}
+                            {viewerCanDeleteAsset(asset) ? (
+                              <button
+                                type="button"
+                                className={styles.assetDeleteButton}
+                                disabled={deletingAssetId === asset.asset_id}
+                                onClick={() => deleteEpisodeAsset(asset)}
+                              >
+                                <DeleteOutlineRoundedIcon aria-hidden="true" />
+                                {deletingAssetId === asset.asset_id
+                                  ? 'Deleting…'
+                                  : 'Delete'}
+                              </button>
+                            ) : null}
+                          </div>
+                        </article>
+                      );
+                    })
+                  ) : (
+                    <p className={styles.workflowEmptyState}>
+                      No private proof has been uploaded yet.
+                    </p>
+                  )}
+                </div>
+
+                {proofApprovalTask ? (
+                  <div className={styles.proofApprovalZone}>
+                    <div>
+                      <strong>Host proof decision</strong>
+                      <span>
+                        Download and listen to the complete program before
+                        recording a decision.
+                      </span>
+                    </div>
+                    {(canHost || canManage) && !hostPreviewReadOnly ? (
+                      <>
+                        <label>
+                          Listening note or requested change
+                          <PlainTextArea
+                            value={proofApprovalTask.evidence_note || ''}
+                            onValueChange={(note) =>
+                              updateProductionTaskLocal(
+                                proofApprovalTask.task_id,
+                                { evidence_note: note }
+                              )
+                            }
+                            maxLength={2000}
+                          />
+                        </label>
+                        <div className={styles.proofDecisionActions}>
+                          <button
+                            type="button"
+                            className={styles.secondaryButton}
+                            disabled={
+                              saving ||
+                              availableProducerProofAssets.length === 0 ||
+                              (proofApprovalTask.evidence_note || '').trim()
+                                .length < 4
+                            }
+                            onClick={() =>
+                              updateProductionTask(
+                                proofApprovalTask.task_id,
+                                {
+                                  status: 'in_progress',
+                                  proof_decision: 'changes_requested',
+                                  note: proofApprovalTask.evidence_note,
+                                },
+                                'Proof changes requested.'
+                              )
+                            }
+                          >
+                            Request proof changes
+                          </button>
+                          <button
+                            type="button"
+                            className={styles.primaryButton}
+                            disabled={
+                              saving ||
+                              availableProducerProofAssets.length === 0
+                            }
+                            onClick={() =>
+                              updateProductionTask(
+                                proofApprovalTask.task_id,
+                                {
+                                  status: 'complete',
+                                  proof_decision: 'approved',
+                                  note: proofApprovalTask.evidence_note,
+                                },
+                                'The private proof is approved.'
+                              )
+                            }
+                          >
+                            <CheckCircleRoundedIcon aria-hidden="true" />
+                            Approve proof
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <p>
+                        {proofApprovalTask.proof_decision === 'approved'
+                          ? `Approved by ${
+                              proofApprovalTask.completed_by_name ||
+                              'the assigned host'
+                            }.`
+                          : proofApprovalTask.proof_decision ===
+                              'changes_requested'
+                            ? 'The host requested changes. Review the note and upload a replacement proof.'
+                            : 'Waiting for an assigned host to record the proof decision.'}
+                      </p>
+                    )}
+                  </div>
+                ) : null}
+                  </section>
+                ) : null}
+                {error ? <p className={styles.errorCard}>{error}</p> : null}
+                {message ? <p className={styles.successCard}>{message}</p> : null}
+              </>
             ) : null}
+
+            {!productionView ? (
+              <>
+                <EpisodeCommunicationClipboard
+                  pinnedNote={episode.producer_feedback || ''}
+                  pinnedNoteEditable={
+                    (canReview || canAdminOverride) && !hostPreviewReadOnly
+                  }
+                  pinnedNoteSaving={saving}
+                  onPinnedNoteChange={(producerFeedback) =>
+                    updateEpisode({ producer_feedback: producerFeedback })
+                  }
+                  onSavePinnedNote={saveCommunicationNote}
+                  messages={episode.messages || []}
+                  messageDraft={messageDraft}
+                  messageComposerEnabled={!hostPreviewReadOnly}
+                  messagePosting={saving}
+                  onMessageDraftChange={setMessageDraft}
+                  onPostMessage={postMessage}
+                />
 
             <section id="sponsor-reads" className={styles.sponsorReadsPanel}>
               <div className={styles.panelHeading}>
@@ -1835,102 +3725,35 @@ export default function EpisodeStudioWorkspace({
               )}
             </section>
 
-            <section id="discussion" className={styles.discussionPanel}>
-              <div className={styles.discussionHeading}>
-                <div>
-                  <span className={styles.eyebrow}>Episode discussion</span>
-                  <h2>Keep decisions with the work</h2>
-                </div>
-                <span>
-                  {(episode.messages || []).length}{' '}
-                  {(episode.messages || []).length === 1
-                    ? 'update'
-                    : 'updates'}
-                </span>
-              </div>
-              {(episode.messages || []).length ? (
-                <div className={styles.messageList}>
-                  {episode.messages.map((entry) => (
-                    <article
-                      key={entry.message_id}
-                      className={
-                        entry.author_role === 'producer'
-                          ? styles.producerMessage
-                          : ''
-                      }
-                    >
-                      <div>
-                        <strong>{entry.author_name}</strong>
-                        <span>
-                          {entry.author_role === 'producer'
-                            ? 'Producer'
-                            : entry.author_role === 'studio_manager'
-                              ? 'Studio manager'
-                              : entry.author_role === 'creator'
-                                ? 'Episode creator'
-                                : 'Host'}
-                        </span>
-                        <time dateTime={entry.created_at}>
-                          {entry.created_at
-                            ? new Date(entry.created_at).toLocaleString()
-                            : ''}
-                        </time>
-                      </div>
-                      <p className={styles.plainTextContent}>{entry.body}</p>
-                    </article>
-                  ))}
-                </div>
-              ) : (
-                <p className={styles.discussionEmpty}>
-                  No updates yet. Use this space only for questions and team
-                  decisions.
-                </p>
-              )}
-              <form
-                className={styles.messageComposer}
-                onSubmit={postMessage}
-              >
-                <label htmlFor="episode-message">
-                  Add a question or decision
-                  <small>
-                    Put finished copy, timestamps, and files in their matching
-                    form step—not in the discussion.
-                  </small>
-                </label>
-                <div>
-                  <PlainTextArea
-                    id="episode-message"
-                    value={messageDraft}
-                    disabled={hostPreviewReadOnly}
-                    onValueChange={setMessageDraft}
-                    maxLength={2400}
-                  />
-                  <button
-                    type="submit"
-                    className={styles.secondaryButton}
-                    disabled={
-                      hostPreviewReadOnly ||
-                      saving ||
-                      messageDraft.trim().length < 2
-                    }
-                    title={
-                      hostPreviewReadOnly
-                        ? 'Exit host preview to post an update.'
-                        : saving
-                        ? 'Wait for the current Studio update to finish.'
-                        : messageDraft.trim().length < 2
-                          ? 'Write a short update first.'
-                          : undefined
-                    }
-                  >
-                    <ForumRoundedIcon aria-hidden="true" />
-                    Post update
-                  </button>
-                </div>
-              </form>
-            </section>
-
             {canManage ? (
+              <EpisodeStudioSettingsDrawer
+                open={settingsOpen}
+                onClose={() => setSettingsOpen(false)}
+                footer={
+                  <>
+                    <button
+                      type="button"
+                      className={styles.secondaryButton}
+                      onClick={() => setSettingsOpen(false)}
+                    >
+                      Close
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.primaryButton}
+                      disabled={Boolean(actionBlockers.save)}
+                      title={actionBlockers.save || undefined}
+                      onClick={async () => {
+                        const saved = await saveDraft();
+                        if (saved) setSettingsOpen(false);
+                      }}
+                    >
+                      <SaveRoundedIcon aria-hidden="true" />
+                      Save settings
+                    </button>
+                  </>
+                }
+              >
               <section className={styles.producerPanel}>
                 <div className={styles.panelHeading}>
                   <div>
@@ -1959,7 +3782,7 @@ export default function EpisodeStudioWorkspace({
                     />
                   </label>
                   <label>
-                    Release date
+                    Air date
                     <FriendlyDateField
                       value={episode.target_release_date}
                       onChange={(event) =>
@@ -1967,7 +3790,7 @@ export default function EpisodeStudioWorkspace({
                           target_release_date: event.target.value,
                         })
                       }
-                      ariaLabel="release date"
+                      ariaLabel="air date"
                     />
                   </label>
                   <label>
@@ -2021,7 +3844,7 @@ export default function EpisodeStudioWorkspace({
                       onChange={(event) =>
                         updateEpisode({ producer_email: event.target.value })
                       }
-                      placeholder="caleb@example.com"
+                      placeholder="producer@example.com"
                     />
                   </label>
                 </div>
@@ -2060,49 +3883,55 @@ export default function EpisodeStudioWorkspace({
                   </div>
                 </div>
               </section>
+              </EpisodeStudioSettingsDrawer>
             ) : null}
 
             <section
               className={styles.hostProductionSection}
               aria-labelledby="host-production-heading"
             >
-            <section className={styles.formIntro}>
-              <div>
-                <span className={styles.eyebrow}>Host production form</span>
-                <h2 id="host-production-heading">Assemble the episode</h2>
-                <p>
-                  Link the actual material, then remove the guesswork. Use
-                  exact filenames and tell the producer what each asset is,
-                  where it belongs, and what the finished episode should do.
-                </p>
-              </div>
-              <div className={styles.checklistSummary}>
-                <strong>{completion.missing.length} required items remain</strong>
-                {canConfigure &&
-                !LOCKED_HOST_STATUSES.includes(episode.status) ? (
-                  <div>
-                    <button
-                      type="button"
-                      className={styles.secondaryButton}
-                      onClick={addChecklistItem}
-                    >
-                      <AddRoundedIcon aria-hidden="true" />
-                      Add checklist item
-                    </button>
-                    <button
-                      type="button"
-                      className={styles.primaryButton}
-                      disabled={Boolean(actionBlockers.save)}
-                      title={actionBlockers.save || undefined}
-                      onClick={saveChecklistConfiguration}
-                    >
-                      <SaveRoundedIcon aria-hidden="true" />
-                      Save episode checklist
-                    </button>
-                  </div>
-                ) : null}
-              </div>
-            </section>
+            <EpisodeChecklistWorkspace
+              id="host-production-heading"
+              remainingCount={completion.missing.length}
+              totalCount={completion.required}
+              canCustomize={canConfigure && !hostPreviewReadOnly}
+              customizationLocked={LOCKED_HOST_STATUSES.includes(
+                episode.status
+              )}
+              customizationLockedReason="Reopen the host package before changing its checklist."
+              mode={checklistMode}
+              onModeChange={setChecklistMode}
+              onAddRequirement={addChecklistItem}
+              addDisabled={
+                (episode.deliverables || []).length >=
+                MAX_EPISODE_DELIVERABLES
+              }
+              addDisabledReason={`A checklist can contain up to ${MAX_EPISODE_DELIVERABLES} items.`}
+              onSave={saveChecklistConfiguration}
+              saving={saving}
+              dirty={checklistDirty}
+              saveDisabled={
+                !checklistDirty || Boolean(actionBlockers.save)
+              }
+              saveDisabledReason={
+                actionBlockers.save ||
+                (!checklistDirty ? 'The checklist is already up to date.' : '')
+              }
+              onDone={() => {
+                if (
+                  checklistDirty &&
+                  !window.confirm(
+                    'Checklist changes are not saved yet. Return to the host response view anyway?'
+                  )
+                ) {
+                  return false;
+                }
+                return true;
+              }}
+            />
+
+            {checklistMode === 'view' ? (
+              <>
             {hostEditBlocker ? (
               <p className={styles.hostLockNotice}>
                 <strong>Why these fields are read-only:</strong>{' '}
@@ -2145,25 +3974,46 @@ export default function EpisodeStudioWorkspace({
             ) : null}
 
             <div className={styles.deliverableList}>
-              {episode.deliverables.map((deliverable, index) => {
+              {hostDeliverables.map((deliverable, index) => {
                 const stepAssets = (episode.assets || []).filter(
                   (asset) => asset.deliverable_id === deliverable.id
                 );
-                const complete = isDeliverableComplete(
-                  deliverable,
-                  episode.assets
+                const isMicKitPlan = deliverable.id === 'mic-kit-plan';
+                const hasLiveMicKitStatus = Boolean(
+                  isMicKitPlan &&
+                    micKitLiveStatus?.episodeId === episode.episode_id &&
+                    micKitLiveStatus.hostIdsKey === activeMicKitHostIdsKey
                 );
-                const missingRequired = deliverable.required && !complete;
+                const complete = isMicKitPlan
+                  ? hasLiveMicKitStatus &&
+                    micKitLiveStatus.complete === true
+                  : isDeliverableComplete(
+                      deliverable,
+                      episode.assets,
+                      episode.host_person_ids
+                    );
+                const missingRequired = Boolean(
+                  deliverable.required &&
+                    !complete &&
+                    (!isMicKitPlan || hasLiveMicKitStatus)
+                );
+                const responseStatusLabel = isMicKitPlan
+                  ? !hasLiveMicKitStatus
+                    ? 'Checking status'
+                    : complete
+                      ? 'All hosts ready'
+                      : 'Needs attention'
+                  : complete
+                    ? 'Response complete'
+                    : 'No response yet';
                 const assetCategory =
                   deliverable.asset_category || 'document';
                 const uploadFeedback =
                   assetUploadFeedback[deliverable.id] || null;
-                const canEditChecklist =
-                  canConfigure &&
-                  !LOCKED_HOST_STATUSES.includes(episode.status);
                 return (
                   <article
                     key={deliverable.id}
+                    id={`deliverable-${deliverable.id}`}
                     className={`${styles.deliverableCard} ${
                       complete ? styles.deliverableComplete : ''
                     }`}
@@ -2177,182 +4027,20 @@ export default function EpisodeStudioWorkspace({
                       <span>{String(index + 1).padStart(2, '0')}</span>
                     </div>
                     <div className={styles.deliverableBody}>
-                      {canEditChecklist ? (
-                        <section
-                          className={styles.stepSetupZone}
-                          aria-label={`${deliverable.label} producer setup`}
-                        >
-                          <div className={styles.stepZoneHeading}>
-                            <div>
-                              <span className={styles.stepSetupKicker}>
-                                Producer setup
-                              </span>
-                              <strong>What the host sees</strong>
-                              <small>
-                                Edit the step title and the guidance shown above
-                                the host’s response.
-                              </small>
-                            </div>
-                            <span className={styles.stepRequirementPill}>
-                              {deliverable.required ? 'Required' : 'Optional'}
-                            </span>
-                          </div>
-                          <div className={styles.checklistItemEditor}>
-                            <label>
-                              <span>Step title shown to the host</span>
-                              <input
-                                value={deliverable.label}
-                                aria-label={`Checklist item ${index + 1} label`}
-                                maxLength={180}
-                                onChange={(event) =>
-                                  updateDeliverable(deliverable.id, {
-                                    label: event.target.value,
-                                  })
-                                }
-                              />
-                            </label>
-                            <label>
-                              <span>Instructions shown above the response</span>
-                              <PlainTextArea
-                                value={deliverable.description}
-                                aria-label={`${deliverable.label} instructions`}
-                                maxLength={800}
-                                onValueChange={(description) =>
-                                  updateDeliverable(deliverable.id, {
-                                    description,
-                                  })
-                                }
-                              />
-                            </label>
-                          </div>
-                          <div className={styles.checklistItemControls}>
-                            <label>
-                              Response the host provides
-                              <select
-                                value={deliverable.type}
-                                onChange={(event) =>
-                                  updateDeliverable(deliverable.id, {
-                                    type: event.target.value,
-                                  })
-                                }
-                              >
-                                <option value="textarea">Written response</option>
-                                <option value="asset">File upload</option>
-                                <option value="url">
-                                  Optional working-source link
-                                </option>
-                              </select>
-                            </label>
-                            <label>
-                              File group
-                              <select
-                                value={deliverable.asset_category || 'document'}
-                                disabled={deliverable.id === 'episode-folder'}
-                                onChange={(event) =>
-                                  updateDeliverable(deliverable.id, {
-                                    asset_category: event.target.value,
-                                  })
-                                }
-                              >
-                                {Object.entries(ASSET_CATEGORY_LABELS).map(
-                                  ([value, label]) => (
-                                    <option key={value} value={value}>
-                                      {label}
-                                    </option>
-                                  )
-                                )}
-                              </select>
-                            </label>
-                            <button
-                              type="button"
-                              aria-label={`Move ${deliverable.label} up`}
-                              disabled={index === 0}
-                              onClick={() =>
-                                moveChecklistItem(deliverable.id, -1)
-                              }
-                            >
-                              <ArrowUpwardRoundedIcon aria-hidden="true" />
-                            </button>
-                            <button
-                              type="button"
-                              aria-label={`Move ${deliverable.label} down`}
-                              disabled={
-                                index === episode.deliverables.length - 1
-                              }
-                              onClick={() =>
-                                moveChecklistItem(deliverable.id, 1)
-                              }
-                            >
-                              <ArrowDownwardRoundedIcon aria-hidden="true" />
-                            </button>
-                            <button
-                              type="button"
-                              aria-label={`Remove ${deliverable.label}`}
-                              disabled={episode.deliverables.length <= 1}
-                              onClick={() => removeChecklistItem(deliverable)}
-                            >
-                              <DeleteOutlineRoundedIcon aria-hidden="true" />
-                            </button>
-                          </div>
-                          <label className={styles.requirementToggle}>
-                            <input
-                              type="checkbox"
-                              checked={deliverable.required}
-                              onChange={(event) =>
-                                updateDeliverable(deliverable.id, {
-                                  required: event.target.checked,
-                                })
-                              }
-                            />
-                            Require this response before a complete handoff
-                          </label>
-                        </section>
-                      ) : canConfigure ? (
-                        <section
-                          className={`${styles.stepSetupZone} ${styles.stepSetupZoneReadOnly}`}
-                          aria-label={`${deliverable.label} host-facing setup`}
-                        >
-                          <div className={styles.stepZoneHeading}>
-                            <div>
-                              <span className={styles.stepSetupKicker}>
-                                Host-facing step
-                              </span>
-                              <strong>What the host was shown</strong>
-                              <small>
-                                This title and guidance are locked while the
-                                package is in producer review.
-                              </small>
-                            </div>
-                            <span className={styles.stepRequirementPill}>
-                              {deliverable.required ? 'Required' : 'Optional'}
-                            </span>
-                          </div>
-                          <div className={styles.stepPreviewCopy}>
-                            <h3>{deliverable.label}</h3>
-                            <span className={styles.producerGuidanceLabel}>
-                              Producer guidance
-                            </span>
-                            <p className={styles.plainTextContent}>
-                              {deliverable.description}
-                            </p>
-                          </div>
-                        </section>
-                      ) : (
-                        <div className={styles.deliverableHeading}>
-                          <div>
-                            <h3>{deliverable.label}</h3>
-                            <span className={styles.producerGuidanceLabel}>
-                              Producer guidance
-                            </span>
-                            <p className={styles.plainTextContent}>
-                              {deliverable.description}
-                            </p>
-                          </div>
-                          <span>
-                            {deliverable.required ? 'Required' : 'Optional'}
+                      <div className={styles.deliverableHeading}>
+                        <div>
+                          <h3>{deliverable.label}</h3>
+                          <span className={styles.producerGuidanceLabel}>
+                            Producer guidance
                           </span>
+                          <p className={styles.plainTextContent}>
+                            {deliverable.description}
+                          </p>
                         </div>
-                      )}
+                        <span>
+                          {deliverable.required ? 'Required' : 'Optional'}
+                        </span>
+                      </div>
 
                       <section
                         className={styles.hostResponseZone}
@@ -2364,14 +4052,22 @@ export default function EpisodeStudioWorkspace({
                               Host response
                             </span>
                             <strong>
-                              {deliverable.type === 'asset'
+                              {deliverable.id === 'guest-details'
+                                ? 'Guest profile and public links'
+                                : deliverable.id === 'mic-kit-plan'
+                                  ? 'Recording equipment plan'
+                                : deliverable.type === 'asset'
                                 ? 'Files the host submits'
                                 : deliverable.type === 'url'
                                   ? 'Link the host submits'
                                   : 'What the host writes'}
                             </strong>
                             <small>
-                              {deliverable.type === 'asset'
+                              {deliverable.id === 'guest-details'
+                                ? 'Add the details the producer needs for contact, show notes, and promotion.'
+                                : deliverable.id === 'mic-kit-plan'
+                                  ? 'Each assigned host confirms their recording setup or connects an active mic-kit request.'
+                                : deliverable.type === 'asset'
                                 ? 'Upload the actual files here.'
                                 : 'The field starts empty; use the producer guidance above.'}
                             </small>
@@ -2383,11 +4079,64 @@ export default function EpisodeStudioWorkspace({
                                 : ''
                             }`}
                           >
-                            {complete ? 'Response complete' : 'No response yet'}
+                            {responseStatusLabel}
                           </span>
                         </div>
 
-                      {deliverable.type === 'asset' ? null : deliverable.type ===
+                      {deliverable.id === 'mic-kit-plan' ? (
+                        <EpisodeMicKitStep
+                          key={`${episode.episode_id}:${activeMicKitHostIdsKey}`}
+                          episodeId={episode.episode_id}
+                          hosts={(episode.host_person_ids || []).map(
+                            (hostPersonId, hostIndex) => ({
+                              host_person_id: hostPersonId,
+                              name:
+                                people.find(
+                                  (person) =>
+                                    person.person_id === hostPersonId
+                                )?.name ||
+                                hostNames[hostIndex] ||
+                                `Host ${hostIndex + 1}`,
+                            })
+                          )}
+                          requestIdHint={
+                            Array.isArray(router.query.mic_request_id)
+                              ? router.query.mic_request_id[0]
+                              : router.query.mic_request_id || ''
+                          }
+                          readOnly={hostPreviewReadOnly}
+                          onDataChange={mergeMicKitPlanData}
+                          onDirtyChange={setMicKitPlanDirty}
+                        />
+                      ) : deliverable.id === 'guest-details' ? (
+                        <EpisodeGuestDetailsFields
+                          profile={deliverable.guest_profile || {}}
+                          additionalNotes={deliverable.value || ''}
+                          earlierSocialNotes={
+                            deliverable.social_profiles || ''
+                          }
+                          disabled={lockedForHost}
+                          disabledTitle={
+                            lockedForHost ? hostEditBlocker : undefined
+                          }
+                          onProfileChange={(profilePatch) =>
+                            updateDeliverable(deliverable.id, {
+                              guest_profile: {
+                                ...(deliverable.guest_profile || {}),
+                                ...profilePatch,
+                              },
+                            })
+                          }
+                          onAdditionalNotesChange={(value) =>
+                            updateDeliverable(deliverable.id, { value })
+                          }
+                          onEarlierSocialNotesChange={(socialProfiles) =>
+                            updateDeliverable(deliverable.id, {
+                              social_profiles: socialProfiles,
+                            })
+                          }
+                        />
+                      ) : deliverable.type === 'asset' ? null : deliverable.type ===
                         'url' ? (
                         <div className={styles.urlField}>
                           <input
@@ -2428,39 +4177,17 @@ export default function EpisodeStudioWorkspace({
                         />
                       )}
 
-                      {deliverable.type === 'textarea' ? (
+                      {deliverable.type === 'textarea' &&
+                      !['guest-details', 'mic-kit-plan'].includes(
+                        deliverable.id
+                      ) ? (
                         <p className={styles.plainTextHint}>
                           Plain text only. Line breaks and pasted lists stay as
                           entered—no Markdown needed.
                         </p>
                       ) : null}
 
-                      {deliverable.id === 'guest-details' ? (
-                        <label className={styles.guestSocialField}>
-                          <span>Guest social profiles and handles</span>
-                          <small>
-                            Add public handles or links, one per line. If there
-                            are none, write “None.”
-                          </small>
-                          <PlainTextArea
-                            value={deliverable.social_profiles || ''}
-                            disabled={lockedForHost}
-                            title={lockedForHost ? hostEditBlocker : undefined}
-                            onValueChange={(socialProfiles) =>
-                              updateDeliverable(deliverable.id, {
-                                social_profiles: socialProfiles,
-                              })
-                            }
-                            aria-label="Guest social profiles and handles"
-                            maxLength={3000}
-                          />
-                          <small>
-                            Public profiles only—never include passwords or
-                            private login credentials.
-                          </small>
-                        </label>
-                      ) : null}
-
+                      {deliverable.id === 'mic-kit-plan' ? null : (
                       <div
                         className={styles.stepAssets}
                         aria-busy={
@@ -2780,6 +4507,22 @@ export default function EpisodeStudioWorkspace({
                           </a>
                         ) : null}
                       </div>
+                      )}
+
+                      {deliverable.id === 'photos' ? (
+                        <EpisodePhotoSelectionReview
+                          key={`photo-review-${episode.updated_at}-${
+                            deliverable.photo_selection?.updated_at || 'draft'
+                          }`}
+                          episodeId={episode.episode_id}
+                          assets={stepAssets}
+                          selection={deliverable.photo_selection || {}}
+                          canEdit={canEditPhotoSelection}
+                          disabledReason={photoSelectionDisabledReason}
+                          saving={saving}
+                          onSave={saveEpisodePhotoSelection}
+                        />
+                      ) : null}
 
                       {missingRequired && canHost && !lockedForHost ? (
                         <div className={styles.gapPanel}>
@@ -2850,8 +4593,120 @@ export default function EpisodeStudioWorkspace({
                 );
               })}
             </div>
+              </>
+            ) : (
+              <EpisodeChecklistBuilderList>
+                {hostDeliverables.map((deliverable, index) => (
+                  <EpisodeChecklistBuilderRow
+                    key={deliverable.id}
+                    id={`checklist-builder-${deliverable.id}`}
+                    index={index}
+                    title={deliverable.label}
+                    required={deliverable.required}
+                    responseTypeLabel={
+                      CHECKLIST_RESPONSE_TYPE_LABELS[deliverable.type] ||
+                      'Written response'
+                    }
+                    onMoveUp={() => moveChecklistItem(deliverable.id, -1)}
+                    onMoveDown={() => moveChecklistItem(deliverable.id, 1)}
+                    onRemove={() => removeChecklistItem(deliverable)}
+                    moveUpDisabled={index === 0}
+                    moveDownDisabled={index === hostDeliverables.length - 1}
+                    removeDisabled={
+                      hostDeliverables.length <= 1 ||
+                      REQUIRED_EPISODE_DELIVERABLE_IDS.includes(
+                        deliverable.id
+                      )
+                    }
+                  >
+                    <label>
+                      Step title shown to the host
+                      <input
+                        id={`checklist-label-${deliverable.id}`}
+                        value={deliverable.label}
+                        maxLength={180}
+                        onChange={(event) =>
+                          updateDeliverable(deliverable.id, {
+                            label: event.target.value,
+                          })
+                        }
+                      />
+                    </label>
+                    <label>
+                      Instructions shown above the response
+                      <PlainTextArea
+                        value={deliverable.description}
+                        maxLength={800}
+                        onValueChange={(description) =>
+                          updateDeliverable(deliverable.id, { description })
+                        }
+                      />
+                    </label>
+                    <label>
+                      Response the host provides
+                      <select
+                        value={deliverable.type}
+                        disabled={REQUIRED_EPISODE_DELIVERABLE_IDS.includes(
+                          deliverable.id
+                        )}
+                        onChange={(event) =>
+                          updateDeliverable(deliverable.id, {
+                            type: event.target.value,
+                          })
+                        }
+                      >
+                        <option value="textarea">Written response</option>
+                        <option value="asset">File upload</option>
+                        <option value="url">
+                          Optional working-source link
+                        </option>
+                      </select>
+                    </label>
+                    <label>
+                      File group
+                      <select
+                        value={deliverable.asset_category || 'document'}
+                        disabled={
+                          deliverable.id === 'episode-folder' ||
+                          REQUIRED_EPISODE_DELIVERABLE_IDS.includes(
+                            deliverable.id
+                          )
+                        }
+                        onChange={(event) =>
+                          updateDeliverable(deliverable.id, {
+                            asset_category: event.target.value,
+                          })
+                        }
+                      >
+                        {Object.entries(ASSET_CATEGORY_LABELS).map(
+                          ([value, label]) => (
+                            <option key={value} value={value}>
+                              {label}
+                            </option>
+                          )
+                        )}
+                      </select>
+                    </label>
+                    <label className={styles.checklistBuilderRequirement}>
+                      <input
+                        type="checkbox"
+                        checked={deliverable.required}
+                        disabled={deliverable.id === 'mic-kit-plan'}
+                        onChange={(event) =>
+                          updateDeliverable(deliverable.id, {
+                            required: event.target.checked,
+                          })
+                        }
+                      />
+                      Require this response before a complete handoff
+                    </label>
+                  </EpisodeChecklistBuilderRow>
+                ))}
+              </EpisodeChecklistBuilderList>
+            )}
             </section>
 
+            {checklistMode === 'view' ? (
             <section id="final-assets" className={styles.assetPackagePanel}>
               <div className={styles.panelHeading}>
                 <div>
@@ -3045,6 +4900,7 @@ export default function EpisodeStudioWorkspace({
                 </div>
               )}
             </section>
+            ) : null}
 
             {error ? <p className={styles.errorCard}>{error}</p> : null}
             {message ? <p className={styles.successCard}>{message}</p> : null}
@@ -3148,7 +5004,10 @@ export default function EpisodeStudioWorkspace({
               </section>
             ) : null}
 
-            {canAdvanceProduction ? (
+              </>
+            ) : null}
+
+            {productionView && canAdvanceProduction ? (
               <section className={styles.reviewPanel} id="production-handoff">
                 <div>
                   <span className={styles.eyebrow}>
@@ -3184,15 +5043,13 @@ export default function EpisodeStudioWorkspace({
                     onClick={advanceProduction}
                   >
                     <CheckCircleRoundedIcon aria-hidden="true" />
-                    {viewerPersonId === 'angie-link'
-                      ? 'Send to Caleb'
-                      : 'Complete production review'}
+                    Advance production review
                   </button>
                 </div>
               </section>
             ) : null}
 
-            {canManage ? (
+            {!productionView && canManage ? (
               <EpisodeStudioDeletionControl
                 episode={episode}
                 saving={saving}
@@ -3202,7 +5059,8 @@ export default function EpisodeStudioWorkspace({
               />
             ) : null}
 
-            <section className={styles.actionDock}>
+            {!productionView ? (
+              <section className={styles.actionDock}>
               <div className={styles.actionDockCopy}>
                 <strong>
                   {hostPreviewActive
@@ -3291,7 +5149,8 @@ export default function EpisodeStudioWorkspace({
                   </>
                 ) : null}
               </div>
-            </section>
+              </section>
+            ) : null}
 
           </>
         ) : null}

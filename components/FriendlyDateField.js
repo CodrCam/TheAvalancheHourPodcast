@@ -8,6 +8,8 @@ export default function FriendlyDateField({
   ariaLabel,
   required = false,
   disabled = false,
+  min,
+  max,
 }) {
   const localRef = useRef(null);
 
@@ -35,6 +37,8 @@ export default function FriendlyDateField({
         aria-label={ariaLabel}
         required={required}
         disabled={disabled}
+        min={min}
+        max={max}
       />
       <button
         type="button"

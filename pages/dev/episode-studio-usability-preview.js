@@ -1,4 +1,6 @@
+import { useRouter } from 'next/router';
 import EpisodeStudioWorkspace from '../../components/EpisodeStudioWorkspace';
+import { createDefaultEpisodeProductionTasks } from '../../lib/episodeProductionPlan.mjs';
 import { normalizeEpisodeStudio } from '../../lib/episodeStudioPresentation.mjs';
 
 const PREVIEW_EPISODE = normalizeEpisodeStudio({
@@ -16,6 +18,7 @@ const PREVIEW_EPISODE = normalizeEpisodeStudio({
   producer_person_id: 'caleb-merrill',
   producer_email: 'producer@example.com',
   host_person_ids: ['cam-griffin'],
+  production_tasks: createDefaultEpisodeProductionTasks('2026-08-19'),
   delivery_health: 'on_track',
   producer_directions:
     'Open with the strongest listener call, then move into the field report.',
@@ -35,7 +38,11 @@ const PREVIEW_EPISODE = normalizeEpisodeStudio({
 const PREVIEW_DATA = {
   episode: PREVIEW_EPISODE,
   host_names: ['Cam Griffin'],
-  people: [{ person_id: 'cam-griffin', name: 'Cam Griffin' }],
+  people: [
+    { person_id: 'cam-griffin', name: 'Cam Griffin' },
+    { person_id: 'angie-link', name: 'Angie Lake' },
+    { person_id: 'sierra-bishop', name: 'Sierra Bishop' },
+  ],
   producers: [
     {
       person_id: 'caleb-merrill',
@@ -76,5 +83,14 @@ export async function getServerSideProps({ req }) {
 }
 
 export default function EpisodeStudioUsabilityPreview() {
-  return <EpisodeStudioWorkspace admin previewData={PREVIEW_DATA} />;
+  const router = useRouter();
+  const workspaceView =
+    router.query.workspace === 'production' ? 'production' : 'package';
+  return (
+    <EpisodeStudioWorkspace
+      admin
+      previewData={PREVIEW_DATA}
+      workspaceView={workspaceView}
+    />
+  );
 }

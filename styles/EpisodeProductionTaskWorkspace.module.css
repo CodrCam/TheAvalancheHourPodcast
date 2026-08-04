@@ -1,0 +1,539 @@
+.workspace {
+  --task-workspace-ink: #243d49;
+  --task-workspace-muted: #6c7d85;
+  --task-workspace-blue: #356b83;
+  --task-workspace-line: rgba(20, 38, 56, 0.13);
+  container-name: task-workspace;
+  container-type: inline-size;
+  display: grid;
+  min-width: 0;
+  gap: 9px;
+  color: var(--task-workspace-ink);
+}
+
+.compactSection,
+.managerControls,
+.detailsForm,
+.audit,
+.extraContent {
+  min-width: 0;
+}
+
+.compactSection {
+  display: grid;
+  gap: 6px;
+}
+
+.sectionHeading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.sectionHeading strong {
+  font-size: 0.62rem;
+  letter-spacing: 0.015em;
+}
+
+.sectionHeading > span {
+  color: var(--task-workspace-muted);
+  font-size: 0.55rem;
+  font-weight: 750;
+}
+
+.chipList,
+.requirementList {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dependencyChip {
+  display: inline-flex;
+  min-width: 0;
+  min-height: 23px;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 7px;
+  color: #755d31;
+  font-size: 0.56rem;
+  font-weight: 750;
+  line-height: 1.2;
+  border: 1px solid rgba(154, 113, 53, 0.2);
+  border-radius: 999px;
+  background: #fbf5e9;
+}
+
+.dependencyChip svg,
+.statusDot {
+  width: 11px;
+  height: 11px;
+  flex: 0 0 auto;
+}
+
+.statusDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: #b28a47;
+}
+
+.dependencyChip[data-state='complete'] {
+  color: #2f7355;
+  border-color: rgba(47, 115, 85, 0.18);
+  background: #edf7f2;
+}
+
+.dependencyChip[data-state='active'] {
+  color: #2e6177;
+  border-color: rgba(53, 107, 131, 0.2);
+  background: #edf5f7;
+}
+
+.requirementList {
+  display: grid;
+  gap: 5px;
+}
+
+.requirementList li,
+.requirementList a,
+.requirementList li > span {
+  min-width: 0;
+}
+
+.requirementList a,
+.requirementList li > span {
+  display: flex;
+  min-height: 28px;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 7px;
+  color: #355f72;
+  font-size: 0.59rem;
+  font-weight: 750;
+  line-height: 1.3;
+  text-decoration: none;
+  border: 1px solid rgba(53, 107, 131, 0.15);
+  border-radius: 7px;
+  background: #f1f6f7;
+}
+
+.requirementList li > span {
+  color: #66777f;
+  border-color: var(--task-workspace-line);
+  background: #f6f8f8;
+}
+
+.requirementList svg {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+}
+
+.requirementList a > span {
+  overflow: hidden;
+  flex: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.requirementList a:hover {
+  color: #244f62;
+  border-color: rgba(53, 107, 131, 0.3);
+  background: #e9f2f4;
+}
+
+.requirementList a:focus-visible,
+.openEvidence:focus-visible,
+.formFooter button:focus-visible {
+  outline: 3px solid rgba(53, 107, 131, 0.24);
+  outline-offset: 2px;
+}
+
+.requirementList li[data-complete='true'] a {
+  color: #2f7355;
+  border-color: rgba(47, 115, 85, 0.17);
+  background: #edf7f2;
+}
+
+.managerControls {
+  display: grid;
+  gap: 7px;
+  padding: 8px;
+  border: 1px solid rgba(53, 107, 131, 0.16);
+  border-radius: 8px;
+  background: #f4f8f9;
+}
+
+.managerControls > div,
+.managerControls > label {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.managerControls strong {
+  color: #3b5967;
+  font-size: 0.59rem;
+  font-weight: 800;
+}
+
+.managerControls small {
+  color: var(--task-workspace-muted);
+  font-size: 0.54rem;
+  font-weight: 550;
+  line-height: 1.35;
+}
+
+.managerControls :is(label, fieldset) {
+  min-width: 0;
+  margin: 0;
+}
+
+.managerControls label,
+.managerControls legend {
+  color: #3b5967;
+  font-size: 0.59rem;
+  font-weight: 800;
+}
+
+.managerControls :is(input, select, button) {
+  max-width: 100%;
+  min-height: 32px;
+  margin-top: 4px;
+  color: var(--task-workspace-ink);
+  font: inherit;
+  font-size: 0.64rem;
+  border: 1px solid rgba(20, 38, 56, 0.17);
+  border-radius: 7px;
+  background: white;
+}
+
+.managerControls :is(input, select) {
+  width: 100%;
+  padding: 6px 7px;
+}
+
+.managerControls button {
+  padding: 6px 8px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.managerControls :is(input, select, button):focus-visible {
+  outline: 3px solid rgba(53, 107, 131, 0.22);
+  outline-offset: 2px;
+}
+
+.managerControls :is(input, select, button):disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+.extraContent {
+  display: grid;
+  gap: 7px;
+}
+
+.detailsForm {
+  display: grid;
+  gap: 9px;
+  padding-top: 8px;
+  border-top: 1px solid var(--task-workspace-line);
+}
+
+.field {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+  color: #3b5967;
+  font-size: 0.62rem;
+  font-weight: 800;
+}
+
+.field > small:not(.characterCount, .fieldError) {
+  color: var(--task-workspace-muted);
+  font-size: 0.56rem;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.field textarea,
+.field input {
+  width: 100%;
+  min-width: 0;
+  color: var(--task-workspace-ink);
+  font: inherit;
+  font-size: 0.65rem;
+  line-height: 1.45;
+  border: 1px solid rgba(20, 38, 56, 0.17);
+  border-radius: 7px;
+  outline: none;
+  background: white;
+}
+
+.field textarea {
+  min-height: 88px;
+  resize: vertical;
+  padding: 8px;
+}
+
+.field input {
+  min-height: 34px;
+  padding: 7px 8px 7px 29px;
+}
+
+.field :is(textarea, input):focus {
+  border-color: #4f8095;
+  box-shadow: 0 0 0 3px rgba(79, 128, 149, 0.13);
+}
+
+.field :is(textarea, input)[readonly] {
+  color: #5e7078;
+  background: #f4f6f6;
+}
+
+.field :is(textarea, input):disabled {
+  cursor: wait;
+  opacity: 0.64;
+}
+
+.field input[aria-invalid='true'] {
+  border-color: #b14d2d;
+  box-shadow: 0 0 0 3px rgba(177, 77, 45, 0.1);
+}
+
+.characterCount {
+  justify-self: end;
+  color: #7b888e;
+  font-size: 0.53rem;
+  font-weight: 650;
+}
+
+.urlField {
+  position: relative;
+  min-width: 0;
+}
+
+.urlField > svg {
+  position: absolute;
+  top: 50%;
+  left: 8px;
+  z-index: 1;
+  width: 14px;
+  height: 14px;
+  color: #718790;
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.fieldError {
+  color: #9a3e26;
+  font-size: 0.56rem;
+  font-weight: 750;
+  line-height: 1.35;
+}
+
+.openEvidence {
+  justify-self: start;
+  color: var(--task-workspace-blue);
+  font-size: 0.56rem;
+  font-weight: 800;
+  text-underline-offset: 2px;
+}
+
+.formFooter {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 7px;
+}
+
+.statusMessage {
+  min-width: 0;
+  margin-right: auto;
+  color: #4d745f;
+  font-size: 0.56rem;
+  line-height: 1.35;
+}
+
+.formFooter button {
+  display: inline-flex;
+  min-height: 32px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 6px 9px;
+  color: white;
+  font: inherit;
+  font-size: 0.61rem;
+  font-weight: 850;
+  border: 1px solid #2f6075;
+  border-radius: 7px;
+  background: var(--task-workspace-blue);
+  cursor: pointer;
+}
+
+.formFooter button svg {
+  width: 14px;
+  height: 14px;
+}
+
+.formFooter button:hover:not(:disabled) {
+  filter: brightness(0.94);
+}
+
+.formFooter button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.audit {
+  padding-top: 8px;
+  border-top: 1px solid var(--task-workspace-line);
+}
+
+.audit summary {
+  display: flex;
+  min-height: 30px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 5px 7px;
+  border-radius: 7px;
+  cursor: pointer;
+  list-style: none;
+  transition: background 140ms ease;
+}
+
+.audit summary::-webkit-details-marker {
+  display: none;
+}
+
+.audit summary:hover {
+  background: rgba(53, 107, 131, 0.06);
+}
+
+.audit summary:focus-visible {
+  outline: 3px solid rgba(53, 107, 131, 0.2);
+  outline-offset: 1px;
+}
+
+.audit summary::after {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  color: #56717d;
+  font-size: 0.82rem;
+  font-weight: 800;
+  line-height: 17px;
+  text-align: center;
+  content: '+';
+  border: 1px solid rgba(53, 107, 131, 0.16);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.audit[open] summary::after {
+  content: '−';
+}
+
+.audit summary strong {
+  color: #536a75;
+  font-size: 0.58rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.audit summary > span {
+  overflow: hidden;
+  margin-left: auto;
+  color: #71818a;
+  font-size: 0.53rem;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.audit dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 9px;
+  margin: 7px 0 0;
+  padding: 8px 9px;
+  border: 1px solid rgba(20, 38, 56, 0.09);
+  border-radius: 7px;
+  background: rgba(248, 250, 249, 0.8);
+}
+
+.audit dl > div {
+  min-width: 0;
+}
+
+.audit dt {
+  color: #7c898f;
+  font-size: 0.5rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.audit dd {
+  overflow-wrap: anywhere;
+  margin: 1px 0 0;
+  color: #455e6a;
+  font-size: 0.56rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+@container task-workspace (min-width: 390px) {
+  .requirementList,
+  .managerControls {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .managerControls > :only-child {
+    grid-column: 1 / -1;
+  }
+
+  .detailsForm {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .formFooter {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 420px) {
+  .formFooter {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .statusMessage {
+    margin-right: 0;
+  }
+
+  .formFooter button {
+    width: 100%;
+  }
+
+  .audit summary > span {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .audit summary {
+    transition: none;
+  }
+}

@@ -8,7 +8,8 @@ availability and submit requests. Only administrators can view private mailing
 addresses, assign kits, export shipping data, or change inventory records.
 
 The operating goal is to keep routine coordination on the board instead of in
-an email chain while still allowing Caleb to make the final logistics decision.
+an email chain while still allowing the mic-kit coordinator to make the final
+logistics decision.
 
 ## Current workflow
 
@@ -19,31 +20,31 @@ an email chain while still allowing Caleb to make the final logistics decision.
 3. The recommendation engine prefers a confirmed kit in the same country. It
    can also plan a direct handoff from a current host when that kit is due back
    before the next shipment must leave.
-4. Caleb reviews the recommendation and selects **Prepare handoff**. This
+4. The mic-kit coordinator reviews the recommendation and selects **Prepare handoff**. This
    reserves the kit, fills the ship-by date, and records the planned due-back
    date.
-5. For a US-origin shipment, Caleb downloads the USPS Click-N-Ship CSV. The
+5. For a US-origin shipment, the coordinator downloads the USPS Click-N-Ship CSV. The
    export includes the recipient, the current host as sender when applicable,
    the saved package preset, and internal reference IDs. Only shipments inside
    Click-N-Ship's seven-day mailing window are included, and its column mapping
    can be saved after the first upload.
-6. Caleb buys the label in USPS, then saves the carrier, tracking number, and
+6. The coordinator buys the label in USPS, then saves the carrier, tracking number, and
    tracking link on the kit.
 7. The next host selects **I received this kit**. A direct handoff closes the
    prior host's checkout automatically and starts the new checkout.
-8. Caleb can always check a kit in, complete a handoff, correct a location, or
+8. A mic-kit coordinator can always check a kit in, complete a handoff, correct a location, or
    override the recommendation.
 
 ## Carrier routing
 
-- A shipment originating in the United States is eligible for Caleb's USPS
+- A shipment originating in the United States is eligible for the coordinator's USPS
   Click-N-Ship export, including an international destination.
 - A shipment originating outside the United States is excluded from the USPS
   export and appears as a carrier-decision task.
 - For a direct handoff, the origin country and sender address come from the
   current holder's original private mailing record.
 - For a kit at its home base, Click-N-Ship can use the default sender attached
-  to Caleb's account.
+  to the shipping account.
 
 The Canadian kit therefore remains useful for Canadian hosts without pretending
 that a Canada-origin parcel belongs in a USPS workflow.
@@ -70,8 +71,8 @@ The shipping module is isolated from the host request and checkout workflow so
 direct label creation can replace the export without changing the rest of the
 product.
 
-Production API work should begin only after the USPS developer app and Caleb's
-business payment account are explicitly connected. The integration will need:
+Production API work should begin only after the USPS developer app and the
+organization's business payment account are explicitly connected. The integration will need:
 
 - USPS OAuth client credentials stored only as server-side Netlify secrets.
 - USPS Customer Registration and payment-account authorization.
@@ -120,7 +121,7 @@ than guessed in advance.
   exist.
 - Save a packed weight and dimensions on every confirmed case.
 - Verify the home country for each kit.
-- Save the Click-N-Ship column mapping on Caleb's first file upload.
+- Save the Click-N-Ship column mapping on the coordinator's first file upload.
 - Keep the USPS API upgrade in test mode until label purchase, retry,
   cancellation, and PII-redaction checks all pass.
 

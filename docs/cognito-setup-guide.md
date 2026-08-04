@@ -51,8 +51,8 @@ Create these Cognito groups exactly as written:
 | `host` | Read Host Studio resources, complete only assigned episode forms, and update only the signed-in host's connected public profile. | Leave blank | Do not assign |
 
 The website reads the complete `cognito:groups` array and combines the
-permissions from every matching group. For example, Sierra can belong to both
-`logistics` and `studio_manager`; no combined group is needed.
+permissions from every matching group. For example, one teammate can belong
+to both `logistics` and `studio_manager`; no combined group is needed.
 
 Group precedence and IAM role assignment are intentionally unused. The website
 authorizes requests through its own server-side permission checks and does not
@@ -92,9 +92,9 @@ Create one user per person. Do not share logins.
 
 Suggested first users:
 
-- Cameron: group `admin`
-- Caleb: group `admin`
-- Sierra: groups `logistics` and `studio_manager`
+- Website administrators: group `admin`
+- Operations administrators: group `admin`
+- Publishing or logistics owners: groups `logistics` and `studio_manager`
 - Selected production-team members: group `studio_manager`
 - Regular hosts: group `host`
 

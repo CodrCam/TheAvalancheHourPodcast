@@ -45,7 +45,52 @@ test('puts requested changes and off-track work ahead of routine progress', () =
 
   assert.equal(result.actions[0].title.includes('recovery plan'), true);
   assert.equal(result.actions[0].urgency, 'urgent');
+  assert.equal(
+    result.actions[0].href,
+    '/studio/episodes/episode-two/production#production-workflow'
+  );
   assert.equal(result.metrics.off_track, 1);
+});
+
+test('routes workflow work to Production while routine package work stays on Package', () => {
+  const result = buildStudioToday(
+    {
+      episodes: [
+        episode({
+          episode_id: 'workflow-episode',
+          status: 'accepted',
+          my_roles: ['host'],
+          workflow: {
+            next_due_task: {
+              task_id: 'intro-ready',
+              label: 'Introduction ready',
+              due_date: '2026-07-28',
+              owner_type: 'hosts',
+              assigned_person_ids: [],
+              owner_label: 'Hosts',
+            },
+          },
+        }),
+        episode({
+          episode_id: 'package-episode',
+        }),
+      ],
+    },
+    { today: '2026-07-26' }
+  );
+
+  assert.equal(
+    result.episode_actions.find(
+      (action) => action.id === 'episode:workflow-episode'
+    ).href,
+    '/studio/episodes/workflow-episode/production#production-workflow'
+  );
+  assert.equal(
+    result.episode_actions.find(
+      (action) => action.id === 'episode:package-episode'
+    ).href,
+    '/studio/episodes/package-episode'
+  );
 });
 
 test('shows producer review work to a manager or assigned producer', () => {
