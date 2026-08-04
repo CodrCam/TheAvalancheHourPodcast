@@ -191,6 +191,44 @@ test('uses the recording date ahead of release deadlines for mic coverage', () =
   assert.equal(coverage?.urgency, 'urgent');
 });
 
+test('surfaces equipment review without recommending or assigning a kit', () => {
+  const automation = buildMicKitAutomation(
+    {
+      ...DEFAULT_MIC_KIT_TRACKER,
+      inventory_confirmed: true,
+      requests: [
+        {
+          request_id: 'guest-review',
+          request_kind: 'equipment_review',
+          participant_type: 'guest',
+          requester_name: 'Alex Guest',
+          episode_id: 'episode-one',
+          recording_date: '2026-08-12',
+          need_by: '2026-08-05',
+          status: 'requested',
+          notes: 'The guest is unsure whether the microphone is suitable.',
+        },
+      ],
+    },
+    [
+      {
+        episode_id: 'episode-one',
+        title: 'Episode One',
+        recording_date: '2026-08-12',
+      },
+    ],
+    { today: '2026-08-01' }
+  );
+
+  assert.equal(automation.recommendations.length, 0);
+  const review = automation.actions.find(
+    (action) => action.request_id === 'guest-review'
+  );
+  assert.equal(review.kind, 'review_equipment_plan');
+  assert.equal(review.kit_id, '');
+  assert.match(review.detail, /unsure/i);
+});
+
 test('plans a direct handoff when a held kit is due before the next ship date', () => {
   const tracker = {
     ...DEFAULT_MIC_KIT_TRACKER,

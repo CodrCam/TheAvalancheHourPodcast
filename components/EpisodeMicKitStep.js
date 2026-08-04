@@ -79,6 +79,15 @@ function safeCoverage(value = {}) {
   return {
     request_id: text(value.request_id, 120),
     host_person_id: text(value.host_person_id, 120),
+    request_kind:
+      value.request_kind === 'equipment_review'
+        ? 'equipment_review'
+        : 'shipment',
+    review_resolution: ['shipment', 'own_equipment'].includes(
+      value.review_resolution
+    )
+      ? value.review_resolution
+      : '',
     status,
     has_kit_assignment: value.has_kit_assignment === true,
     updated_at: text(value.updated_at, 50),
@@ -183,6 +192,12 @@ function currentRequestForHost(coverage, hostPersonId, requestIdHint = '') {
 
 function planLabel(plan) {
   if (plan.choice === 'request_kit') return 'Avalanche Hour mic kit';
+  if (
+    plan.choice === 'needs_follow_up' &&
+    plan.request_coverage?.request_kind === 'shipment'
+  ) {
+    return 'Avalanche Hour mic kit';
+  }
   if (plan.choice === 'use_own_equipment') return 'Own recording equipment';
   if (plan.choice === 'no_kit_needed') return 'No separate kit needed';
   if (plan.choice) return 'Producer follow-up needed';
@@ -461,9 +476,25 @@ export default function EpisodeMicKitStep({
     hostReadyCount + (guestPlanPresent && guestPlan.resolved ? 1 : 0);
   const allParticipantsReady = payload.complete;
   const guestRequestStatus = guestPlan.request_coverage?.status || '';
-  const guestRequestStatusMeta = guestRequestStatus
-    ? REQUEST_STATUS_META[guestRequestStatus]
-    : null;
+  const guestRequestStatusMeta =
+    guestPlan.request_coverage?.review_resolution === 'own_equipment'
+      ? {
+          label: 'Setup confirmed · no shipment needed',
+          detail:
+            'The episode team confirmed the guest’s recording setup without a microphone-kit shipment.',
+          tone: 'ready',
+        }
+      : guestPlan.request_coverage?.request_kind === 'equipment_review' &&
+          guestRequestStatus === 'requested'
+      ? {
+          label: 'Equipment review queued',
+          detail:
+            'The episode team can see why the setup was flagged and confirm whether a kit shipment is needed.',
+          tone: 'attention',
+        }
+      : guestRequestStatus
+        ? REQUEST_STATUS_META[guestRequestStatus]
+        : null;
   const requestHref = `/studio/mic-kits?episode_id=${encodeURIComponent(
     episodeId
   )}&return_to=${encodeURIComponent(

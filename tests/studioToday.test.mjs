@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { buildStudioToday } from '../lib/studioToday.mjs';
+import {
+  buildStudioToday,
+  isViewerMicKitRequestActionable,
+} from '../lib/studioToday.mjs';
 
 function episode(overrides = {}) {
   return {
@@ -215,6 +218,71 @@ test('shows only the signed-in host mic-kit requests', () => {
 
   assert.equal(result.mic_kit_actions.length, 1);
   assert.equal(result.mic_kit_actions[0].id, 'mic-kit:mine');
+});
+
+test('surfaces coordinated guest equipment reviews with actionable copy', () => {
+  const coordinatedReview = {
+    request_id: 'guest-review',
+    participant_type: 'guest',
+    request_kind: 'equipment_review',
+    requester_name: 'Alex Guest',
+    is_mine: false,
+    is_coordinator: true,
+    status: 'requested',
+    need_by: '2026-08-01',
+    recording_date: '2026-08-08',
+    notes: 'The guest is unsure whether the microphone is suitable.',
+  };
+  const result = buildStudioToday(
+    {
+      micKitPayload: {
+        tracker: {
+          requests: [
+            coordinatedReview,
+            {
+              ...coordinatedReview,
+              request_id: 'unrelated-guest',
+              is_coordinator: false,
+            },
+            {
+              ...coordinatedReview,
+              request_id: 'unrelated-host',
+              participant_type: 'host',
+              is_coordinator: true,
+            },
+          ],
+        },
+      },
+    },
+    { today: '2026-07-26' }
+  );
+
+  assert.equal(result.mic_kit_actions.length, 1);
+  assert.deepEqual(
+    {
+      id: result.mic_kit_actions[0].id,
+      title: result.mic_kit_actions[0].title,
+      badge: result.mic_kit_actions[0].badge,
+      href: result.mic_kit_actions[0].href,
+      urgency: result.mic_kit_actions[0].urgency,
+    },
+    {
+      id: 'mic-kit:guest-review',
+      title: 'Confirm Alex Guest’s recording setup',
+      badge: 'Guest equipment review',
+      href: '/studio/mic-kits#guest-review',
+      urgency: 'medium',
+    }
+  );
+  assert.match(result.mic_kit_actions[0].detail, /unsure/i);
+  assert.equal(isViewerMicKitRequestActionable(coordinatedReview), true);
+  assert.equal(
+    isViewerMicKitRequestActionable({
+      ...coordinatedReview,
+      status: 'declined',
+    }),
+    false
+  );
 });
 
 test('puts Team Inbox blockers and untriaged requests into Caleb’s queue', () => {

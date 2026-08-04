@@ -81,6 +81,8 @@ test('normalizes guest recipient metadata while legacy requests remain Studio ho
         ],
         source: 'guest_questionnaire',
         source_response_id: ' response-one ',
+        request_kind: 'equipment_review',
+        review_resolution: 'own_equipment',
         requester_name: 'Guest Recipient',
       },
     ],
@@ -106,13 +108,44 @@ test('normalizes guest recipient metadata while legacy requests remain Studio ho
       coordinator_person_ids: tracker.requests[1].coordinator_person_ids,
       source: tracker.requests[1].source,
       source_response_id: tracker.requests[1].source_response_id,
+      request_kind: tracker.requests[1].request_kind,
+      review_resolution: tracker.requests[1].review_resolution,
     },
     {
       participant_type: 'guest',
       coordinator_person_ids: ['host-one', 'producer-one'],
       source: 'guest_questionnaire',
       source_response_id: 'response-one',
+      request_kind: 'equipment_review',
+      review_resolution: 'own_equipment',
     }
+  );
+});
+
+test('does not allow an unresolved equipment review to hold a physical kit', () => {
+  assert.throws(
+    () =>
+      validateMicKitTracker({
+        kits: [
+          {
+            kit_id: 'kit-one',
+            label: 'Kit one',
+            status: 'available',
+            next_request_id: 'guest-review',
+          },
+        ],
+        requests: [
+          {
+            request_id: 'guest-review',
+            request_kind: 'equipment_review',
+            participant_type: 'guest',
+            requester_name: 'Guest Recipient',
+            status: 'assigned',
+            kit_id: 'kit-one',
+          },
+        ],
+      }),
+    /review the guest recording setup/i
   );
 });
 
@@ -144,6 +177,7 @@ test('selecting available clears shipment details from an editor draft', () => {
       carrier: '',
       tracking_number: '',
       tracking_url: '',
+      tracking_request_id: '',
     }
   );
 });
@@ -394,6 +428,87 @@ test('guest coordinators can act and see their guest delivery details', () => {
   assert.equal(manager.requests[0].can_act, true);
 });
 
+test('current episode producers can see older guest requests without stale coordinator data', () => {
+  const tracker = normalizeMicKitTracker({
+    ...DEFAULT_MIC_KIT_TRACKER,
+    requests: [
+      {
+        request_id: 'legacy-guest-request',
+        participant_type: 'guest',
+        coordinator_person_ids: ['host-one'],
+        source: 'guest_questionnaire',
+        requester_name: 'Guest Recipient',
+        requester_email: 'guest@example.com',
+        country: 'US',
+        city_region: 'Bozeman, Montana',
+        need_by: '2026-10-01',
+        episode_id: 'episode-one',
+        status: 'requested',
+        shipping: {
+          recipient: 'Guest Recipient',
+          address_line_1: '123 Private Lane',
+          city: 'Bozeman',
+          region: 'MT',
+          postal_code: '59715',
+          country: 'US',
+        },
+      },
+    ],
+  });
+
+  const producer = sanitizeMicKitTrackerForViewer(tracker, {
+    person_id: 'producer-one',
+    coordinated_episode_ids: ['episode-one'],
+  });
+  assert.equal(producer.requests.length, 1);
+  assert.equal(producer.requests[0].is_coordinator, true);
+  assert.equal(producer.requests[0].can_act, true);
+  assert.equal(
+    producer.requests[0].shipping.address_line_1,
+    '123 Private Lane'
+  );
+  assert.equal(
+    canActOnMicKitRequest(tracker.requests[0], {
+      person_id: 'producer-one',
+      coordinated_episode_ids: ['episode-one'],
+    }),
+    true
+  );
+
+  const unrelatedProducer = sanitizeMicKitTrackerForViewer(tracker, {
+    person_id: 'producer-two',
+    coordinated_episode_ids: ['episode-two'],
+  });
+  assert.equal(unrelatedProducer.requests.length, 0);
+
+  const formerHost = sanitizeMicKitTrackerForViewer(tracker, {
+    person_id: 'host-one',
+    coordinated_episode_ids: [],
+  });
+  assert.equal(formerHost.requests.length, 0);
+  assert.equal(
+    canActOnMicKitRequest(tracker.requests[0], {
+      person_id: 'host-one',
+      coordinated_episode_ids: [],
+    }),
+    false
+  );
+
+  assert.equal(
+    canActOnMicKitRequest(
+      {
+        ...tracker.requests[0],
+        episode_id: '',
+      },
+      {
+        person_id: 'host-one',
+        coordinated_episode_ids: ['episode-one'],
+      }
+    ),
+    false
+  );
+});
+
 test('keeps tracking visible to the host while a kit is checked out', () => {
   const tracker = normalizeMicKitTracker({
     ...DEFAULT_MIC_KIT_TRACKER,
@@ -471,6 +586,87 @@ test('allows one current checkout and one scheduled direct handoff', () => {
     '2026-08-15'
   );
   assert.doesNotThrow(() => validateMicKitTracker(tracker));
+});
+
+test('keeps direct-handoff custody and tracking private to the related recipient', () => {
+  const tracker = normalizeMicKitTracker({
+    ...DEFAULT_MIC_KIT_TRACKER,
+    kits: [
+      {
+        ...DEFAULT_MIC_KIT_TRACKER.kits[0],
+        status: 'with_holder',
+        current_holder_name: 'Current Recipient',
+        current_location: 'Current recipient private location',
+        checked_out_request_id: 'current-request',
+        checked_out_at: '2026-08-01T12:00:00.000Z',
+        next_request_id: 'next-request',
+        ship_by: '2026-08-10',
+        carrier: 'UPS',
+        tracking_number: 'CURRENT-TRACKING',
+        tracking_url: 'https://tracking.example/current',
+        tracking_request_id: 'current-request',
+      },
+    ],
+    requests: [
+      {
+        request_id: 'current-request',
+        requester_subject: 'current-subject',
+        requester_name: 'Current Recipient',
+        status: 'checked_out',
+        kit_id: 'tah-us-1',
+      },
+      {
+        request_id: 'next-request',
+        requester_subject: 'next-subject',
+        requester_name: 'Next Recipient',
+        status: 'assigned',
+        kit_id: 'tah-us-1',
+      },
+    ],
+  });
+
+  const currentView = sanitizeMicKitTrackerForViewer(tracker, {
+    subject: 'current-subject',
+  }).kits[0];
+  assert.equal(currentView.current_holder_name, 'Current Recipient');
+  assert.equal(currentView.current_location, 'Current recipient private location');
+  assert.equal(currentView.checked_out_request_id, 'current-request');
+  assert.equal(currentView.next_request_id, '');
+  assert.equal(currentView.ship_by, '');
+  assert.equal(currentView.tracking_number, 'CURRENT-TRACKING');
+
+  const nextView = sanitizeMicKitTrackerForViewer(tracker, {
+    subject: 'next-subject',
+  }).kits[0];
+  assert.equal(nextView.current_holder_name, '');
+  assert.equal(nextView.current_location, '');
+  assert.equal(nextView.checked_out_request_id, '');
+  assert.equal(nextView.checked_out_at, '');
+  assert.equal(nextView.next_request_id, 'next-request');
+  assert.equal(nextView.ship_by, '2026-08-10');
+  assert.equal(nextView.tracking_number, '');
+
+  const nextTrackingView = sanitizeMicKitTrackerForViewer(
+    {
+      ...tracker,
+      kits: tracker.kits.map((kit) => ({
+        ...kit,
+        tracking_number: 'NEXT-TRACKING',
+        tracking_url: 'https://tracking.example/next',
+        tracking_request_id: 'next-request',
+      })),
+    },
+    { subject: 'next-subject' }
+  ).kits[0];
+  assert.equal(nextTrackingView.tracking_number, 'NEXT-TRACKING');
+  assert.equal(nextTrackingView.current_location, '');
+
+  const managerView = sanitizeMicKitTrackerForViewer(tracker, {
+    canManage: true,
+  }).kits[0];
+  assert.equal(managerView.current_location, 'Current recipient private location');
+  assert.equal(managerView.next_request_id, 'next-request');
+  assert.equal(managerView.tracking_number, 'CURRENT-TRACKING');
 });
 
 test('rejects dangling assignments and summarizes only active inventory', () => {

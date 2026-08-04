@@ -14,7 +14,10 @@ import StudioLayout, {
   useStudioSession,
 } from '../../components/StudioLayout';
 import { buildMicKitAutomation } from '../../lib/micKitAutomation.mjs';
-import { buildStudioToday } from '../../lib/studioToday.mjs';
+import {
+  buildStudioToday,
+  isViewerMicKitRequestActionable,
+} from '../../lib/studioToday.mjs';
 import styles from '../../styles/Studio.module.css';
 
 const QUICK_LINKS = [
@@ -281,11 +284,7 @@ export function TodayWorkspace({
   const micKitMetric = canManageMicKits
     ? Number(workspace.micKits?.automation?.metrics?.open_requests) || 0
     : (workspace.micKits?.tracker?.requests || []).filter(
-        (request) =>
-          request.is_mine &&
-          ['requested', 'approved', 'waitlisted', 'assigned', 'checked_out'].includes(
-            request.status
-          )
+        isViewerMicKitRequestActionable
       ).length;
   const operationsAttention = workspace.operations
     ? (Number(workspace.operations.orders?.unshipped) || 0) +

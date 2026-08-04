@@ -17,6 +17,8 @@ import {
   getMicKitTracker,
   saveMicKitTracker,
 } from '../../../lib/micKitStore';
+import { getGuestQuestionnairesByEpisodeIds } from '../../../lib/guestQuestionnaireStore';
+import { reconcileSubmittedGuestMicKitQueue } from '../../../lib/guestQuestionnaireMicKitReconciliation.mjs';
 import { getMicKitAccessForPermissions } from '../../../lib/micKitAccess.mjs';
 import { listEpisodeStudios } from '../../../lib/episodeStudioStore';
 import { getStudioBindingForSubject } from '../../../lib/studioAccessStore';
@@ -120,11 +122,61 @@ function requestInput(req, principal, binding) {
   };
 }
 
-function viewerFor(principal, binding, canManage) {
+function confirmedGuestShipment(input = {}, request = {}) {
+  const shipping = {
+    recipient: cleanText(input.shipping?.recipient, 120),
+    phone: cleanText(input.shipping?.phone, 60),
+    address_line_1: cleanText(input.shipping?.address_line_1, 180),
+    address_line_2: cleanText(input.shipping?.address_line_2, 180),
+    city: cleanText(input.shipping?.city, 120),
+    region: cleanText(input.shipping?.region, 120),
+    postal_code: cleanText(input.shipping?.postal_code, 40),
+    country: cleanCountry(input.shipping?.country || input.country),
+  };
+  const cityRegion =
+    cleanText(input.city_region, 180) ||
+    [shipping.city, shipping.region].filter(Boolean).join(', ');
+  const needBy = cleanDate(input.need_by) || request.need_by;
+  if (
+    !shipping.recipient ||
+    !shipping.address_line_1 ||
+    !shipping.city ||
+    !shipping.region ||
+    !shipping.postal_code ||
+    !shipping.country ||
+    !cityRegion ||
+    !needBy
+  ) {
+    throw new Error(
+      'Mic kit request: confirm the complete guest mailing address, location, and need-by date before requesting shipment.'
+    );
+  }
+  return {
+    shipping,
+    country: shipping.country,
+    city_region: cityRegion,
+    need_by: needBy,
+    admin_response: cleanText(input.admin_response, 1200),
+  };
+}
+
+function viewerFor(principal, binding, canManage, episodes = []) {
+  const personId = binding?.person_id || '';
   return {
     subject: principal.subject,
     username: principal.username,
-    person_id: binding?.person_id || '',
+    person_id: personId,
+    coordinated_episode_ids: personId
+      ? (Array.isArray(episodes) ? episodes : [])
+          .filter(
+            (episode) =>
+              episode?.producer_person_id === personId ||
+              (Array.isArray(episode?.host_person_ids) &&
+                episode.host_person_ids.includes(personId))
+          )
+          .map((episode) => episode.episode_id)
+          .filter(Boolean)
+      : [],
     canManage,
   };
 }
@@ -149,7 +201,7 @@ function responsePayload(
       : null,
     tracker: sanitizeMicKitTrackerForViewer(
       result.tracker,
-      viewerFor(principal, binding, canManage)
+      viewerFor(principal, binding, canManage, episodes)
     ),
   };
 }
@@ -187,6 +239,11 @@ function syncKitAssignment(tracker, kit, nextRequestId) {
   if (!nextRequest) {
     throw new Error('Mic kit tracker: that request no longer exists.');
   }
+  if (nextRequest.request_kind === 'equipment_review') {
+    throw new Error(
+      'Mic kit tracker: confirm the guest needs a shipment and collect the mailing details before assigning a kit.'
+    );
+  }
   if (
     ['checked_out', 'returned', 'declined', 'cancelled'].includes(
       nextRequest.status
@@ -200,6 +257,13 @@ function syncKitAssignment(tracker, kit, nextRequestId) {
   nextRequest.status = 'assigned';
   nextRequest.kit_id = kit.kit_id;
   nextRequest.updated_at = new Date().toISOString();
+
+  if (previousRequestId !== nextRequestId) {
+    kit.carrier = '';
+    kit.tracking_number = '';
+    kit.tracking_url = '';
+    kit.tracking_request_id = '';
+  }
 }
 
 function closePreviousCheckout(tracker, kit, nextRequestId, principal, now) {
@@ -224,11 +288,17 @@ function clearQueuedRequestFromKits(tracker, requestId) {
   tracker.kits = tracker.kits.map((kit) => {
     if (kit.next_request_id !== requestId) return kit;
     const hasCurrentHolder = Boolean(kit.checked_out_request_id);
+    const clearTracking =
+      !kit.tracking_request_id || kit.tracking_request_id === requestId;
     return {
       ...kit,
       next_request_id: '',
       ship_by: '',
       due_back: hasCurrentHolder ? kit.due_back : '',
+      carrier: clearTracking ? '' : kit.carrier,
+      tracking_number: clearTracking ? '' : kit.tracking_number,
+      tracking_url: clearTracking ? '' : kit.tracking_url,
+      tracking_request_id: clearTracking ? '' : kit.tracking_request_id,
     };
   });
 }
@@ -236,6 +306,7 @@ function clearQueuedRequestFromKits(tracker, requestId) {
 export const config = { api: { bodyParser: { sizeLimit: '500kb' } } };
 
 export default async function handler(req, res) {
+  res.setHeader('Cache-Control', 'private, no-store');
   if (!['GET', 'POST', 'PATCH'].includes(req.method)) {
     res.setHeader('Allow', 'GET,POST,PATCH');
     return res.status(405).json({ ok: false, error: 'Method not allowed' });
@@ -255,24 +326,50 @@ export default async function handler(req, res) {
     const { canManage } = micKitAccess;
     const includeAutomation =
       canManage && req.query.automation !== 'false';
-    const result = await getMicKitTracker();
+    let result = await getMicKitTracker();
     const actorBinding = await getStudioBindingForSubject(
       principal.subject
     );
-    let automationEpisodes = [];
-    if (includeAutomation) {
-      try {
-        const episodeResult = await listEpisodeStudios();
-        automationEpisodes = episodeResult.episodes || [];
-      } catch (episodeError) {
-        console.error(
-          'mic kit episode automation unavailable:',
-          episodeError
-        );
-      }
+    let episodeStudios = [];
+    try {
+      const episodeResult = await listEpisodeStudios();
+      episodeStudios = episodeResult.episodes || [];
+    } catch (episodeError) {
+      console.error(
+        'mic kit episode relationships unavailable:',
+        episodeError
+      );
     }
+    const actorViewer = viewerFor(
+      principal,
+      actorBinding,
+      canManage,
+      episodeStudios
+    );
 
     if (req.method === 'GET') {
+      try {
+        const coordinatedEpisodeIds = new Set(
+          actorViewer.coordinated_episode_ids || []
+        );
+        const reconciliationEpisodes = canManage
+          ? episodeStudios
+          : episodeStudios.filter((episode) =>
+              coordinatedEpisodeIds.has(episode.episode_id)
+            );
+        result = await reconcileSubmittedGuestMicKitQueue({
+          trackerResult: result,
+          episodes: reconciliationEpisodes,
+          loadQuestionnaires: getGuestQuestionnairesByEpisodeIds,
+          loadTracker: getMicKitTracker,
+          saveTracker: saveMicKitTracker,
+        });
+      } catch (reconciliationError) {
+        console.error(
+          'guest questionnaire mic-kit reconciliation unavailable:',
+          reconciliationError
+        );
+      }
       return res
         .status(200)
         .json(
@@ -281,7 +378,7 @@ export default async function handler(req, res) {
             principal,
             actorBinding,
             micKitAccess,
-            automationEpisodes,
+            episodeStudios,
             includeAutomation
           )
         );
@@ -300,10 +397,7 @@ export default async function handler(req, res) {
     if (action === 'create_request') {
       const request = requestInput(req, principal, actorBinding);
       if (request.episode_id) {
-        const episodeSource = canManage
-          ? automationEpisodes
-          : (await listEpisodeStudios()).episodes;
-        const episode = episodeSource.find(
+        const episode = episodeStudios.find(
           (candidate) => candidate.episode_id === request.episode_id
         );
         if (
@@ -350,14 +444,19 @@ export default async function handler(req, res) {
           .json({ ok: false, error: 'Mic kit request not found.' });
       }
       if (
-        !canActOnMicKitRequest(request, {
-          subject: principal.subject,
-          username: principal.username,
-          person_id: actorBinding?.person_id || '',
-          canManage,
-        })
+        !canActOnMicKitRequest(request, actorViewer)
       ) {
         return res.status(403).json({ ok: false, error: 'Forbidden' });
+      }
+      if (
+        request.request_kind === 'equipment_review' &&
+        request.status === 'requested'
+      ) {
+        return res.status(409).json({
+          ok: false,
+          error:
+            'Resolve the equipment review by confirming a shipment or confirming that no shipment is needed.',
+        });
       }
       if (
         ['checked_out', 'returned', 'declined', 'cancelled'].includes(
@@ -387,12 +486,7 @@ export default async function handler(req, res) {
           .json({ ok: false, error: 'Mic kit request not found.' });
       }
       if (
-        !canActOnMicKitRequest(request, {
-          subject: principal.subject,
-          username: principal.username,
-          person_id: actorBinding?.person_id || '',
-          canManage,
-        })
+        !canActOnMicKitRequest(request, actorViewer)
       ) {
         return res.status(403).json({ ok: false, error: 'Forbidden' });
       }
@@ -418,6 +512,12 @@ export default async function handler(req, res) {
         principal,
         now
       );
+      if (
+        !kit.tracking_request_id &&
+        (kit.carrier || kit.tracking_number || kit.tracking_url)
+      ) {
+        kit.tracking_request_id = request.request_id;
+      }
       kit.status = 'with_holder';
       kit.current_holder_name = request.requester_name;
       kit.current_location = request.city_region;
@@ -432,6 +532,84 @@ export default async function handler(req, res) {
         kit_id: kit.kit_id,
         request_id: request.request_id,
       });
+    } else if (
+      ['confirm_guest_shipment', 'resolve_guest_review_no_shipment'].includes(
+        action
+      )
+    ) {
+      const requestId = cleanText(req.body?.request_id, 100);
+      const request = tracker.requests.find(
+        (candidate) => candidate.request_id === requestId
+      );
+      if (!request) {
+        return res
+          .status(404)
+          .json({ ok: false, error: 'Mic kit request not found.' });
+      }
+      if (!canActOnMicKitRequest(request, actorViewer)) {
+        return res.status(403).json({ ok: false, error: 'Forbidden' });
+      }
+      if (
+        request.participant_type !== 'guest' ||
+        request.request_kind !== 'equipment_review' ||
+        request.status !== 'requested'
+      ) {
+        return res.status(409).json({
+          ok: false,
+          error:
+            'Only an open guest equipment review can be resolved by its episode coordinator.',
+        });
+      }
+
+      if (action === 'confirm_guest_shipment') {
+        const confirmed = confirmedGuestShipment(
+          req.body?.shipment,
+          request
+        );
+        Object.assign(request, {
+          request_kind: 'shipment',
+          review_resolution: 'shipment',
+          country: confirmed.country,
+          city_region: confirmed.city_region,
+          need_by: confirmed.need_by,
+          shipping: confirmed.shipping,
+          status: 'requested',
+          kit_id: '',
+          admin_response:
+            confirmed.admin_response ||
+            'The episode team confirmed that this guest needs a microphone-kit shipment.',
+          admin_updated_at: now,
+          admin_updated_by: actorLabel(principal),
+          updated_at: now,
+        });
+        logAdminAction(req, principal, 'mic_kit.guest_shipment_confirm', {
+          request_id: request.request_id,
+          episode_id: request.episode_id,
+          country: request.country,
+          need_by: request.need_by,
+        });
+      } else {
+        Object.assign(request, {
+          review_resolution: 'own_equipment',
+          status: 'declined',
+          kit_id: '',
+          admin_response:
+            cleanText(req.body?.admin_response, 1200) ||
+            'The episode team confirmed that the guest has a suitable recording setup and does not need a shipment.',
+          admin_updated_at: now,
+          admin_updated_by: actorLabel(principal),
+          updated_at: now,
+        });
+        logAdminAction(
+          req,
+          principal,
+          'mic_kit.guest_review_no_shipment',
+          {
+            request_id: request.request_id,
+            episode_id: request.episode_id,
+          }
+        );
+      }
     } else {
       if (!canManage) {
         return res.status(403).json({ ok: false, error: 'Forbidden' });
@@ -456,6 +634,7 @@ export default async function handler(req, res) {
           carrier: '',
           tracking_number: '',
           tracking_url: '',
+          tracking_request_id: '',
           notes: '',
           possible_addition: false,
           checked_out_request_id: '',
@@ -482,13 +661,27 @@ export default async function handler(req, res) {
             .status(404)
             .json({ ok: false, error: 'Mic kit not found.' });
         }
+        const previousNextRequestId = kit.next_request_id;
         const nextRequestId = cleanText(input.next_request_id, 100);
         syncKitAssignment(tracker, kit, nextRequestId);
         const status = cleanText(input.status, 40);
         const nextStatus = MIC_KIT_STATUSES.includes(status)
           ? status
           : kit.status;
-        const clearTracking = nextStatus === 'available';
+        const assignmentChanged = previousNextRequestId !== nextRequestId;
+        const clearTracking =
+          nextStatus === 'available' || assignmentChanged;
+        const carrier = clearTracking ? '' : cleanText(input.carrier, 80);
+        const trackingNumber = clearTracking
+          ? ''
+          : cleanText(input.tracking_number, 160);
+        const trackingUrl = clearTracking
+          ? ''
+          : cleanText(input.tracking_url, 1200);
+        const trackingRequestId =
+          carrier || trackingNumber || trackingUrl
+            ? nextRequestId || kit.checked_out_request_id
+            : '';
         Object.assign(kit, {
           label: cleanText(input.label, 100) || kit.label,
           home_country: cleanCountry(input.home_country),
@@ -497,13 +690,10 @@ export default async function handler(req, res) {
           current_location: cleanText(input.current_location, 160),
           next_request_id: nextRequestId,
           ship_by: cleanDate(input.ship_by),
-          carrier: clearTracking ? '' : cleanText(input.carrier, 80),
-          tracking_number: clearTracking
-            ? ''
-            : cleanText(input.tracking_number, 160),
-          tracking_url: clearTracking
-            ? ''
-            : cleanText(input.tracking_url, 1200),
+          carrier,
+          tracking_number: trackingNumber,
+          tracking_url: trackingUrl,
+          tracking_request_id: trackingRequestId,
           notes: cleanText(input.notes, 1200),
           possible_addition: input.possible_addition === true,
           checked_out_request_id: kit.checked_out_request_id,
@@ -555,6 +745,16 @@ export default async function handler(req, res) {
           });
         }
         if (
+          request.request_kind === 'equipment_review' &&
+          !['requested', 'declined', 'cancelled'].includes(status)
+        ) {
+          return res.status(409).json({
+            ok: false,
+            error:
+              'Use the guest shipment confirmation to approve a kit after the mailing details are verified.',
+          });
+        }
+        if (
           request.status === 'checked_out' &&
           status !== 'checked_out'
         ) {
@@ -597,6 +797,13 @@ export default async function handler(req, res) {
             error: 'Choose a valid mic kit and request.',
           });
         }
+        if (request.request_kind === 'equipment_review') {
+          return res.status(409).json({
+            ok: false,
+            error:
+              'Confirm the guest needs a shipment and collect the mailing details before checking out a kit.',
+          });
+        }
         if (kit.checked_out_request_id === request.request_id) {
           return res.status(409).json({
             ok: false,
@@ -629,6 +836,12 @@ export default async function handler(req, res) {
           now
         );
         if (
+          !kit.tracking_request_id &&
+          (kit.carrier || kit.tracking_number || kit.tracking_url)
+        ) {
+          kit.tracking_request_id = request.request_id;
+        }
+        if (
           kit.next_request_id &&
           kit.next_request_id !== request.request_id
         ) {
@@ -652,6 +865,15 @@ export default async function handler(req, res) {
           ) {
             candidate.next_request_id = '';
             candidate.ship_by = '';
+            if (
+              !candidate.tracking_request_id ||
+              candidate.tracking_request_id === request.request_id
+            ) {
+              candidate.carrier = '';
+              candidate.tracking_number = '';
+              candidate.tracking_url = '';
+              candidate.tracking_request_id = '';
+            }
           }
         }
         kit.status = 'with_holder';
@@ -676,7 +898,7 @@ export default async function handler(req, res) {
         const requestId = cleanText(req.body?.request_id, 100);
         const automation = buildMicKitAutomation(
           tracker,
-          automationEpisodes
+          episodeStudios
         );
         const recommendation = automation.recommendations.find(
           (candidate) => candidate.request_id === requestId
@@ -766,6 +988,7 @@ export default async function handler(req, res) {
           carrier: '',
           tracking_number: '',
           tracking_url: '',
+          tracking_request_id: '',
         });
         logAdminAction(req, principal, 'mic_kit.checkin', {
           kit_id: kit.kit_id,
@@ -818,7 +1041,7 @@ export default async function handler(req, res) {
         principal,
         actorBinding,
         micKitAccess,
-        automationEpisodes
+        episodeStudios
       ),
       ...(createdRequestId
         ? { created_request_id: createdRequestId }

@@ -30,7 +30,10 @@ import {
   getMicKitTracker,
   saveMicKitTracker,
 } from '../../lib/micKitStore';
-import { upsertGuestMicKitRequest } from '../../lib/guestQuestionnaireMicKit.mjs';
+import {
+  guestMicKitRequestId,
+  upsertGuestMicKitRequest,
+} from '../../lib/guestQuestionnaireMicKit.mjs';
 import { publishGuestQuestionnaireSubmissionNotifications } from '../../lib/guestQuestionnaireNotifications';
 import { getGuestQuestionnaireSubmissionIdempotency } from '../../lib/guestQuestionnaireSubmission.mjs';
 
@@ -81,7 +84,7 @@ async function syncGuestMicKitRequest({
   guestPlan,
   now,
 }) {
-  if (guestPlan?.choice !== 'request_kit') {
+  if (!['request_kit', 'needs_follow_up'].includes(guestPlan?.choice)) {
     return { request: null, configured: null };
   }
   let trackerResult = await getMicKitTracker();
@@ -289,20 +292,21 @@ export default async function handler(req, res) {
       }
     );
     let projection = projectGuestQuestionnaireResponse(nextRecord);
-    const micKitSync = await syncGuestMicKitRequest({
-      questionnaire: nextRecord,
-      episode: receivedWorkflow.episode,
-      guestPlan: projection.production?.guest_mic_kit_plan,
-      now: submittedAt,
-    });
-    if (micKitSync.request) {
+    const projectedGuestPlan = projection.production?.guest_mic_kit_plan;
+    const projectedRequestId = [
+      'request_kit',
+      'needs_follow_up',
+    ].includes(projectedGuestPlan?.choice)
+      ? guestMicKitRequestId(nextRecord.episode_id)
+      : '';
+    if (projectedRequestId) {
       projection = {
         ...projection,
         production: {
           ...projection.production,
           guest_mic_kit_plan: {
-            ...projection.production.guest_mic_kit_plan,
-            request_id: micKitSync.request.request_id,
+            ...projectedGuestPlan,
+            request_id: projectedRequestId,
           },
         },
       };
@@ -328,6 +332,22 @@ export default async function handler(req, res) {
         expectedEpisodeUpdatedAt: episode.updated_at,
       }
     );
+    try {
+      await syncGuestMicKitRequest({
+        questionnaire: saved.questionnaire,
+        episode: saved.episode,
+        guestPlan: projection.production?.guest_mic_kit_plan,
+        now: submittedAt,
+      });
+    } catch (micKitError) {
+      // The submitted questionnaire is authoritative. The signed-in mic-kit
+      // queue performs an idempotent repair if this secondary store is briefly
+      // unavailable, so a successful guest submission is never rolled back.
+      console.error(
+        'guest questionnaire mic-kit sync deferred:',
+        String(micKitError?.message || 'mic-kit storage unavailable')
+      );
+    }
     await publishSubmissionNotification(
       saved.episode || episode,
       saved.questionnaire.response.revision

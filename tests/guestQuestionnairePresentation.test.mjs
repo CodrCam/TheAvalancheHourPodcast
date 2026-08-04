@@ -187,7 +187,7 @@ test('conditional questions support multiple controlling values', () => {
   assert.equal(isGuestQuestionActive(details, { close_call: 'no' }), false);
 });
 
-test('recording readiness keeps the microphone-kit path visible until equipment is confirmed', () => {
+test('recording readiness keeps the support path visible until the full setup is confirmed', () => {
   const record = createDefaultGuestQuestionnaire('episode-one');
   const microphone = record.questions.find(
     (question) => question.key === 'external_microphone'
@@ -223,6 +223,15 @@ test('recording readiness keeps the microphone-kit path visible until equipment 
     isGuestQuestionActive(kitRequest, {
       external_microphone: 'yes',
       over_ear_headphones: 'yes',
+    }),
+    true
+  );
+  assert.equal(
+    isGuestQuestionActive(kitRequest, {
+      high_speed_internet: 'yes',
+      external_microphone: 'yes',
+      over_ear_headphones: 'yes',
+      quiet_recording_place: 'yes',
     }),
     false
   );
@@ -400,6 +409,48 @@ test('projects the guest recording decision tree into a structured microphone pl
   assert.equal(
     projectGuestQuestionnaireResponse(arranging).production.guest_mic_kit_plan
       .choice,
+    'needs_follow_up'
+  );
+
+  for (const readinessPatch of [
+    { high_speed_internet: 'no' },
+    { high_speed_internet: 'not_sure' },
+    { quiet_recording_place: 'no' },
+    { quiet_recording_place: 'not_sure' },
+  ]) {
+    const needsSetupReview = responseReadyRecord();
+    needsSetupReview.response = {
+      ...needsSetupReview.response,
+      status: 'submitted',
+      revision: 1,
+      answers: requiredAnswers({
+        external_microphone: 'yes',
+        over_ear_headphones: 'yes',
+        mic_kit_shipping_needed: 'no',
+        ...readinessPatch,
+      }),
+    };
+    assert.equal(
+      projectGuestQuestionnaireResponse(needsSetupReview).production
+        .guest_mic_kit_plan.choice,
+      'needs_follow_up'
+    );
+  }
+
+  const asksToDiscuss = responseReadyRecord();
+  asksToDiscuss.response = {
+    ...asksToDiscuss.response,
+    status: 'submitted',
+    revision: 1,
+    answers: requiredAnswers({
+      external_microphone: 'yes',
+      over_ear_headphones: 'yes',
+      mic_kit_shipping_needed: 'unsure',
+    }),
+  };
+  assert.equal(
+    projectGuestQuestionnaireResponse(asksToDiscuss).production
+      .guest_mic_kit_plan.choice,
     'needs_follow_up'
   );
 });

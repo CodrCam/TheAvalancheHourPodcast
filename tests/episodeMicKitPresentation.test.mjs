@@ -117,9 +117,17 @@ test('normalizes the additive guest plan without retaining private questionnaire
     isEpisodeGuestMicKitPlanResolved({
       ...plan,
       choice: 'needs_follow_up',
-      request_id: '',
+      request_id: 'review-request-one',
     }),
     false
+  );
+  assert.equal(
+    normalizeEpisodeGuestMicKitPlan({
+      ...plan,
+      choice: 'needs_follow_up',
+      request_id: 'review-request-one',
+    }).request_id,
+    'review-request-one'
   );
   assert.doesNotMatch(JSON.stringify(plan), /email|shipping|private/i);
 });
@@ -337,6 +345,8 @@ test('returns safe guest request coverage and builds a guest participant row', (
     {
       request_id: 'guest-request-one',
       participant_type: 'guest',
+      request_kind: 'shipment',
+      review_resolution: '',
       status: 'approved',
       has_kit_assignment: false,
       updated_at: '2026-08-06T12:00:00.000Z',
@@ -366,6 +376,65 @@ test('returns safe guest request coverage and builds a guest participant row', (
     JSON.stringify(rows[1]),
     /email|shipping|address|private/i
   );
+});
+
+test('derives the guest setup lifecycle from an equipment-review queue item', () => {
+  const guestPlan = {
+    guest_name: 'Alex Guest',
+    choice: 'needs_follow_up',
+    request_id: '',
+    equipment_note: 'The guest is unsure whether the microphone is suitable.',
+    response_revision: 1,
+    readiness: { microphone: 'not_sure', headphones: 'yes' },
+  };
+  const pendingCoverage = [
+    {
+      request_id: 'guest-review-one',
+      participant_type: 'guest',
+      request_kind: 'equipment_review',
+      review_resolution: '',
+      status: 'requested',
+    },
+  ];
+  const pending = buildEpisodeMicKitPlanRows({
+    hostPersonIds: [],
+    guestPlan,
+    guestRequestCoverage: pendingCoverage,
+  })[0];
+  assert.equal(pending.request_id, 'guest-review-one');
+  assert.equal(pending.choice, 'needs_follow_up');
+  assert.equal(pending.resolved, false);
+  assert.equal(pending.request_coverage.request_kind, 'equipment_review');
+
+  const shipment = buildEpisodeMicKitPlanRows({
+    hostPersonIds: [],
+    guestPlan,
+    guestRequestCoverage: [
+      {
+        ...pendingCoverage[0],
+        request_kind: 'shipment',
+        review_resolution: 'shipment',
+      },
+    ],
+  })[0];
+  assert.equal(shipment.request_id, 'guest-review-one');
+  assert.equal(shipment.choice, 'request_kit');
+  assert.equal(shipment.resolved, true);
+
+  const ownEquipment = buildEpisodeMicKitPlanRows({
+    hostPersonIds: [],
+    guestPlan,
+    guestRequestCoverage: [
+      {
+        ...pendingCoverage[0],
+        review_resolution: 'own_equipment',
+        status: 'declined',
+      },
+    ],
+  })[0];
+  assert.equal(ownEquipment.request_id, 'guest-review-one');
+  assert.equal(ownEquipment.choice, 'use_own_equipment');
+  assert.equal(ownEquipment.resolved, true);
 });
 
 test('builds one safe plan row for every assigned host', () => {

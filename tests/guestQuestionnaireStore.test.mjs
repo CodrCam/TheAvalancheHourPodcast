@@ -73,6 +73,11 @@ test('stores, atomically applies, and conditionally deletes questionnaire PII un
         expectedEpisodeUpdatedAt: episode.updated_at,
       }
     );
+    const batch = await store.getGuestQuestionnairesByEpisodeIds([
+      'episode-one',
+      'episode-one',
+      'episode-two',
+    ]);
     const deleted = await store.deleteGuestQuestionnaire('episode-one', {
       expectedUpdatedAt: applied.questionnaire.updated_at,
     });
@@ -101,6 +106,23 @@ test('stores, atomically applies, and conditionally deletes questionnaire PII un
     assert.equal(deletedTogether.deleted, true);
     assert.equal(finalized.questionnaire_deleted, true);
     assert.equal(finalized.episode.title, 'Deleted Episode Studio');
+    assert.equal(batch.configured, true);
+    const batchRequest = requests.find((request) =>
+      request.target.endsWith('.BatchGetItem')
+    ).body;
+    assert.deepEqual(
+      batchRequest.RequestItems.TestSiteContent.Keys.map(
+        (key) => key.content_key.S
+      ),
+      [
+        'guest_questionnaire#episode-one',
+        'guest_questionnaire#episode-two',
+      ]
+    );
+    assert.equal(
+      batchRequest.RequestItems.TestSiteContent.ConsistentRead,
+      true
+    );
     const createRequest = requests.find((request) =>
       request.target.endsWith('.PutItem')
     ).body;

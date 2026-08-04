@@ -46,11 +46,43 @@ test('questionnaire writes that depend on current Studio state are episode-versi
     'saveGuestQuestionnaireWithEpisode(',
     apply
   );
+  const micKitSync = submissionBlock.indexOf(
+    'await syncGuestMicKitRequest(',
+    save
+  );
   assert.ok(project > 0);
   assert.ok(apply > project);
   assert.ok(save > apply);
+  assert.ok(
+    micKitSync > save,
+    'private mic-kit data must not persist before the guarded questionnaire transaction'
+  );
   assert.match(submissionBlock, /questionnaire: autoFilledRecord/);
   assert.match(submissionBlock, /episode: applied\.episode/);
+
+  const applyResponseBlock = between(
+    persistenceRoute,
+    '} else {',
+    '\n\n    logAdminAction('
+  );
+  const studioApply = applyResponseBlock.indexOf(
+    'applyGuestQuestionnaireProjectionToEpisode('
+  );
+  const studioSave = applyResponseBlock.indexOf(
+    'saveGuestQuestionnaireAutofill(',
+    studioApply
+  );
+  const studioMicKitSync = applyResponseBlock.indexOf(
+    'await syncGuestMicKitRequest(',
+    studioSave
+  );
+  assert.ok(studioApply > 0);
+  assert.ok(studioSave > studioApply);
+  assert.ok(
+    studioMicKitSync > studioSave,
+    'applying a response must commit its episode changes before syncing the secondary mic-kit tracker'
+  );
+  assert.match(applyResponseBlock, /guestMicKitRequestId\(record\.episode_id\)/);
 
   for (const [start, end] of [
     ["if (action === 'save_configuration')", "} else if (action === 'issue_link')"],
@@ -76,7 +108,7 @@ test('questionnaires without a guest kit request do not depend on mic-kit storag
       'export default async function handler'
     );
     const choiceGuard = syncHelper.indexOf(
-      "guestPlan?.choice !== 'request_kit'"
+      "['request_kit', 'needs_follow_up'].includes(guestPlan?.choice)"
     );
     const trackerRead = syncHelper.indexOf('await getMicKitTracker()');
     assert.ok(choiceGuard >= 0, `${path} is missing the choice guard`);

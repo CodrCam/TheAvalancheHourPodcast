@@ -955,6 +955,22 @@ export default function EpisodeGuestQuestionnaireWorkspace({ admin = false }) {
         shippingRequested &&
         responseRecord?.status === 'submitted')
   );
+  const responseSections = buildGuestQuestionnaireSections(responseQuestions);
+  const visibleResponseUploadSlots = configuredUploadSlots.filter(
+    (slot) => slot.visible !== false
+  );
+  const responseFileCount = visibleResponseUploadSlots.reduce(
+    (total, slot) => {
+      const responseSlot = responseRecord?.upload_slots?.[slot.key] || {};
+      return (
+        total +
+        Number(
+          responseSlot.count || responseUploadAssets(responseSlot).length || 0
+        )
+      );
+    },
+    0
+  );
   const activeLink = linkStatusLabel(shareLink) === 'Active';
   const linkShared =
     episode?.guest_questionnaire_shared === true ||
@@ -1072,6 +1088,11 @@ export default function EpisodeGuestQuestionnaireWorkspace({ admin = false }) {
                     ? `Submitted ${dateLabel(responseRecord.submitted_at)}`
                     : 'Refresh this page after the guest submits.'}
                 </small>
+                {responseRecord?.status === 'submitted' ? (
+                  <a href="#submitted-intake" className={styles.summaryCardLink}>
+                    Review the full intake
+                  </a>
+                ) : null}
               </section>
               <section className={styles.summaryCard}>
                 <span>Episode connection</span>
@@ -1082,6 +1103,247 @@ export default function EpisodeGuestQuestionnaireWorkspace({ admin = false }) {
                 </small>
               </section>
             </div>
+
+            {responseRecord?.status === 'submitted' ? (
+              <section
+                id="submitted-intake"
+                className={styles.intakeReview}
+                aria-labelledby="submitted-intake-title"
+              >
+                <header className={styles.intakeReviewHeader}>
+                  <div>
+                    <span className={styles.eyebrow}>Submitted intake</span>
+                    <h2 id="submitted-intake-title">Review the guest response</h2>
+                    <p>
+                      The complete response is organized below for the episode
+                      team. Answers remain read-only, and restricted delivery
+                      details only appear to authorized roles.
+                    </p>
+                  </div>
+                  <div className={styles.intakeReviewActions}>
+                    <button
+                      type="button"
+                      className={styles.secondaryAction}
+                      onClick={refreshResponse}
+                    >
+                      <RefreshRoundedIcon aria-hidden="true" />
+                      Refresh response
+                    </button>
+                    <Link href={packageHref} className={styles.primaryLink}>
+                      Open episode package
+                      <OpenInNewRoundedIcon aria-hidden="true" />
+                    </Link>
+                  </div>
+                </header>
+
+                <div className={styles.intakeReviewSummary}>
+                  <div>
+                    <CheckCircleRoundedIcon aria-hidden="true" />
+                    <span>
+                      <strong>Response received</strong>
+                      <small>{dateLabel(responseRecord.submitted_at)}</small>
+                    </span>
+                  </div>
+                  <div>
+                    <strong>{responseQuestions.length}</strong>
+                    <span>answers available</span>
+                  </div>
+                  <div>
+                    <strong>{responseFileCount}</strong>
+                    <span>guest files</span>
+                  </div>
+                </div>
+
+                {responseSections.length || visibleResponseUploadSlots.length ? (
+                  <nav
+                    className={styles.intakeSectionNav}
+                    aria-label="Guest response sections"
+                  >
+                    {responseSections.map((section) => (
+                      <a
+                        key={section.id}
+                        href={`#guest-response-${section.id}`}
+                      >
+                        {section.label}
+                        <span>{section.questions.length}</span>
+                      </a>
+                    ))}
+                    {visibleResponseUploadSlots.length ? (
+                      <a href="#guest-response-files">
+                        Files
+                        <span>{responseFileCount}</span>
+                      </a>
+                    ) : null}
+                  </nav>
+                ) : null}
+
+                <div className={styles.intakeSections}>
+                  {responseSections.map((section) => (
+                    <section
+                      key={section.id}
+                      id={`guest-response-${section.id}`}
+                      className={styles.intakeSection}
+                      aria-labelledby={`guest-response-${section.id}-title`}
+                    >
+                      <div className={styles.intakeSectionHeading}>
+                        <div>
+                          <h3 id={`guest-response-${section.id}-title`}>
+                            {section.label}
+                          </h3>
+                          <p>{section.description}</p>
+                        </div>
+                        <small>
+                          {section.questions.length}{' '}
+                          {section.questions.length === 1 ? 'answer' : 'answers'}
+                        </small>
+                      </div>
+                      <div className={styles.intakeAnswerGrid}>
+                        {section.questions.map((question) => {
+                          const restricted =
+                            question.privacy === 'restricted_shipping' &&
+                            !canViewShipping;
+                          const value = answerLabel(
+                            responseAnswers[question.key],
+                            question
+                          );
+                          return (
+                            <article
+                              key={question.key}
+                              className={`${styles.intakeAnswer} ${
+                                question.type === 'long_text'
+                                  ? styles.intakeAnswerWide
+                                  : ''
+                              }`}
+                            >
+                              <span>{question.prompt}</span>
+                              {restricted ? (
+                                <p className={styles.restrictedAnswer}>
+                                  <LockRoundedIcon aria-hidden="true" />
+                                  Restricted to the producer or a Studio manager
+                                </p>
+                              ) : (
+                                <p>{value || 'No answer'}</p>
+                              )}
+                            </article>
+                          );
+                        })}
+                      </div>
+                    </section>
+                  ))}
+
+                  {!responseSections.length ? (
+                    <p className={styles.emptyCopy}>
+                      The response was received without reviewable answers.
+                    </p>
+                  ) : null}
+
+                  {visibleResponseUploadSlots.length ? (
+                    <section
+                      id="guest-response-files"
+                      className={styles.intakeSection}
+                      aria-labelledby="guest-response-files-title"
+                    >
+                      <div className={styles.intakeSectionHeading}>
+                        <div>
+                          <h3 id="guest-response-files-title">
+                            Guest files
+                          </h3>
+                          <p>Documents, photos, and credits from the guest.</p>
+                        </div>
+                        <small>
+                          {responseFileCount}{' '}
+                          {responseFileCount === 1 ? 'file' : 'files'}
+                        </small>
+                      </div>
+                      <div className={styles.intakeFilesGrid}>
+                        {visibleResponseUploadSlots.map((slot) => {
+                          const responseSlot =
+                            responseRecord.upload_slots?.[slot.key] || {};
+                          const assets = responseUploadAssets(responseSlot);
+                          return (
+                            <div
+                              key={slot.key}
+                              className={styles.intakeFileGroup}
+                            >
+                              <span>
+                                {slot.key === 'resume'
+                                  ? 'Resume / CV'
+                                  : 'Guest photos'}
+                              </span>
+                              {assets.length ? (
+                                <ul>
+                                  {assets.map((asset) => (
+                                    <li key={asset.asset_id}>
+                                      <a
+                                        href={`/api/studio/episodes/${encodeURIComponent(
+                                          routeEpisodeId
+                                        )}/assets/${encodeURIComponent(
+                                          asset.asset_id
+                                        )}`}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                      >
+                                        {asset.file_name || 'Guest file'}
+                                        <OpenInNewRoundedIcon aria-hidden="true" />
+                                      </a>
+                                      <small>
+                                        {fileSizeLabel(
+                                          asset.size_bytes || asset.size
+                                        )}
+                                      </small>
+                                    </li>
+                                  ))}
+                                </ul>
+                              ) : (
+                                <small>No files received</small>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </section>
+                  ) : null}
+                </div>
+
+                {canApply || applyResult ? (
+                  <footer className={styles.intakeReviewFooter}>
+                    <div>
+                      <strong>Episode Studio connection</strong>
+                      <span>
+                        Reapplying fills blank fields only. Existing host or
+                        producer work is never replaced.
+                      </span>
+                    </div>
+                    {canApply ? (
+                      <button
+                        type="button"
+                        className={styles.applyButton}
+                        disabled={applying}
+                        onClick={applyResponse}
+                      >
+                        <CheckCircleRoundedIcon aria-hidden="true" />
+                        {applying ? 'Applying…' : 'Reapply to blank fields'}
+                      </button>
+                    ) : null}
+                    {applyResult ? (
+                      <div className={styles.applyResult} role="status">
+                        <strong>
+                          {applyResult.applied.length} field
+                          {applyResult.applied.length === 1 ? '' : 's'} filled
+                        </strong>
+                        <span>
+                          {applyResult.skipped.length
+                            ? `${applyResult.skipped.length} existing field${
+                                applyResult.skipped.length === 1 ? ' was' : 's were'
+                              } left unchanged.`
+                            : 'No existing Studio work was replaced.'}
+                        </span>
+                      </div>
+                    ) : null}
+                  </footer>
+                ) : null}
+              </section>
+            ) : null}
 
             <div className={styles.layout}>
               <form className={styles.builder} onSubmit={saveConfiguration}>
@@ -1600,144 +1862,29 @@ export default function EpisodeGuestQuestionnaireWorkspace({ admin = false }) {
                   ) : null}
                 </section>
 
-                <section className={styles.sidePanel}>
-                  <div className={styles.sidePanelHeading}>
-                    <div>
-                      <span>Submitted intake</span>
-                      <h2>Guest response</h2>
+                {responseRecord?.status !== 'submitted' ? (
+                  <section className={styles.sidePanel}>
+                    <div className={styles.sidePanelHeading}>
+                      <div>
+                        <span>Submitted intake</span>
+                        <h2>Guest response</h2>
+                      </div>
+                      <button
+                        type="button"
+                        className={styles.iconButton}
+                        aria-label="Refresh guest response"
+                        onClick={refreshResponse}
+                      >
+                        <RefreshRoundedIcon aria-hidden="true" />
+                      </button>
                     </div>
-                    <button
-                      type="button"
-                      className={styles.iconButton}
-                      aria-label="Refresh guest response"
-                      onClick={refreshResponse}
-                    >
-                      <RefreshRoundedIcon aria-hidden="true" />
-                    </button>
-                  </div>
-                  {responseRecord?.status === 'submitted' ? (
-                    <>
-                      <div className={styles.responseMeta}>
-                        <CheckCircleRoundedIcon aria-hidden="true" />
-                        <div>
-                          <strong>Submitted</strong>
-                          <span>{dateLabel(responseRecord.submitted_at)}</span>
-                        </div>
-                      </div>
-                      <div className={styles.answerList}>
-                        {responseQuestions.map((question) => {
-                          const restricted =
-                            question.privacy === 'restricted_shipping' &&
-                            !canViewShipping;
-                          const value = answerLabel(
-                            responseAnswers[question.key],
-                            question
-                          );
-                          return (
-                            <div key={question.key} className={styles.answerItem}>
-                              <span>{question.prompt}</span>
-                              {restricted ? (
-                                <p className={styles.restrictedAnswer}>
-                                  <LockRoundedIcon aria-hidden="true" />
-                                  Restricted to the producer or a Studio manager
-                                </p>
-                              ) : (
-                                <p>{value || 'No answer'}</p>
-                              )}
-                            </div>
-                          );
-                        })}
-                        {!responseQuestions.length ? (
-                          <p className={styles.emptyCopy}>
-                            The response was received without reviewable answers.
-                          </p>
-                        ) : null}
-                      </div>
-                      {configuredUploadSlots.some(
-                        (slot) => slot.visible !== false
-                      ) ? (
-                        <div className={styles.responseFiles}>
-                          <strong>Guest files</strong>
-                          {configuredUploadSlots
-                            .filter((slot) => slot.visible !== false)
-                            .map((slot) => {
-                              const responseSlot =
-                                responseRecord.upload_slots?.[slot.key] || {};
-                              const assets = responseUploadAssets(responseSlot);
-                              return (
-                                <div key={slot.key} className={styles.responseFileSlot}>
-                                  <span>
-                                    {slot.key === 'resume'
-                                      ? 'Resume / CV'
-                                      : 'Photos'}{' '}
-                                    · {Number(responseSlot.count || assets.length)}
-                                  </span>
-                                  {assets.length ? (
-                                    <ul>
-                                      {assets.map((asset) => (
-                                        <li key={asset.asset_id}>
-                                          <a
-                                            href={`/api/studio/episodes/${encodeURIComponent(
-                                              routeEpisodeId
-                                            )}/assets/${encodeURIComponent(
-                                              asset.asset_id
-                                            )}`}
-                                            target="_blank"
-                                            rel="noreferrer"
-                                          >
-                                            {asset.file_name || 'Guest file'}
-                                          </a>
-                                          <small>
-                                            {fileSizeLabel(
-                                              asset.size_bytes || asset.size
-                                            )}
-                                          </small>
-                                        </li>
-                                      ))}
-                                    </ul>
-                                  ) : (
-                                    <small>No files received</small>
-                                  )}
-                                </div>
-                              );
-                            })}
-                        </div>
-                      ) : null}
-                      {canApply ? (
-                        <button
-                          type="button"
-                          className={styles.applyButton}
-                          disabled={applying}
-                          onClick={applyResponse}
-                        >
-                          <CheckCircleRoundedIcon aria-hidden="true" />
-                          {applying ? 'Applying…' : 'Reapply to blank fields'}
-                        </button>
-                      ) : null}
-                      {applyResult ? (
-                        <div className={styles.applyResult}>
-                          <strong>
-                            {applyResult.applied.length} field
-                            {applyResult.applied.length === 1 ? '' : 's'} filled
-                          </strong>
-                          <span>
-                            {applyResult.skipped.length
-                              ? `${applyResult.skipped.length} existing field${
-                                  applyResult.skipped.length === 1 ? ' was' : 's were'
-                                } left unchanged.`
-                              : 'No existing Studio work was replaced.'}
-                          </span>
-                        </div>
-                      ) : null}
-                    </>
-                  ) : (
                     <p className={styles.emptyCopy}>
                       No submitted response yet. The guest’s answers will appear
                       here for review without exposing the internal publishing
                       package.
                     </p>
-                  )}
-                </section>
+                  </section>
+                ) : null}
 
                 <section className={styles.privacyPanel}>
                   <LockRoundedIcon aria-hidden="true" />

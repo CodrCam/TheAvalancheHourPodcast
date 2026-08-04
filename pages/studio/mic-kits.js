@@ -31,6 +31,19 @@ const REQUEST_STATUS_LABELS = {
   cancelled: 'Cancelled',
 };
 
+function requestStatusLabel(request = {}) {
+  if (request.review_resolution === 'own_equipment') {
+    return 'Setup confirmed · no shipment';
+  }
+  if (
+    request.request_kind === 'equipment_review' &&
+    request.status === 'requested'
+  ) {
+    return 'Needs producer review';
+  }
+  return REQUEST_STATUS_LABELS[request.status] || request.status;
+}
+
 const EPISODE_STATUS_LABELS = {
   planning: 'Planning',
   in_progress: 'In progress',
@@ -55,6 +68,25 @@ const EMPTY_REQUEST = {
     country: 'US',
   },
 };
+
+function equipmentReviewDraft(request = {}) {
+  const shipping = request.shipping || {};
+  return {
+    city_region: request.city_region || '',
+    need_by: request.need_by || '',
+    admin_response: request.admin_response || '',
+    shipping: {
+      recipient: shipping.recipient || request.requester_name || '',
+      phone: shipping.phone || '',
+      address_line_1: shipping.address_line_1 || '',
+      address_line_2: shipping.address_line_2 || '',
+      city: shipping.city || '',
+      region: shipping.region || '',
+      postal_code: shipping.postal_code || '',
+      country: shipping.country || request.country || 'US',
+    },
+  };
+}
 
 function formatDate(value) {
   if (!value) return 'Not set';
@@ -94,12 +126,20 @@ function kitSummary(tracker) {
   const kits = (tracker?.kits || []).filter(
     (kit) => kit.status !== 'retired'
   );
+  const requests = tracker?.requests || [];
+  const equipmentReviews = requests.filter(
+    (request) =>
+      request.request_kind === 'equipment_review' &&
+      request.status === 'requested'
+  ).length;
   return {
     total: kits.length,
     available: kits.filter((kit) => kit.status === 'available').length,
     moving: kits.filter((kit) => kit.status === 'in_transit').length,
-    attention: kits.filter((kit) => kit.status === 'maintenance').length,
-    waiting: (tracker?.requests || []).filter((request) =>
+    attention:
+      kits.filter((kit) => kit.status === 'maintenance').length +
+      equipmentReviews,
+    waiting: requests.filter((request) =>
       ['requested', 'approved', 'waitlisted'].includes(request.status)
     ).length,
   };
@@ -174,6 +214,7 @@ export default function MicKitsPage({ adminMode = false }) {
   const [editingKitId, setEditingKitId] = useState('');
   const [kitDraft, setKitDraft] = useState(null);
   const [responseDrafts, setResponseDrafts] = useState({});
+  const [equipmentReviewDrafts, setEquipmentReviewDrafts] = useState({});
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
@@ -339,6 +380,8 @@ export default function MicKitsPage({ adminMode = false }) {
         )
         .sort(
           (a, b) =>
+            Number(b.request_kind === 'equipment_review') -
+              Number(a.request_kind === 'equipment_review') ||
             (recommendationsByRequestId.get(b.request_id)?.priority_score ||
               0) -
               (recommendationsByRequestId.get(a.request_id)
@@ -601,6 +644,67 @@ export default function MicKitsPage({ adminMode = false }) {
         delete next[request.request_id];
         return next;
       });
+    }
+  }
+
+  function updateEquipmentReviewDraft(request, patch) {
+    setEquipmentReviewDrafts((current) => ({
+      ...current,
+      [request.request_id]: {
+        ...(current[request.request_id] || equipmentReviewDraft(request)),
+        ...patch,
+      },
+    }));
+  }
+
+  function updateEquipmentReviewShipping(request, field, value) {
+    setEquipmentReviewDrafts((current) => {
+      const draft =
+        current[request.request_id] || equipmentReviewDraft(request);
+      return {
+        ...current,
+        [request.request_id]: {
+          ...draft,
+          shipping: { ...draft.shipping, [field]: value },
+        },
+      };
+    });
+  }
+
+  async function confirmGuestShipment(event, request) {
+    event.preventDefault();
+    const shipment =
+      equipmentReviewDrafts[request.request_id] ||
+      equipmentReviewDraft(request);
+    const saved = await mutate('confirm_guest_shipment', {
+      request_id: request.request_id,
+      shipment,
+    });
+    if (!saved) return;
+    setMessage(
+      `${request.requester_name} is now in the shipment queue with verified mailing details.`
+    );
+    setEquipmentReviewDrafts((current) => {
+      const next = { ...current };
+      delete next[request.request_id];
+      return next;
+    });
+  }
+
+  async function closeEquipmentReview(request) {
+    const draft =
+      equipmentReviewDrafts[request.request_id] ||
+      equipmentReviewDraft(request);
+    const saved = await mutate('resolve_guest_review_no_shipment', {
+      request_id: request.request_id,
+      admin_response:
+        draft.admin_response ||
+        'The episode team confirmed that a microphone-kit shipment is not needed.',
+    });
+    if (saved) {
+      setMessage(
+        `${request.requester_name}’s equipment review was closed without a shipment.`
+      );
     }
   }
 
@@ -1281,15 +1385,20 @@ export default function MicKitsPage({ adminMode = false }) {
                         }
                       >
                         <option value="">No next recipient</option>
-                        {openRequests.map((request) => (
-                          <option
-                            key={request.request_id}
-                            value={request.request_id}
-                          >
-                            {request.requester_name} ·{' '}
-                            {formatDate(request.need_by)}
-                          </option>
-                        ))}
+                        {openRequests
+                          .filter(
+                            (request) =>
+                              request.request_kind !== 'equipment_review'
+                          )
+                          .map((request) => (
+                            <option
+                              key={request.request_id}
+                              value={request.request_id}
+                            >
+                              {request.requester_name} ·{' '}
+                              {formatDate(request.need_by)}
+                            </option>
+                          ))}
                       </select>
                     </label>
                     <label>
@@ -1626,8 +1735,8 @@ export default function MicKitsPage({ adminMode = false }) {
             <span>Upcoming demand</span>
             <h2>Request queue</h2>
             <p>
-              Sorted by need-by date so the team can plan the shortest,
-              least-expensive handoff.
+              Equipment questions come first, followed by shipment requests in
+              need-by order so the team can plan each handoff early.
             </p>
           </div>
         </div>
@@ -1637,8 +1746,17 @@ export default function MicKitsPage({ adminMode = false }) {
             {openRequests.map((request) => {
               const recommendation =
                 recommendationsByRequestId.get(request.request_id);
+              const isEquipmentReview =
+                request.request_kind === 'equipment_review';
+              const reviewDraft =
+                equipmentReviewDrafts[request.request_id] ||
+                equipmentReviewDraft(request);
               return (
-              <article key={request.request_id} className={styles.requestCard}>
+              <article
+                key={request.request_id}
+                id={request.request_id}
+                className={styles.requestCard}
+              >
                 <div className={styles.requestIdentity}>
                   <span className={styles.avatar}>
                     {request.requester_name.charAt(0).toUpperCase()}
@@ -1650,9 +1768,24 @@ export default function MicKitsPage({ adminMode = false }) {
                         ? ' · Guest'
                         : ''}
                     </h3>
+                    <span
+                      className={`${styles.requestKindBadge} ${
+                        isEquipmentReview
+                          ? styles.requestKindReview
+                          : styles.requestKindShipment
+                      }`}
+                    >
+                      {isEquipmentReview
+                        ? 'Equipment review'
+                        : 'Send a kit'}
+                    </span>
                     <p>
                       <PlaceRoundedIcon aria-hidden="true" />
-                      {request.city_region} · {formatCountry(request.country)}
+                      {request.city_region
+                        ? `${request.city_region} · ${formatCountry(
+                            request.country
+                          )}`
+                        : 'Location still needs confirmation'}
                     </p>
                   </div>
                 </div>
@@ -1667,16 +1800,16 @@ export default function MicKitsPage({ adminMode = false }) {
                   </div>
                   <div>
                     <dt>Status</dt>
-                    <dd>
-                      {REQUEST_STATUS_LABELS[request.status] || request.status}
-                    </dd>
+                    <dd>{requestStatusLabel(request)}</dd>
                   </div>
                   <div>
                     <dt>Assigned kit</dt>
                     <dd>
-                      {tracker.kits.find(
-                        (kit) => kit.kit_id === request.kit_id
-                      )?.label || 'Not assigned'}
+                      {isEquipmentReview
+                        ? 'Locked until confirmed'
+                        : tracker.kits.find(
+                            (kit) => kit.kit_id === request.kit_id
+                          )?.label || 'Not assigned'}
                     </dd>
                   </div>
                   <div>
@@ -1687,7 +1820,7 @@ export default function MicKitsPage({ adminMode = false }) {
                     </dd>
                   </div>
                 </dl>
-                {request.shipping ? (
+                {formatAddress(request.shipping) ? (
                   <p className={styles.privateAddress}>
                     <LockRoundedIcon aria-hidden="true" />
                     <span>
@@ -1697,7 +1830,18 @@ export default function MicKitsPage({ adminMode = false }) {
                   </p>
                 ) : null}
                 {request.notes ? (
-                  <p className={styles.requestNotes}>{request.notes}</p>
+                  <p
+                    className={
+                      isEquipmentReview
+                        ? styles.equipmentReviewReason
+                        : styles.requestNotes
+                    }
+                  >
+                    {isEquipmentReview ? (
+                      <strong>Why this needs review: </strong>
+                    ) : null}
+                    {request.notes}
+                  </p>
                 ) : null}
                 {request.admin_response ? (
                   <p className={styles.adminResponse}>
@@ -1740,6 +1884,196 @@ export default function MicKitsPage({ adminMode = false }) {
                     ) : null}
                   </div>
                 ) : null}
+                {(request.can_act || showManage) &&
+                isEquipmentReview &&
+                request.status === 'requested' ? (
+                  <details className={styles.equipmentReviewDesk}>
+                    <summary>Resolve equipment review</summary>
+                    <p>
+                      If the guest needs a kit, verify every mailing field
+                      before moving this into the shipment queue. Otherwise,
+                      close the review without a shipment.
+                    </p>
+                    <form
+                      onSubmit={(event) =>
+                        confirmGuestShipment(event, request)
+                      }
+                    >
+                      <div className={styles.equipmentReviewFields}>
+                        <label>
+                          Recipient
+                          <input
+                            value={reviewDraft.shipping.recipient}
+                            onChange={(event) =>
+                              updateEquipmentReviewShipping(
+                                request,
+                                'recipient',
+                                event.target.value
+                              )
+                            }
+                            required
+                          />
+                        </label>
+                        <label>
+                          Carrier phone <span>(optional)</span>
+                          <input
+                            type="tel"
+                            value={reviewDraft.shipping.phone}
+                            onChange={(event) =>
+                              updateEquipmentReviewShipping(
+                                request,
+                                'phone',
+                                event.target.value
+                              )
+                            }
+                          />
+                        </label>
+                        <label className={styles.reviewWideField}>
+                          Mailing address
+                          <input
+                            value={reviewDraft.shipping.address_line_1}
+                            onChange={(event) =>
+                              updateEquipmentReviewShipping(
+                                request,
+                                'address_line_1',
+                                event.target.value
+                              )
+                            }
+                            required
+                          />
+                        </label>
+                        <label>
+                          Address line 2 <span>(optional)</span>
+                          <input
+                            value={reviewDraft.shipping.address_line_2}
+                            onChange={(event) =>
+                              updateEquipmentReviewShipping(
+                                request,
+                                'address_line_2',
+                                event.target.value
+                              )
+                            }
+                          />
+                        </label>
+                        <label>
+                          City
+                          <input
+                            value={reviewDraft.shipping.city}
+                            onChange={(event) =>
+                              updateEquipmentReviewShipping(
+                                request,
+                                'city',
+                                event.target.value
+                              )
+                            }
+                            required
+                          />
+                        </label>
+                        <label>
+                          State / province
+                          <input
+                            value={reviewDraft.shipping.region}
+                            onChange={(event) =>
+                              updateEquipmentReviewShipping(
+                                request,
+                                'region',
+                                event.target.value
+                              )
+                            }
+                            required
+                          />
+                        </label>
+                        <label>
+                          Postal code
+                          <input
+                            value={reviewDraft.shipping.postal_code}
+                            onChange={(event) =>
+                              updateEquipmentReviewShipping(
+                                request,
+                                'postal_code',
+                                event.target.value
+                              )
+                            }
+                            required
+                          />
+                        </label>
+                        <label>
+                          Country code
+                          <input
+                            value={reviewDraft.shipping.country}
+                            onChange={(event) =>
+                              updateEquipmentReviewShipping(
+                                request,
+                                'country',
+                                event.target.value.toUpperCase()
+                              )
+                            }
+                            maxLength={2}
+                            placeholder="US"
+                            required
+                          />
+                        </label>
+                        <label>
+                          General location
+                          <input
+                            value={reviewDraft.city_region}
+                            onChange={(event) =>
+                              updateEquipmentReviewDraft(request, {
+                                city_region: event.target.value,
+                              })
+                            }
+                            placeholder="Wenatchee, WA"
+                            required
+                          />
+                        </label>
+                        <label>
+                          Need by
+                          <input
+                            type="date"
+                            value={reviewDraft.need_by}
+                            onChange={(event) =>
+                              updateEquipmentReviewDraft(request, {
+                                need_by: event.target.value,
+                              })
+                            }
+                            required
+                          />
+                        </label>
+                        <label className={styles.reviewWideField}>
+                          Coordinator note <span>(optional)</span>
+                          <textarea
+                            value={reviewDraft.admin_response}
+                            onChange={(event) =>
+                              updateEquipmentReviewDraft(request, {
+                                admin_response: event.target.value,
+                              })
+                            }
+                            rows={2}
+                            maxLength={1200}
+                            placeholder="Record what was confirmed with the guest."
+                          />
+                        </label>
+                      </div>
+                      <div className={styles.equipmentReviewActions}>
+                        <button
+                          type="submit"
+                          className={studioStyles.primaryButton}
+                          disabled={working}
+                        >
+                          Confirm kit shipment
+                        </button>
+                        <button
+                          type="button"
+                          className={studioStyles.secondaryButton}
+                          onClick={() => closeEquipmentReview(request)}
+                          disabled={working}
+                        >
+                          No shipment needed
+                        </button>
+                      </div>
+                    </form>
+                  </details>
+                ) : null}
                 <div className={styles.requestActions}>
                   {request.can_act && request.status === 'assigned' ? (
                     <button
@@ -1753,7 +2087,7 @@ export default function MicKitsPage({ adminMode = false }) {
                         : 'I received this kit'}
                     </button>
                   ) : null}
-                  {request.can_act || showManage ? (
+                  {(request.can_act || showManage) && !isEquipmentReview ? (
                     <button
                       type="button"
                       className={studioStyles.secondaryButton}
@@ -1765,6 +2099,7 @@ export default function MicKitsPage({ adminMode = false }) {
                   ) : null}
                 </div>
                 {showManage &&
+                !isEquipmentReview &&
                 ['requested', 'approved', 'waitlisted'].includes(
                   request.status
                 ) ? (
@@ -1855,7 +2190,7 @@ export default function MicKitsPage({ adminMode = false }) {
                     )?.label || 'No kit recorded'}
                   </span>
                   <span>
-                    {REQUEST_STATUS_LABELS[request.status] || request.status}
+                    {requestStatusLabel(request)}
                   </span>
                 </article>
               ))}

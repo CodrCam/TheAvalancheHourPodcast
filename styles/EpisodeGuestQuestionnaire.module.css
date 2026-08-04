@@ -222,6 +222,397 @@
   line-height: 1.45;
 }
 
+.summaryCardLink {
+  width: fit-content;
+  margin-top: 3px;
+  color: #2f6b83;
+  font-size: 0.69rem;
+  font-weight: 820;
+  text-underline-offset: 3px;
+}
+
+.summaryCardLink:hover {
+  color: #1d4e63;
+}
+
+.intakeReview {
+  scroll-margin-top: 18px;
+  margin-bottom: 18px;
+  padding: clamp(20px, 3vw, 32px);
+  border: 1px solid rgba(53, 107, 131, 0.2);
+  border-radius: 17px;
+  background:
+    radial-gradient(circle at 100% 0, rgba(104, 162, 182, 0.14), transparent 24rem),
+    #f7faf9;
+  box-shadow: 0 12px 34px rgba(27, 53, 66, 0.055);
+}
+
+.intakeReviewHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.intakeReviewHeader > div:first-child {
+  max-width: 760px;
+}
+
+.intakeReviewHeader h2 {
+  margin: 6px 0 7px;
+  color: #183246;
+  font-size: clamp(1.45rem, 2.3vw, 2rem);
+  letter-spacing: -0.04em;
+}
+
+.intakeReviewHeader p {
+  margin: 0;
+  color: #667b84;
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+
+.intakeReviewActions {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.intakeReviewActions button,
+.intakeReviewActions a {
+  min-height: 42px;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 9px 13px;
+  font: inherit;
+  font-size: 0.71rem;
+  font-weight: 820;
+  border-radius: 9px;
+  cursor: pointer;
+}
+
+.intakeReviewActions svg {
+  width: 17px;
+  height: 17px;
+}
+
+.secondaryAction {
+  color: #42636f;
+  border: 1px solid rgba(30, 58, 76, 0.16);
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.secondaryAction:hover {
+  color: #244c5d;
+  border-color: rgba(53, 107, 131, 0.28);
+  background: #fff;
+}
+
+.primaryLink {
+  color: #fff;
+  border: 1px solid var(--questionnaire-blue);
+  background: var(--questionnaire-blue);
+  text-decoration: none;
+}
+
+.primaryLink:hover {
+  background: #295d74;
+}
+
+.summaryCardLink:focus-visible,
+.intakeReview a:focus-visible,
+.intakeReview button:focus-visible {
+  outline: 3px solid rgba(53, 107, 131, 0.24);
+  outline-offset: 2px;
+}
+
+.intakeReviewSummary {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.5fr) repeat(2, minmax(120px, 0.5fr));
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.intakeReviewSummary > div {
+  min-width: 0;
+  min-height: 62px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid rgba(20, 38, 56, 0.1);
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.intakeReviewSummary > div:first-child > svg {
+  width: 24px;
+  height: 24px;
+  flex: 0 0 auto;
+  color: #3e8060;
+}
+
+.intakeReviewSummary > div:first-child > span {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.intakeReviewSummary strong {
+  color: #244556;
+  font-size: 0.88rem;
+}
+
+.intakeReviewSummary > div:not(:first-child) strong {
+  font-size: 1.18rem;
+  letter-spacing: -0.03em;
+}
+
+.intakeReviewSummary span,
+.intakeReviewSummary small {
+  color: #71838b;
+  font-size: 0.67rem;
+  line-height: 1.4;
+}
+
+.intakeSectionNav {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 18px 0;
+  padding-bottom: 2px;
+  overflow-x: auto;
+}
+
+.intakeSectionNav a {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 10px;
+  color: #476772;
+  font-size: 0.69rem;
+  font-weight: 780;
+  border: 1px solid rgba(20, 38, 56, 0.11);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.75);
+  text-decoration: none;
+}
+
+.intakeSectionNav a:hover {
+  color: #28576a;
+  border-color: rgba(53, 107, 131, 0.24);
+  background: #fff;
+}
+
+.intakeSectionNav a span {
+  min-width: 20px;
+  display: grid;
+  place-items: center;
+  padding: 2px 5px;
+  color: #547985;
+  font-size: 0.59rem;
+  border-radius: 999px;
+  background: #e8f1f2;
+}
+
+.intakeSections {
+  display: grid;
+  gap: 14px;
+}
+
+.intakeSection {
+  scroll-margin-top: 18px;
+  padding: clamp(16px, 2vw, 22px);
+  border: 1px solid rgba(20, 38, 56, 0.11);
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.88);
+}
+
+.intakeSectionHeading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.intakeSectionHeading > div {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.intakeSectionHeading h3 {
+  margin: 0;
+  color: #254858;
+  font-size: 0.92rem;
+  letter-spacing: -0.015em;
+}
+
+.intakeSectionHeading p {
+  margin: 0;
+  color: #6f8189;
+  font-size: 0.69rem;
+  line-height: 1.45;
+}
+
+.intakeSectionHeading > small {
+  flex: 0 0 auto;
+  padding: 5px 8px;
+  color: #607983;
+  font-size: 0.62rem;
+  font-weight: 780;
+  border-radius: 999px;
+  background: #edf4f4;
+}
+
+.intakeAnswerGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.intakeAnswer {
+  min-width: 0;
+  padding: 13px 14px;
+  border: 1px solid rgba(20, 38, 56, 0.09);
+  border-radius: 10px;
+  background: #fbfcfc;
+}
+
+.intakeAnswerWide {
+  grid-column: 1 / -1;
+}
+
+.intakeAnswer > span {
+  display: block;
+  margin-bottom: 6px;
+  color: #57717c;
+  font-size: 0.68rem;
+  font-weight: 790;
+  line-height: 1.4;
+}
+
+.intakeAnswer p {
+  margin: 0;
+  color: #172f41;
+  font-size: 0.82rem;
+  line-height: 1.58;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.intakeFilesGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.intakeFileGroup {
+  min-width: 0;
+  display: grid;
+  gap: 8px;
+  padding: 13px 14px;
+  border: 1px solid rgba(20, 38, 56, 0.09);
+  border-radius: 10px;
+  background: #fbfcfc;
+}
+
+.intakeFileGroup > span {
+  color: #57717c;
+  font-size: 0.68rem;
+  font-weight: 790;
+}
+
+.intakeFileGroup > small {
+  color: #7b8c93;
+  font-size: 0.68rem;
+}
+
+.intakeFileGroup ul {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.intakeFileGroup li {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.intakeFileGroup a {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  overflow: hidden;
+  color: #2e687f;
+  font-size: 0.73rem;
+  font-weight: 760;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.intakeFileGroup a svg {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+}
+
+.intakeFileGroup li small {
+  flex: 0 0 auto;
+  color: #829198;
+  font-size: 0.63rem;
+}
+
+.intakeReviewFooter {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(20, 38, 56, 0.11);
+}
+
+.intakeReviewFooter > div:first-child {
+  min-width: 0;
+  flex: 1;
+  display: grid;
+  gap: 3px;
+}
+
+.intakeReviewFooter > div:first-child strong {
+  color: #355462;
+  font-size: 0.73rem;
+}
+
+.intakeReviewFooter > div:first-child span {
+  color: #71838b;
+  font-size: 0.65rem;
+  line-height: 1.45;
+}
+
+.intakeReviewFooter .applyButton {
+  width: auto;
+  flex: 0 0 auto;
+  margin-top: 0;
+}
+
+.intakeReviewFooter .applyResult {
+  flex: 0 0 auto;
+  margin-top: 0;
+}
+
 .layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(300px, 0.34fr);
@@ -947,126 +1338,6 @@
   cursor: pointer;
 }
 
-.responseMeta {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 10px 0 12px;
-}
-
-.responseMeta > svg {
-  width: 21px;
-  height: 21px;
-  color: #3e8060;
-}
-
-.responseMeta > div {
-  display: grid;
-  gap: 2px;
-}
-
-.responseMeta strong {
-  font-size: 0.72rem;
-}
-
-.responseMeta span {
-  color: #71838b;
-  font-size: 0.61rem;
-}
-
-.answerList {
-  max-height: 520px;
-  display: grid;
-  gap: 0;
-  overflow: auto;
-  border-top: 1px solid var(--questionnaire-line);
-}
-
-.responseFiles {
-  display: grid;
-  gap: 8px;
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid var(--questionnaire-line);
-}
-
-.responseFiles > strong {
-  color: #405c69;
-  font-size: 0.67rem;
-}
-
-.responseFileSlot {
-  display: grid;
-  gap: 5px;
-  padding: 9px;
-  border-radius: 8px;
-  background: #f3f7f7;
-}
-
-.responseFileSlot > span {
-  color: #607780;
-  font-size: 0.61rem;
-  font-weight: 780;
-}
-
-.responseFileSlot > small {
-  color: #809097;
-  font-size: 0.6rem;
-}
-
-.responseFileSlot ul {
-  display: grid;
-  gap: 4px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.responseFileSlot li {
-  min-width: 0;
-  display: flex;
-  justify-content: space-between;
-  gap: 7px;
-}
-
-.responseFileSlot a {
-  overflow: hidden;
-  color: #31677d;
-  font-size: 0.63rem;
-  font-weight: 740;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.responseFileSlot li small {
-  flex: 0 0 auto;
-  color: #819097;
-  font-size: 0.58rem;
-}
-
-.answerItem {
-  padding: 11px 0;
-  border-bottom: 1px solid var(--questionnaire-line);
-}
-
-.answerItem > span {
-  display: block;
-  margin-bottom: 4px;
-  color: #526a75;
-  font-size: 0.61rem;
-  font-weight: 790;
-  line-height: 1.35;
-}
-
-.answerItem p {
-  margin: 0;
-  color: #1e3445;
-  font-size: 0.7rem;
-  line-height: 1.5;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
-
 .restrictedAnswer {
   display: flex;
   align-items: center;
@@ -1139,6 +1410,10 @@
     grid-template-columns: 1fr;
   }
 
+  .intakeReviewHeader {
+    display: grid;
+  }
+
   .sidebar {
     position: static;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1174,6 +1449,32 @@
     grid-template-columns: 1fr;
   }
 
+  .intakeReviewSummary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .intakeReviewSummary > div:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .intakeAnswerGrid,
+  .intakeFilesGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .intakeAnswerWide {
+    grid-column: auto;
+  }
+
+  .intakeReviewFooter {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .intakeReviewFooter .applyButton {
+    width: 100%;
+  }
+
   .privacyPanel {
     grid-column: auto;
   }
@@ -1202,6 +1503,31 @@
 @media (max-width: 500px) {
   .panel {
     padding: 15px;
+  }
+
+  .intakeReview {
+    padding: 16px;
+  }
+
+  .intakeReviewActions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .intakeReviewSummary {
+    grid-template-columns: 1fr;
+  }
+
+  .intakeReviewSummary > div:first-child {
+    grid-column: auto;
+  }
+
+  .intakeSectionHeading {
+    display: grid;
+  }
+
+  .intakeSectionHeading > small {
+    width: fit-content;
   }
 
   .panelHeading > svg {

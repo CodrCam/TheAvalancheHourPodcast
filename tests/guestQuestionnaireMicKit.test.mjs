@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   buildGuestMicKitRequest,
   guestMicKitRequestId,
+  reconcileSubmittedGuestMicKitRequests,
   scrubGuestMicKitDataForEpisode,
   upsertGuestMicKitRequest,
 } from '../lib/guestQuestionnaireMicKit.mjs';
@@ -34,6 +35,7 @@ const episode = {
   episode_id: 'episode-one',
   recording_date: '2026-09-21',
   host_person_ids: ['host-one', 'host-two'],
+  producer_person_id: 'producer-one',
 };
 
 const guestPlan = {
@@ -42,7 +44,7 @@ const guestPlan = {
   equipment_note: 'Guest requested an Avalanche Hour microphone kit.',
 };
 
-test('builds a private guest request owned by the assigned episode hosts', () => {
+test('builds a private guest request coordinated by the episode team', () => {
   const request = buildGuestMicKitRequest({
     questionnaire: questionnaire(),
     episode,
@@ -53,7 +55,11 @@ test('builds a private guest request owned by the assigned episode hosts', () =>
   assert.equal(request.request_id, guestMicKitRequestId('episode-one'));
   assert.equal(request.participant_type, 'guest');
   assert.equal(request.source, 'guest_questionnaire');
-  assert.deepEqual(request.coordinator_person_ids, ['host-one', 'host-two']);
+  assert.deepEqual(request.coordinator_person_ids, [
+    'host-one',
+    'host-two',
+    'producer-one',
+  ]);
   assert.equal(request.recording_date, '2026-09-21');
   assert.equal(request.need_by, '2026-09-14');
   assert.equal(request.shipping.address_line_1, '123 Private Lane');
@@ -106,8 +112,8 @@ test('upserts one deterministic request without erasing logistics state', () => 
   assert.equal(second.request.admin_response, 'Kit reserved.');
 });
 
-test('does not create a tracker request for own-equipment or follow-up plans', () => {
-  for (const choice of ['use_own_equipment', 'needs_follow_up']) {
+test('does not create a tracker request when own equipment is confirmed', () => {
+  for (const choice of ['use_own_equipment']) {
     const result = upsertGuestMicKitRequest({
       tracker: { kits: [], requests: [] },
       questionnaire: questionnaire(),
@@ -117,6 +123,77 @@ test('does not create a tracker request for own-equipment or follow-up plans', (
     assert.equal(result.request, null);
     assert.equal(result.tracker.requests.length, 0);
   }
+});
+
+test('creates a non-ship-ready review item when guest equipment needs follow-up', () => {
+  const result = upsertGuestMicKitRequest({
+    tracker: { kits: [], requests: [] },
+    questionnaire: questionnaire(),
+    episode,
+    guestPlan: {
+      ...guestPlan,
+      choice: 'needs_follow_up',
+      equipment_note: 'The guest is unsure whether the microphone is suitable.',
+    },
+    now: '2026-08-04T12:00:00.000Z',
+  });
+
+  assert.equal(result.request.request_kind, 'equipment_review');
+  assert.equal(result.request.review_resolution, '');
+  assert.equal(result.request.status, 'requested');
+  assert.equal(result.request.kit_id, '');
+  assert.match(result.request.notes, /unsure/i);
+});
+
+test('backfills pre-sync submissions and preserves a producer review resolution', () => {
+  const submitted = questionnaire();
+  submitted.response.status = 'submitted';
+  submitted.response.answers = {
+    ...submitted.response.answers,
+    external_microphone: 'not_sure',
+    over_ear_headphones: 'yes',
+    mic_kit_shipping_needed: 'unsure',
+  };
+  const first = reconcileSubmittedGuestMicKitRequests({
+    tracker: { kits: [], requests: [] },
+    questionnaires: [submitted],
+    episodes: [{ ...episode, status: 'planning' }],
+    now: '2026-08-04T12:00:00.000Z',
+  });
+
+  assert.equal(first.changed, true);
+  assert.equal(first.tracker.requests.length, 1);
+  assert.equal(first.tracker.requests[0].request_kind, 'equipment_review');
+
+  first.tracker.requests[0] = {
+    ...first.tracker.requests[0],
+    request_kind: 'shipment',
+    review_resolution: 'shipment',
+    shipping: {
+      recipient: 'Alex Guest',
+      phone: '',
+      address_line_1: 'Confirmed address',
+      address_line_2: '',
+      city: 'Wenatchee',
+      region: 'WA',
+      postal_code: '98801',
+      country: 'US',
+    },
+  };
+  const second = reconcileSubmittedGuestMicKitRequests({
+    tracker: first.tracker,
+    questionnaires: [submitted],
+    episodes: [{ ...episode, status: 'planning' }],
+    now: '2026-08-05T12:00:00.000Z',
+  });
+
+  assert.equal(second.tracker.requests.length, 1);
+  assert.equal(second.tracker.requests[0].request_kind, 'shipment');
+  assert.equal(second.tracker.requests[0].review_resolution, 'shipment');
+  assert.equal(
+    second.tracker.requests[0].shipping.address_line_1,
+    'Confirmed address'
+  );
 });
 
 test('scrubs deleted guest PII while preserving active kit references', () => {

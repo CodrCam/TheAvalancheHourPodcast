@@ -526,6 +526,28 @@
   font-size: 0.98rem;
 }
 
+.requestKindBadge {
+  display: inline-flex;
+  width: fit-content;
+  margin-top: 5px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 0.58rem;
+  font-weight: 820;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.requestKindReview {
+  color: #8a4f28;
+  background: #fff0df;
+}
+
+.requestKindShipment {
+  color: #315f50;
+  background: #e8f3ed;
+}
+
 .kitCardHeader p,
 .requestIdentity p {
   margin: 4px 0 0;
@@ -695,6 +717,7 @@
 }
 
 .requestCard {
+  scroll-margin-top: 18px;
   display: grid;
   grid-template-columns: minmax(220px, 0.8fr) minmax(360px, 1.2fr) auto;
   align-items: center;
@@ -767,6 +790,18 @@
 .requestNotes {
   padding: 0 4px;
   font-style: italic;
+}
+
+.equipmentReviewReason {
+  grid-column: 1 / -1;
+  margin: -3px 0 0;
+  padding: 11px 12px;
+  color: #754523;
+  font-size: 0.76rem;
+  line-height: 1.5;
+  border: 1px solid rgba(164, 94, 42, 0.18);
+  border-radius: 10px;
+  background: #fff7ed;
 }
 
 .adminResponse {
@@ -864,6 +899,79 @@
 
 .responseDesk textarea {
   resize: vertical;
+}
+
+.equipmentReviewDesk {
+  grid-column: 1 / -1;
+  padding: 0 14px 14px;
+  border: 1px solid rgba(164, 94, 42, 0.2);
+  border-radius: 12px;
+  background: #fffaf3;
+}
+
+.equipmentReviewDesk summary {
+  padding: 14px 0;
+  color: #704420;
+  font-size: 0.8rem;
+  font-weight: 820;
+  cursor: pointer;
+}
+
+.equipmentReviewDesk > p {
+  margin: -2px 0 13px;
+  color: #6f6359;
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+.equipmentReviewFields {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.equipmentReviewFields label {
+  display: grid;
+  gap: 6px;
+  color: #5f4938;
+  font-size: 0.7rem;
+  font-weight: 760;
+}
+
+.equipmentReviewFields input,
+.equipmentReviewFields textarea {
+  width: 100%;
+  min-height: 42px;
+  padding: 9px 10px;
+  color: #142638;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 520;
+  border: 1px solid rgba(20, 38, 56, 0.16);
+  border-radius: 9px;
+  outline: none;
+  background: #fff;
+}
+
+.equipmentReviewFields textarea {
+  resize: vertical;
+}
+
+.equipmentReviewFields input:focus,
+.equipmentReviewFields textarea:focus {
+  border-color: #b77b4a;
+  box-shadow: 0 0 0 3px rgba(183, 123, 74, 0.12);
+}
+
+.reviewWideField {
+  grid-column: span 2;
+}
+
+.equipmentReviewActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-top: 13px;
 }
 
 .responseDesk select:focus,
@@ -1160,6 +1268,10 @@
     grid-template-columns: 1fr;
   }
 
+  .equipmentReviewFields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .planningGrid,
   .operationsGrid {
     grid-template-columns: 1fr;
@@ -1190,6 +1302,7 @@
   .summaryGrid,
   .kitGrid,
   .fieldGrid,
+  .equipmentReviewFields,
   .handoffGuide,
   .handoffGuide ol {
     grid-template-columns: 1fr;
@@ -1204,7 +1317,8 @@
   }
 
   .kitEditor .fullField,
-  .kitEditor .checkboxField {
+  .kitEditor .checkboxField,
+  .reviewWideField {
     grid-column: auto;
   }
 
