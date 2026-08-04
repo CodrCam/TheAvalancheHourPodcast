@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  buildUspsClickNShipCsv,
+  buildPirateShipCsv,
   listReadyMicKitShipments,
-  listUspsClickNShipShipments,
+  listPirateShipSpreadsheetShipments,
 } from '../lib/micKitShipping.mjs';
 import { DEFAULT_MIC_KIT_TRACKER } from '../lib/micKitPresentation.mjs';
 
@@ -55,22 +55,25 @@ test('lists only assigned shipments that are ready for a label', () => {
   assert.equal(shipments[0].kit_label, 'TAH US Kit 1');
   assert.equal(shipments[0].package_weight_lb, '4.5');
   assert.equal(shipments[0].postal_code, '59715');
-  assert.equal(shipments[0].shipping_provider, 'usps_click_n_ship');
+  assert.equal(shipments[0].shipping_provider, 'pirate_ship_spreadsheet');
 });
 
-test('builds a USPS Click-N-Ship mapping CSV and blocks spreadsheet formulas', () => {
-  const csv = buildUspsClickNShipCsv(shippingTracker(), {
+test('builds a Pirate Ship mapping CSV and blocks spreadsheet formulas', () => {
+  const csv = buildPirateShipCsv(shippingTracker(), {
     today: '2026-07-25',
   });
 
-  assert.match(csv, /"Recipient Address Line 1"/);
-  assert.match(csv, /"Package Weight \(lb\)"/);
+  assert.match(csv, /"Address Line 1"/);
+  assert.match(csv, /"Weight \(Pounds\)"/);
   assert.match(csv, /"'=CSV Host"/);
   assert.match(csv, /"123 Main Street"/);
   assert.match(csv, /"4\.5"/);
+  assert.doesNotMatch(csv, /host@example\.com/);
+  assert.doesNotMatch(csv, /2026-08-07/);
+  assert.doesNotMatch(csv, /2026-08-08/);
 });
 
-test('includes a current host as the sender for a direct handoff', () => {
+test('routes a direct US handoff through individual Pirate Ship setup', () => {
   const tracker = shippingTracker();
   tracker.kits[0].status = 'with_holder';
   tracker.kits[0].checked_out_request_id = 'current-holder';
@@ -89,16 +92,43 @@ test('includes a current host as the sender for a direct handoff', () => {
     },
   });
 
-  const shipment = listUspsClickNShipShipments(tracker, {
-    today: '2026-07-25',
-  })[0];
-  const csv = buildUspsClickNShipCsv(tracker, {
+  const shipment = listReadyMicKitShipments(tracker)[0];
+  const csv = buildPirateShipCsv(tracker, {
     today: '2026-07-25',
   });
 
   assert.equal(shipment.sender.address_line_1, '44 Sender Way');
-  assert.match(csv, /"Sender Address Line 1"/);
-  assert.match(csv, /"44 Sender Way"/);
+  assert.equal(shipment.shipping_provider, 'pirate_ship_manual');
+  assert.doesNotMatch(csv, /CSV Host/);
+  assert.doesNotMatch(csv, /44 Sender Way/);
+});
+
+test('does not prepare a direct handoff without a complete origin address', () => {
+  const tracker = shippingTracker();
+  tracker.kits[0].status = 'with_holder';
+  tracker.kits[0].checked_out_request_id = 'current-holder';
+  tracker.requests.push({
+    request_id: 'current-holder',
+    requester_name: 'Current Host',
+    status: 'checked_out',
+    kit_id: 'tah-us-1',
+    shipping: {
+      recipient: 'Current Host',
+      address_line_1: '44 Sender Way',
+      city: 'Bend',
+      region: 'OR',
+      postal_code: '',
+      country: 'US',
+    },
+  });
+
+  assert.equal(listReadyMicKitShipments(tracker).length, 0);
+  assert.equal(
+    listPirateShipSpreadsheetShipments(tracker, {
+      today: '2026-07-25',
+    }).length,
+    0
+  );
 });
 
 test('keeps Canada-origin handoffs out of the US shipping export', () => {
@@ -110,13 +140,13 @@ test('keeps Canada-origin handoffs out of the US shipping export', () => {
     1
   );
   assert.equal(
-    listUspsClickNShipShipments(tracker, {
+    listPirateShipSpreadsheetShipments(tracker, {
       today: '2026-07-25',
     }).length,
     0
   );
   assert.doesNotMatch(
-    buildUspsClickNShipCsv(tracker, { today: '2026-07-25' }),
+    buildPirateShipCsv(tracker, { today: '2026-07-25' }),
     /CSV Host/
   );
 });
@@ -131,23 +161,23 @@ test('omits assigned shipments until the mailing address is complete', () => {
   );
 });
 
-test('holds future shipments until they enter the seven-day USPS window', () => {
+test('includes future ready shipments without a carrier-specific upload window', () => {
   const tracker = shippingTracker();
   tracker.kits[0].ship_by = '2026-08-02';
 
   assert.equal(
-    listUspsClickNShipShipments(tracker, {
+    listPirateShipSpreadsheetShipments(tracker, {
       today: '2026-07-25',
     }).length,
-    0
+    1
   );
 });
 
-test('moves an overdue USPS mail date to today in the export', () => {
+test('moves an overdue Pirate Ship date to today in the export', () => {
   const tracker = shippingTracker();
   tracker.kits[0].ship_by = '2026-07-20';
 
-  const shipments = listUspsClickNShipShipments(tracker, {
+  const shipments = listPirateShipSpreadsheetShipments(tracker, {
     today: '2026-07-25',
   });
 

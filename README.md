@@ -43,14 +43,18 @@ person’s role.
 - Shared follow-ups for blockers, questions, decisions, and durable next steps
 - Notifications and production reminders
 - Mic-kit requests, inventory, handoff planning, tracking, shipping presets,
-  and a USPS Click-N-Ship CSV export
+  and a Pirate Ship-ready spreadsheet export for US home-base shipments
 - Product catalog, stock, product images, orders, homepage content, people,
   sponsors, and system-health administration
 - A technical-support contact available throughout the signed-in workspace
 
-Direct USPS label creation is intentionally not connected yet. The shipping
-layer is separated so account-based USPS API support can be added later without
-changing the host request workflow.
+Pirate Ship does not currently offer a public API. For US home-base shipments,
+the Studio prepares a protected spreadsheet for an authorized coordinator to
+upload, review, and purchase manually in Pirate Ship. Direct handoffs are
+created individually so the current holder's Ship From address is confirmed;
+non-US-origin shipments remain a manual carrier workflow. The application must
+not invent or store Pirate Ship API credentials; an API integration should be
+reconsidered only if Pirate Ship officially launches one.
 
 ## Roles and access
 

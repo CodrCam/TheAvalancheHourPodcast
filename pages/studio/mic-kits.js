@@ -122,6 +122,55 @@ function formatAddress(shipping) {
     .join(' · ');
 }
 
+function recommendationAssignmentOptions(recommendation = {}) {
+  const options =
+    recommendation.assignment_options || recommendation.kit_options || [];
+  return Array.isArray(options) ? options : [];
+}
+
+function assignmentOptionKitId(option = {}) {
+  return String(option.kit_id || option.id || '').trim();
+}
+
+function assignmentOptionLabel(option = {}) {
+  return option.label || option.kit_label || assignmentOptionKitId(option);
+}
+
+function assignmentOptionIsEligible(option = {}) {
+  return option.eligible === true || option.is_eligible === true;
+}
+
+function assignmentOptionReason(option = {}) {
+  return (
+    option.reason ||
+    option.availability_label ||
+    option.availability ||
+    (assignmentOptionIsEligible(option)
+      ? 'Available for this request'
+      : 'Unavailable for this request')
+  );
+}
+
+function defaultAssignmentKitId(recommendation = {}) {
+  const options = recommendationAssignmentOptions(recommendation);
+  const recommendedKitId = String(
+    recommendation.recommended_kit_id || ''
+  ).trim();
+  const recommendedById = options.find(
+    (option) =>
+      assignmentOptionIsEligible(option) &&
+      assignmentOptionKitId(option) === recommendedKitId
+  );
+  const recommendedByFlag = options.find(
+    (option) =>
+      assignmentOptionIsEligible(option) && option.is_recommended === true
+  );
+  const firstEligible = options.find(assignmentOptionIsEligible);
+  return assignmentOptionKitId(
+    recommendedById || recommendedByFlag || firstEligible
+  );
+}
+
 function kitSummary(tracker) {
   const kits = (tracker?.kits || []).filter(
     (kit) => kit.status !== 'retired'
@@ -193,6 +242,7 @@ function episodePriority(episode, today) {
 export default function MicKitsPage({ adminMode = false }) {
   const router = useRouter();
   const appliedEpisodePrefill = useRef(false);
+  const focusedRequestId = useRef('');
   const [tracker, setTracker] = useState(null);
   const [automation, setAutomation] = useState({
     recommendations: [],
@@ -215,6 +265,7 @@ export default function MicKitsPage({ adminMode = false }) {
   const [kitDraft, setKitDraft] = useState(null);
   const [responseDrafts, setResponseDrafts] = useState({});
   const [equipmentReviewDrafts, setEquipmentReviewDrafts] = useState({});
+  const [assignmentDrafts, setAssignmentDrafts] = useState({});
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
@@ -311,6 +362,14 @@ export default function MicKitsPage({ adminMode = false }) {
       return;
     }
 
+    const queryRequestId = Array.isArray(router.query.request_id)
+      ? router.query.request_id[0]
+      : router.query.request_id;
+    if (String(queryRequestId || '').trim()) {
+      appliedEpisodePrefill.current = true;
+      return;
+    }
+
     const queryEpisodeId = Array.isArray(router.query.episode_id)
       ? router.query.episode_id[0]
       : router.query.episode_id;
@@ -346,6 +405,40 @@ export default function MicKitsPage({ adminMode = false }) {
       cancelled = true;
     };
   }, [adminMode, episodes, episodesLoading, router.isReady, router.query]);
+
+  useEffect(() => {
+    if (!router.isReady || loading || !tracker) return undefined;
+    const queryRequestId = Array.isArray(router.query.request_id)
+      ? router.query.request_id[0]
+      : router.query.request_id;
+    const requestId = String(queryRequestId || '').trim();
+    if (!requestId || focusedRequestId.current === requestId) {
+      return undefined;
+    }
+
+    const frame = window.requestAnimationFrame(() => {
+      const requestCard = document.getElementById(requestId);
+      if (!requestCard) return;
+      focusedRequestId.current = requestId;
+      const review = requestCard.querySelector('details');
+      if (review) review.open = true;
+      const reduceMotion = window.matchMedia?.(
+        '(prefers-reduced-motion: reduce)'
+      ).matches;
+      requestCard.scrollIntoView({
+        behavior: reduceMotion ? 'auto' : 'smooth',
+        block: 'center',
+      });
+      window.requestAnimationFrame(() => {
+        const focusTarget =
+          review?.querySelector('input, select, textarea, button') ||
+          requestCard.querySelector('[data-kit-assignment]') ||
+          requestCard;
+        focusTarget.focus({ preventScroll: true });
+      });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [loading, router.isReady, router.query.request_id, tracker]);
 
   const today = new Date().toISOString().slice(0, 10);
   const summary = useMemo(() => kitSummary(tracker), [tracker]);
@@ -671,12 +764,12 @@ export default function MicKitsPage({ adminMode = false }) {
     });
   }
 
-  async function confirmGuestShipment(event, request) {
+  async function confirmParticipantShipment(event, request) {
     event.preventDefault();
     const shipment =
       equipmentReviewDrafts[request.request_id] ||
       equipmentReviewDraft(request);
-    const saved = await mutate('confirm_guest_shipment', {
+    const saved = await mutate('confirm_shipment', {
       request_id: request.request_id,
       shipment,
     });
@@ -695,7 +788,7 @@ export default function MicKitsPage({ adminMode = false }) {
     const draft =
       equipmentReviewDrafts[request.request_id] ||
       equipmentReviewDraft(request);
-    const saved = await mutate('resolve_guest_review_no_shipment', {
+    const saved = await mutate('resolve_review_no_shipment', {
       request_id: request.request_id,
       admin_response:
         draft.admin_response ||
@@ -730,19 +823,53 @@ export default function MicKitsPage({ adminMode = false }) {
     }
   }
 
-  async function prepareRecommendedHandoff(request) {
-    const recommendation = recommendationsByRequestId.get(
-      request.request_id
+  async function assignSelectedKit(request, recommendation) {
+    const options = recommendationAssignmentOptions(recommendation);
+    const draftedKitId = assignmentDrafts[request.request_id];
+    const selectedOption = options.find(
+      (option) =>
+        assignmentOptionIsEligible(option) &&
+        assignmentOptionKitId(option) === draftedKitId
     );
-    if (!recommendation?.recommended_kit_id) return;
-    const saved = await mutate('apply_recommendation', {
+    const kitId = assignmentOptionKitId(
+      selectedOption ||
+        options.find(
+          (option) =>
+            assignmentOptionIsEligible(option) &&
+            assignmentOptionKitId(option) ===
+              defaultAssignmentKitId(recommendation)
+        )
+    );
+    if (!kitId) return;
+
+    const kitLabel = assignmentOptionLabel(
+      options.find((option) => assignmentOptionKitId(option) === kitId)
+    );
+    const saved = await mutate('assign_request_to_kit', {
       request_id: request.request_id,
+      kit_id: kitId,
     });
     if (saved) {
+      setAssignmentDrafts((current) => {
+        const next = { ...current };
+        delete next[request.request_id];
+        return next;
+      });
       setMessage(
-        `${recommendation.recommended_kit_label} is assigned to ${request.requester_name}, with the ship-by date filled in.`
+        `${kitLabel} is assigned to ${request.requester_name}, with the ship-by date filled in.`
       );
     }
+  }
+
+  function focusKitAssignment(requestId) {
+    const requestCard = document.getElementById(requestId);
+    if (!requestCard) return;
+    requestCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    window.requestAnimationFrame(() => {
+      requestCard
+        .querySelector('[data-kit-assignment]')
+        ?.focus({ preventScroll: true });
+    });
   }
 
   async function confirmReceipt(request) {
@@ -1374,34 +1501,6 @@ export default function MicKitsPage({ adminMode = false }) {
                       />
                     </label>
                     <label>
-                      Next request
-                      <select
-                        value={kitDraft.next_request_id}
-                        onChange={(event) =>
-                          setKitDraft((current) => ({
-                            ...current,
-                            next_request_id: event.target.value,
-                          }))
-                        }
-                      >
-                        <option value="">No next recipient</option>
-                        {openRequests
-                          .filter(
-                            (request) =>
-                              request.request_kind !== 'equipment_review'
-                          )
-                          .map((request) => (
-                            <option
-                              key={request.request_id}
-                              value={request.request_id}
-                            >
-                              {request.requester_name} ·{' '}
-                              {formatDate(request.need_by)}
-                            </option>
-                          ))}
-                      </select>
-                    </label>
-                    <label>
                       Ship by
                       <input
                         type="date"
@@ -1610,14 +1709,14 @@ export default function MicKitsPage({ adminMode = false }) {
               className={studioStyles.primaryButton}
             >
               <LocalShippingRoundedIcon aria-hidden="true" />
-              Download USPS Click-N-Ship CSV
+              Download Pirate Ship CSV
             </Link>
           </div>
 
           <div className={styles.automationMetrics}>
             <article>
               <strong>{automation.metrics?.ready_to_assign || 0}</strong>
-              <span>Ready to auto-assign</span>
+              <span>Ready to assign</span>
             </article>
             <article>
               <strong>{automation.metrics?.labels_to_create || 0}</strong>
@@ -1658,11 +1757,11 @@ export default function MicKitsPage({ adminMode = false }) {
                           type="button"
                           className={studioStyles.secondaryButton}
                           onClick={() =>
-                            prepareRecommendedHandoff(request)
+                            focusKitAssignment(request.request_id)
                           }
                           disabled={working}
                         >
-                          Prepare handoff
+                          Choose kit
                         </button>
                       ) : null}
                     </article>
@@ -1677,50 +1776,55 @@ export default function MicKitsPage({ adminMode = false }) {
 
             <aside className={styles.shippingAutomation}>
               <span>Shipping automation</span>
-              <h3>One clean handoff into label creation</h3>
+              <h3>One clean handoff into Pirate Ship</h3>
               <p>
-                The export includes US-origin handoffs inside USPS’s
-                seven-day mailing window, with each recipient’s private address,
-                ship date, and saved case measurements.
+                The export includes ready US home-base shipments with only the
+                destination, ship date, and saved case measurements needed for
+                postage. Direct handoffs are created one at a time so the
+                current holder’s Ship From address is confirmed.
               </p>
               <div className={styles.shippingModes}>
                 <span>
                   <strong>Available now</strong>
-                  Click-N-Ship file upload
+                  Pirate Ship spreadsheet upload
                 </span>
                 <span>
-                  <strong>Next integration</strong>
-                  Direct USPS labels after account onboarding
+                  <strong>Direct API</strong>
+                  Not currently offered by Pirate Ship
                 </span>
               </div>
               <ol>
-                <li>Use the recommendation to reserve a kit.</li>
-                <li>Download the US-origin shipments as a mapped CSV.</li>
+                <li>Choose an eligible kit on the request card.</li>
+                <li>Download home-base US shipments as a mapped CSV.</li>
                 <li>
-                  Upload it to USPS Click-N-Ship, review rates, and paste
-                  tracking back once.
+                  Upload it to Pirate Ship, choose a USPS or UPS rate, and
+                  paste tracking back once.
+                </li>
+                <li>
+                  For a direct handoff, create the label individually and
+                  confirm the current holder’s saved Ship From address.
                 </li>
               </ol>
               <p className={styles.integrationNote}>
-                Canada-origin handoffs stay out of this export so the team can
-                choose the correct Canadian carrier. The shipping layer is
-                separated so USPS OAuth label creation can replace the file
-                upload later without changing the recipient workflow.
+                Canada-origin handoffs stay out of this export because Pirate
+                Ship currently supports only US-origin postage. The shipping
+                layer remains separated so the workflow can change cleanly if
+                Pirate Ship offers an API in the future.
               </p>
               <div className={styles.integrationLinks}>
                 <a
-                  href="https://faq.usps.com/articles/Knowledge/Click-N-Ship-The-Basics"
+                  href="https://support.pirateship.com/en/articles/1068428-how-do-i-upload-address-spreadsheets-into-pirate-ship"
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  Click-N-Ship guide
+                  Pirate Ship upload guide
                 </a>
                 <a
-                  href="https://developers.usps.com/domesticlabelsv3"
+                  href="https://support.pirateship.com/en/articles/2309246-does-pirate-ship-have-an-api"
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  USPS label API
+                  Pirate Ship API status
                 </a>
               </div>
             </aside>
@@ -1751,10 +1855,34 @@ export default function MicKitsPage({ adminMode = false }) {
               const reviewDraft =
                 equipmentReviewDrafts[request.request_id] ||
                 equipmentReviewDraft(request);
+              const assignmentOptions =
+                recommendationAssignmentOptions(recommendation);
+              const draftedKitId = assignmentDrafts[request.request_id];
+              const draftedOption = assignmentOptions.find(
+                (option) =>
+                  assignmentOptionIsEligible(option) &&
+                  assignmentOptionKitId(option) === draftedKitId
+              );
+              const selectedKitId = assignmentOptionKitId(
+                draftedOption ||
+                  assignmentOptions.find(
+                    (option) =>
+                      assignmentOptionIsEligible(option) &&
+                      assignmentOptionKitId(option) ===
+                        defaultAssignmentKitId(recommendation)
+                  )
+              );
+              const selectedAssignmentOption = assignmentOptions.find(
+                (option) => assignmentOptionKitId(option) === selectedKitId
+              );
+              const eligibleAssignmentCount = assignmentOptions.filter(
+                assignmentOptionIsEligible
+              ).length;
               return (
               <article
                 key={request.request_id}
                 id={request.request_id}
+                tabIndex={-1}
                 className={styles.requestCard}
               >
                 <div className={styles.requestIdentity}>
@@ -1853,34 +1981,94 @@ export default function MicKitsPage({ adminMode = false }) {
                 ) : null}
                 {showManage && recommendation ? (
                   <div className={styles.priorityRecommendation}>
-                    <div>
+                    <div className={styles.recommendationContext}>
                       <span>{recommendation.priority_label}</span>
                       <strong>
                         {recommendation.recommended_kit_label
                           ? `${recommendation.recommended_kit_label} is the best current fit`
-                          : 'No confirmed kit is available yet'}
+                          : eligibleAssignmentCount
+                            ? `${eligibleAssignmentCount} eligible kit${eligibleAssignmentCount === 1 ? '' : 's'} can be selected`
+                            : 'No confirmed kit is available yet'}
                       </strong>
                       <p>{recommendation.reasons.join(' · ')}</p>
                       {recommendation.recommended_kit_id ? (
                         <em>
                           {recommendation.recommended_shipping_provider ===
-                          'usps_click_n_ship'
-                            ? 'USPS Click-N-Ship route'
-                            : 'Separate carrier decision required'}
+                          'pirate_ship_spreadsheet'
+                            ? 'Pirate Ship spreadsheet route'
+                            : recommendation.recommended_shipping_provider ===
+                                'pirate_ship_manual'
+                              ? 'Pirate Ship one-by-one route'
+                              : 'Separate carrier decision required'}
                         </em>
                       ) : null}
                     </div>
-                    {recommendation.recommended_kit_id ? (
-                      <button
-                        type="button"
-                        className={studioStyles.primaryButton}
-                        onClick={() =>
-                          prepareRecommendedHandoff(request)
-                        }
-                        disabled={working}
-                      >
-                        Prepare handoff
-                      </button>
+                    {!isEquipmentReview ? (
+                      <div className={styles.assignmentPicker}>
+                        <label htmlFor={`kit-assignment-${request.request_id}`}>
+                          Choose a kit
+                          <select
+                            id={`kit-assignment-${request.request_id}`}
+                            data-kit-assignment
+                            value={selectedKitId}
+                            onChange={(event) =>
+                              setAssignmentDrafts((current) => ({
+                                ...current,
+                                [request.request_id]: event.target.value,
+                              }))
+                            }
+                            disabled={working}
+                          >
+                            {!selectedKitId ? (
+                              <option value="">
+                                No eligible kit is available
+                              </option>
+                            ) : null}
+                            {assignmentOptions.map((option) => {
+                              const optionKitId =
+                                assignmentOptionKitId(option);
+                              const recommendedKitId = String(
+                                recommendation.recommended_kit_id || ''
+                              ).trim();
+                              const isRecommended =
+                                optionKitId === recommendedKitId ||
+                                (!recommendedKitId &&
+                                  option.is_recommended === true);
+                              return (
+                                <option
+                                  key={optionKitId}
+                                  value={optionKitId}
+                                  disabled={!assignmentOptionIsEligible(option)}
+                                >
+                                  {assignmentOptionLabel(option)}
+                                  {isRecommended ? ' · Recommended' : ''}
+                                  {' — '}
+                                  {assignmentOptionReason(option)}
+                                </option>
+                              );
+                            })}
+                          </select>
+                        </label>
+                        <button
+                          type="button"
+                          className={studioStyles.primaryButton}
+                          onClick={() =>
+                            assignSelectedKit(request, recommendation)
+                          }
+                          disabled={working || !selectedKitId}
+                        >
+                          Assign selected kit
+                        </button>
+                        <p className={styles.assignmentHint}>
+                          {selectedAssignmentOption
+                            ? assignmentOptionReason(
+                                selectedAssignmentOption
+                              )
+                            : assignmentOptions.length
+                              ? 'Every kit is currently unavailable. Open the menu to see why.'
+                              : 'No confirmed inventory is ready for this handoff yet.'}
+                        </p>
+                      </div>
                     ) : null}
                   </div>
                 ) : null}
@@ -1890,13 +2078,13 @@ export default function MicKitsPage({ adminMode = false }) {
                   <details className={styles.equipmentReviewDesk}>
                     <summary>Resolve equipment review</summary>
                     <p>
-                      If the guest needs a kit, verify every mailing field
-                      before moving this into the shipment queue. Otherwise,
-                      close the review without a shipment.
+                      If this participant needs a kit, verify every mailing
+                      field before moving the request into the shipment queue.
+                      Otherwise, close the review without a shipment.
                     </p>
                     <form
                       onSubmit={(event) =>
-                        confirmGuestShipment(event, request)
+                        confirmParticipantShipment(event, request)
                       }
                     >
                       <div className={styles.equipmentReviewFields}>
@@ -2050,7 +2238,7 @@ export default function MicKitsPage({ adminMode = false }) {
                             }
                             rows={2}
                             maxLength={1200}
-                            placeholder="Record what was confirmed with the guest."
+                            placeholder="Record what was confirmed with the participant."
                           />
                         </label>
                       </div>
@@ -2084,7 +2272,9 @@ export default function MicKitsPage({ adminMode = false }) {
                     >
                       {request.participant_type === 'guest'
                         ? 'Confirm guest received kit'
-                        : 'I received this kit'}
+                        : request.is_mine
+                          ? 'I received this kit'
+                          : 'Confirm host received kit'}
                     </button>
                   ) : null}
                   {(request.can_act || showManage) && !isEquipmentReview ? (

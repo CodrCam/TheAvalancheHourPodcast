@@ -329,6 +329,65 @@ test('keeps shipping addresses and tracking private from unrelated viewers', () 
   assert.equal(manager.kits[0].notes, 'Coordinator only');
 });
 
+test('producer-created host requests still belong to the intended host person', () => {
+  const tracker = normalizeMicKitTracker({
+    ...DEFAULT_MIC_KIT_TRACKER,
+    requests: [
+      {
+        request_id: 'producer-created-host-request',
+        participant_type: 'host',
+        requester_subject: 'producer-subject',
+        requester_person_id: 'host-one',
+        requester_name: 'Host Recipient',
+        requester_email: 'host@example.com',
+        coordinator_person_ids: ['producer-one'],
+        episode_id: 'episode-one',
+        status: 'requested',
+        shipping: {
+          recipient: 'Host Recipient',
+          address_line_1: '123 Private Lane',
+          city: 'Bozeman',
+          region: 'MT',
+          postal_code: '59715',
+          country: 'US',
+        },
+      },
+    ],
+  });
+
+  const host = sanitizeMicKitTrackerForViewer(tracker, {
+    person_id: 'host-one',
+    subject: 'host-subject',
+    username: 'different@example.com',
+    coordinated_episode_ids: [],
+  });
+
+  assert.equal(host.requests.length, 1);
+  assert.equal(host.requests[0].is_mine, true);
+  assert.equal(host.requests[0].is_coordinator, false);
+  assert.equal(host.requests[0].can_act, true);
+  assert.equal(host.requests[0].shipping.address_line_1, '123 Private Lane');
+  assert.equal(
+    canActOnMicKitRequest(tracker.requests[0], {
+      person_id: 'host-one',
+      coordinated_episode_ids: [],
+    }),
+    true
+  );
+
+  const unrelated = sanitizeMicKitTrackerForViewer(tracker, {
+    person_id: 'host-two',
+    coordinated_episode_ids: [],
+  });
+  assert.equal(unrelated.requests.length, 0);
+
+  const manager = sanitizeMicKitTrackerForViewer(tracker, {
+    canManage: true,
+  });
+  assert.equal(manager.requests.length, 1);
+  assert.equal(manager.requests[0].requester_person_id, 'host-one');
+});
+
 test('guest coordinators can act and see their guest delivery details', () => {
   const tracker = normalizeMicKitTracker({
     ...DEFAULT_MIC_KIT_TRACKER,
@@ -426,6 +485,107 @@ test('guest coordinators can act and see their guest delivery details', () => {
   assert.deepEqual(manager.requests[0].coordinator_person_ids, ['host-one']);
   assert.equal(manager.requests[0].source_response_id, 'guest-response-one');
   assert.equal(manager.requests[0].can_act, true);
+});
+
+test('current episode scope overrides stale host and guest coordinator snapshots', () => {
+  const tracker = normalizeMicKitTracker({
+    ...DEFAULT_MIC_KIT_TRACKER,
+    requests: [
+      {
+        request_id: 'host-request',
+        participant_type: 'host',
+        requester_person_id: 'host-one',
+        requester_name: 'Host Recipient',
+        coordinator_person_ids: ['former-producer'],
+        episode_id: 'episode-one',
+        status: 'requested',
+        shipping: {
+          recipient: 'Host Recipient',
+          address_line_1: '100 Host Lane',
+          country: 'US',
+        },
+      },
+      {
+        request_id: 'guest-request',
+        participant_type: 'guest',
+        requester_name: 'Guest Recipient',
+        coordinator_person_ids: ['former-producer'],
+        episode_id: 'episode-one',
+        status: 'requested',
+        shipping: {
+          recipient: 'Guest Recipient',
+          address_line_1: '200 Guest Lane',
+          country: 'US',
+        },
+      },
+    ],
+  });
+
+  const currentProducer = sanitizeMicKitTrackerForViewer(tracker, {
+    person_id: 'current-producer',
+    coordinated_episode_ids: ['episode-one'],
+  });
+  assert.equal(currentProducer.requests.length, 2);
+  assert.equal(
+    currentProducer.requests.every((request) => request.is_coordinator),
+    true
+  );
+  assert.equal(
+    currentProducer.requests.every((request) => request.shipping),
+    true
+  );
+
+  const formerProducer = sanitizeMicKitTrackerForViewer(tracker, {
+    person_id: 'former-producer',
+    coordinated_episode_ids: [],
+  });
+  assert.equal(formerProducer.requests.length, 0);
+  assert.equal(
+    tracker.requests.every(
+      (request) =>
+        canActOnMicKitRequest(request, {
+          person_id: 'former-producer',
+          coordinated_episode_ids: [],
+        }) === false
+    ),
+    true
+  );
+
+  const host = sanitizeMicKitTrackerForViewer(tracker, {
+    person_id: 'host-one',
+    coordinated_episode_ids: [],
+  });
+  assert.deepEqual(
+    host.requests.map((request) => request.request_id),
+    ['host-request']
+  );
+  assert.equal(host.requests[0].is_mine, true);
+
+  const manager = sanitizeMicKitTrackerForViewer(tracker, {
+    canManage: true,
+  });
+  assert.equal(manager.requests.length, 2);
+
+  const roleAwareProducer = sanitizeMicKitTrackerForViewer(tracker, {
+    person_id: 'current-producer',
+    produced_episode_ids: ['episode-one'],
+    hosted_episode_ids: [],
+  });
+  assert.deepEqual(
+    roleAwareProducer.requests.map((request) => request.request_id),
+    ['host-request', 'guest-request']
+  );
+
+  const cohost = sanitizeMicKitTrackerForViewer(tracker, {
+    person_id: 'host-two',
+    produced_episode_ids: [],
+    hosted_episode_ids: ['episode-one'],
+  });
+  assert.deepEqual(
+    cohost.requests.map((request) => request.request_id),
+    ['guest-request']
+  );
+  assert.equal(cohost.requests[0].shipping.address_line_1, '200 Guest Lane');
 });
 
 test('current episode producers can see older guest requests without stale coordinator data', () => {

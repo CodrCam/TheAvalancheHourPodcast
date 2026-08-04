@@ -142,11 +142,22 @@ function safePayload(value = {}) {
   return {
     episode_id: text(value.episode_id, 120),
     episode_updated_at: text(value.episode_updated_at, 50),
+    tracker_updated_at: text(value.tracker_updated_at, 50),
     tracker_configured: value.tracker_configured !== false,
     required: value.required === true,
     complete: value.complete === true,
     viewer_host_person_id: text(value.viewer_host_person_id, 120),
     can_edit: value.can_edit === true,
+    can_coordinate_requests: value.can_coordinate_requests === true,
+    requestable_host_person_ids: (
+      Array.isArray(value.requestable_host_person_ids)
+        ? value.requestable_host_person_ids
+        : []
+    )
+      .slice(0, 5)
+      .map((personId) => text(personId, 120))
+      .filter(Boolean),
+    can_request_guest: value.can_request_guest === true,
     guest_plan:
       value.guest_plan && typeof value.guest_plan === 'object'
         ? safeGuestPlan(value.guest_plan)
@@ -188,6 +199,23 @@ function currentRequestForHost(coverage, hostPersonId, requestIdHint = '') {
       return String(right.updated_at).localeCompare(String(left.updated_at));
     });
   return active[0] || null;
+}
+
+function targetedMicKitBoardHref(baseHref = '', requestId = '') {
+  const href = String(baseHref || '').trim();
+  const targetRequestId = String(requestId || '').trim();
+  if (!href || !targetRequestId) return href;
+
+  try {
+    const parsed = new URL(href, 'https://episode-studio.local');
+    if (!['/studio/mic-kits', '/admin/mic-kits'].includes(parsed.pathname)) {
+      return href;
+    }
+    parsed.searchParams.set('request_id', targetRequestId);
+    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+  } catch {
+    return href;
+  }
 }
 
 function planLabel(plan) {
@@ -244,6 +272,8 @@ export default function EpisodeMicKitStep({
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [savingHostId, setSavingHostId] = useState('');
+  const [requestingParticipantKey, setRequestingParticipantKey] =
+    useState('');
   const [rowErrors, setRowErrors] = useState({});
   const [rowMessages, setRowMessages] = useState({});
   const [reloadKey, setReloadKey] = useState(0);
@@ -441,6 +471,67 @@ export default function EpisodeMicKitStep({
     }
   }
 
+  async function requestParticipantKit(participantType, hostPersonId = '') {
+    if (
+      !payload ||
+      requestingParticipantKey ||
+      readOnly ||
+      !payload.tracker_configured
+    ) {
+      return false;
+    }
+    const participantKey =
+      participantType === 'guest' ? 'guest' : hostPersonId;
+    setRequestingParticipantKey(participantKey);
+    setRowErrors((current) => ({ ...current, [participantKey]: '' }));
+    setRowMessages((current) => ({ ...current, [participantKey]: '' }));
+    try {
+      const response = await fetch(
+        `/api/studio/episodes/${encodeURIComponent(episodeId)}/mic-kit`,
+        {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'request_participant_kit',
+            participant_type: participantType,
+            ...(participantType === 'host'
+              ? { host_person_id: hostPersonId }
+              : {}),
+            expected_tracker_updated_at: payload.tracker_updated_at,
+          }),
+        }
+      );
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.error || 'Could not add the mic-kit request.');
+      }
+      const nextPayload = safePayload(data);
+      setPayload(nextPayload);
+      setDrafts(draftsFromPayload(nextPayload));
+      const outcome = data.request_reopened
+        ? 'The mic-kit request was reopened.'
+        : data.request_created
+          ? 'The mic-kit request is in the queue.'
+          : 'The active mic-kit request is connected.';
+      setRowMessages((current) => ({
+        ...current,
+        [participantKey]: `${outcome} Complete the private shipment details on the mic-kit board.`,
+      }));
+      onDataChangeRef.current?.(nextPayload);
+      return true;
+    } catch (error) {
+      setRowErrors((current) => ({
+        ...current,
+        [participantKey]:
+          error.message || 'Could not add the mic-kit request.',
+      }));
+      return false;
+    } finally {
+      setRequestingParticipantKey('');
+    }
+  }
+
   if (loading && !payload) {
     return (
       <div className={styles.loadingState} role="status" aria-live="polite">
@@ -471,11 +562,21 @@ export default function EpisodeMicKitStep({
   const guestPlanPresent = Boolean(payload.guest_plan);
   const guestPlan = payload.guest_plan || safeGuestPlan();
   const guestHasResponse = guestPlan.response_revision > 0;
+  const guestHasPlanActivity = Boolean(
+    guestHasResponse || guestPlan.request_coverage
+  );
   const participantCount = displayHosts.length + (guestPlanPresent ? 1 : 0);
   const readyCount =
     hostReadyCount + (guestPlanPresent && guestPlan.resolved ? 1 : 0);
   const allParticipantsReady = payload.complete;
   const guestRequestStatus = guestPlan.request_coverage?.status || '';
+  const guestHasActiveRequest = ACTIVE_REQUEST_STATUSES.has(
+    guestRequestStatus
+  );
+  const guestHasPreviousRequest = Boolean(
+    ['cancelled', 'declined'].includes(guestRequestStatus)
+  );
+  const guestRequesting = requestingParticipantKey === 'guest';
   const guestRequestStatusMeta =
     guestPlan.request_coverage?.review_resolution === 'own_equipment'
       ? {
@@ -503,10 +604,22 @@ export default function EpisodeMicKitStep({
   const questionnaireHref =
     questionnaireHrefProp ||
     `/studio/episodes/${encodeURIComponent(episodeId)}/questionnaire`;
-  const guestMicKitHref = micKitBoardHref || requestHref;
+  const micKitBoardBaseHref = micKitBoardHref || requestHref;
+  const guestMicKitHref =
+    guestPlan.request_coverage?.request_kind === 'equipment_review'
+      ? targetedMicKitBoardHref(
+          micKitBoardBaseHref,
+          guestPlan.request_coverage.request_id
+        )
+      : micKitBoardBaseHref;
 
   return (
-    <div className={styles.workspace} aria-busy={loading || savingHostId !== ''}>
+    <div
+      className={styles.workspace}
+      aria-busy={
+        loading || savingHostId !== '' || requestingParticipantKey !== ''
+      }
+    >
       <header className={styles.summary}>
         <div>
           <span>Episode equipment readiness</span>
@@ -562,19 +675,37 @@ export default function EpisodeMicKitStep({
             plansByHost.get(host.host_person_id) ||
             safePlan({ host_person_id: host.host_person_id });
           const requestStatus = plan.request_coverage?.status || '';
-          const statusMeta = requestStatus
-            ? REQUEST_STATUS_META[requestStatus]
-            : null;
+          const statusMeta =
+            plan.request_coverage?.request_kind === 'equipment_review' &&
+            requestStatus === 'requested'
+              ? {
+                  label: 'Shipment setup needed',
+                  detail:
+                    'The need is recorded. Confirm the private mailing details on the mic-kit board before a kit can be assigned.',
+                  tone: 'attention',
+                }
+              : requestStatus
+                ? REQUEST_STATUS_META[requestStatus]
+                : null;
           const attention =
             plan.choice === 'request_kit' && plan.resolved !== true;
           const editable =
             !readOnly &&
             payload.can_edit &&
             payload.viewer_host_person_id === host.host_person_id;
+          const canRequestForHost =
+            !readOnly &&
+            payload.requestable_host_person_ids.includes(
+              host.host_person_id
+            );
           const activeRequest = currentRequestForHost(
             payload.request_coverage,
             host.host_person_id,
             requestIdHint
+          );
+          const activeRequestBoardHref = targetedMicKitBoardHref(
+            micKitBoardBaseHref,
+            activeRequest?.request_id
           );
           const draft = drafts[host.host_person_id] || {
             choice: plan.choice,
@@ -586,6 +717,13 @@ export default function EpisodeMicKitStep({
             String(draft.request_id || '') !== plan.request_id ||
             String(draft.equipment_note || '') !== plan.equipment_note;
           const saving = savingHostId === host.host_person_id;
+          const requesting =
+            requestingParticipantKey === host.host_person_id;
+          const hasReopenableRequest = payload.request_coverage.some(
+            (request) =>
+              request.host_person_id === host.host_person_id &&
+              ['cancelled', 'declined'].includes(request.status)
+          );
           const needsRequest =
             draft.choice === 'request_kit' && !draft.request_id;
 
@@ -659,6 +797,62 @@ export default function EpisodeMicKitStep({
                   !['assigned', 'checked_out'].includes(requestStatus)
                     ? ' A kit match is recorded.'
                     : ''}
+                </p>
+              ) : null}
+
+              {!editable && canRequestForHost ? (
+                activeRequest?.request_kind === 'equipment_review' ? (
+                  <div className={styles.requestAction}>
+                    <div>
+                      <strong>Request is visible in the queue</strong>
+                      <span>
+                        Confirm the private mailing details before assigning a
+                        kit.
+                      </span>
+                    </div>
+                    <Link href={activeRequestBoardHref}>
+                      Complete shipment details
+                    </Link>
+                  </div>
+                ) : !activeRequest &&
+                  (!plan.resolved || hasReopenableRequest) ? (
+                  <div className={styles.requestAction}>
+                    <div>
+                      <strong>
+                        {hasReopenableRequest
+                          ? 'A new microphone request is needed'
+                          : 'This host may need a microphone kit'}
+                      </strong>
+                      <span>
+                        Add the need now; the private address can be confirmed
+                        in the queue.
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      className={styles.connectButton}
+                      disabled={requesting || Boolean(requestingParticipantKey)}
+                      onClick={() =>
+                        requestParticipantKit('host', host.host_person_id)
+                      }
+                    >
+                      {requesting
+                        ? 'Adding…'
+                        : hasReopenableRequest
+                          ? 'Request again'
+                          : 'Request kit'}
+                    </button>
+                  </div>
+                ) : null
+              ) : null}
+
+              {!editable && rowErrors[host.host_person_id] ? (
+                <p className={styles.inlineFeedbackError} role="alert">
+                  {rowErrors[host.host_person_id]}
+                </p>
+              ) : !editable && rowMessages[host.host_person_id] ? (
+                <p className={styles.inlineFeedbackSuccess} role="status">
+                  {rowMessages[host.host_person_id]}
                 </p>
               ) : null}
 
@@ -775,7 +969,15 @@ export default function EpisodeMicKitStep({
 
                   {draft.choice === 'request_kit' ? (
                     <div className={styles.requestAction}>
-                      {activeRequest ? (
+                      {activeRequest?.request_kind === 'equipment_review' ? (
+                        <div>
+                          <strong>Shipment details are still needed</strong>
+                          <span>
+                            Confirm the private mailing details before a kit can
+                            be assigned.
+                          </span>
+                        </div>
+                      ) : activeRequest ? (
                         <div>
                           <strong>Active episode request found</strong>
                           <span>
@@ -783,16 +985,28 @@ export default function EpisodeMicKitStep({
                               'Active request'}
                           </span>
                         </div>
+                      ) : plan.resolved ? (
+                        <div>
+                          <strong>Microphone handoff completed</strong>
+                          <span>
+                            This episode’s kit request was fulfilled and the kit
+                            has been returned.
+                          </span>
+                        </div>
                       ) : (
                         <div>
                           <strong>No active episode request yet</strong>
                           <span>
-                            Submit the prefilled request, then return here to
-                            connect it.
+                            Add the request here, then complete the private
+                            shipment details on the mic-kit board.
                           </span>
                         </div>
                       )}
-                      {activeRequest ? (
+                      {activeRequest?.request_kind === 'equipment_review' ? (
+                        <Link href={activeRequestBoardHref}>
+                          Complete shipment details
+                        </Link>
+                      ) : activeRequest ? (
                         plan.request_id !== activeRequest.request_id ||
                         !plan.resolved ? (
                           <button
@@ -812,8 +1026,28 @@ export default function EpisodeMicKitStep({
                         ) : (
                           <span className={styles.connectedBadge}>Connected</span>
                         )
+                      ) : plan.resolved ? (
+                        <span className={styles.connectedBadge}>Complete</span>
                       ) : payload.tracker_configured ? (
-                        <Link href={requestHref}>Open prefilled request</Link>
+                        <button
+                          type="button"
+                          className={styles.connectButton}
+                          disabled={
+                            requesting || Boolean(requestingParticipantKey)
+                          }
+                          onClick={() =>
+                            requestParticipantKit(
+                              'host',
+                              host.host_person_id
+                            )
+                          }
+                        >
+                          {requesting
+                            ? 'Adding…'
+                            : hasReopenableRequest
+                              ? 'Request again'
+                              : 'Request kit'}
+                        </button>
                       ) : null}
                     </div>
                   ) : null}
@@ -906,7 +1140,7 @@ export default function EpisodeMicKitStep({
           <span>
             {guestPlan.resolved
               ? '1 of 1 ready'
-              : guestHasResponse
+              : guestHasPlanActivity
                 ? 'Needs review'
                 : 'Awaiting answers'}
           </span>
@@ -915,7 +1149,7 @@ export default function EpisodeMicKitStep({
         <article
           className={`${styles.hostCard} ${styles.guestCard}`}
           data-attention={
-            guestHasResponse && !guestPlan.resolved ? 'true' : 'false'
+            guestHasPlanActivity && !guestPlan.resolved ? 'true' : 'false'
           }
           aria-labelledby="mic-plan-guest"
         >
@@ -935,14 +1169,14 @@ export default function EpisodeMicKitStep({
               data-tone={
                 guestPlan.resolved
                   ? 'ready'
-                  : guestHasResponse
+                  : guestHasPlanActivity
                     ? 'attention'
                     : 'neutral'
               }
             >
               {guestPlan.resolved
                 ? 'Plan ready'
-                : guestHasResponse
+                : guestHasPlanActivity
                   ? 'Needs attention'
                   : 'Awaiting answers'}
             </span>
@@ -987,7 +1221,9 @@ export default function EpisodeMicKitStep({
             className={styles.statusDetail}
             data-tone={
               guestRequestStatusMeta?.tone ||
-              (guestHasResponse && !guestPlan.resolved ? 'attention' : 'active')
+              (guestHasPlanActivity && !guestPlan.resolved
+                ? 'attention'
+                : 'active')
             }
           >
             {guestRequestStatusMeta
@@ -1007,8 +1243,37 @@ export default function EpisodeMicKitStep({
 
           <nav className={styles.guestActions} aria-label="Guest setup links">
             <Link href={questionnaireHref}>Review guest questionnaire</Link>
-            <Link href={guestMicKitHref}>Open mic-kit board</Link>
+            {payload.can_request_guest &&
+            !readOnly &&
+            !guestHasActiveRequest &&
+            (!guestPlan.resolved || guestHasPreviousRequest) ? (
+              <button
+                type="button"
+                disabled={guestRequesting || Boolean(requestingParticipantKey)}
+                onClick={() => requestParticipantKit('guest')}
+              >
+                {guestRequesting
+                  ? 'Adding…'
+                  : guestHasPreviousRequest
+                    ? 'Request guest kit again'
+                    : 'Request guest kit'}
+              </button>
+            ) : guestPlan.request_coverage?.request_kind ===
+                'equipment_review' && guestHasActiveRequest ? (
+              <Link href={guestMicKitHref}>Complete shipment details</Link>
+            ) : (
+              <Link href={guestMicKitHref}>Open mic-kit board</Link>
+            )}
           </nav>
+          {rowErrors.guest ? (
+            <p className={styles.inlineFeedbackError} role="alert">
+              {rowErrors.guest}
+            </p>
+          ) : rowMessages.guest ? (
+            <p className={styles.inlineFeedbackSuccess} role="status">
+              {rowMessages.guest}
+            </p>
+          ) : null}
         </article>
       </section>
     </div>

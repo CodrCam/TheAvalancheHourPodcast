@@ -5,14 +5,22 @@ import {
   EPISODE_MIC_KIT_DELIVERABLE_ID,
   applyEpisodeMicKitPlanUpdate,
   buildEpisodeMicKitPlanRows,
+  connectEpisodeMicKitRequestToPlan,
   getEpisodeGuestMicKitRequestCoverage,
   getEpisodeMicKitRequestCoverage,
   findEpisodeMicKitRequest,
   isActiveEpisodeMicKitRequestCoverage,
 } from '../../../../../lib/episodeMicKitPresentation.mjs';
+import { upsertEpisodeMicKitEquipmentReviewRequest } from '../../../../../lib/episodeMicKitRequests.mjs';
 import { normalizeEpisodeStudio } from '../../../../../lib/episodeStudioPresentation.mjs';
 import { saveEpisodeStudio } from '../../../../../lib/episodeStudioStore';
-import { getMicKitTracker } from '../../../../../lib/micKitStore';
+import {
+  getMicKitTracker,
+  saveMicKitTracker,
+} from '../../../../../lib/micKitStore';
+import { listPeople } from '../../../../../lib/peopleStore';
+import { publishMicKitNotifications } from '../../../../../lib/micKitEvents';
+import { listStudioBindings } from '../../../../../lib/studioAccessStore';
 
 const HOST_LOCKED_STATUSES = new Set([
   'submitted',
@@ -28,6 +36,78 @@ function microphonePlanDeliverable(episode) {
   return episode.deliverables.find(
     (deliverable) => deliverable.id === EPISODE_MIC_KIT_DELIVERABLE_ID
   );
+}
+
+function actorLabel(principal = {}) {
+  return (
+    cleanText(principal.displayName, 120) ||
+    cleanText(principal.username, 240) ||
+    'Studio team member'
+  );
+}
+
+function requestableHostPersonIds(access) {
+  const actorPersonId = access.binding?.person_id || '';
+  if (access.canManage || access.roles.includes('producer')) {
+    return access.episode.host_person_ids;
+  }
+  return access.roles.includes('host') &&
+    access.episode.host_person_ids.includes(actorPersonId)
+    ? [actorPersonId]
+    : [];
+}
+
+function canRequestForGuest(access) {
+  return Boolean(
+    access.canManage ||
+      access.roles.includes('producer') ||
+      access.roles.includes('host')
+  );
+}
+
+function currentCoordinatorPersonIds(episode) {
+  return [
+    ...new Set(
+      [
+        ...(Array.isArray(episode.host_person_ids)
+          ? episode.host_person_ids
+          : []),
+        episode.producer_person_id,
+      ].filter(Boolean)
+    ),
+  ].slice(0, 10);
+}
+
+async function participantIdentity(access, participantType, hostPersonId) {
+  if (participantType === 'guest') {
+    const guestPlan = microphonePlanDeliverable(access.episode)
+      ?.guest_mic_kit_plan;
+    return {
+      requesterName:
+        cleanText(guestPlan?.guest_name, 120) || 'Episode guest',
+      requesterPersonId: '',
+      requesterSubject: '',
+      requesterEmail: '',
+    };
+  }
+
+  const [peopleResult, bindingsResult] = await Promise.all([
+    listPeople({ allowStaticFallback: true, includeInactive: true }),
+    listStudioBindings(),
+  ]);
+  const person = (peopleResult.people || []).find(
+    (candidate) => candidate.person_id === hostPersonId
+  );
+  const binding = (bindingsResult.bindings || []).find(
+    (candidate) =>
+      candidate.person_id === hostPersonId && candidate.active !== false
+  );
+  return {
+    requesterName: cleanText(person?.name, 120) || 'Episode host',
+    requesterPersonId: hostPersonId,
+    requesterSubject: cleanText(binding?.user_sub, 160),
+    requesterEmail: cleanText(binding?.account_email, 240).toLowerCase(),
+  };
 }
 
 function responsePayload(access, trackerResult) {
@@ -66,6 +146,7 @@ function responsePayload(access, trackerResult) {
     episode_id: access.episode.episode_id,
     episode_updated_at: access.episode.updated_at,
     tracker_configured: trackerResult.configured,
+    tracker_updated_at: trackerResult.tracker.updated_at,
     required: deliverable?.required === true,
     complete:
       plans.length > 0 &&
@@ -76,6 +157,11 @@ function responsePayload(access, trackerResult) {
       viewerHostPersonId &&
         !HOST_LOCKED_STATUSES.has(access.episode.status)
     ),
+    can_coordinate_requests: Boolean(
+      requestableHostPersonIds(access).length || canRequestForGuest(access)
+    ),
+    requestable_host_person_ids: requestableHostPersonIds(access),
+    can_request_guest: canRequestForGuest(access),
     plans,
     guest_plan: guestPlan,
     request_coverage: requestCoverage,
@@ -83,8 +169,9 @@ function responsePayload(access, trackerResult) {
 }
 
 export default async function handler(req, res) {
-  if (!['GET', 'PATCH'].includes(req.method)) {
-    res.setHeader('Allow', 'GET,PATCH');
+  res.setHeader('Cache-Control', 'private, no-store');
+  if (!['GET', 'POST', 'PATCH'].includes(req.method)) {
+    res.setHeader('Allow', 'GET,POST,PATCH');
     return res.status(405).json({ ok: false, error: 'Method not allowed' });
   }
 
@@ -92,7 +179,9 @@ export default async function handler(req, res) {
   const permission =
     req.method === 'GET'
       ? ADMIN_PERMISSIONS.MIC_KITS_READ
-      : ADMIN_PERMISSIONS.EPISODES_UPDATE;
+      : req.method === 'POST'
+        ? ADMIN_PERMISSIONS.MIC_KITS_REQUEST
+        : ADMIN_PERMISSIONS.EPISODES_UPDATE;
   const access = await requireEpisodeStudioAccess(
     req,
     res,
@@ -111,6 +200,172 @@ export default async function handler(req, res) {
         ok: false,
         error: 'Content-Type must be application/json',
       });
+    }
+
+    if (req.method === 'POST') {
+      if (HOST_LOCKED_STATUSES.has(access.episode.status)) {
+        return res.status(409).json({
+          ok: false,
+          error:
+            'This episode package is locked while it is with the producer.',
+        });
+      }
+      if (!trackerResult.configured) {
+        return res.status(503).json({
+          ok: false,
+          error: 'Mic-kit requests are temporarily unavailable.',
+        });
+      }
+      const action = cleanText(req.body?.action, 60);
+      if (action !== 'request_participant_kit') {
+        return res.status(400).json({
+          ok: false,
+          error: 'Choose a valid microphone request action.',
+        });
+      }
+      const participantType =
+        req.body?.participant_type === 'guest' ? 'guest' : 'host';
+      const hostPersonId =
+        participantType === 'host'
+          ? cleanText(req.body?.host_person_id, 120)
+          : '';
+      if (
+        participantType === 'host' &&
+        !requestableHostPersonIds(access).includes(hostPersonId)
+      ) {
+        return res.status(403).json({
+          ok: false,
+          error:
+            'You can only request a microphone kit for an authorized episode host.',
+        });
+      }
+      if (participantType === 'guest' && !canRequestForGuest(access)) {
+        return res.status(403).json({ ok: false, error: 'Forbidden' });
+      }
+
+      const identity = await participantIdentity(
+        access,
+        participantType,
+        hostPersonId
+      );
+      const requestResult = upsertEpisodeMicKitEquipmentReviewRequest({
+        tracker: trackerResult.tracker,
+        episodeId: access.episode.episode_id,
+        recordingDate: access.episode.recording_date,
+        participantType,
+        ...identity,
+        coordinatorPersonIds: currentCoordinatorPersonIds(access.episode),
+      });
+      if (!requestResult.request) {
+        return res.status(400).json({
+          ok: false,
+          error: 'Could not identify the participant for this request.',
+        });
+      }
+
+      let nextTrackerResult = trackerResult;
+      if (requestResult.created || requestResult.reopened) {
+        const expectedTrackerUpdatedAt = cleanText(
+          req.body?.expected_tracker_updated_at,
+          50
+        );
+        if (expectedTrackerUpdatedAt !== trackerResult.tracker.updated_at) {
+          return res.status(409).json({
+            ok: false,
+            error:
+              'The mic-kit queue changed in another session. Refresh and try again.',
+          });
+        }
+        nextTrackerResult = await saveMicKitTracker(requestResult.tracker, {
+          expectedUpdatedAt: trackerResult.tracker.updated_at,
+          updatedBy: actorLabel(access.principal),
+        });
+        try {
+          await publishMicKitNotifications({
+            previousTracker: trackerResult.tracker,
+            tracker: nextTrackerResult.tracker,
+            action: requestResult.created
+              ? 'create_request'
+              : 'update_request',
+            actorName: actorLabel(access.principal),
+            actorPersonId: access.binding?.person_id || '',
+            managerPersonIds: String(
+              process.env.STUDIO_MIC_KIT_MANAGER_PERSON_IDS || ''
+            )
+              .split(',')
+              .map((personId) => personId.trim())
+              .filter(Boolean),
+          });
+        } catch (notificationError) {
+          console.error(
+            'episode mic-kit request notification generation failed:',
+            notificationError
+          );
+        }
+      }
+
+      const deliverable =
+        microphonePlanDeliverable(access.episode) || {
+          id: EPISODE_MIC_KIT_DELIVERABLE_ID,
+          required: true,
+        };
+      const connectedDeliverable = connectEpisodeMicKitRequestToPlan({
+        deliverable,
+        hostPersonIds: access.episode.host_person_ids,
+        participantType,
+        hostPersonId,
+        guestName: identity.requesterName,
+        requestId: requestResult.request.request_id,
+      });
+      const hasDeliverable = access.episode.deliverables.some(
+        (candidate) => candidate.id === EPISODE_MIC_KIT_DELIVERABLE_ID
+      );
+      const nextEpisode = normalizeEpisodeStudio({
+        ...access.episode,
+        deliverables: hasDeliverable
+          ? access.episode.deliverables.map((candidate) =>
+              candidate.id === EPISODE_MIC_KIT_DELIVERABLE_ID
+                ? connectedDeliverable
+                : candidate
+            )
+          : [...access.episode.deliverables, connectedDeliverable],
+      });
+      let responseAccess = access;
+      let episodeLinkDeferred = false;
+      if (
+        JSON.stringify(deliverable) !== JSON.stringify(connectedDeliverable)
+      ) {
+        try {
+          const savedEpisode = await saveEpisodeStudio(nextEpisode, {
+            expectedUpdatedAt: access.episode.updated_at,
+          });
+          responseAccess = { ...access, episode: savedEpisode.episode };
+        } catch (episodeError) {
+          if (!/conditional/i.test(String(episodeError?.message || ''))) {
+            throw episodeError;
+          }
+          episodeLinkDeferred = true;
+        }
+      }
+
+      logAdminAction(req, access.principal, 'mic_kit.episode_request', {
+        episode_id: access.episode.episode_id,
+        participant_type: participantType,
+        host_person_id: hostPersonId,
+        request_id: requestResult.request.request_id,
+        created: requestResult.created,
+        reopened: requestResult.reopened,
+        episode_link_deferred: episodeLinkDeferred,
+      });
+      return res
+        .status(requestResult.created || requestResult.reopened ? 201 : 200)
+        .json({
+          ...responsePayload(responseAccess, nextTrackerResult),
+          created_request_id: requestResult.request.request_id,
+          request_created: requestResult.created,
+          request_reopened: requestResult.reopened,
+          episode_link_deferred: episodeLinkDeferred,
+        });
     }
 
     const actorPersonId = access.binding?.person_id || '';

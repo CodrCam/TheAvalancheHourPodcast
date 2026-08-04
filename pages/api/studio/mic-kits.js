@@ -4,7 +4,10 @@ import {
   requirePermissionAsync,
 } from '../../../lib/adminAuth';
 import { logAdminAction } from '../../../lib/adminAudit';
-import { buildMicKitAutomation } from '../../../lib/micKitAutomation.mjs';
+import {
+  buildMicKitAutomation,
+  getMicKitAssignmentOptions,
+} from '../../../lib/micKitAutomation.mjs';
 import {
   MIC_KIT_REQUEST_STATUSES,
   MIC_KIT_STATUSES,
@@ -122,7 +125,7 @@ function requestInput(req, principal, binding) {
   };
 }
 
-function confirmedGuestShipment(input = {}, request = {}) {
+function confirmedParticipantShipment(input = {}, request = {}) {
   const shipping = {
     recipient: cleanText(input.shipping?.recipient, 120),
     phone: cleanText(input.shipping?.phone, 60),
@@ -148,7 +151,7 @@ function confirmedGuestShipment(input = {}, request = {}) {
     !needBy
   ) {
     throw new Error(
-      'Mic kit request: confirm the complete guest mailing address, location, and need-by date before requesting shipment.'
+      'Mic kit request: confirm the complete participant mailing address, location, and need-by date before requesting shipment.'
     );
   }
   return {
@@ -162,21 +165,32 @@ function confirmedGuestShipment(input = {}, request = {}) {
 
 function viewerFor(principal, binding, canManage, episodes = []) {
   const personId = binding?.person_id || '';
+  const currentEpisodes = Array.isArray(episodes) ? episodes : [];
+  const producedEpisodeIds = personId
+    ? currentEpisodes
+        .filter((episode) => episode?.producer_person_id === personId)
+        .map((episode) => episode.episode_id)
+        .filter(Boolean)
+    : [];
+  const hostedEpisodeIds = personId
+    ? currentEpisodes
+        .filter(
+          (episode) =>
+            Array.isArray(episode?.host_person_ids) &&
+            episode.host_person_ids.includes(personId)
+        )
+        .map((episode) => episode.episode_id)
+        .filter(Boolean)
+    : [];
   return {
     subject: principal.subject,
     username: principal.username,
     person_id: personId,
-    coordinated_episode_ids: personId
-      ? (Array.isArray(episodes) ? episodes : [])
-          .filter(
-            (episode) =>
-              episode?.producer_person_id === personId ||
-              (Array.isArray(episode?.host_person_ids) &&
-                episode.host_person_ids.includes(personId))
-          )
-          .map((episode) => episode.episode_id)
-          .filter(Boolean)
-      : [],
+    produced_episode_ids: producedEpisodeIds,
+    hosted_episode_ids: hostedEpisodeIds,
+    coordinated_episode_ids: [
+      ...new Set([...producedEpisodeIds, ...hostedEpisodeIds]),
+    ],
     canManage,
   };
 }
@@ -206,8 +220,29 @@ function responsePayload(
   };
 }
 
+function hasCompletePrivateShipping(request = {}) {
+  const shipping = request.shipping || {};
+  return Boolean(
+    cleanText(shipping.recipient, 120) &&
+      cleanText(shipping.address_line_1, 180) &&
+      cleanText(shipping.city, 120) &&
+      cleanText(shipping.region, 120) &&
+      cleanText(shipping.postal_code, 40) &&
+      cleanCountry(shipping.country || request.country)
+  );
+}
+
 function syncKitAssignment(tracker, kit, nextRequestId) {
   const previousRequestId = kit.next_request_id;
+  if (
+    previousRequestId &&
+    nextRequestId &&
+    previousRequestId !== nextRequestId
+  ) {
+    throw new Error(
+      'Mic kit tracker: clear the existing reservation before assigning this kit to another request.'
+    );
+  }
   if (previousRequestId && previousRequestId !== nextRequestId) {
     const previousRequest = tracker.requests.find(
       (request) => request.request_id === previousRequestId
@@ -241,7 +276,12 @@ function syncKitAssignment(tracker, kit, nextRequestId) {
   }
   if (nextRequest.request_kind === 'equipment_review') {
     throw new Error(
-      'Mic kit tracker: confirm the guest needs a shipment and collect the mailing details before assigning a kit.'
+      'Mic kit tracker: confirm the participant needs a shipment and collect the mailing details before assigning a kit.'
+    );
+  }
+  if (!hasCompletePrivateShipping(nextRequest)) {
+    throw new Error(
+      'Mic kit tracker: confirm the private mailing details before assigning a physical kit.'
     );
   }
   if (
@@ -533,9 +573,12 @@ export default async function handler(req, res) {
         request_id: request.request_id,
       });
     } else if (
-      ['confirm_guest_shipment', 'resolve_guest_review_no_shipment'].includes(
-        action
-      )
+      [
+        'confirm_shipment',
+        'resolve_review_no_shipment',
+        'confirm_guest_shipment',
+        'resolve_guest_review_no_shipment',
+      ].includes(action)
     ) {
       const requestId = cleanText(req.body?.request_id, 100);
       const request = tracker.requests.find(
@@ -550,19 +593,18 @@ export default async function handler(req, res) {
         return res.status(403).json({ ok: false, error: 'Forbidden' });
       }
       if (
-        request.participant_type !== 'guest' ||
         request.request_kind !== 'equipment_review' ||
         request.status !== 'requested'
       ) {
         return res.status(409).json({
           ok: false,
           error:
-            'Only an open guest equipment review can be resolved by its episode coordinator.',
+            'Only an open participant equipment review can be resolved by its episode coordinator.',
         });
       }
 
-      if (action === 'confirm_guest_shipment') {
-        const confirmed = confirmedGuestShipment(
+      if (['confirm_shipment', 'confirm_guest_shipment'].includes(action)) {
+        const confirmed = confirmedParticipantShipment(
           req.body?.shipment,
           request
         );
@@ -577,12 +619,12 @@ export default async function handler(req, res) {
           kit_id: '',
           admin_response:
             confirmed.admin_response ||
-            'The episode team confirmed that this guest needs a microphone-kit shipment.',
+            'The episode team confirmed that this participant needs a microphone-kit shipment.',
           admin_updated_at: now,
           admin_updated_by: actorLabel(principal),
           updated_at: now,
         });
-        logAdminAction(req, principal, 'mic_kit.guest_shipment_confirm', {
+        logAdminAction(req, principal, 'mic_kit.shipment_confirm', {
           request_id: request.request_id,
           episode_id: request.episode_id,
           country: request.country,
@@ -603,7 +645,7 @@ export default async function handler(req, res) {
         logAdminAction(
           req,
           principal,
-          'mic_kit.guest_review_no_shipment',
+          'mic_kit.review_no_shipment',
           {
             request_id: request.request_id,
             episode_id: request.episode_id,
@@ -801,13 +843,41 @@ export default async function handler(req, res) {
           return res.status(409).json({
             ok: false,
             error:
-              'Confirm the guest needs a shipment and collect the mailing details before checking out a kit.',
+              'Confirm the participant needs a shipment and collect the mailing details before checking out a kit.',
+          });
+        }
+        if (!hasCompletePrivateShipping(request)) {
+          return res.status(409).json({
+            ok: false,
+            error:
+              'Confirm the private mailing details before checking out a physical kit.',
           });
         }
         if (kit.checked_out_request_id === request.request_id) {
           return res.status(409).json({
             ok: false,
             error: `${kit.label} is already checked out.`,
+          });
+        }
+        if (
+          kit.next_request_id &&
+          kit.next_request_id !== request.request_id
+        ) {
+          return res.status(409).json({
+            ok: false,
+            error:
+              'Clear the existing reservation before checking this kit out to another request.',
+          });
+        }
+        const otherReservedKit = tracker.kits.find(
+          (candidate) =>
+            candidate.kit_id !== kit.kit_id &&
+            candidate.next_request_id === request.request_id
+        );
+        if (otherReservedKit) {
+          return res.status(409).json({
+            ok: false,
+            error: `That request is already reserved for ${otherReservedKit.label}.`,
           });
         }
         if (
@@ -893,6 +963,52 @@ export default async function handler(req, res) {
           kit_id: kit.kit_id,
           request_id: request.request_id,
           due_back: kit.due_back,
+        });
+      } else if (action === 'assign_request_to_kit') {
+        const requestId = cleanText(req.body?.request_id, 100);
+        const kitId = cleanText(req.body?.kit_id, 100);
+        const request = tracker.requests.find(
+          (candidate) => candidate.request_id === requestId
+        );
+        const kit = tracker.kits.find(
+          (candidate) => candidate.kit_id === kitId
+        );
+        if (!request || !kit) {
+          return res.status(404).json({
+            ok: false,
+            error: 'Choose a current request and microphone kit.',
+          });
+        }
+        const assignment = getMicKitAssignmentOptions(
+          tracker,
+          request.request_id
+        ).find((option) => option.kit_id === kit.kit_id);
+        if (!assignment?.eligible) {
+          return res.status(409).json({
+            ok: false,
+            error:
+              assignment?.reason ||
+              'That microphone kit is not currently eligible for this request.',
+          });
+        }
+        syncKitAssignment(tracker, kit, request.request_id);
+        const directHandoff = Boolean(kit.checked_out_request_id);
+        kit.status = directHandoff ? 'with_holder' : 'available';
+        kit.next_request_id = request.request_id;
+        kit.ship_by = assignment.ship_by;
+        request.planned_due_back = assignment.due_back;
+        if (!directHandoff) kit.due_back = assignment.due_back;
+        request.admin_response = directHandoff
+          ? `${kit.label} is planned as a direct handoff. Shipping details will follow.`
+          : `${kit.label} has been assigned. Shipping details will follow.`;
+        request.admin_updated_at = now;
+        request.admin_updated_by = actorLabel(principal);
+        request.updated_at = now;
+        logAdminAction(req, principal, 'mic_kit.request_assign', {
+          kit_id: kit.kit_id,
+          request_id: request.request_id,
+          ship_by: kit.ship_by,
+          direct_handoff: directHandoff,
         });
       } else if (action === 'apply_recommendation') {
         const requestId = cleanText(req.body?.request_id, 100);

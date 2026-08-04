@@ -7,14 +7,18 @@ import {
   applyEpisodeMicKitReadinessToCompletion,
   applyEpisodeMicKitPlanUpdate,
   buildEpisodeMicKitPlanRows,
+  connectEpisodeMicKitRequestToPlan,
   findEpisodeMicKitRequest,
   getEpisodeGuestMicKitRequestCoverage,
   getEpisodeMicKitPlanCompletion,
   getEpisodeMicKitRequestCoverage,
   getEpisodeMicKitSubmissionReadiness,
   hasEpisodeGuestMicKitPlan,
+  isActiveEpisodeMicKitRequestCoverage,
   isEpisodeGuestMicKitPlanResolved,
   isEpisodeMicKitPlanResolved,
+  isHistoricallyFulfilledEpisodeMicKitRequestCoverage,
+  isSatisfiedEpisodeMicKitRequestCoverage,
   normalizeEpisodeGuestMicKitPlan,
   normalizeEpisodeMicKitPlans,
 } from '../lib/episodeMicKitPresentation.mjs';
@@ -269,6 +273,52 @@ test('binds a plan update to the authenticated assigned host', () => {
   );
 });
 
+test('connects an early request to the correct host or guest plan', () => {
+  const base = {
+    id: 'mic-kit-plan',
+    mic_kit_plans: [
+      {
+        host_person_id: 'host-two',
+        choice: 'no_kit_needed',
+        equipment_note: 'Shared studio',
+      },
+    ],
+  };
+  const host = connectEpisodeMicKitRequestToPlan({
+    deliverable: base,
+    hostPersonIds: hosts,
+    participantType: 'host',
+    hostPersonId: 'host-one',
+    requestId: 'host-request-one',
+  });
+  assert.deepEqual(host.mic_kit_plans, [
+    {
+      host_person_id: 'host-one',
+      choice: 'request_kit',
+      request_id: 'host-request-one',
+      equipment_note: '',
+    },
+    {
+      host_person_id: 'host-two',
+      choice: 'no_kit_needed',
+      request_id: '',
+      equipment_note: 'Shared studio',
+    },
+  ]);
+
+  const guest = connectEpisodeMicKitRequestToPlan({
+    deliverable: host,
+    hostPersonIds: hosts,
+    participantType: 'guest',
+    guestName: 'Alex Guest',
+    requestId: 'guest-request-one',
+  });
+  assert.equal(guest.guest_mic_kit_plan.guest_name, 'Alex Guest');
+  assert.equal(guest.guest_mic_kit_plan.choice, 'request_kit');
+  assert.equal(guest.guest_mic_kit_plan.request_id, 'guest-request-one');
+  assert.doesNotMatch(JSON.stringify(guest), /shipping|address|email/i);
+});
+
 test('verifies a linked canonical request by request, host, and episode', () => {
   const tracker = trackerWithRequests();
   assert.equal(
@@ -307,6 +357,8 @@ test('returns narrowly redacted episode request coverage', () => {
     {
       request_id: 'request-one',
       host_person_id: 'host-one',
+      request_kind: 'shipment',
+      review_resolution: '',
       status: 'assigned',
       has_kit_assignment: true,
       updated_at: '2026-08-04T12:00:00.000Z',
@@ -437,6 +489,126 @@ test('derives the guest setup lifecycle from an equipment-review queue item', ()
   assert.equal(ownEquipment.resolved, true);
 });
 
+test('derives a resolved host-owned-equipment plan from a closed review', () => {
+  const rows = buildEpisodeMicKitPlanRows({
+    plans: [
+      {
+        host_person_id: 'host-one',
+        choice: 'request_kit',
+        request_id: 'host-review-one',
+      },
+    ],
+    hostPersonIds: ['host-one'],
+    requestCoverage: [
+      {
+        request_id: 'host-review-one',
+        host_person_id: 'host-one',
+        request_kind: 'equipment_review',
+        review_resolution: 'own_equipment',
+        status: 'declined',
+        updated_at: '2026-08-07T12:00:00.000Z',
+      },
+    ],
+  });
+
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].choice, 'use_own_equipment');
+  assert.equal(rows[0].request_id, 'host-review-one');
+  assert.equal(rows[0].resolved, true);
+  assert.equal(rows[0].request_coverage.review_resolution, 'own_equipment');
+  assert.equal(
+    isActiveEpisodeMicKitRequestCoverage(rows[0].request_coverage),
+    false
+  );
+});
+
+test('keeps a linked returned shipment fulfilled without treating it as active', () => {
+  const activeCoverage = {
+    request_id: 'active-shipment',
+    host_person_id: 'host-one',
+    request_kind: 'shipment',
+    status: 'assigned',
+  };
+  const returnedCoverage = {
+    request_id: 'returned-shipment',
+    host_person_id: 'host-one',
+    request_kind: 'shipment',
+    status: 'returned',
+  };
+  assert.equal(isActiveEpisodeMicKitRequestCoverage(activeCoverage), true);
+  assert.equal(
+    isHistoricallyFulfilledEpisodeMicKitRequestCoverage(activeCoverage),
+    false
+  );
+  assert.equal(isSatisfiedEpisodeMicKitRequestCoverage(activeCoverage), true);
+  assert.equal(isActiveEpisodeMicKitRequestCoverage(returnedCoverage), false);
+  assert.equal(
+    isHistoricallyFulfilledEpisodeMicKitRequestCoverage(returnedCoverage),
+    true
+  );
+  assert.equal(
+    isSatisfiedEpisodeMicKitRequestCoverage(returnedCoverage),
+    true
+  );
+  assert.equal(
+    isHistoricallyFulfilledEpisodeMicKitRequestCoverage({
+      ...returnedCoverage,
+      request_kind: 'equipment_review',
+    }),
+    false
+  );
+
+  const hostRow = buildEpisodeMicKitPlanRows({
+    plans: [
+      {
+        host_person_id: 'host-one',
+        choice: 'request_kit',
+        request_id: 'returned-shipment',
+      },
+    ],
+    hostPersonIds: ['host-one'],
+    requestCoverage: [returnedCoverage],
+  })[0];
+  assert.equal(hostRow.choice, 'request_kit');
+  assert.equal(hostRow.resolved, true);
+  assert.equal(hostRow.request_coverage.status, 'returned');
+
+  const guestRow = buildEpisodeMicKitPlanRows({
+    hostPersonIds: [],
+    guestPlan: {
+      guest_name: 'Alex Guest',
+      choice: 'request_kit',
+      request_id: 'guest-returned-shipment',
+      response_revision: 1,
+    },
+    guestRequestCoverage: [
+      {
+        request_id: 'guest-returned-shipment',
+        participant_type: 'guest',
+        request_kind: 'shipment',
+        status: 'returned',
+      },
+    ],
+  })[0];
+  assert.equal(guestRow.choice, 'request_kit');
+  assert.equal(guestRow.resolved, true);
+  assert.equal(guestRow.request_coverage.status, 'returned');
+
+  const unlinkedRow = buildEpisodeMicKitPlanRows({
+    plans: [
+      {
+        host_person_id: 'host-one',
+        choice: 'request_kit',
+        request_id: 'different-request',
+      },
+    ],
+    hostPersonIds: ['host-one'],
+    requestCoverage: [returnedCoverage],
+  })[0];
+  assert.equal(unlinkedRow.resolved, false);
+  assert.equal(unlinkedRow.request_coverage, null);
+});
+
 test('builds one safe plan row for every assigned host', () => {
   const coverage = getEpisodeMicKitRequestCoverage(trackerWithRequests(), {
     episodeId: 'episode-one',
@@ -503,7 +675,59 @@ test('builds one safe plan row for every assigned host', () => {
   assert.equal(wrongOwnerRows[0].request_coverage, null);
 });
 
-test('submission readiness requires an active request for the same host and episode', () => {
+test('recovers a participant plan from the sole active episode request', () => {
+  const hostRows = buildEpisodeMicKitPlanRows({
+    plans: [
+      {
+        host_person_id: 'host-one',
+        choice: 'request_kit',
+        request_id: 'cancelled-request',
+      },
+    ],
+    hostPersonIds: ['host-one'],
+    requestCoverage: [
+      {
+        request_id: 'cancelled-request',
+        host_person_id: 'host-one',
+        request_kind: 'shipment',
+        status: 'cancelled',
+      },
+      {
+        request_id: 'replacement-review',
+        host_person_id: 'host-one',
+        request_kind: 'equipment_review',
+        status: 'requested',
+        updated_at: '2026-08-04T13:00:00.000Z',
+      },
+    ],
+  });
+
+  assert.equal(hostRows[0].choice, 'request_kit');
+  assert.equal(hostRows[0].request_id, 'replacement-review');
+  assert.equal(hostRows[0].resolved, false);
+  assert.equal(
+    hostRows[0].request_coverage.request_kind,
+    'equipment_review'
+  );
+
+  const guestRows = buildEpisodeMicKitPlanRows({
+    hostPersonIds: [],
+    guestRequestCoverage: [
+      {
+        request_id: 'guest-review',
+        participant_type: 'guest',
+        request_kind: 'equipment_review',
+        status: 'requested',
+      },
+    ],
+  });
+  assert.equal(guestRows.length, 1);
+  assert.equal(guestRows[0].guest_name, 'Episode guest');
+  assert.equal(guestRows[0].request_id, 'guest-review');
+  assert.equal(guestRows[0].resolved, false);
+});
+
+test('submission readiness accepts active or linked fulfilled requests for the same episode', () => {
   const episode = {
     episode_id: 'episode-one',
     host_person_ids: hosts,
@@ -539,6 +763,16 @@ test('submission readiness requires an active request for the same host and epis
     gap_acknowledged: false,
     unresolved_hosts: [],
   });
+
+  const fulfilledTracker = trackerWithRequests();
+  fulfilledTracker.requests[0].status = 'returned';
+  const fulfilled = getEpisodeMicKitSubmissionReadiness(
+    episode,
+    fulfilledTracker
+  );
+  assert.equal(fulfilled.complete, true);
+  assert.equal(fulfilled.resolved_count, 2);
+  assert.deepEqual(fulfilled.unresolved_hosts, []);
 
   const inactiveTracker = trackerWithRequests();
   inactiveTracker.requests[0].status = 'declined';

@@ -2407,6 +2407,14 @@ export default function EpisodeStudioWorkspace({
             >
               Open guest questionnaire
             </Link>
+            {task.task_id === 'guest-recording-plan-reviewed' ? (
+              <Link
+                href={`${packageHref}#deliverable-mic-kit-plan`}
+                onClick={guardWorkspaceNavigation}
+              >
+                Open microphone plans
+              </Link>
+            ) : null}
           </div>
         ) : null}
 

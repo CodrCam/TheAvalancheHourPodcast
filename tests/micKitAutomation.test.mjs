@@ -1,6 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildMicKitAutomation } from '../lib/micKitAutomation.mjs';
+import {
+  buildMicKitAutomation,
+  getMicKitAssignmentOptions,
+} from '../lib/micKitAutomation.mjs';
 import { DEFAULT_MIC_KIT_TRACKER } from '../lib/micKitPresentation.mjs';
 
 test('prioritizes linked episodes and recommends an available in-country kit', () => {
@@ -278,7 +281,203 @@ test('plans a direct handoff when a held kit is due before the next ship date', 
   assert.equal(recommendation.recommended_kit_id, 'tah-us-1');
   assert.equal(
     recommendation.recommended_shipping_provider,
-    'usps_click_n_ship'
+    'pirate_ship_manual'
   );
   assert.match(recommendation.reasons.join(' '), /hand it off/);
+});
+
+test('assignment options rank available inventory ahead of a same-country handoff', () => {
+  const tracker = {
+    kits: [
+      {
+        kit_id: 'available-us',
+        label: 'Available US kit',
+        home_country: 'US',
+        status: 'available',
+      },
+      {
+        kit_id: 'held-ca',
+        label: 'Held Canada kit',
+        home_country: 'CA',
+        status: 'with_holder',
+        checked_out_request_id: 'current-holder',
+        due_back: '2026-08-10',
+      },
+    ],
+    requests: [
+      {
+        request_id: 'current-holder',
+        requester_name: 'Current holder',
+        status: 'checked_out',
+        shipping: { country: 'CA' },
+      },
+      {
+        request_id: 'next-guest',
+        requester_name: 'Next guest',
+        country: 'CA',
+        need_by: '2026-08-20',
+        recording_date: '2026-08-21',
+        status: 'approved',
+      },
+    ],
+  };
+
+  const choices = getMicKitAssignmentOptions(tracker, 'next-guest', {
+    today: '2026-08-01',
+  });
+
+  assert.deepEqual(
+    choices.map((choice) => choice.kit_id),
+    ['available-us', 'held-ca']
+  );
+  assert.equal(choices[0].availability, 'available_now');
+  assert.equal(choices[0].same_country, false);
+  assert.equal(choices[0].is_recommended, true);
+  assert.equal(choices[0].ship_by, '2026-08-08');
+  assert.equal(choices[0].due_back, '2026-08-24');
+  assert.equal(choices[0].shipping_provider, 'pirate_ship_spreadsheet');
+  assert.equal(choices[1].availability, 'direct_handoff');
+  assert.equal(choices[1].same_country, true);
+  assert.equal(choices[1].current_due_back, '2026-08-10');
+  assert.equal(choices[1].ship_by, '2026-08-14');
+  assert.equal(choices[1].shipping_provider, 'manual_carrier');
+});
+
+test('assignment options include all actual kits independent of virtual recommendations', () => {
+  const tracker = {
+    kits: [
+      {
+        kit_id: 'kit-one',
+        label: 'Kit One',
+        home_country: 'US',
+        status: 'available',
+      },
+      {
+        kit_id: 'kit-two',
+        label: 'Kit Two',
+        home_country: 'US',
+        status: 'available',
+      },
+    ],
+    requests: [
+      {
+        request_id: 'first-request',
+        requester_name: 'First guest',
+        country: 'US',
+        need_by: '2026-08-05',
+        status: 'approved',
+      },
+      {
+        request_id: 'second-request',
+        requester_name: 'Second guest',
+        country: 'US',
+        need_by: '2026-08-12',
+        status: 'approved',
+      },
+    ],
+  };
+
+  const automation = buildMicKitAutomation(tracker, [], {
+    today: '2026-08-01',
+  });
+  const choices = getMicKitAssignmentOptions(
+    tracker,
+    'second-request',
+    { today: '2026-08-01' }
+  );
+
+  assert.notEqual(
+    automation.recommendations[0].recommended_kit_id,
+    automation.recommendations[1].recommended_kit_id
+  );
+  assert.ok(
+    automation.recommendations.every(
+      (recommendation) =>
+        recommendation.assignment_options.length === 2 &&
+        recommendation.assignment_options.every((option) => option.eligible)
+    )
+  );
+  assert.deepEqual(
+    choices.map((choice) => choice.kit_id),
+    ['kit-one', 'kit-two']
+  );
+  assert.ok(choices.every((choice) => choice.eligible));
+});
+
+test('assignment options explain why unsafe inventory cannot be selected', () => {
+  const tracker = {
+    kits: [
+      {
+        kit_id: 'maintenance',
+        label: 'Maintenance kit',
+        status: 'maintenance',
+      },
+      {
+        kit_id: 'retired',
+        label: 'Retired kit',
+        status: 'retired',
+      },
+      {
+        kit_id: 'in-transit',
+        label: 'In-transit kit',
+        status: 'in_transit',
+      },
+      {
+        kit_id: 'reserved',
+        label: 'Reserved kit',
+        status: 'available',
+        next_request_id: 'another-request',
+      },
+      {
+        kit_id: 'late-return',
+        label: 'Late-return kit',
+        status: 'with_holder',
+        checked_out_request_id: 'current-holder',
+        due_back: '2026-08-18',
+      },
+      {
+        kit_id: 'missing-return',
+        label: 'Missing-return kit',
+        status: 'with_holder',
+        checked_out_request_id: 'current-holder',
+      },
+    ],
+    requests: [
+      {
+        request_id: 'current-holder',
+        requester_name: 'Current holder',
+        status: 'checked_out',
+        shipping: { country: 'US' },
+      },
+      {
+        request_id: 'another-request',
+        requester_name: 'Another guest',
+        status: 'approved',
+      },
+      {
+        request_id: 'target-request',
+        requester_name: 'Target guest',
+        country: 'US',
+        need_by: '2026-08-20',
+        status: 'approved',
+      },
+    ],
+  };
+
+  const choices = getMicKitAssignmentOptions(
+    tracker,
+    'target-request',
+    { today: '2026-08-01' }
+  );
+  const byId = new Map(
+    choices.map((choice) => [choice.kit_id, choice])
+  );
+
+  assert.ok(choices.every((choice) => !choice.eligible));
+  assert.match(byId.get('maintenance').reason, /Needs attention/);
+  assert.match(byId.get('retired').reason, /Not in circulation/);
+  assert.match(byId.get('in-transit').reason, /Currently in transit/);
+  assert.match(byId.get('reserved').reason, /Reserved for another/);
+  assert.match(byId.get('late-return').reason, /after this request must ship/);
+  assert.match(byId.get('missing-return').reason, /return date is required/);
 });

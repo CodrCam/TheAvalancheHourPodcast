@@ -337,7 +337,8 @@
   padding: 0 14px 14px;
 }
 
-.guestActions a {
+.guestActions a,
+.guestActions button {
   display: inline-flex;
   box-sizing: border-box;
   min-height: 34px;
@@ -347,15 +348,42 @@
   color: #356b83;
   font-size: 0.63rem;
   font-weight: 790;
+  font-family: inherit;
   text-decoration: none;
   border: 1px solid rgba(53, 107, 131, 0.2);
   border-radius: 9px;
   background: #fff;
+  cursor: pointer;
 }
 
-.guestActions a:hover {
+.guestActions a:hover,
+.guestActions button:hover:not(:disabled) {
   border-color: rgba(53, 107, 131, 0.42);
   background: #f3f8fa;
+}
+
+.guestActions button:disabled {
+  opacity: 0.52;
+  cursor: not-allowed;
+}
+
+.inlineFeedbackError,
+.inlineFeedbackSuccess {
+  margin: 0 14px 12px;
+  padding: 8px 10px;
+  font-size: 0.65rem;
+  line-height: 1.45;
+  border-radius: 9px;
+}
+
+.inlineFeedbackError {
+  color: #934239;
+  background: #fff1ee;
+}
+
+.inlineFeedbackSuccess {
+  color: #2f7052;
+  background: #ecf7f0;
 }
 
 .editor {
