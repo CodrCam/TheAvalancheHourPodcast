@@ -37,6 +37,11 @@ import {
 import { resetGuestQuestionnaireUploadBudget } from '../../../../../lib/guestQuestionnaireUploadBudget.mjs';
 import { getEpisodeStudio } from '../../../../../lib/episodeStudioStore';
 import { getStudioBindingForSubject } from '../../../../../lib/studioAccessStore';
+import {
+  getMicKitTracker,
+  saveMicKitTracker,
+} from '../../../../../lib/micKitStore';
+import { upsertGuestMicKitRequest } from '../../../../../lib/guestQuestionnaireMicKit.mjs';
 
 const ACTIONS = new Set([
   'save_configuration',
@@ -98,6 +103,44 @@ function isConflict(error) {
   return /conditional|transaction cancelled|changed elsewhere/i.test(
     String(error?.message || '')
   );
+}
+
+async function syncGuestMicKitRequest({
+  questionnaire,
+  episode,
+  guestPlan,
+  now,
+}) {
+  if (guestPlan?.choice !== 'request_kit') {
+    return null;
+  }
+  let trackerResult = await getMicKitTracker();
+  if (!trackerResult.configured) {
+    return null;
+  }
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const synced = upsertGuestMicKitRequest({
+      tracker: trackerResult.tracker,
+      questionnaire,
+      episode,
+      guestPlan,
+      now,
+    });
+    if (!synced.request || !synced.changed) return synced.request;
+    try {
+      const saved = await saveMicKitTracker(synced.tracker, {
+        expectedUpdatedAt: trackerResult.tracker.updated_at,
+        updatedBy: 'guest-questionnaire',
+      });
+      return saved.tracker.requests.find(
+        (request) => request.request_id === synced.request.request_id
+      );
+    } catch (error) {
+      if (!isConflict(error) || attempt > 0) throw error;
+      trackerResult = await getMicKitTracker();
+    }
+  }
+  return null;
 }
 
 export default async function handler(req, res) {
@@ -411,13 +454,31 @@ export default async function handler(req, res) {
             'The Episode Studio changed elsewhere. Refresh before applying the guest response.',
         });
       }
-      const projection = projectGuestQuestionnaireResponse(record);
+      let projection = projectGuestQuestionnaireResponse(record);
+      const appliedAt = new Date().toISOString();
+      const guestMicRequest = await syncGuestMicKitRequest({
+        questionnaire: record,
+        episode,
+        guestPlan: projection.production?.guest_mic_kit_plan,
+        now: appliedAt,
+      });
+      if (guestMicRequest) {
+        projection = {
+          ...projection,
+          production: {
+            ...projection.production,
+            guest_mic_kit_plan: {
+              ...projection.production.guest_mic_kit_plan,
+              request_id: guestMicRequest.request_id,
+            },
+          },
+        };
+      }
       const applied = applyGuestQuestionnaireProjectionToEpisode(
         episode,
         projection,
         record.autofill
       );
-      const appliedAt = new Date().toISOString();
       const nextRecord = {
         ...record,
         autofill: {

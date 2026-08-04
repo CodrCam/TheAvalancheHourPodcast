@@ -101,7 +101,7 @@ test('includes a current host as the sender for a direct handoff', () => {
   assert.match(csv, /"44 Sender Way"/);
 });
 
-test('keeps Canada-origin handoffs out of Caleb’s USPS export', () => {
+test('keeps Canada-origin handoffs out of the US shipping export', () => {
   const tracker = shippingTracker();
   tracker.kits[0].home_country = 'CA';
 

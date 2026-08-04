@@ -5,6 +5,7 @@ import {
   EPISODE_MIC_KIT_DELIVERABLE_ID,
   applyEpisodeMicKitPlanUpdate,
   buildEpisodeMicKitPlanRows,
+  getEpisodeGuestMicKitRequestCoverage,
   getEpisodeMicKitRequestCoverage,
   findEpisodeMicKitRequest,
   isActiveEpisodeMicKitRequestCoverage,
@@ -43,11 +44,23 @@ function responsePayload(access, trackerResult) {
       hostPersonIds: access.episode.host_person_ids,
     }
   );
-  const plans = buildEpisodeMicKitPlanRows({
+  const guestRequestCoverage = getEpisodeGuestMicKitRequestCoverage(
+    trackerResult.tracker,
+    { episodeId: access.episode.episode_id }
+  );
+  const participantPlans = buildEpisodeMicKitPlanRows({
     plans: deliverable?.mic_kit_plans,
     hostPersonIds: access.episode.host_person_ids,
     requestCoverage,
+    guestPlan: deliverable?.guest_mic_kit_plan,
+    guestRequestCoverage,
   });
+  const plans = participantPlans.filter(
+    (plan) => plan.participant_type !== 'guest'
+  );
+  const guestPlan =
+    participantPlans.find((plan) => plan.participant_type === 'guest') ||
+    null;
   return {
     ok: true,
     episode_id: access.episode.episode_id,
@@ -55,13 +68,16 @@ function responsePayload(access, trackerResult) {
     tracker_configured: trackerResult.configured,
     required: deliverable?.required === true,
     complete:
-      plans.length > 0 && plans.every((plan) => plan.resolved === true),
+      plans.length > 0 &&
+      plans.every((plan) => plan.resolved === true) &&
+      (!guestPlan || guestPlan.resolved === true),
     viewer_host_person_id: viewerHostPersonId,
     can_edit: Boolean(
       viewerHostPersonId &&
         !HOST_LOCKED_STATUSES.has(access.episode.status)
     ),
     plans,
+    guest_plan: guestPlan,
     request_coverage: requestCoverage,
   };
 }

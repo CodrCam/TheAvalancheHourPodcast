@@ -1066,6 +1066,106 @@ test('requires every assigned host to resolve a required microphone plan', () =>
   );
 });
 
+test('requires a connected guest microphone plan while leaving legacy episodes unchanged', () => {
+  const hostPlan = {
+    host_person_id: 'host-one',
+    choice: 'no_kit_needed',
+  };
+  const legacyEpisode = normalizeEpisodeStudio({
+    ...sampleEpisode(),
+    host_person_ids: ['host-one'],
+    deliverables: [
+      {
+        id: 'mic-kit-plan',
+        label: 'Microphone plan',
+        type: 'textarea',
+        required: true,
+        mic_kit_plans: [hostPlan],
+      },
+    ],
+  });
+  const legacyPlan = legacyEpisode.deliverables.find(
+    (deliverable) => deliverable.id === 'mic-kit-plan'
+  );
+  assert.equal(
+    isDeliverableComplete(legacyPlan, [], legacyEpisode.host_person_ids),
+    true
+  );
+
+  const needsFollowUp = normalizeEpisodeStudio({
+    ...legacyEpisode,
+    deliverables: legacyEpisode.deliverables.map((deliverable) =>
+      deliverable.id === 'mic-kit-plan'
+        ? {
+            ...deliverable,
+            guest_mic_kit_plan: {
+              guest_name: 'Alex Guest',
+              choice: 'needs_follow_up',
+              response_revision: 1,
+              readiness: {
+                internet: 'yes',
+                microphone: 'not_sure',
+                headphones: 'yes',
+                quiet_place: 'yes',
+              },
+              private_shipping: 'must not survive',
+            },
+          }
+        : deliverable
+    ),
+  });
+  const followUpPlan = needsFollowUp.deliverables.find(
+    (deliverable) => deliverable.id === 'mic-kit-plan'
+  );
+  assert.equal(
+    isDeliverableComplete(
+      followUpPlan,
+      [],
+      needsFollowUp.host_person_ids
+    ),
+    false
+  );
+  assert.equal(getEpisodeCompletion(needsFollowUp).can_submit, false);
+  assert.deepEqual(followUpPlan.guest_mic_kit_plan, {
+    guest_name: 'Alex Guest',
+    choice: 'needs_follow_up',
+    request_id: '',
+    equipment_note: '',
+    response_revision: 1,
+    readiness: {
+      internet: 'yes',
+      microphone: 'not_sure',
+      headphones: 'yes',
+      quiet_place: 'yes',
+    },
+  });
+
+  const guestReady = normalizeEpisodeStudio({
+    ...needsFollowUp,
+    deliverables: needsFollowUp.deliverables.map((deliverable) =>
+      deliverable.id === 'mic-kit-plan'
+        ? {
+            ...deliverable,
+            guest_mic_kit_plan: {
+              ...deliverable.guest_mic_kit_plan,
+              choice: 'use_own_equipment',
+              equipment_note:
+                'Guest confirmed a dedicated microphone and wired headphones.',
+            },
+          }
+        : deliverable
+    ),
+  });
+  const readyPlan = guestReady.deliverables.find(
+    (deliverable) => deliverable.id === 'mic-kit-plan'
+  );
+  assert.equal(
+    isDeliverableComplete(readyPlan, [], guestReady.host_person_ids),
+    true
+  );
+  assert.equal(getEpisodeCompletion(guestReady).can_submit, true);
+});
+
 test('generic host saves cannot forge another host microphone plan', () => {
   const episode = normalizeEpisodeStudio({
     ...sampleEpisode(),
@@ -1083,6 +1183,12 @@ test('generic host saves cannot forge another host microphone plan', () => {
             choice: 'no_kit_needed',
           },
         ],
+        guest_mic_kit_plan: {
+          guest_name: 'Alex Guest',
+          choice: 'needs_follow_up',
+          response_revision: 1,
+          readiness: { microphone: 'not_sure' },
+        },
       },
     ],
   });
@@ -1095,6 +1201,11 @@ test('generic host saves cannot forge another host microphone plan', () => {
           choice: 'no_kit_needed',
         },
       ],
+      guest_mic_kit_plan: {
+        guest_name: 'Forged Guest',
+        choice: 'use_own_equipment',
+        equipment_note: 'Forged ready plan',
+      },
       required: false,
     },
   ]);
@@ -1111,6 +1222,8 @@ test('generic host saves cannot forge another host microphone plan', () => {
       equipment_note: '',
     },
   ]);
+  assert.equal(micPlan.guest_mic_kit_plan.guest_name, 'Alex Guest');
+  assert.equal(micPlan.guest_mic_kit_plan.choice, 'needs_follow_up');
 });
 
 test('checklist configuration cannot remove or erase the microphone plan', () => {
@@ -1131,6 +1244,13 @@ test('checklist configuration cannot remove or erase the microphone plan', () =>
             equipment_note: 'Shure MV7 and wired headphones',
           },
         ],
+        guest_mic_kit_plan: {
+          guest_name: 'Alex Guest',
+          choice: 'request_kit',
+          request_id: 'guest-request-one',
+          response_revision: 1,
+          readiness: { microphone: 'no', headphones: 'no' },
+        },
       },
       {
         id: 'notes',
@@ -1157,6 +1277,11 @@ test('checklist configuration cannot remove or erase the microphone plan', () =>
   assert.equal(
     micPlan.mic_kit_plans[0].equipment_note,
     'Shure MV7 and wired headphones'
+  );
+  assert.equal(micPlan.guest_mic_kit_plan.guest_name, 'Alex Guest');
+  assert.equal(
+    micPlan.guest_mic_kit_plan.request_id,
+    'guest-request-one'
   );
 });
 

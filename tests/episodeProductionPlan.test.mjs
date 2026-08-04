@@ -104,6 +104,8 @@ test('creates the complete default workflow from the air date', () => {
   );
   assert.equal(microphonePlan.owner_type, 'hosts');
   assert.equal(microphonePlan.days_before_air, 21);
+  assert.equal(microphonePlan.label, 'Confirm the episode microphone plans');
+  assert.match(microphonePlan.description, /guest recording plan/i);
   assert.deepEqual(microphonePlan.dependencies, ['guest-prep-sent']);
   assert.deepEqual(microphonePlan.linked_deliverable_ids, ['mic-kit-plan']);
   assert.equal(
@@ -381,6 +383,12 @@ test('exact legacy built-in names migrate to roles while custom task copy remain
   const migrated = normalizeEpisodeProductionTasks(
     [
       {
+        task_id: MICROPHONE_PLAN_TASK_ID,
+        label: 'Confirm the host microphone plans',
+        description:
+          'Each assigned host confirms an active mic-kit request, identifies their own tested microphone and headphones, or records that no separate kit is needed.',
+      },
+      {
         task_id: 'intro-ready',
         label: 'Record the intro or schedule it with Angie',
         description:
@@ -410,6 +418,7 @@ test('exact legacy built-in names migrate to roles while custom task copy remain
   );
 
   for (const taskId of [
+    MICROPHONE_PLAN_TASK_ID,
     'intro-ready',
     'show-notes-brief',
     'producer-proof-upload',
@@ -419,6 +428,14 @@ test('exact legacy built-in names migrate to roles while custom task copy remain
     const task = migrated.find((candidate) => candidate.task_id === taskId);
     assert.doesNotMatch(`${task.label} ${task.description}`, /Angie|Sierra/);
   }
+  const migratedMicrophonePlan = migrated.find(
+    (task) => task.task_id === MICROPHONE_PLAN_TASK_ID
+  );
+  assert.equal(
+    migratedMicrophonePlan.label,
+    'Confirm the episode microphone plans'
+  );
+  assert.match(migratedMicrophonePlan.description, /guest recording plan/i);
 
   const customCopy = normalizeEpisodeProductionTasks(
     [
@@ -554,7 +571,7 @@ test('recorded intro completion requires the linked intro asset', () => {
   assert.equal(isEpisodeProductionTaskComplete(intro, updated), true);
 });
 
-test('microphone plan completion requires a resolved choice for every assigned host', () => {
+test('microphone plan completion requires every assigned host and any connected guest', () => {
   let value = episode({
     deliverables: [
       {
@@ -583,7 +600,7 @@ test('microphone plan completion requires a resolved choice for every assigned h
         { personId: 'host-one', personName: 'Host One' },
         { now: '2026-08-09T10:00:00Z' }
       ),
-    /every assigned host must complete the microphone plan/i
+    /every assigned host and any connected guest must complete the microphone plan/i
   );
 
   value.deliverables[0].mic_kit_plans.push({
@@ -591,6 +608,28 @@ test('microphone plan completion requires a resolved choice for every assigned h
     choice: 'use_own_equipment',
     equipment_note: 'Tested USB microphone and wired headphones.',
   });
+  value.deliverables[0].guest_mic_kit_plan = {
+    guest_name: 'Alex Guest',
+    choice: 'needs_follow_up',
+    response_revision: 1,
+    readiness: { microphone: 'not_sure' },
+  };
+  assert.throws(
+    () =>
+      applyEpisodeProductionTaskUpdate(
+        value,
+        MICROPHONE_PLAN_TASK_ID,
+        { status: 'complete' },
+        { personId: 'host-one', personName: 'Host One' },
+        { now: '2026-08-09T10:00:00Z' }
+      ),
+    /connected guest must complete the microphone plan/i
+  );
+  value.deliverables[0].guest_mic_kit_plan = {
+    ...value.deliverables[0].guest_mic_kit_plan,
+    choice: 'use_own_equipment',
+    equipment_note: 'Dedicated microphone and wired headphones confirmed.',
+  };
   value = applyEpisodeProductionTaskUpdate(
     value,
     MICROPHONE_PLAN_TASK_ID,

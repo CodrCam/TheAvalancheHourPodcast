@@ -340,6 +340,70 @@ test('recording decision-tree validation cannot skip a required kit decision or 
   );
 });
 
+test('projects the guest recording decision tree into a structured microphone plan', () => {
+  const requested = responseReadyRecord();
+  requested.response = {
+    ...requested.response,
+    status: 'submitted',
+    revision: 3,
+    answers: requiredAnswers({
+      external_microphone: 'no',
+      over_ear_headphones: 'not_sure',
+      mic_kit_shipping_needed: 'yes',
+      shipping_recipient_name: 'Alex Guest',
+      shipping_address_line_1: '123 Private Lane',
+      shipping_city: 'Wenatchee',
+      shipping_region: 'WA',
+      shipping_postal_code: '98801',
+      shipping_country: 'US',
+    }),
+  };
+  const requestedPlan = projectGuestQuestionnaireResponse(requested).production
+    .guest_mic_kit_plan;
+  assert.equal(requestedPlan.choice, 'request_kit');
+  assert.equal(requestedPlan.response_revision, 3);
+  assert.deepEqual(requestedPlan.readiness, {
+    internet: 'yes',
+    microphone: 'no',
+    headphones: 'not_sure',
+    quiet_place: 'yes',
+  });
+  assert.doesNotMatch(JSON.stringify(requestedPlan), /Private Lane|98801/);
+
+  const equipped = responseReadyRecord();
+  equipped.response = {
+    ...equipped.response,
+    status: 'submitted',
+    revision: 1,
+    answers: requiredAnswers({
+      external_microphone: 'yes',
+      over_ear_headphones: 'yes',
+      mic_kit_shipping_needed: '',
+    }),
+  };
+  assert.equal(
+    projectGuestQuestionnaireResponse(equipped).production.guest_mic_kit_plan
+      .choice,
+    'use_own_equipment'
+  );
+
+  const arranging = responseReadyRecord();
+  arranging.response = {
+    ...arranging.response,
+    status: 'submitted',
+    revision: 1,
+    answers: requiredAnswers({
+      external_microphone: 'no',
+      mic_kit_shipping_needed: 'no',
+    }),
+  };
+  assert.equal(
+    projectGuestQuestionnaireResponse(arranging).production.guest_mic_kit_plan
+      .choice,
+    'needs_follow_up'
+  );
+});
+
 test('accepted and archived history is read-only while producer revocation stays available', () => {
   const activeHost = getGuestQuestionnaireStudioCapabilities({
     canHost: true,
@@ -637,6 +701,7 @@ test('projection fills blanks, keeps project links in notes, sets no-profile sta
       { id: 'show-notes', value: '' },
       { id: 'social-copy', value: 'Producer-written social copy' },
       { id: 'credits', value: '' },
+      { id: 'mic-kit-plan', mic_kit_plans: [] },
     ],
     production_tasks: [
       {
@@ -672,6 +737,18 @@ test('projection fills blanks, keeps project links in notes, sets no-profile sta
   assert.match(
     applied.episode.production_tasks[0].evidence_note,
     /Guest questionnaire recording readiness/
+  );
+  assert.equal(
+    applied.episode.deliverables.find(
+      (deliverable) => deliverable.id === 'mic-kit-plan'
+    ).guest_mic_kit_plan.choice,
+    'request_kit'
+  );
+  assert.equal(
+    applied.applied_fields.includes(
+      'deliverables.mic-kit-plan.guest_mic_kit_plan'
+    ),
+    true
   );
   assert.equal(applied.episode.production_tasks[0].status, 'complete');
   assert.equal(applied.autofill.package.show_notes, projection.package.show_notes);

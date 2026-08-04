@@ -46,6 +46,7 @@ const EMPTY_REQUEST = {
   notes: '',
   shipping: {
     recipient: '',
+    phone: '',
     address_line_1: '',
     address_line_2: '',
     city: '',
@@ -77,6 +78,7 @@ function formatAddress(shipping) {
   if (!shipping) return '';
   return [
     shipping.recipient,
+    shipping.phone ? `Carrier phone: ${shipping.phone}` : '',
     shipping.address_line_1,
     shipping.address_line_2,
     [shipping.city, shipping.region, shipping.postal_code]
@@ -644,7 +646,11 @@ export default function MicKitsPage({ adminMode = false }) {
       request_id: request.request_id,
     });
     if (saved) {
-      setMessage('Thanks—the kit is now checked out to you.');
+      setMessage(
+        request.participant_type === 'guest'
+          ? `The kit is now checked out to ${request.requester_name}.`
+          : 'Thanks—the kit is now checked out to you.'
+      );
     }
   }
 
@@ -658,7 +664,7 @@ export default function MicKitsPage({ adminMode = false }) {
       >
         <div className={studioStyles.notice}>
           <h2>Opening the mic kit board…</h2>
-          <p>Checking kit locations, requests, and upcoming handoffs.</p>
+          <p>Checking kit availability and your upcoming handoffs.</p>
         </div>
       </LoadingLayout>
     );
@@ -680,8 +686,8 @@ export default function MicKitsPage({ adminMode = false }) {
           <h1>{adminMode ? 'Mic Kit Checkout' : 'Mic Kits'}</h1>
           <p>
             {adminMode
-              ? 'Review every request, respond to hosts, assign the right case, and check each kit out and back in like a library item.'
-              : 'See how many kits are available, where the cases are, and request one for any recording date—even when every kit is currently checked out.'}
+              ? 'Review every request, respond to recipients and coordinators, assign the right case, and check each kit out and back in like a library item.'
+              : 'See current availability, follow kits connected to you or your guest, and request one for any recording date—even when every kit is checked out.'}
           </p>
         </div>
         {canRequest && !adminMode ? (
@@ -873,6 +879,18 @@ export default function MicKitsPage({ adminMode = false }) {
                   />
                 </label>
                 <label>
+                  Carrier phone <span>(optional)</span>
+                  <input
+                    type="tel"
+                    value={requestDraft.shipping.phone}
+                    onChange={(event) =>
+                      updateShipping('phone', event.target.value)
+                    }
+                    autoComplete="tel"
+                    maxLength={60}
+                  />
+                </label>
+                <label>
                   Address
                   <input
                     value={requestDraft.shipping.address_line_1}
@@ -967,10 +985,15 @@ export default function MicKitsPage({ adminMode = false }) {
         <div className={styles.sectionHeading}>
           <div>
             <span>Where’s my mic?</span>
-            <h2>Kit locations and next handoffs</h2>
+            <h2>
+              {showManage
+                ? 'Kit locations and next handoffs'
+                : 'Kit availability and your handoffs'}
+            </h2>
             <p>
-              Retired kits remain recorded but are left out of the active
-              count.
+              {showManage
+                ? 'Retired kits remain recorded but are left out of the active count.'
+                : 'Specific locations appear only when a kit is connected to you or your guest.'}
             </p>
           </div>
           {showManage ? (
@@ -1060,42 +1083,52 @@ export default function MicKitsPage({ adminMode = false }) {
                   </span>
                 </div>
 
-                <dl className={styles.kitDetails}>
-                  <div>
-                    <dt>Current holder</dt>
-                    <dd>{kit.current_holder_name || 'Not confirmed'}</dd>
-                  </div>
-                  <div>
-                    <dt>Current location</dt>
-                    <dd>{kit.current_location || 'Not confirmed'}</dd>
-                  </div>
-                  <div>
-                    <dt>Next recipient</dt>
-                    <dd>
-                      {nextRequest
-                        ? `${nextRequest.requester_name} · ${formatDate(
-                            nextRequest.need_by
-                          )}`
-                        : 'No one assigned'}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt>Ship by</dt>
-                    <dd>{formatDate(kit.ship_by)}</dd>
-                  </div>
-                  {kit.checked_out_request_id ? (
-                    <>
-                      <div>
-                        <dt>Checked out</dt>
-                        <dd>{formatDate(kit.checked_out_at?.slice(0, 10))}</dd>
-                      </div>
-                      <div>
-                        <dt>Due back</dt>
-                        <dd>{formatDate(kit.due_back)}</dd>
-                      </div>
-                    </>
-                  ) : null}
-                </dl>
+                {showManage || kit.details_visible === true ? (
+                  <dl className={styles.kitDetails}>
+                    <div>
+                      <dt>Current holder</dt>
+                      <dd>{kit.current_holder_name || 'Not confirmed'}</dd>
+                    </div>
+                    <div>
+                      <dt>Current location</dt>
+                      <dd>{kit.current_location || 'Not confirmed'}</dd>
+                    </div>
+                    <div>
+                      <dt>Next recipient</dt>
+                      <dd>
+                        {nextRequest
+                          ? `${nextRequest.requester_name} · ${formatDate(
+                              nextRequest.need_by
+                            )}`
+                          : 'No one assigned'}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>Ship by</dt>
+                      <dd>{formatDate(kit.ship_by)}</dd>
+                    </div>
+                    {kit.checked_out_request_id ? (
+                      <>
+                        <div>
+                          <dt>Checked out</dt>
+                          <dd>
+                            {formatDate(kit.checked_out_at?.slice(0, 10))}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt>Due back</dt>
+                          <dd>{formatDate(kit.due_back)}</dd>
+                        </div>
+                      </>
+                    ) : null}
+                  </dl>
+                ) : (
+                  <p className={styles.privateTracking}>
+                    <LockRoundedIcon aria-hidden="true" />
+                    Detailed location and handoff information is shown only for
+                    kits connected to you or your guest.
+                  </p>
+                )}
 
                 {kit.tracking_url ? (
                   <a
@@ -1220,7 +1253,7 @@ export default function MicKitsPage({ adminMode = false }) {
                             current_holder_name: event.target.value,
                           }))
                         }
-                        placeholder="Host or storage contact"
+                        placeholder="Recipient or storage contact"
                       />
                     </label>
                     <label>
@@ -1538,7 +1571,7 @@ export default function MicKitsPage({ adminMode = false }) {
               <h3>One clean handoff into label creation</h3>
               <p>
                 The export includes US-origin handoffs inside USPS’s
-                seven-day mailing window, with each host’s private address,
+                seven-day mailing window, with each recipient’s private address,
                 ship date, and saved case measurements.
               </p>
               <div className={styles.shippingModes}>
@@ -1563,7 +1596,7 @@ export default function MicKitsPage({ adminMode = false }) {
                 Canada-origin handoffs stay out of this export so the team can
                 choose the correct Canadian carrier. The shipping layer is
                 separated so USPS OAuth label creation can replace the file
-                upload later without changing the host workflow.
+                upload later without changing the recipient workflow.
               </p>
               <div className={styles.integrationLinks}>
                 <a
@@ -1611,7 +1644,12 @@ export default function MicKitsPage({ adminMode = false }) {
                     {request.requester_name.charAt(0).toUpperCase()}
                   </span>
                   <div>
-                    <h3>{request.requester_name}</h3>
+                    <h3>
+                      {request.requester_name}
+                      {request.participant_type === 'guest'
+                        ? ' · Guest'
+                        : ''}
+                    </h3>
                     <p>
                       <PlaceRoundedIcon aria-hidden="true" />
                       {request.city_region} · {formatCountry(request.country)}
@@ -1703,17 +1741,19 @@ export default function MicKitsPage({ adminMode = false }) {
                   </div>
                 ) : null}
                 <div className={styles.requestActions}>
-                  {request.is_mine && request.status === 'assigned' ? (
+                  {request.can_act && request.status === 'assigned' ? (
                     <button
                       type="button"
                       className={studioStyles.primaryButton}
                       onClick={() => confirmReceipt(request)}
                       disabled={working}
                     >
-                      I received this kit
+                      {request.participant_type === 'guest'
+                        ? 'Confirm guest received kit'
+                        : 'I received this kit'}
                     </button>
                   ) : null}
-                  {request.is_mine || showManage ? (
+                  {request.can_act || showManage ? (
                     <button
                       type="button"
                       className={studioStyles.secondaryButton}
@@ -1752,7 +1792,7 @@ export default function MicKitsPage({ adminMode = false }) {
                       </select>
                     </label>
                     <label>
-                      Response to host
+                      Response to recipient
                       <textarea
                         value={
                           responseDrafts[request.request_id]
@@ -1765,7 +1805,7 @@ export default function MicKitsPage({ adminMode = false }) {
                             admin_response: event.target.value,
                           })
                         }
-                        placeholder="Let the host know what happens next."
+                        placeholder="Record what happens next for the recipient and coordinator."
                         rows={2}
                         maxLength={1200}
                       />
@@ -1946,7 +1986,10 @@ export default function MicKitsPage({ adminMode = false }) {
         <ol>
           <li>
             <strong>1</strong>
-            <span>A host adds a need-by date and private mailing address.</span>
+            <span>
+              A host or guest coordinator adds a need-by date and private
+              mailing address.
+            </span>
           </li>
           <li>
             <strong>2</strong>

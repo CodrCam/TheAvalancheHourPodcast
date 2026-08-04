@@ -5,6 +5,7 @@ import {
   DEFAULT_MIC_KIT_TRACKER,
   MIC_KIT_STATUSES,
   applyMicKitStatus,
+  canActOnMicKitRequest,
   findActiveMicKitRequest,
   micKitTrackerSummary,
   normalizeMicKitTracker,
@@ -59,6 +60,59 @@ test('finds an active mic request only for the same host and episode', () => {
       episodeId: 'episode-two',
     }),
     null
+  );
+});
+
+test('normalizes guest recipient metadata while legacy requests remain Studio host requests', () => {
+  const tracker = normalizeMicKitTracker({
+    requests: [
+      {
+        request_id: 'legacy-host-request',
+        requester_person_id: 'host-one',
+      },
+      {
+        request_id: 'guest-request',
+        participant_type: 'guest',
+        coordinator_person_ids: [
+          'host-one',
+          ' host-one ',
+          '',
+          'producer-one',
+        ],
+        source: 'guest_questionnaire',
+        source_response_id: ' response-one ',
+        requester_name: 'Guest Recipient',
+      },
+    ],
+  });
+
+  assert.deepEqual(
+    {
+      participant_type: tracker.requests[0].participant_type,
+      coordinator_person_ids: tracker.requests[0].coordinator_person_ids,
+      source: tracker.requests[0].source,
+      source_response_id: tracker.requests[0].source_response_id,
+    },
+    {
+      participant_type: 'host',
+      coordinator_person_ids: [],
+      source: 'studio',
+      source_response_id: '',
+    }
+  );
+  assert.deepEqual(
+    {
+      participant_type: tracker.requests[1].participant_type,
+      coordinator_person_ids: tracker.requests[1].coordinator_person_ids,
+      source: tracker.requests[1].source,
+      source_response_id: tracker.requests[1].source_response_id,
+    },
+    {
+      participant_type: 'guest',
+      coordinator_person_ids: ['host-one', 'producer-one'],
+      source: 'guest_questionnaire',
+      source_response_id: 'response-one',
+    }
   );
 });
 
@@ -201,15 +255,18 @@ test('keeps shipping addresses and tracking private from unrelated viewers', () 
     username: 'someone@example.com',
     canManage: false,
   });
-  assert.equal(unrelated.requests[0].shipping, null);
-  assert.equal(unrelated.requests[0].requester_subject, '');
-  assert.equal(unrelated.requests[0].requester_person_id, '');
-  assert.equal(unrelated.requests[0].requester_email, '');
-  assert.equal(unrelated.requests[0].notes, '');
-  assert.equal(unrelated.requests[0].admin_response, '');
+  assert.equal(unrelated.requests.length, 0);
+  assert.equal(unrelated.kits[0].details_visible, false);
+  assert.equal(unrelated.kits[0].current_holder_name, '');
+  assert.equal(unrelated.kits[0].current_location, '');
+  assert.equal(unrelated.kits[0].next_request_id, '');
+  assert.equal(unrelated.kits[0].ship_by, '');
+  assert.equal(unrelated.kits[0].checked_out_request_id, '');
+  assert.equal(unrelated.kits[0].checked_out_at, '');
+  assert.equal(unrelated.kits[0].due_back, '');
   assert.equal(unrelated.kits[0].tracking_number, '');
   assert.equal(unrelated.kits[0].tracking_url, '');
-  assert.equal(unrelated.kits[0].tracking_available, true);
+  assert.equal(unrelated.kits[0].tracking_available, false);
   assert.equal(unrelated.kits[0].notes, '');
 
   const recipient = sanitizeMicKitTrackerForViewer(tracker, {
@@ -226,6 +283,7 @@ test('keeps shipping addresses and tracking private from unrelated viewers', () 
     'Your kit will ship on Monday.'
   );
   assert.equal(recipient.kits[0].tracking_number, 'TRACK-PRIVATE');
+  assert.equal(recipient.kits[0].details_visible, true);
   assert.equal(recipient.kits[0].notes, '');
 
   const manager = sanitizeMicKitTrackerForViewer(tracker, {
@@ -233,7 +291,107 @@ test('keeps shipping addresses and tracking private from unrelated viewers', () 
   });
   assert.equal(manager.requests[0].requester_person_id, 'person-casey');
   assert.equal(manager.requests[0].shipping.postal_code, '97701');
+  assert.equal(manager.kits[0].details_visible, true);
   assert.equal(manager.kits[0].notes, 'Coordinator only');
+});
+
+test('guest coordinators can act and see their guest delivery details', () => {
+  const tracker = normalizeMicKitTracker({
+    ...DEFAULT_MIC_KIT_TRACKER,
+    requests: [
+      {
+        request_id: 'guest-request',
+        participant_type: 'guest',
+        coordinator_person_ids: ['host-one'],
+        source: 'guest_questionnaire',
+        source_response_id: 'guest-response-one',
+        requester_subject: 'guest-subject',
+        requester_name: 'Guest Recipient',
+        requester_email: 'guest@example.com',
+        country: 'US',
+        city_region: 'Bozeman, Montana',
+        need_by: '2026-10-01',
+        status: 'assigned',
+        kit_id: 'tah-us-1',
+        notes: 'Private guest equipment note',
+        admin_response: 'The kit ships Monday.',
+        admin_updated_at: '2026-09-20T12:00:00.000Z',
+        admin_updated_by: 'Mic kit coordinator',
+        shipping: {
+          recipient: 'Guest Recipient',
+          phone: '+1 406 555 0102',
+          address_line_1: '123 Private Lane',
+          city: 'Bozeman',
+          region: 'MT',
+          postal_code: '59715',
+          country: 'US',
+        },
+      },
+    ],
+    kits: DEFAULT_MIC_KIT_TRACKER.kits.map((kit, index) =>
+      index === 0
+        ? {
+            ...kit,
+            status: 'in_transit',
+            next_request_id: 'guest-request',
+            tracking_number: 'GUEST-TRACKING',
+            tracking_url: 'https://carrier.example/guest-tracking',
+          }
+        : kit
+    ),
+  });
+
+  const coordinator = sanitizeMicKitTrackerForViewer(tracker, {
+    person_id: 'host-one',
+    username: 'guest@example.com',
+  });
+  const guestRequest = coordinator.requests[0];
+  assert.equal(guestRequest.participant_type, 'guest');
+  assert.equal(guestRequest.status, 'assigned');
+  assert.equal(guestRequest.is_mine, false);
+  assert.equal(guestRequest.is_coordinator, true);
+  assert.equal(guestRequest.can_act, true);
+  assert.equal(guestRequest.requester_email, 'guest@example.com');
+  assert.equal(guestRequest.shipping.phone, '+1 406 555 0102');
+  assert.equal(guestRequest.shipping.address_line_1, '123 Private Lane');
+  assert.equal(guestRequest.notes, 'Private guest equipment note');
+  assert.equal(guestRequest.admin_response, 'The kit ships Monday.');
+  assert.deepEqual(guestRequest.coordinator_person_ids, []);
+  assert.equal(guestRequest.source_response_id, '');
+  assert.equal(coordinator.kits[0].tracking_number, 'GUEST-TRACKING');
+  assert.equal(coordinator.kits[0].details_visible, true);
+  assert.equal(
+    canActOnMicKitRequest(tracker.requests[0], {
+      person_id: 'host-one',
+    }),
+    true
+  );
+  assert.equal(
+    canActOnMicKitRequest(tracker.requests[0], {
+      username: 'guest@example.com',
+    }),
+    false
+  );
+
+  const unrelated = sanitizeMicKitTrackerForViewer(tracker, {
+    person_id: 'host-two',
+  });
+  assert.equal(unrelated.requests.length, 0);
+  assert.equal(unrelated.kits[0].tracking_number, '');
+  assert.equal(unrelated.kits[0].details_visible, false);
+
+  const manager = sanitizeMicKitTrackerForViewer(tracker, {
+    canManage: true,
+  });
+  assert.equal(manager.requests[0].requester_email, 'guest@example.com');
+  assert.equal(
+    manager.requests[0].shipping.address_line_1,
+    '123 Private Lane'
+  );
+  assert.equal(manager.requests[0].notes, 'Private guest equipment note');
+  assert.deepEqual(manager.requests[0].coordinator_person_ids, ['host-one']);
+  assert.equal(manager.requests[0].source_response_id, 'guest-response-one');
+  assert.equal(manager.requests[0].can_act, true);
 });
 
 test('keeps tracking visible to the host while a kit is checked out', () => {

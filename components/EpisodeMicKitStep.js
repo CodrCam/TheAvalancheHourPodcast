@@ -45,12 +45,12 @@ const REQUEST_STATUS_META = {
   },
   assigned: {
     label: 'Kit assigned',
-    detail: 'A kit has been matched to this host.',
+    detail: 'A kit has been matched to this recording plan.',
     tone: 'ready',
   },
   checked_out: {
     label: 'Kit checked out',
-    detail: 'The host has an active kit checkout for this episode.',
+    detail: 'A kit is checked out for this episode.',
     tone: 'ready',
   },
   returned: {
@@ -99,6 +99,36 @@ function safePlan(value = {}) {
   };
 }
 
+function safeGuestPlan(value = {}) {
+  const source = value && typeof value === 'object' ? value : {};
+  const readiness =
+    source.readiness && typeof source.readiness === 'object'
+      ? source.readiness
+      : {};
+  return {
+    guest_name: text(source.guest_name, 180) || 'Episode guest',
+    choice: text(source.choice, 40),
+    request_id: text(source.request_id, 120),
+    equipment_note: text(source.equipment_note, 800),
+    response_revision: Math.max(
+      0,
+      Math.trunc(Number(source.response_revision) || 0)
+    ),
+    readiness: {
+      internet: text(readiness.internet, 40),
+      microphone: text(readiness.microphone, 40),
+      headphones: text(readiness.headphones, 40),
+      quiet_place: text(readiness.quiet_place, 40),
+    },
+    resolved: source.resolved === true,
+    request_coverage:
+      source.request_coverage &&
+      typeof source.request_coverage === 'object'
+        ? safeCoverage(source.request_coverage)
+        : null,
+  };
+}
+
 function safePayload(value = {}) {
   return {
     episode_id: text(value.episode_id, 120),
@@ -108,6 +138,10 @@ function safePayload(value = {}) {
     complete: value.complete === true,
     viewer_host_person_id: text(value.viewer_host_person_id, 120),
     can_edit: value.can_edit === true,
+    guest_plan:
+      value.guest_plan && typeof value.guest_plan === 'object'
+        ? safeGuestPlan(value.guest_plan)
+        : null,
     plans: (Array.isArray(value.plans) ? value.plans : [])
       .slice(0, 5)
       .map(safePlan),
@@ -151,7 +185,24 @@ function planLabel(plan) {
   if (plan.choice === 'request_kit') return 'Avalanche Hour mic kit';
   if (plan.choice === 'use_own_equipment') return 'Own recording equipment';
   if (plan.choice === 'no_kit_needed') return 'No separate kit needed';
+  if (plan.choice) return 'Producer follow-up needed';
   return 'Plan needed';
+}
+
+const READINESS_ITEMS = [
+  { key: 'internet', label: 'Internet connection' },
+  { key: 'microphone', label: 'Dedicated microphone' },
+  { key: 'headphones', label: 'Recording headphones' },
+  { key: 'quiet_place', label: 'Quiet recording space' },
+];
+
+function readinessMeta(value = '') {
+  if (value === 'yes') return { label: 'Ready', tone: 'ready' };
+  if (value === 'no') return { label: 'Needs support', tone: 'attention' };
+  if (['not_sure', 'unsure'].includes(value)) {
+    return { label: 'Not sure', tone: 'waiting' };
+  }
+  return { label: 'Not answered', tone: 'neutral' };
 }
 
 function initials(name = '') {
@@ -167,6 +218,8 @@ export default function EpisodeMicKitStep({
   episodeId,
   hosts = [],
   requestIdHint = '',
+  questionnaireHref: questionnaireHrefProp = '',
+  micKitBoardHref = '',
   readOnly = false,
   onDataChange,
   onDirtyChange,
@@ -378,7 +431,7 @@ export default function EpisodeMicKitStep({
       <div className={styles.loadingState} role="status" aria-live="polite">
         <span className={styles.loadingMark} aria-hidden="true" />
         <div>
-          <strong>Checking each host&apos;s microphone plan…</strong>
+          <strong>Checking the host and guest recording plans…</strong>
           <p>Loading only the episode&apos;s safe readiness status.</p>
         </div>
       </div>
@@ -399,12 +452,27 @@ export default function EpisodeMicKitStep({
     );
   }
 
-  const readyCount = payload.plans.filter((plan) => plan.resolved).length;
+  const hostReadyCount = payload.plans.filter((plan) => plan.resolved).length;
+  const guestPlanPresent = Boolean(payload.guest_plan);
+  const guestPlan = payload.guest_plan || safeGuestPlan();
+  const guestHasResponse = guestPlan.response_revision > 0;
+  const participantCount = displayHosts.length + (guestPlanPresent ? 1 : 0);
+  const readyCount =
+    hostReadyCount + (guestPlanPresent && guestPlan.resolved ? 1 : 0);
+  const allParticipantsReady = payload.complete;
+  const guestRequestStatus = guestPlan.request_coverage?.status || '';
+  const guestRequestStatusMeta = guestRequestStatus
+    ? REQUEST_STATUS_META[guestRequestStatus]
+    : null;
   const requestHref = `/studio/mic-kits?episode_id=${encodeURIComponent(
     episodeId
   )}&return_to=${encodeURIComponent(
     `/studio/episodes/${encodeURIComponent(episodeId)}`
   )}`;
+  const questionnaireHref =
+    questionnaireHrefProp ||
+    `/studio/episodes/${encodeURIComponent(episodeId)}/questionnaire`;
+  const guestMicKitHref = micKitBoardHref || requestHref;
 
   return (
     <div className={styles.workspace} aria-busy={loading || savingHostId !== ''}>
@@ -412,15 +480,15 @@ export default function EpisodeMicKitStep({
         <div>
           <span>Episode equipment readiness</span>
           <strong>
-            {readyCount} of {displayHosts.length} host
-            {displayHosts.length === 1 ? '' : 's'} ready
+            {readyCount} of {participantCount} participant
+            {participantCount === 1 ? '' : 's'} ready
           </strong>
         </div>
         <span
           className={styles.completionBadge}
-          data-complete={payload.complete ? 'true' : 'false'}
+          data-complete={allParticipantsReady ? 'true' : 'false'}
         >
-          {payload.complete ? 'All plans ready' : 'Plans needed'}
+          {allParticipantsReady ? 'All plans ready' : 'Plans needed'}
         </span>
       </header>
 
@@ -446,7 +514,18 @@ export default function EpisodeMicKitStep({
         </div>
       ) : null}
 
-      <div className={styles.hostList}>
+      <section className={styles.participantGroup} aria-label="Host setup">
+        <header className={styles.groupHeading}>
+          <div>
+            <strong>Host setup</strong>
+            <span>Each assigned host confirms their own recording plan.</span>
+          </div>
+          <span>
+            {hostReadyCount} of {displayHosts.length} ready
+          </span>
+        </header>
+
+        <div className={styles.hostList}>
         {displayHosts.map((host) => {
           const plan =
             plansByHost.get(host.host_person_id) ||
@@ -781,7 +860,126 @@ export default function EpisodeMicKitStep({
             </section>
           );
         })}
-      </div>
+        </div>
+      </section>
+
+      <section className={styles.participantGroup} aria-label="Guest setup">
+        <header className={styles.groupHeading}>
+          <div>
+            <strong>Guest setup</strong>
+            <span>
+              Filled automatically from the guest questionnaire and mic-kit
+              board.
+            </span>
+          </div>
+          <span>
+            {guestPlan.resolved
+              ? '1 of 1 ready'
+              : guestHasResponse
+                ? 'Needs review'
+                : 'Awaiting answers'}
+          </span>
+        </header>
+
+        <article
+          className={`${styles.hostCard} ${styles.guestCard}`}
+          data-attention={
+            guestHasResponse && !guestPlan.resolved ? 'true' : 'false'
+          }
+          aria-labelledby="mic-plan-guest"
+        >
+          <header className={styles.hostHeader}>
+            <span
+              className={`${styles.avatar} ${styles.guestAvatar}`}
+              aria-hidden="true"
+            >
+              {initials(guestPlan.guest_name)}
+            </span>
+            <div>
+              <h4 id="mic-plan-guest">{guestPlan.guest_name}</h4>
+              <span>Guest questionnaire plan</span>
+            </div>
+            <span
+              className={styles.statusBadge}
+              data-tone={
+                guestPlan.resolved
+                  ? 'ready'
+                  : guestHasResponse
+                    ? 'attention'
+                    : 'neutral'
+              }
+            >
+              {guestPlan.resolved
+                ? 'Plan ready'
+                : guestHasResponse
+                  ? 'Needs attention'
+                  : 'Awaiting answers'}
+            </span>
+          </header>
+
+          <div className={styles.planSummary}>
+            <div>
+              <span>Recording plan</span>
+              <strong>{planLabel(guestPlan)}</strong>
+            </div>
+            {guestRequestStatusMeta ? (
+              <div>
+                <span>Mic-request status</span>
+                <strong data-tone={guestRequestStatusMeta.tone}>
+                  {guestRequestStatusMeta.label}
+                </strong>
+              </div>
+            ) : null}
+            {guestPlan.equipment_note ? (
+              <div className={styles.noteSummary}>
+                <span>Equipment note</span>
+                <p>{guestPlan.equipment_note}</p>
+              </div>
+            ) : null}
+          </div>
+
+          {guestHasResponse ? (
+            <dl className={styles.readinessGrid}>
+              {READINESS_ITEMS.map((item) => {
+                const meta = readinessMeta(guestPlan.readiness[item.key]);
+                return (
+                  <div key={item.key}>
+                    <dt>{item.label}</dt>
+                    <dd data-tone={meta.tone}>{meta.label}</dd>
+                  </div>
+                );
+              })}
+            </dl>
+          ) : null}
+
+          <p
+            className={styles.statusDetail}
+            data-tone={
+              guestRequestStatusMeta?.tone ||
+              (guestHasResponse && !guestPlan.resolved ? 'attention' : 'active')
+            }
+          >
+            {guestRequestStatusMeta
+              ? guestRequestStatusMeta.detail
+              : !guestHasResponse
+                ? 'This plan will fill automatically after the guest submits the questionnaire.'
+                : guestPlan.choice === 'request_kit'
+                  ? 'The guest requested a kit. The producer can review and track the logistics on the mic-kit board.'
+                  : guestPlan.resolved
+                    ? 'The questionnaire confirms the guest’s recording setup.'
+                    : 'The questionnaire flagged a setup detail for producer follow-up.'}
+            {guestPlan.request_coverage?.has_kit_assignment &&
+            !['assigned', 'checked_out'].includes(guestRequestStatus)
+              ? ' A kit match is recorded.'
+              : ''}
+          </p>
+
+          <nav className={styles.guestActions} aria-label="Guest setup links">
+            <Link href={questionnaireHref}>Review guest questionnaire</Link>
+            <Link href={guestMicKitHref}>Open mic-kit board</Link>
+          </nav>
+        </article>
+      </section>
     </div>
   );
 }

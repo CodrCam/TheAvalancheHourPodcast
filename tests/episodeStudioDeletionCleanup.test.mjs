@@ -33,6 +33,27 @@ test('keeps deletion pending until the latest tracked grant is safe', async () =
 test('sweeps storage before deleting the questionnaire and writing a tombstone', async () => {
   const calls = [];
   const episode = deletionEpisode();
+  const micKitTracker = {
+    updated_at: '2026-08-04T12:20:00.000Z',
+    kits: [],
+    requests: [
+      {
+        request_id: 'guest-request',
+        participant_type: 'guest',
+        coordinator_person_ids: ['host-one'],
+        source: 'guest_questionnaire',
+        source_response_id: 'response-one',
+        requester_name: 'Private Guest',
+        requester_email: 'private@example.com',
+        episode_id: 'episode-one',
+        notes: 'Private delivery note',
+        shipping: {
+          recipient: 'Private Guest',
+          address_line_1: '123 Private Lane',
+        },
+      },
+    ],
+  };
   const result = await finalizeEpisodeStudioDeletion(episode, {
     now: '2026-08-04T12:31:00.000Z',
     deleteVersions: async (episodeId) => {
@@ -45,6 +66,25 @@ test('sweeps storage before deleting the questionnaire and writing a tombstone',
         configured: true,
         questionnaire: { updated_at: '2026-08-04T12:15:00.000Z' },
       };
+    },
+    getMicKitTracker: async () => {
+      calls.push('mic-kit:load');
+      return { configured: true, tracker: micKitTracker };
+    },
+    saveMicKitTracker: async (tracker, options) => {
+      calls.push('mic-kit:scrub');
+      assert.equal(
+        options.expectedUpdatedAt,
+        '2026-08-04T12:20:00.000Z'
+      );
+      assert.equal(options.updatedBy, 'episode-studio-deletion');
+      assert.equal(tracker.requests[0].requester_name, 'Deleted guest recipient');
+      assert.equal(tracker.requests[0].requester_email, '');
+      assert.equal(tracker.requests[0].episode_id, '');
+      assert.equal(tracker.requests[0].shipping.address_line_1, '');
+      assert.equal(JSON.stringify(tracker).includes('Private Guest'), false);
+      assert.equal(JSON.stringify(tracker).includes('123 Private Lane'), false);
+      return { configured: true, tracker };
     },
     finalizeTombstone: async (value, options) => {
       calls.push(`finalize:${value.episode_id}`);
@@ -69,6 +109,8 @@ test('sweeps storage before deleting the questionnaire and writing a tombstone',
   assert.deepEqual(calls, [
     'sweep:episode-one',
     'questionnaire:episode-one',
+    'mic-kit:load',
+    'mic-kit:scrub',
     'finalize:episode-one',
   ]);
   assert.equal(result.pending, false);

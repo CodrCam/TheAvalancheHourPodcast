@@ -1,16 +1,21 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  EPISODE_GUEST_MIC_KIT_PLAN_CHOICES,
   EPISODE_MIC_KIT_DELIVERABLE_ID,
   EPISODE_MIC_KIT_PLAN_CHOICES,
   applyEpisodeMicKitReadinessToCompletion,
   applyEpisodeMicKitPlanUpdate,
   buildEpisodeMicKitPlanRows,
   findEpisodeMicKitRequest,
+  getEpisodeGuestMicKitRequestCoverage,
   getEpisodeMicKitPlanCompletion,
   getEpisodeMicKitRequestCoverage,
   getEpisodeMicKitSubmissionReadiness,
+  hasEpisodeGuestMicKitPlan,
+  isEpisodeGuestMicKitPlanResolved,
   isEpisodeMicKitPlanResolved,
+  normalizeEpisodeGuestMicKitPlan,
   normalizeEpisodeMicKitPlans,
 } from '../lib/episodeMicKitPresentation.mjs';
 
@@ -67,6 +72,56 @@ test('defines a dedicated built-in deliverable and compact plan choices', () => 
     'use_own_equipment',
     'no_kit_needed',
   ]);
+  assert.deepEqual(EPISODE_GUEST_MIC_KIT_PLAN_CHOICES, [
+    'request_kit',
+    'use_own_equipment',
+    'needs_follow_up',
+  ]);
+});
+
+test('normalizes the additive guest plan without retaining private questionnaire data', () => {
+  const plan = normalizeEpisodeGuestMicKitPlan({
+    guest_name: '  Alex Guest  ',
+    choice: 'request_kit',
+    request_id: ' Guest Request One ',
+    equipment_note: '  Producer will confirm the sound check.  ',
+    response_revision: 3.9,
+    readiness: {
+      internet: 'yes',
+      microphone: 'no',
+      headphones: 'not_sure',
+      quiet_place: 'yes',
+      shipping_address: 'must not survive',
+    },
+    guest_email: 'must-not-survive@example.com',
+    shipping_address: 'must not survive',
+  });
+
+  assert.deepEqual(plan, {
+    guest_name: 'Alex Guest',
+    choice: 'request_kit',
+    request_id: 'guest-request-one',
+    equipment_note: 'Producer will confirm the sound check.',
+    response_revision: 3,
+    readiness: {
+      internet: 'yes',
+      microphone: 'no',
+      headphones: 'not_sure',
+      quiet_place: 'yes',
+    },
+  });
+  assert.equal(hasEpisodeGuestMicKitPlan(plan), true);
+  assert.equal(hasEpisodeGuestMicKitPlan({}), false);
+  assert.equal(isEpisodeGuestMicKitPlanResolved(plan), true);
+  assert.equal(
+    isEpisodeGuestMicKitPlanResolved({
+      ...plan,
+      choice: 'needs_follow_up',
+      request_id: '',
+    }),
+    false
+  );
+  assert.doesNotMatch(JSON.stringify(plan), /email|shipping|private/i);
 });
 
 test('normalizes only assigned-host plans and strips unknown or private fields', () => {
@@ -252,6 +307,67 @@ test('returns narrowly redacted episode request coverage', () => {
   assert.doesNotMatch(JSON.stringify(coverage), /private|tracking|address/i);
 });
 
+test('returns safe guest request coverage and builds a guest participant row', () => {
+  const tracker = trackerWithRequests();
+  tracker.requests.push(
+    {
+      request_id: 'guest-request-one',
+      participant_type: 'guest',
+      requester_name: 'Private Guest Name',
+      requester_email: 'private-guest@example.com',
+      episode_id: 'episode-one',
+      status: 'approved',
+      kit_id: '',
+      notes: 'Private guest request note',
+      shipping: { address_line_1: '123 Private Guest Lane' },
+      updated_at: '2026-08-06T12:00:00.000Z',
+    },
+    {
+      request_id: 'guest-wrong-episode',
+      participant_type: 'guest',
+      episode_id: 'episode-two',
+      status: 'requested',
+    }
+  );
+  const guestCoverage = getEpisodeGuestMicKitRequestCoverage(tracker, {
+    episodeId: 'episode-one',
+  });
+
+  assert.deepEqual(guestCoverage, [
+    {
+      request_id: 'guest-request-one',
+      participant_type: 'guest',
+      status: 'approved',
+      has_kit_assignment: false,
+      updated_at: '2026-08-06T12:00:00.000Z',
+    },
+  ]);
+  const rows = buildEpisodeMicKitPlanRows({
+    plans: [
+      { host_person_id: 'host-one', choice: 'no_kit_needed' },
+    ],
+    hostPersonIds: ['host-one'],
+    guestPlan: {
+      guest_name: 'Alex Guest',
+      choice: 'request_kit',
+      request_id: 'guest-request-one',
+      response_revision: 1,
+      readiness: { microphone: 'no', headphones: 'no' },
+    },
+    guestRequestCoverage: guestCoverage,
+  });
+
+  assert.equal(rows.length, 2);
+  assert.equal(rows[1].participant_type, 'guest');
+  assert.equal(rows[1].guest_name, 'Alex Guest');
+  assert.equal(rows[1].resolved, true);
+  assert.equal(rows[1].request_coverage.status, 'approved');
+  assert.doesNotMatch(
+    JSON.stringify(rows[1]),
+    /email|shipping|address|private/i
+  );
+});
+
 test('builds one safe plan row for every assigned host', () => {
   const coverage = getEpisodeMicKitRequestCoverage(trackerWithRequests(), {
     episodeId: 'episode-one',
@@ -389,6 +505,72 @@ test('submission readiness requires an active request for the same host and epis
       request_status: '',
     },
   ]);
+});
+
+test('submission readiness includes a connected guest without blocking legacy episodes', () => {
+  const episode = {
+    episode_id: 'episode-one',
+    host_person_ids: ['host-one'],
+    deliverables: [
+      {
+        id: 'mic-kit-plan',
+        required: true,
+        mic_kit_plans: [
+          { host_person_id: 'host-one', choice: 'no_kit_needed' },
+        ],
+        guest_mic_kit_plan: {
+          guest_name: 'Alex Guest',
+          choice: 'request_kit',
+          request_id: 'guest-request-one',
+          response_revision: 1,
+          readiness: { microphone: 'no', headphones: 'no' },
+        },
+      },
+    ],
+  };
+  const tracker = {
+    requests: [
+      {
+        request_id: 'guest-request-one',
+        participant_type: 'guest',
+        episode_id: 'episode-one',
+        status: 'requested',
+      },
+    ],
+  };
+
+  const active = getEpisodeMicKitSubmissionReadiness(episode, tracker);
+  assert.equal(active.complete, true);
+  assert.equal(active.host_count, 1);
+  assert.equal(active.guest_count, 1);
+  assert.equal(active.participant_count, 2);
+  assert.equal(active.participant_resolved_count, 2);
+  assert.equal(active.unresolved_guest, null);
+
+  tracker.requests[0].status = 'declined';
+  const declined = getEpisodeMicKitSubmissionReadiness(episode, tracker);
+  assert.equal(declined.complete, false);
+  assert.deepEqual(declined.unresolved_guest, {
+    participant_type: 'guest',
+    choice: 'request_kit',
+    reason: 'request_inactive',
+    request_status: 'declined',
+  });
+
+  const legacy = getEpisodeMicKitSubmissionReadiness(
+    {
+      ...episode,
+      deliverables: [
+        {
+          ...episode.deliverables[0],
+          guest_mic_kit_plan: undefined,
+        },
+      ],
+    },
+    tracker
+  );
+  assert.equal(legacy.complete, true);
+  assert.equal(Object.hasOwn(legacy, 'guest_count'), false);
 });
 
 test('a missing or legacy-optional microphone plan still blocks submission', () => {

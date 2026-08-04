@@ -26,6 +26,11 @@ import {
   GUEST_QUESTIONNAIRE_SENT_TASK_ID,
 } from '../../lib/guestQuestionnaireWorkflow.mjs';
 import { getEpisodeStudio } from '../../lib/episodeStudioStore';
+import {
+  getMicKitTracker,
+  saveMicKitTracker,
+} from '../../lib/micKitStore';
+import { upsertGuestMicKitRequest } from '../../lib/guestQuestionnaireMicKit.mjs';
 import { publishGuestQuestionnaireSubmissionNotifications } from '../../lib/guestQuestionnaireNotifications';
 import { getGuestQuestionnaireSubmissionIdempotency } from '../../lib/guestQuestionnaireSubmission.mjs';
 
@@ -68,6 +73,50 @@ async function publishSubmissionNotification(episode, revision) {
       String(error?.message || 'notification unavailable')
     );
   }
+}
+
+async function syncGuestMicKitRequest({
+  questionnaire,
+  episode,
+  guestPlan,
+  now,
+}) {
+  if (guestPlan?.choice !== 'request_kit') {
+    return { request: null, configured: null };
+  }
+  let trackerResult = await getMicKitTracker();
+  if (!trackerResult.configured) {
+    return { request: null, configured: trackerResult.configured };
+  }
+
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const synced = upsertGuestMicKitRequest({
+      tracker: trackerResult.tracker,
+      questionnaire,
+      episode,
+      guestPlan,
+      now,
+    });
+    if (!synced.request || !synced.changed) {
+      return { request: synced.request, configured: true };
+    }
+    try {
+      const saved = await saveMicKitTracker(synced.tracker, {
+        expectedUpdatedAt: trackerResult.tracker.updated_at,
+        updatedBy: 'guest-questionnaire',
+      });
+      return {
+        request: saved.tracker.requests.find(
+          (request) => request.request_id === synced.request.request_id
+        ),
+        configured: true,
+      };
+    } catch (error) {
+      if (!isConflict(error) || attempt > 0) throw error;
+      trackerResult = await getMicKitTracker();
+    }
+  }
+  return { request: null, configured: true };
 }
 
 export default async function handler(req, res) {
@@ -239,7 +288,25 @@ export default async function handler(req, res) {
         now: submittedAt,
       }
     );
-    const projection = projectGuestQuestionnaireResponse(nextRecord);
+    let projection = projectGuestQuestionnaireResponse(nextRecord);
+    const micKitSync = await syncGuestMicKitRequest({
+      questionnaire: nextRecord,
+      episode: receivedWorkflow.episode,
+      guestPlan: projection.production?.guest_mic_kit_plan,
+      now: submittedAt,
+    });
+    if (micKitSync.request) {
+      projection = {
+        ...projection,
+        production: {
+          ...projection.production,
+          guest_mic_kit_plan: {
+            ...projection.production.guest_mic_kit_plan,
+            request_id: micKitSync.request.request_id,
+          },
+        },
+      };
+    }
     const applied = applyGuestQuestionnaireProjectionToEpisode(
       receivedWorkflow.episode,
       projection,

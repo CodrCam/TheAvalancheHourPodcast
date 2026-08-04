@@ -8,6 +8,7 @@ import { buildMicKitAutomation } from '../../../lib/micKitAutomation.mjs';
 import {
   MIC_KIT_REQUEST_STATUSES,
   MIC_KIT_STATUSES,
+  canActOnMicKitRequest,
   findActiveMicKitRequest,
   normalizeMicKitTracker,
   sanitizeMicKitTrackerForViewer,
@@ -40,15 +41,6 @@ function cleanDecimal(value, max = 999) {
   return String(Math.round(parsed * 100) / 100);
 }
 
-function isRequestOwner(request, principal) {
-  return Boolean(
-    (principal.subject &&
-      request.requester_subject === principal.subject) ||
-      (principal.username &&
-        request.requester_email === principal.username.toLowerCase())
-  );
-}
-
 function actorLabel(principal) {
   return principal.displayName || principal.username || 'Studio team member';
 }
@@ -71,6 +63,7 @@ function requestInput(req, principal, binding) {
   const needBy = cleanDate(input.need_by);
   const shipping = {
     recipient: cleanText(input.shipping?.recipient, 120),
+    phone: cleanText(input.shipping?.phone, 60),
     address_line_1: cleanText(input.shipping?.address_line_1, 180),
     address_line_2: cleanText(input.shipping?.address_line_2, 180),
     city: cleanText(input.shipping?.city, 120),
@@ -99,6 +92,12 @@ function requestInput(req, principal, binding) {
 
   return {
     request_id: `mic-request-${crypto.randomUUID()}`,
+    participant_type: 'host',
+    coordinator_person_ids: binding?.person_id
+      ? [binding.person_id]
+      : [],
+    source: 'studio',
+    source_response_id: '',
     requester_subject: principal.subject,
     requester_person_id: binding?.person_id || '',
     requester_name: actorLabel(principal),
@@ -121,10 +120,11 @@ function requestInput(req, principal, binding) {
   };
 }
 
-function viewerFor(principal, canManage) {
+function viewerFor(principal, binding, canManage) {
   return {
     subject: principal.subject,
     username: principal.username,
+    person_id: binding?.person_id || '',
     canManage,
   };
 }
@@ -132,6 +132,7 @@ function viewerFor(principal, canManage) {
 function responsePayload(
   result,
   principal,
+  binding,
   micKitAccess,
   episodes = [],
   includeAutomation = true
@@ -148,7 +149,7 @@ function responsePayload(
       : null,
     tracker: sanitizeMicKitTrackerForViewer(
       result.tracker,
-      viewerFor(principal, canManage)
+      viewerFor(principal, binding, canManage)
     ),
   };
 }
@@ -255,6 +256,9 @@ export default async function handler(req, res) {
     const includeAutomation =
       canManage && req.query.automation !== 'false';
     const result = await getMicKitTracker();
+    const actorBinding = await getStudioBindingForSubject(
+      principal.subject
+    );
     let automationEpisodes = [];
     if (includeAutomation) {
       try {
@@ -275,6 +279,7 @@ export default async function handler(req, res) {
           responsePayload(
             result,
             principal,
+            actorBinding,
             micKitAccess,
             automationEpisodes,
             includeAutomation
@@ -291,9 +296,6 @@ export default async function handler(req, res) {
     const expectedUpdatedAt = cleanText(req.body?.expected_updated_at, 40);
     const now = new Date().toISOString();
     let createdRequestId = '';
-    const actorBinding = await getStudioBindingForSubject(
-      principal.subject
-    );
 
     if (action === 'create_request') {
       const request = requestInput(req, principal, actorBinding);
@@ -347,7 +349,14 @@ export default async function handler(req, res) {
           .status(404)
           .json({ ok: false, error: 'Mic kit request not found.' });
       }
-      if (!canManage && !isRequestOwner(request, principal)) {
+      if (
+        !canActOnMicKitRequest(request, {
+          subject: principal.subject,
+          username: principal.username,
+          person_id: actorBinding?.person_id || '',
+          canManage,
+        })
+      ) {
         return res.status(403).json({ ok: false, error: 'Forbidden' });
       }
       if (
@@ -363,6 +372,7 @@ export default async function handler(req, res) {
       request.status = 'cancelled';
       request.updated_at = now;
       clearQueuedRequestFromKits(tracker, request.request_id);
+      request.kit_id = '';
       logAdminAction(req, principal, 'mic_kit.request_cancel', {
         request_id: request.request_id,
       });
@@ -376,7 +386,14 @@ export default async function handler(req, res) {
           .status(404)
           .json({ ok: false, error: 'Mic kit request not found.' });
       }
-      if (!canManage && !isRequestOwner(request, principal)) {
+      if (
+        !canActOnMicKitRequest(request, {
+          subject: principal.subject,
+          username: principal.username,
+          person_id: actorBinding?.person_id || '',
+          canManage,
+        })
+      ) {
         return res.status(403).json({ ok: false, error: 'Forbidden' });
       }
       const kit = tracker.kits.find(
@@ -696,7 +713,7 @@ export default async function handler(req, res) {
         request.admin_response =
           request.admin_response ||
           (directHandoff
-            ? `${kit.label} is planned as a direct handoff from ${kit.current_holder_name || 'the current host'}. Shipping details will follow.`
+            ? `${kit.label} is planned as a direct handoff from ${kit.current_holder_name || 'the current recipient'}. Shipping details will follow.`
             : `${kit.label} has been assigned. Shipping details will follow.`);
         request.admin_updated_at = now;
         request.admin_updated_by = actorLabel(principal);
@@ -799,6 +816,7 @@ export default async function handler(req, res) {
       ...responsePayload(
         saved,
         principal,
+        actorBinding,
         micKitAccess,
         automationEpisodes
       ),

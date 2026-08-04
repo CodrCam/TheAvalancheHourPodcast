@@ -279,13 +279,41 @@ function mergeEpisodeMicKitPlanResponse(currentEpisode, response = {}) {
       request_id: String(plan?.request_id || ''),
       equipment_note: String(plan?.equipment_note || ''),
     }));
+  const guestPlanSource =
+    response.guest_plan && typeof response.guest_plan === 'object'
+      ? response.guest_plan
+      : null;
+  const guestMicKitPlan = guestPlanSource
+    ? {
+        guest_name: String(guestPlanSource.guest_name || ''),
+        choice: String(guestPlanSource.choice || ''),
+        request_id: String(guestPlanSource.request_id || ''),
+        equipment_note: String(guestPlanSource.equipment_note || ''),
+        response_revision: Math.max(
+          0,
+          Math.trunc(Number(guestPlanSource.response_revision) || 0)
+        ),
+        readiness: {
+          internet: String(guestPlanSource.readiness?.internet || ''),
+          microphone: String(guestPlanSource.readiness?.microphone || ''),
+          headphones: String(guestPlanSource.readiness?.headphones || ''),
+          quiet_place: String(guestPlanSource.readiness?.quiet_place || ''),
+        },
+      }
+    : null;
   return {
     ...currentEpisode,
     updated_at:
       String(response.episode_updated_at || '') || currentEpisode.updated_at,
     deliverables: (currentEpisode.deliverables || []).map((deliverable) =>
       deliverable.id === 'mic-kit-plan'
-        ? { ...deliverable, mic_kit_plans: micKitPlans }
+        ? {
+            ...deliverable,
+            mic_kit_plans: micKitPlans,
+            ...(guestMicKitPlan
+              ? { guest_mic_kit_plan: guestMicKitPlan }
+              : null),
+          }
         : deliverable
     ),
   };
@@ -4001,7 +4029,7 @@ export default function EpisodeStudioWorkspace({
                   ? !hasLiveMicKitStatus
                     ? 'Checking status'
                     : complete
-                      ? 'All hosts ready'
+                      ? 'All participants ready'
                       : 'Needs attention'
                   : complete
                     ? 'Response complete'
@@ -4034,7 +4062,9 @@ export default function EpisodeStudioWorkspace({
                             Producer guidance
                           </span>
                           <p className={styles.plainTextContent}>
-                            {deliverable.description}
+                            {isMicKitPlan
+                              ? 'Confirm the recording setup for every assigned host and the guest, including any mic-kit request that needs producer follow-up.'
+                              : deliverable.description}
                           </p>
                         </div>
                         <span>
@@ -4044,18 +4074,24 @@ export default function EpisodeStudioWorkspace({
 
                       <section
                         className={styles.hostResponseZone}
-                        aria-label={`${deliverable.label} host response`}
+                        aria-label={
+                          isMicKitPlan
+                            ? `${deliverable.label} host and guest response`
+                            : `${deliverable.label} host response`
+                        }
                       >
                         <div className={styles.stepZoneHeading}>
                           <div>
                             <span className={styles.hostResponseKicker}>
-                              Host response
+                              {isMicKitPlan
+                                ? 'Host and guest response'
+                                : 'Host response'}
                             </span>
                             <strong>
                               {deliverable.id === 'guest-details'
                                 ? 'Guest profile and public links'
                                 : deliverable.id === 'mic-kit-plan'
-                                  ? 'Recording equipment plan'
+                                  ? 'Recording equipment plans'
                                 : deliverable.type === 'asset'
                                 ? 'Files the host submits'
                                 : deliverable.type === 'url'
@@ -4066,7 +4102,7 @@ export default function EpisodeStudioWorkspace({
                               {deliverable.id === 'guest-details'
                                 ? 'Add the details the producer needs for contact, show notes, and promotion.'
                                 : deliverable.id === 'mic-kit-plan'
-                                  ? 'Each assigned host confirms their recording setup or connects an active mic-kit request.'
+                                  ? 'Each assigned host confirms their setup, while the guest plan fills automatically from the questionnaire and mic-kit board.'
                                 : deliverable.type === 'asset'
                                 ? 'Upload the actual files here.'
                                 : 'The field starts empty; use the producer guidance above.'}
@@ -4103,6 +4139,14 @@ export default function EpisodeStudioWorkspace({
                             Array.isArray(router.query.mic_request_id)
                               ? router.query.mic_request_id[0]
                               : router.query.mic_request_id || ''
+                          }
+                          questionnaireHref={questionnaireHref}
+                          micKitBoardHref={
+                            admin
+                              ? `/admin/mic-kits?episode_id=${encodeURIComponent(
+                                  episode.episode_id
+                                )}`
+                              : ''
                           }
                           readOnly={hostPreviewReadOnly}
                           onDataChange={mergeMicKitPlanData}

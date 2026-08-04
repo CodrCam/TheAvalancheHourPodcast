@@ -63,3 +63,26 @@ test('questionnaire writes that depend on current Studio state are episode-versi
     assert.match(actionBlock, /expectedEpisodeUpdatedAt/);
   }
 });
+
+test('questionnaires without a guest kit request do not depend on mic-kit storage', async () => {
+  for (const path of [
+    '../pages/api/guest-questionnaire.js',
+    '../pages/api/studio/episodes/[episodeId]/guest-questionnaire.js',
+  ]) {
+    const route = await source(path);
+    const syncHelper = between(
+      route,
+      'async function syncGuestMicKitRequest',
+      'export default async function handler'
+    );
+    const choiceGuard = syncHelper.indexOf(
+      "guestPlan?.choice !== 'request_kit'"
+    );
+    const trackerRead = syncHelper.indexOf('await getMicKitTracker()');
+    assert.ok(choiceGuard >= 0, `${path} is missing the choice guard`);
+    assert.ok(
+      trackerRead > choiceGuard,
+      `${path} reads mic-kit storage before checking whether it is needed`
+    );
+  }
+});
