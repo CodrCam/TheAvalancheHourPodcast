@@ -750,7 +750,6 @@ test('projection fills blanks, keeps project links in notes, sets no-profile sta
         },
       },
       { id: 'show-notes', value: '' },
-      { id: 'social-copy', value: 'Producer-written social copy' },
       { id: 'credits', value: '' },
       { id: 'mic-kit-plan', mic_kit_plans: [] },
     ],
@@ -773,16 +772,17 @@ test('projection fills blanks, keeps project links in notes, sets no-profile sta
   assert.equal(applied.applied_fields.includes('guest_profile.name'), true);
   assert.equal(applied.skipped_fields.includes('guest_profile.instagram'), true);
   assert.match(applied.episode.deliverables[1].value, /Mountain Safety Project/);
-  assert.equal(
-    applied.episode.deliverables[2].value,
-    'Producer-written social copy'
+  assert.match(
+    applied.episode.deliverables[1].value,
+    /Promotion permissions and public profiles/
   );
+  assert.match(applied.episode.deliverables[1].value, /Approved public profiles/);
   assert.equal(
-    applied.skipped_fields.includes('deliverables.social-copy.value'),
+    applied.applied_fields.includes('deliverables.show-notes.value'),
     true
   );
   assert.equal(
-    applied.episode.deliverables[3].value,
+    applied.episode.deliverables[2].value,
     'Photo credit: Courtesy of Alex Guest'
   );
   assert.match(

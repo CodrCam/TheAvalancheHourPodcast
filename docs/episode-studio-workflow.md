@@ -154,14 +154,16 @@ Every new Episode Studio begins with a suggested backbone:
    that no separate kit is needed. Producers see only readiness and request
    status here; private shipping and tracking details remain in the Mic Kits
    tracker.
-4. Episode source-file uploads.
-5. Required raw recording-track uploads.
-6. First-cut and edit notes.
-7. Show notes and relevant links.
-8. Required intro or sponsor-read audio uploads.
-9. Social media copy.
-10. Required photo and artwork uploads.
-11. Credits and permissions.
+4. Required raw recording-track uploads.
+5. First-cut and edit notes.
+6. One combined show-notes and promotion brief with the episode summary,
+   title ideas, takeaways, guest biography, verified links and handles,
+   suggested excerpts or timestamps, and any no-tag, privacy, or
+   do-not-publish instructions.
+7. Required introduction audio when the host records it directly.
+8. Required photo and artwork uploads, including captions, visual guidance,
+   crop or editing needs, creator credits, permissions, and restrictions.
+9. Credits and permissions for music and any other creative work.
 
 These are starting points, not a hard-coded production order. The assigned
 producer can add episode-specific interview notes, fact checks, ad obligations,

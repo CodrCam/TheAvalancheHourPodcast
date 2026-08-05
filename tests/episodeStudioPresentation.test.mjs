@@ -915,10 +915,110 @@ test('keeps the canonical Episode Source Files step on the mixed safe-file polic
 });
 
 test('keeps the default Episode Studio checklist role-based', () => {
+  const defaults = createDefaultEpisodeDeliverables();
   assert.doesNotMatch(
-    JSON.stringify(createDefaultEpisodeDeliverables()),
+    JSON.stringify(defaults),
     /\b(?:Angie|Sierra|Caleb|Cameron|Cam)\b/
   );
+  assert.equal(
+    defaults.filter((deliverable) => deliverable.section !== 'producer_proof')
+      .length,
+    9
+  );
+  assert.equal(
+    defaults.some((deliverable) => deliverable.id === 'social-copy'),
+    false
+  );
+  assert.match(
+    defaults.find((deliverable) => deliverable.id === 'show-notes')
+      .description,
+    /one clear source brief/i
+  );
+  assert.match(
+    defaults.find((deliverable) => deliverable.id === 'photos').description,
+    /promotion image source material/i
+  );
+});
+
+test('folds the retired promotion source step into the show-notes brief', () => {
+  const episode = normalizeEpisodeStudio({
+    ...sampleEpisode(),
+    schema_version: 9,
+    deliverables: [
+      {
+        id: 'show-notes',
+        label: 'Show-notes and promotion brief',
+        description:
+          'Give the producer and publishing owner the episode summary, key takeaways, guest biography, public links and handles, credits, title ideas, and anything that should not be published. The publishing owner drafts the final public copy.',
+        type: 'textarea',
+        required: true,
+        value: 'Episode summary and guest biography.',
+        sort_order: 60,
+      },
+      {
+        id: 'intro-audio',
+        label: 'Recorded introduction',
+        type: 'asset',
+        required: false,
+        sort_order: 70,
+      },
+      {
+        id: 'social-copy',
+        label: 'Promotion source material',
+        type: 'textarea',
+        required: true,
+        value: 'Use @guest and do not tag their employer.',
+        missing_acknowledged: true,
+        missing_note: 'Excerpt timestamp is still coming.',
+        expected_by: '2026-10-01',
+        sort_order: 80,
+      },
+      {
+        id: 'photos',
+        label: 'Photos and artwork',
+        type: 'asset',
+        required: true,
+        sort_order: 90,
+      },
+    ],
+    assets: [
+      {
+        asset_id: 'promotion-notes',
+        object_key: 'episodes/episode-one/document/promotion-notes.txt',
+        file_name: 'promotion-notes.txt',
+        content_type: 'text/plain',
+        size: 100,
+        category: 'document',
+        deliverable_id: 'social-copy',
+      },
+      {
+        asset_id: 'promotion-artwork',
+        object_key: 'episodes/episode-one/image/promotion-artwork.jpg',
+        file_name: 'promotion-artwork.jpg',
+        content_type: 'image/jpeg',
+        size: 100,
+        category: 'image',
+        deliverable_id: 'social-copy',
+      },
+    ],
+  });
+
+  const ids = episode.deliverables.map((deliverable) => deliverable.id);
+  const showNotes = episode.deliverables.find(
+    (deliverable) => deliverable.id === 'show-notes'
+  );
+  assert.equal(ids.includes('social-copy'), false);
+  assert.ok(ids.indexOf('show-notes') < ids.indexOf('intro-audio'));
+  assert.ok(ids.indexOf('intro-audio') < ids.indexOf('photos'));
+  assert.match(showNotes.value, /Episode summary and guest biography/);
+  assert.match(showNotes.value, /Additional promotion source material/);
+  assert.match(showNotes.value, /do not tag their employer/);
+  assert.equal(showNotes.missing_acknowledged, true);
+  assert.match(showNotes.missing_note, /Excerpt timestamp is still coming/);
+  assert.equal(showNotes.expected_by, '2026-10-01');
+  assert.match(showNotes.description, /one clear source brief/i);
+  assert.equal(episode.assets[0].deliverable_id, 'show-notes');
+  assert.equal(episode.assets[1].deliverable_id, 'photos');
 });
 
 test('updates exact legacy built-in instructions without rewriting custom copy', () => {
