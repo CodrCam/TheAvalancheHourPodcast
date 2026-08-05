@@ -7,6 +7,7 @@ import {
   createDefaultEpisodeDeliverables,
   episodeStudioSummary,
   getEpisodeStudioMembership,
+  upcomingEpisodeCalendarEntries,
 } from '../../../../lib/episodeStudioPresentation.mjs';
 import {
   createEpisodeStudioId,
@@ -83,12 +84,23 @@ export default async function handler(req, res) {
     const canManage = principal.permissions.includes(
       ADMIN_PERMISSIONS.EPISODES_MANAGE
     );
+    const calendarOnly =
+      req.method === 'GET' && req.query.scope === 'calendar';
     const [{ episodes, configured }, directory] = await Promise.all([
       listEpisodeStudios(),
-      getStudioDirectory(),
+      calendarOnly ? Promise.resolve(null) : getStudioDirectory(),
     ]);
 
     if (req.method === 'GET') {
+      if (calendarOnly) {
+        res.setHeader('Cache-Control', 'no-store, private');
+        return res.status(200).json({
+          ok: true,
+          configured,
+          calendar: upcomingEpisodeCalendarEntries(episodes),
+        });
+      }
+
       let visibleEpisodes = episodes.filter(
         (episode) => !episode.deletion_finalized_at
       );

@@ -230,24 +230,25 @@ export default function StudioAccessPage() {
   return (
     <StudioLayout
       hasUnsavedChanges={accessDirty}
-      unsavedChangesMessage="You have unsaved Host Access changes. Leave and discard them?"
+      unsavedChangesMessage="You have unsaved profile-access changes. Leave and discard them?"
     >
       <header className={styles.pageHeader}>
         <div>
           <span className={styles.eyebrow}>Producer workspace</span>
-          <h1>Host Access</h1>
+          <h1>Host &amp; Team Access</h1>
           <p>
-            Connect each Cognito account to exactly one public host profile.
-            The permanent Cognito user ID is the security link.
+            Connect each Cognito account to exactly one team profile. This
+            identity link does not grant permissions; Cognito groups still
+            control what the account can access.
           </p>
         </div>
       </header>
 
       {!configured && !loading ? (
         <p className={styles.warningMessage}>
-          Host Access requires both the team profile database and the existing
-          site-content database. Seed the team profiles before connecting
-          accounts.
+          Profile access requires both the team profile database and the
+          existing site-content database. Seed the team profiles before
+          connecting accounts.
         </p>
       ) : null}
       {message ? <p className={styles.successMessage}>{message}</p> : null}
@@ -272,7 +273,7 @@ export default function StudioAccessPage() {
 
       <div className={styles.statusBar}>
         <span>
-          {connectedCount} of {people.length} host profiles connected
+          {connectedCount} of {people.length} team profiles connected
         </span>
         <span>
           Copy the user’s <strong>sub</strong> attribute from Cognito
@@ -285,13 +286,13 @@ export default function StudioAccessPage() {
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search hosts, account emails, or Cognito IDs…"
-            aria-label="Search host access"
+            placeholder="Search team profiles, account emails, or Cognito IDs…"
+            aria-label="Search host and team access"
           />
         </div>
       </div>
 
-      {loading ? <div className={styles.notice}>Loading host profiles…</div> : null}
+      {loading ? <div className={styles.notice}>Loading team profiles…</div> : null}
 
       <section className={styles.accessList}>
         {filteredPeople.map((person) => (
@@ -317,7 +318,9 @@ export default function StudioAccessPage() {
                         : 'Connected'}
                     </>
                   ) : (
-                    'Not connected'
+                    person.active === false
+                      ? 'Inactive profile'
+                      : 'Not connected'
                   )}
                 </span>
               </div>
@@ -325,7 +328,9 @@ export default function StudioAccessPage() {
             <input
               className={styles.input}
               value={person.account_email}
-              disabled={busyPersonId === person.person_id}
+              disabled={
+                person.active === false || busyPersonId === person.person_id
+              }
               onChange={(event) =>
                 updatePerson(person.person_id, {
                   account_email: event.target.value,
@@ -337,7 +342,9 @@ export default function StudioAccessPage() {
             <input
               className={styles.input}
               value={person.user_sub}
-              disabled={busyPersonId === person.person_id}
+              disabled={
+                person.active === false || busyPersonId === person.person_id
+              }
               onChange={(event) =>
                 updatePerson(person.person_id, {
                   user_sub: event.target.value,
@@ -347,7 +354,9 @@ export default function StudioAccessPage() {
               aria-label={`${person.name} Cognito user ID`}
             />
             <div className={styles.editorActions}>
-              {!currentPersonId && !person.binding?.user_sub ? (
+              {!currentPersonId &&
+              !person.binding?.user_sub &&
+              person.active !== false ? (
                 <button
                   type="button"
                   className={styles.secondaryButton}
@@ -377,6 +386,7 @@ export default function StudioAccessPage() {
                 onClick={() => saveBinding(person)}
                 disabled={
                   !configured ||
+                  person.active === false ||
                   !person.user_sub.trim() ||
                   !isDirty(person) ||
                   Boolean(busyPersonId)

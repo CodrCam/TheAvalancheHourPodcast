@@ -85,7 +85,7 @@ table:
   manager draft are separate attributes on this same item, so draft work never
   changes what hosts can read.
 - `studio_profile_binding#<person_id>` stores the one-to-one connection between
-  a public host profile and the permanent Cognito user `sub`.
+  a public team profile and the permanent Cognito user `sub`.
 - `episode_studio#<episode_id>` stores an episode's release and due dates,
   multi-host assignments, producer, creator profile, checklist values,
   known-gap acknowledgements, review feedback, and handoff status.
@@ -95,7 +95,7 @@ manager or admin saves or publishes for the first time. A draft save creates
 or updates `host_studio_guide` without changing the host-facing content. A
 publish atomically updates the published guide and synchronizes the saved
 draft.
-Profile bindings are created from the Studio's **Host Access** page, and
+Profile bindings are created from the Studio's **Host & Team Access** page, and
 Episode Studio records are created from the production calendar. Do not edit
 these record shapes directly in DynamoDB during normal operation.
 

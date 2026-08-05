@@ -3342,7 +3342,8 @@
 }
 
 .createGrid input,
-.createGrid select {
+.createGrid select,
+.createGrid textarea {
   min-height: 44px;
   padding: 10px 12px;
   color: var(--episode-ink);
@@ -3351,6 +3352,41 @@
   border: 1px solid rgba(20, 38, 56, 0.16);
   border-radius: 10px;
   background: #fff;
+}
+
+.createGrid textarea {
+  min-height: 132px;
+  line-height: 1.55;
+}
+
+.createGrid input:focus,
+.createGrid select:focus,
+.createGrid textarea:focus {
+  border-color: #5b8da2;
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(83, 139, 164, 0.1);
+}
+
+.requestVisibilityNote {
+  display: grid;
+  align-content: center;
+  gap: 5px;
+  min-height: 44px;
+  padding: 10px 12px;
+  color: #5f6f74;
+  border: 1px solid rgba(53, 107, 131, 0.14);
+  border-radius: 10px;
+  background: #edf5f7;
+}
+
+.requestVisibilityNote strong {
+  color: #355f70;
+  font-size: 0.7rem;
+}
+
+.requestVisibilityNote span {
+  font-size: 0.66rem;
+  line-height: 1.45;
 }
 
 .friendlyDateField {
@@ -3414,6 +3450,39 @@
   border-radius: 19px;
   background: rgba(255, 255, 255, 0.82);
   box-shadow: 0 15px 42px rgba(25, 48, 60, 0.07);
+}
+
+.readOnlyCalendar {
+  margin-bottom: 22px;
+}
+
+.readOnlyCalendar .calendarToolbar > div:first-child {
+  display: grid;
+  gap: 4px;
+}
+
+.readOnlyCalendarNote {
+  margin: 0;
+  padding: 11px 17px;
+  color: #65767d;
+  font-size: 0.72rem;
+  line-height: 1.5;
+  border-bottom: 1px solid var(--episode-line);
+  background: #f7faf9;
+}
+
+.readOnlyCalendarStatus,
+.readOnlyCalendarError {
+  margin: 0;
+  padding: 28px 18px;
+  color: var(--episode-muted);
+  font-size: 0.78rem;
+  text-align: center;
+}
+
+.readOnlyCalendarError {
+  color: #8b3030;
+  background: #fff7f6;
 }
 
 .calendarToolbar {
@@ -3491,6 +3560,45 @@
 
 .calendarDayMuted {
   background: rgba(242, 245, 245, 0.6);
+}
+
+.readOnlyCalendarDayNumber {
+  position: absolute;
+  top: 10px;
+  left: 11px;
+  color: #77878e;
+  font-size: 0.68rem;
+  font-weight: 780;
+}
+
+.readOnlyCalendarEpisode {
+  position: relative;
+  z-index: 1;
+  display: block;
+  margin-bottom: 6px;
+  padding: 8px;
+  color: #274c5d;
+  border-left: 3px solid #527f92;
+  border-radius: 8px;
+  background: #edf4f6;
+}
+
+.readOnlyCalendarEpisode strong,
+.readOnlyCalendarEpisode span {
+  display: block;
+}
+
+.readOnlyCalendarEpisode strong {
+  overflow: hidden;
+  font-size: 0.69rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.readOnlyCalendarEpisode span {
+  margin-top: 3px;
+  color: #6b7d85;
+  font-size: 0.6rem;
 }
 
 .calendarDayTarget {

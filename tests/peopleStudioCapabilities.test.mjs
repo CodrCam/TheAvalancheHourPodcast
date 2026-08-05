@@ -51,3 +51,17 @@ test('publishes Angie Lake with host and producer Studio capabilities', () => {
     producer: true,
   });
 });
+
+test('keeps Sierra Bishop as a team profile without inventing episode roles', () => {
+  const sierra = people.find((person) => person.slug === 'sierra-bishop');
+
+  assert.ok(sierra);
+  assert.equal(sierra.name, 'Sierra Bishop');
+  assert.equal(sierra.role, 'social_media_manager');
+  assert.notEqual(sierra.active, false);
+  assert.equal(getPeopleSectionId(sierra), 'team');
+  assert.deepEqual(getPersonStudioCapabilities(sierra), {
+    host: false,
+    producer: false,
+  });
+});

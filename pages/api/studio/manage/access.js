@@ -4,7 +4,7 @@ import {
 } from '../../../../lib/adminAuth';
 import { logAdminAction } from '../../../../lib/adminAudit';
 import { listPeople } from '../../../../lib/peopleStore';
-import { personHasStudioCapability } from '../../../../lib/peopleStudioCapabilities.mjs';
+import { selectStudioAccessPeople } from '../../../../lib/studioAccessRoster.mjs';
 import {
   deleteStudioBinding,
   listStudioBindings,
@@ -35,27 +35,23 @@ export default async function handler(req, res) {
         listPeople({ allowStaticFallback: true, includeInactive: true }),
         listStudioBindings(),
       ]);
-      const bindingByPerson = new Map(
-        bindingResult.bindings
-          .filter((binding) => binding.active)
-          .map((binding) => [binding.person_id, binding])
-      );
       const currentBinding =
         bindingResult.bindings.find(
           (binding) =>
             binding.active && binding.user_sub === principal.subject
         ) || null;
-      const people = peopleResult.people
-        .filter((person) => personHasStudioCapability(person, 'host'))
-        .map((person) => ({
-          person_id: person.person_id,
-          slug: person.slug,
-          name: person.name,
-          title: person.title,
-          active: person.active,
-          image: person.images?.[0] || '',
-          binding: bindingByPerson.get(person.person_id) || null,
-        }));
+      const people = selectStudioAccessPeople(
+        peopleResult.people,
+        bindingResult.bindings
+      ).map((person) => ({
+        person_id: person.person_id,
+        slug: person.slug,
+        name: person.name,
+        title: person.title,
+        active: person.active,
+        image: person.images?.[0] || '',
+        binding: person.binding,
+      }));
 
       return res.status(200).json({
         ok: true,
@@ -100,15 +96,13 @@ export default async function handler(req, res) {
         : req.body?.binding?.person_id
     ).trim();
     if (
-      !peopleResult.people.some(
-        (person) =>
-          person.person_id === personId &&
-          personHasStudioCapability(person, 'host')
+      !selectStudioAccessPeople(peopleResult.people).some(
+        (person) => person.person_id === personId
       )
     ) {
       return res
         .status(404)
-        .json({ ok: false, error: 'Host profile not found.' });
+        .json({ ok: false, error: 'Active team profile not found.' });
     }
 
     if (action === 'connect_self') {
@@ -156,7 +150,7 @@ export default async function handler(req, res) {
     );
     return res.status(conflict ? 409 : validation ? 400 : 500).json({
       ok: false,
-      error: err.message || 'Failed to update Host Studio access.',
+      error: err.message || 'Failed to update Team Studio access.',
     });
   }
 }

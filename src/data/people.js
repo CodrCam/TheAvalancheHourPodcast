@@ -185,7 +185,7 @@ export const people = [
   // Placeholders you requested
   {
     slug: 'sierra-bishop',
-    role: 'host',
+    role: 'social_media_manager',
     name: 'Sierra Bishop',
     images: [
       '/images/hosts/sierra1.png',
@@ -252,17 +252,6 @@ export const people = [
     needsBio: true,
     needsImages: true,
     bioShort: 'Producer for The Avalanche Hour.',
-    bioFull: 'Bio coming soon.',
-  },
-
-  {
-    slug: 'bob-keating',
-    role: 'producer',
-    name: 'Bob Keating',
-    images: [],
-    needsBio: true,
-    needsImages: true,
-    bioShort: 'Team member — bio coming soon.',
     bioFull: 'Bio coming soon.',
   },
 ];

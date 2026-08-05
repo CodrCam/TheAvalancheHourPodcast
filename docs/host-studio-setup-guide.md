@@ -133,7 +133,7 @@ without copying a Cognito ID:
 
 1. Sign in with the named Cognito account that will use the Studio.
 2. Open **My Episodes** or **My Profile**. If the account is not connected,
-   follow **Connect my account** to **Host Access**.
+   follow **Connect my account** to **Host & Team Access**.
 3. Select only your own team profile and choose **Connect my account**.
 4. Confirm the profile name, then verify **My Episodes** and **My Profile**.
 
@@ -143,20 +143,21 @@ connection is one-time, one account can map to only one profile, and an already
 connected profile cannot be claimed by another account. Disconnect the
 incorrect binding before reconnecting.
 
-### Connect a host as a manager
+### Connect a host or team member as a manager
 
 Repeat this sequence for each person. The current roster includes **Dom Baker**
 with that spelling.
 
-1. Confirm the person's public profile already exists in the website People
-   manager and has the `host` role.
+1. Confirm the person's active public profile already exists in the website
+   People manager. Profile binding does not require an Episode Studio role.
 2. In Cognito, create or open that person's named user.
-3. Add the user to the `host` group. A producer who also edits resources can
-   belong to both `host` and `studio_manager`.
+3. Add the user to the Cognito group that matches the access they need. The
+   `host` group provides the base Team Studio workspace; a producer who also
+   manages Studio work can belong to both `host` and `studio_manager`.
 4. Open the Cognito user's details and copy the full **sub** attribute. Do not
    copy the username, email, or user-pool ID.
 5. In the website, open `/studio/manage/access`.
-6. Find the matching public host profile.
+6. Find the matching public host or team profile.
 7. Enter the account email as a human-readable reference and paste the Cognito
    `sub`.
 8. Choose **Connect**.
@@ -169,10 +170,14 @@ with that spelling.
    - they cannot open `/admin`, another host's episode or profile, or producer
      tools.
 
-The security boundary is server-side. Host profile updates never accept a
-target profile ID from the browser; the API looks up the signed-in Cognito
-`sub`, finds its one active binding, and updates only biography and photo
-fields on that profile.
+The security boundary is server-side. Self-service profile updates never
+accept a target profile ID from the browser; the API looks up the signed-in
+Cognito `sub`, finds its one active binding, and updates only biography and
+photo fields on that profile.
+
+Run `npm run audit:studio-access-profiles` to compare the current source roster
+with DynamoDB. The command is read-only and exits unsuccessfully if any current
+host or team profile is missing from the backend People table.
 
 ## Change or remove access
 

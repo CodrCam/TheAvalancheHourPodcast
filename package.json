@@ -18,6 +18,7 @@
     "seed:dynamo-site-content": "node scripts/seedDynamoSiteContent.js",
     "seed:dynamo-sponsors": "node scripts/seedDynamoSponsors.js",
     "seed:dynamo-people": "node scripts/seedDynamoPeople.js",
+    "audit:studio-access-profiles": "node scripts/seedDynamoPeople.js --audit-access-profiles",
     "update:dynamo-person-studio-roles": "node scripts/seedDynamoPeople.js",
     "create:dynamo-products": "node scripts/createDynamoProductsTable.js",
     "create:dynamo-mic-kits": "node scripts/createDynamoMicKitsTable.js",

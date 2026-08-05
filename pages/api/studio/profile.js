@@ -45,7 +45,7 @@ export default async function handler(req, res) {
         ok: false,
         code: 'PROFILE_NOT_CONNECTED',
         error:
-          'Your Host Studio account is not connected to a public profile yet.',
+          'Your Team Studio account is not connected to a team profile yet.',
         can_manage_access: principal.permissions.includes(
           ADMIN_PERMISSIONS.STUDIO_ACCESS_MANAGE
         ),

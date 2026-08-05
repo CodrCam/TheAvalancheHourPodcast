@@ -30,6 +30,7 @@ import {
   REQUIRED_EPISODE_DELIVERABLE_IDS,
   removeEpisodeAssetFromEpisode,
   sanitizeEpisodeStudioForViewer,
+  upcomingEpisodeCalendarEntries,
   validateEpisodeStudio,
 } from '../lib/episodeStudioPresentation.mjs';
 
@@ -346,6 +347,82 @@ test('manager recording schedules are normalized and included in summaries', () 
   assert.equal(updated.recording_location, 'Riverside room');
   assert.equal(summary.recording_date, '2026-08-01');
   assert.equal(summary.recording_time_zone, 'America/Denver');
+});
+
+test('projects a minimal read-only calendar without Episode Studio access data', () => {
+  const entries = upcomingEpisodeCalendarEntries(
+    [
+      {
+        ...sampleEpisode(),
+        episode_id: 'later-zulu-private-id',
+        title: 'Zulu later episode',
+        season: 'Season 12',
+        target_release_date: '2026-10-20',
+        producer_email: 'private@example.com',
+        recording_location: 'Private room',
+      },
+      {
+        ...sampleEpisode(),
+        episode_id: 'later-alpha-private-id',
+        title: 'Alpha later episode',
+        season: 'Season 12',
+        target_release_date: '2026-10-20',
+      },
+      {
+        ...sampleEpisode(),
+        episode_id: 'today-private-id',
+        title: 'Today episode',
+        target_release_date: '2026-10-01',
+      },
+      {
+        ...sampleEpisode(),
+        episode_id: 'past-episode',
+        target_release_date: '2026-09-30',
+      },
+      {
+        ...sampleEpisode(),
+        episode_id: 'deleted-episode',
+        target_release_date: '2026-10-12',
+        deleted_at: '2026-10-01T12:00:00.000Z',
+      },
+      {
+        ...sampleEpisode(),
+        episode_id: 'archived-episode',
+        target_release_date: '2026-10-13',
+        archived: true,
+      },
+      {
+        ...sampleEpisode(),
+        episode_id: 'finalized-episode',
+        target_release_date: '2026-10-14',
+        deletion_finalized_at: '2026-10-01T13:00:00.000Z',
+      },
+    ],
+    { today: '2026-10-01' }
+  );
+
+  assert.deepEqual(entries, [
+    {
+      title: 'Today episode',
+      season: '',
+      target_release_date: '2026-10-01',
+    },
+    {
+      title: 'Alpha later episode',
+      season: 'Season 12',
+      target_release_date: '2026-10-20',
+    },
+    {
+      title: 'Zulu later episode',
+      season: 'Season 12',
+      target_release_date: '2026-10-20',
+    },
+  ]);
+  assert.deepEqual(Object.keys(entries[0]), [
+    'title',
+    'season',
+    'target_release_date',
+  ]);
 });
 
 test('moving the air date preserves completed and manager-overridden task deadlines', () => {

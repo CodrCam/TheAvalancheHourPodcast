@@ -232,7 +232,10 @@ export default function StudioProfilePage() {
               Connect my account
             </Link>
           ) : (
-            <p>Ask a Studio manager to connect your account in Host Access.</p>
+            <p>
+              Ask a Studio manager to connect your account in Host &amp; Team
+              Access.
+            </p>
           )}
         </section>
       ) : null}

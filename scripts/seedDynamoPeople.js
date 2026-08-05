@@ -134,6 +134,38 @@ async function dynamoDbRequest(action, body) {
   return data;
 }
 
+async function listPeopleForAccessAudit(tableName) {
+  const people = [];
+  let exclusiveStartKey;
+
+  do {
+    const response = await dynamoDbRequest('Scan', {
+      TableName: tableName,
+      ProjectionExpression: '#person_id, #slug, #name, #role, #active',
+      ExpressionAttributeNames: {
+        '#person_id': 'person_id',
+        '#slug': 'slug',
+        '#name': 'name',
+        '#role': 'role',
+        '#active': 'active',
+      },
+      ...(exclusiveStartKey ? { ExclusiveStartKey: exclusiveStartKey } : {}),
+    });
+    for (const item of response.Items || []) {
+      people.push({
+        person_id: item.person_id?.S || '',
+        slug: item.slug?.S || '',
+        name: item.name?.S || '',
+        role: item.role?.S || '',
+        active: item.active?.BOOL !== false,
+      });
+    }
+    exclusiveStartKey = response.LastEvaluatedKey;
+  } while (exclusiveStartKey);
+
+  return people;
+}
+
 function normalizePerson(person, index) {
   const slug = person.slug || String(person.name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-');
   const role = [
@@ -192,6 +224,32 @@ async function main() {
   if (!tableName) {
     console.error('Missing DYNAMODB_PEOPLE_TABLE in .env.local');
     process.exit(1);
+  }
+
+  if (process.argv.includes('--audit-access-profiles')) {
+    const [{ people: sourcePeople }, { auditStudioAccessRoster }] =
+      await Promise.all([
+        import('../src/data/people.js'),
+        import('../lib/studioAccessRoster.mjs'),
+      ]);
+    const livePeople = await listPeopleForAccessAudit(tableName);
+    const audit = auditStudioAccessRoster(sourcePeople, livePeople);
+
+    console.log(`DynamoDB table: ${tableName}`);
+    console.log(`Source roster profiles: ${sourcePeople.length}`);
+    console.log(`Live backend profiles: ${livePeople.length}`);
+    console.log(
+      `Active connectable profiles: ${audit.activeLiveProfiles.length}`
+    );
+    if (audit.missingPersonIds.length) {
+      console.log(
+        `Missing backend profiles: ${audit.missingPersonIds.join(', ')}`
+      );
+      process.exitCode = 2;
+    } else {
+      console.log('Roster audit passed: every source profile exists in DynamoDB.');
+    }
+    return;
   }
 
   const lookupName = readArgument('--lookup-name');
