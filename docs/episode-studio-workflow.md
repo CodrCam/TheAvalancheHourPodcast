@@ -84,42 +84,47 @@ is completed.
 
 Assigned producers and Studio managers can add a task from the Board or edit an
 existing card's name, instructions, phase, owner, release requirement, and
-prerequisites. New deadlines use an air-date timing picker (for example, 21,
-14, 10, 8, or 7 days before air) instead of requiring a calendar date. The Board
+prerequisites. New deadlines use an air-date timing picker (for example, 35,
+28, 21, 17, 16, 15, or 14 days before air) instead of requiring a calendar date. The Board
 calculates the date and countdown automatically. Task IDs, special workflow
 behavior, progress notes, evidence, and completion history are not rewritten by
 definition edits, and task deletion is intentionally not part of this control.
 
 The default timeline is:
 
-1. Host sends the guest prep form 28 days before air.
-2. Host verifies that the completed guest prep form was returned 21 days
+1. Host sends the guest prep form 35 days before air.
+2. Host verifies that the completed guest prep form was returned 28 days
    before air.
-3. Every assigned host confirms the microphone plan 21 days before air by
+3. After the completed form is received, every assigned host confirms the
+   microphone plan 28 days before air by
    connecting an active mic-kit request, identifying tested equipment, or
    confirming that no separate kit is needed.
 4. The producer reviews the guest's internet, microphone, headphones,
-   recording space, and any requested guest microphone kit 21 days before air.
+   recording space, and any requested guest microphone kit 28 days before air.
    The guest form asks four plain-language readiness checks. A missing or
    uncertain microphone/headphone answer reveals the kit decision path; the
    generic all-equipment text box is no longer part of the default form.
-5. Host delivers the raw tracks and timestamped edit request 21 days before
-   air. The completed guest form and producer recording-setup review are
-   prerequisites.
-6. Host completes the intro path 14 days before air. The host either uploads a
+5. Host schedules and completes the interview, then uploads every raw local
+   recording track 21 days before air. The completed guest form, confirmed
+   microphone plan, and producer recording-setup review are prerequisites.
+6. Host completes the intro path 21 days before air. The host either uploads a
    recorded intro or confirms that the script was sent and records the date of
    the producer recording session. That session must be scheduled no later
-   than ten days before air; scheduling itself remains outside Episode Studio.
-7. Host delivers the show-notes and promotion brief ten days before air.
-8. The assigned producer uploads the private producer proof ten days before air.
-9. The assigned host downloads, listens to, and approves the proof eight days
+   than seventeen days before air; scheduling itself remains outside Episode Studio.
+7. Host delivers the timestamped edit notes, show-notes and promotion brief,
+   final photo selection, and credits 21 days before air.
+8. The publishing owner completes the episode graphic, final show notes, and
+   show assets 21 days before air so the producer and social media crew receive
+   the near-complete package together.
+9. After the written package and intro are ready, the assigned producer uploads
+   the private producer proof 16 days before air.
+10. The assigned host downloads, listens to, and approves the proof 15 days
    before air, or records the exact changes requested.
-10. The accountable publishing owner completes the graphic, final show notes,
-   and Spotify scheduling seven days before air.
-11. The accountable promotion owner confirms social, email, and blog scheduling
-   seven days before air.
+11. The accountable publishing owner schedules the approved episode on Spotify,
+   and the promotion owner confirms social, email, and blog scheduling 14 days
+   before air.
 12. The host confirms the approved air-date assets were shared with the guest
-    seven days before air.
+    14 days before air.
 
 Every required step has an explicit due date. Once that date has passed, the
 unfinished step receives one inline overdue warning, automatically makes the
@@ -133,7 +138,7 @@ offset move with it. A manager-entered date override and completed work keep
 their recorded dates.
 
 The first normalization under this schedule upgrades every seeded legacy
-deadline to the current 10-, 8-, or 7-day rule and recalculates its due date,
+deadline to the current 35-, 28-, 21-, 17-, 16-, 15-, or 14-day rule and recalculates its due date,
 including previously completed tasks and old date overrides. Completion status
 and attribution remain intact. Each task then records the deadline-schedule
 version, so any deliberate producer or Studio-manager timing change made after

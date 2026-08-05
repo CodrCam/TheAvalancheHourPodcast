@@ -449,9 +449,9 @@ test('moving the air date preserves completed and manager-overridden task deadli
     target_release_date: '2026-09-08',
   });
 
-  assert.equal(updated.production_tasks[0].due_date, '2026-08-04');
+  assert.equal(updated.production_tasks[0].due_date, '2026-07-28');
   assert.equal(updated.production_tasks[1].due_date, '2026-08-08');
-  assert.equal(updated.production_tasks[2].due_date, '2026-08-18');
+  assert.equal(updated.production_tasks[2].due_date, '2026-08-11');
 });
 
 test('moves the former seven-day host deadline to ten days without changing custom dates', () => {

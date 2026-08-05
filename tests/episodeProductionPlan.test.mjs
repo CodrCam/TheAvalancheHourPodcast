@@ -3,6 +3,7 @@ import test from 'node:test';
 import {
   DEFAULT_EPISODE_PRODUCTION_TASKS,
   EPISODE_PRODUCTION_DEADLINE_SCHEMA_VERSION,
+  EPISODE_PRODUCTION_PLAN_SCHEMA_VERSION,
   GUEST_RECORDING_PLAN_TASK_ID,
   MICROPHONE_PLAN_TASK_ID,
   addEpisodeProductionTaskDefinition,
@@ -75,9 +76,9 @@ test('creates the complete default workflow from the air date', () => {
       'edit-package-delivered',
       'intro-ready',
       'show-notes-brief',
+      'publishing-package',
       'producer-proof-upload',
       'proof-listen-approval',
-      'publishing-package',
       'promotion-scheduled',
       'guest-assets-shared',
     ]
@@ -85,28 +86,28 @@ test('creates the complete default workflow from the air date', () => {
   assert.deepEqual(
     tasks.map((task) => task.due_date),
     [
+      '2026-07-27',
+      '2026-08-03',
+      '2026-08-03',
       '2026-08-03',
       '2026-08-10',
       '2026-08-10',
       '2026-08-10',
       '2026-08-10',
+      '2026-08-15',
+      '2026-08-16',
       '2026-08-17',
-      '2026-08-21',
-      '2026-08-21',
-      '2026-08-23',
-      '2026-08-24',
-      '2026-08-24',
-      '2026-08-24',
+      '2026-08-17',
     ]
   );
   const microphonePlan = tasks.find(
     (task) => task.task_id === MICROPHONE_PLAN_TASK_ID
   );
   assert.equal(microphonePlan.owner_type, 'hosts');
-  assert.equal(microphonePlan.days_before_air, 21);
+  assert.equal(microphonePlan.days_before_air, 28);
   assert.equal(microphonePlan.label, 'Confirm the episode microphone plans');
   assert.match(microphonePlan.description, /guest recording plan/i);
-  assert.deepEqual(microphonePlan.dependencies, ['guest-prep-sent']);
+  assert.deepEqual(microphonePlan.dependencies, ['guest-prep-received']);
   assert.deepEqual(microphonePlan.linked_deliverable_ids, ['mic-kit-plan']);
   assert.equal(
     microphonePlan.deadline_schema_version,
@@ -116,13 +117,41 @@ test('creates the complete default workflow from the air date', () => {
     (task) => task.task_id === GUEST_RECORDING_PLAN_TASK_ID
   );
   assert.equal(guestRecordingPlan.owner_type, 'producer');
-  assert.equal(guestRecordingPlan.days_before_air, 21);
+  assert.equal(guestRecordingPlan.days_before_air, 28);
   assert.deepEqual(guestRecordingPlan.dependencies, ['guest-prep-received']);
   assert.deepEqual(
     tasks.find((task) => task.task_id === 'edit-package-delivered')
       .dependencies,
-    ['guest-prep-received', GUEST_RECORDING_PLAN_TASK_ID]
+    [
+      'guest-prep-received',
+      MICROPHONE_PLAN_TASK_ID,
+      GUEST_RECORDING_PLAN_TASK_ID,
+    ]
   );
+  const recordingPackage = tasks.find(
+    (task) => task.task_id === 'edit-package-delivered'
+  );
+  assert.equal(recordingPackage.days_before_air, 21);
+  assert.deepEqual(recordingPackage.linked_deliverable_ids, [
+    'recording-files',
+  ]);
+  const writtenPackage = tasks.find(
+    (task) => task.task_id === 'show-notes-brief'
+  );
+  assert.deepEqual(writtenPackage.linked_deliverable_ids, [
+    'edit-notes',
+    'show-notes',
+    'photos',
+    'credits',
+  ]);
+  const producerProof = tasks.find(
+    (task) => task.task_id === 'producer-proof-upload'
+  );
+  assert.equal(producerProof.days_before_air, 16);
+  assert.deepEqual(producerProof.dependencies, [
+    'intro-ready',
+    'show-notes-brief',
+  ]);
   assert.deepEqual(
     tasks.find((task) => task.task_id === 'producer-proof-upload')
       .assigned_person_ids,
@@ -142,11 +171,26 @@ test('creates the complete default workflow from the air date', () => {
     tasks.find((task) => task.task_id === 'publishing-package').owner_type,
     'producer'
   );
+  assert.equal(
+    tasks.find((task) => task.task_id === 'publishing-package')
+      .days_before_air,
+    21
+  );
+  assert.deepEqual(
+    tasks.find((task) => task.task_id === 'publishing-package').dependencies,
+    ['edit-package-delivered', 'show-notes-brief']
+  );
+  assert.deepEqual(
+    tasks
+      .find((task) => task.task_id === 'publishing-package')
+      .subtasks.map((subtask) => subtask.id),
+    ['graphic', 'show-notes']
+  );
   assert.deepEqual(
     tasks
       .find((task) => task.task_id === 'promotion-scheduled')
       .subtasks.map((subtask) => subtask.id),
-    ['social-media', 'email', 'blog']
+    ['spotify', 'social-media', 'email', 'blog']
   );
 });
 
@@ -182,8 +226,8 @@ test('normalization merges new defaults, accepts legacy names, and retains custo
   assert.equal(tasks.length, DEFAULT_EPISODE_PRODUCTION_TASKS.length + 1);
   const sent = tasks.find((task) => task.task_id === 'guest-prep-sent');
   assert.equal(sent.status, 'complete');
-  assert.equal(sent.due_date, '2026-07-31');
-  assert.equal(sent.due_date_overridden, true);
+  assert.equal(sent.due_date, '2026-07-27');
+  assert.equal(sent.due_date_overridden, false);
   assert.equal(sent.evidence_note, 'Sent by email.');
   const custom = tasks.find(
     (task) => task.task_id === 'custom-legal-review'
@@ -277,10 +321,10 @@ test('legacy named default owners migrate to roles without changing a deliberate
   assert.deepEqual(publishing.assigned_person_ids, [
     'publishing-owner-two',
   ]);
-  assert.equal(showNotes.days_before_air, 10);
-  assert.equal(showNotes.due_date, '2026-08-21');
-  assert.equal(promotion.days_before_air, 7);
-  assert.equal(promotion.due_date, '2026-08-24');
+  assert.equal(showNotes.days_before_air, 21);
+  assert.equal(showNotes.due_date, '2026-08-10');
+  assert.equal(promotion.days_before_air, 14);
+  assert.equal(promotion.due_date, '2026-08-17');
   assert.equal(promotion.due_date_overridden, false);
   assert.equal(
     promotion.deadline_schema_version,
@@ -290,20 +334,32 @@ test('legacy named default owners migrate to roles without changing a deliberate
 
 test('current seeded deadlines replace every legacy default once and then remain editable', () => {
   const legacyDeadlineByTaskId = new Map([
-    ['show-notes-brief', 7],
-    ['producer-proof-upload', 7],
-    ['proof-listen-approval', 5],
-    ['publishing-package', 4],
-    ['promotion-scheduled', 3],
-    ['guest-assets-shared', 3],
-  ]);
-  const currentDeadlineByTaskId = new Map([
+    ['guest-prep-sent', 28],
+    ['guest-prep-received', 21],
+    [MICROPHONE_PLAN_TASK_ID, 21],
+    [GUEST_RECORDING_PLAN_TASK_ID, 21],
+    ['edit-package-delivered', 14],
+    ['intro-ready', 14],
     ['show-notes-brief', 10],
-    ['producer-proof-upload', 10],
+    ['producer-proof-upload', 9],
     ['proof-listen-approval', 8],
     ['publishing-package', 7],
     ['promotion-scheduled', 7],
     ['guest-assets-shared', 7],
+  ]);
+  const currentDeadlineByTaskId = new Map([
+    ['guest-prep-sent', 35],
+    ['guest-prep-received', 28],
+    [MICROPHONE_PLAN_TASK_ID, 28],
+    [GUEST_RECORDING_PLAN_TASK_ID, 28],
+    ['edit-package-delivered', 21],
+    ['intro-ready', 21],
+    ['show-notes-brief', 21],
+    ['producer-proof-upload', 16],
+    ['proof-listen-approval', 15],
+    ['publishing-package', 21],
+    ['promotion-scheduled', 14],
+    ['guest-assets-shared', 14],
   ]);
   const legacyTasks = [...legacyDeadlineByTaskId].map(
     ([taskId, daysBeforeAir], index) => ({
@@ -377,6 +433,123 @@ test('current seeded deadlines replace every legacy default once and then remain
       taskId
     );
   }
+});
+
+test('current production dependencies replace old defaults once and remain editable', () => {
+  const legacyTasks = createDefaultEpisodeProductionTasks(AIR_DATE).map(
+    (task) => {
+      const { definition_schema_version: _version, ...legacyTask } = task;
+      if (task.task_id === MICROPHONE_PLAN_TASK_ID) {
+        return { ...legacyTask, dependencies: ['guest-prep-sent'] };
+      }
+      if (task.task_id === 'edit-package-delivered') {
+        return {
+          ...legacyTask,
+          dependencies: [
+            'guest-prep-received',
+            GUEST_RECORDING_PLAN_TASK_ID,
+          ],
+        };
+      }
+      if (task.task_id === 'producer-proof-upload') {
+        return {
+          ...legacyTask,
+          dependencies: ['edit-package-delivered', 'intro-ready'],
+        };
+      }
+      if (task.task_id === 'publishing-package') {
+        return {
+          ...legacyTask,
+          dependencies: ['proof-listen-approval', 'show-notes-brief'],
+          subtasks: [
+            ...legacyTask.subtasks,
+            {
+              id: 'spotify',
+              label: 'Spotify episode scheduled',
+              required: true,
+              completed: true,
+              completed_at: '2026-08-10T12:00:00.000Z',
+              completed_by_person_id: 'producer-one',
+              completed_by_name: 'Producer One',
+            },
+          ],
+        };
+      }
+      if (task.task_id === 'promotion-scheduled') {
+        return {
+          ...legacyTask,
+          dependencies: ['publishing-package'],
+          subtasks: legacyTask.subtasks.filter(
+            (subtask) => subtask.id !== 'spotify'
+          ),
+        };
+      }
+      if (task.task_id === 'guest-assets-shared') {
+        return { ...legacyTask, dependencies: ['publishing-package'] };
+      }
+      return legacyTask;
+    }
+  );
+
+  const migrated = normalizeEpisodeProductionTasks(legacyTasks, AIR_DATE);
+  const byId = new Map(migrated.map((task) => [task.task_id, task]));
+  assert.deepEqual(byId.get(MICROPHONE_PLAN_TASK_ID).dependencies, [
+    'guest-prep-received',
+  ]);
+  assert.deepEqual(byId.get('edit-package-delivered').dependencies, [
+    'guest-prep-received',
+    MICROPHONE_PLAN_TASK_ID,
+    GUEST_RECORDING_PLAN_TASK_ID,
+  ]);
+  assert.deepEqual(byId.get('producer-proof-upload').dependencies, [
+    'intro-ready',
+    'show-notes-brief',
+  ]);
+  assert.deepEqual(byId.get('publishing-package').dependencies, [
+    'edit-package-delivered',
+    'show-notes-brief',
+  ]);
+  assert.deepEqual(byId.get('promotion-scheduled').dependencies, [
+    'proof-listen-approval',
+    'publishing-package',
+  ]);
+  assert.deepEqual(byId.get('guest-assets-shared').dependencies, [
+    'proof-listen-approval',
+    'publishing-package',
+  ]);
+  assert.equal(
+    byId
+      .get('promotion-scheduled')
+      .subtasks.find((subtask) => subtask.id === 'spotify').completed,
+    true
+  );
+  assert.equal(
+    byId
+      .get('publishing-package')
+      .subtasks.some((subtask) => subtask.id === 'spotify'),
+    false
+  );
+  assert.equal(
+    byId.get('producer-proof-upload').definition_schema_version,
+    EPISODE_PRODUCTION_PLAN_SCHEMA_VERSION
+  );
+
+  const customized = editEpisodeProductionTaskDefinition(
+    episode({ production_tasks: migrated }),
+    MICROPHONE_PLAN_TASK_ID,
+    { dependencies: ['guest-prep-sent'] },
+    { personId: 'manager-one', canManage: true }
+  );
+  const normalizedAgain = normalizeEpisodeProductionTasks(
+    customized.production_tasks,
+    AIR_DATE
+  );
+  assert.deepEqual(
+    normalizedAgain.find(
+      (task) => task.task_id === MICROPHONE_PLAN_TASK_ID
+    ).dependencies,
+    ['guest-prep-sent']
+  );
 });
 
 test('exact legacy built-in names migrate to roles while custom task copy remains intact', () => {
@@ -501,7 +674,7 @@ test('air-date recalculation moves unfinished dates but preserves completed and 
 
 test('summary exposes progress, next actionable task, overdue IDs, and dependency blocking', () => {
   const result = getEpisodeProductionPlanSummary(episode(), {
-    today: '2026-08-04',
+    today: '2026-07-28',
   });
 
   assert.equal(result.completion_percent, 0);
@@ -519,10 +692,10 @@ test('summary exposes progress, next actionable task, overdue IDs, and dependenc
 
 test('a task is not overdue until the day after its deadline', () => {
   const onDeadline = getEpisodeProductionPlanSummary(episode(), {
-    today: '2026-08-03',
+    today: '2026-07-27',
   });
   const afterDeadline = getEpisodeProductionPlanSummary(episode(), {
-    today: '2026-08-04',
+    today: '2026-07-28',
   });
 
   assert.equal(onDeadline.off_track, false);
@@ -644,7 +817,7 @@ test('microphone plan completion requires every assigned host and any connected 
   assert.equal(isEpisodeProductionTaskComplete(microphoneTask, value), true);
 });
 
-test('producer scheduling path allows ten days before air but rejects a later meeting', () => {
+test('producer scheduling path allows seventeen days before air but rejects a later meeting', () => {
   let value = episode();
   value.production_tasks = waiveDependencies(value.production_tasks, 'intro-ready');
 
@@ -653,7 +826,7 @@ test('producer scheduling path allows ten days before air but rejects a later me
       {
         task_id: 'intro-ready',
         intro_method: 'scheduled_with_angie',
-        intro_scheduled_for: '2026-08-21',
+        intro_scheduled_for: '2026-08-14',
       },
     ],
     AIR_DATE
@@ -682,7 +855,7 @@ test('producer scheduling path allows ten days before air but rejects a later me
     {
       status: 'complete',
       intro_method: 'scheduled_with_producer',
-      intro_scheduled_for: '2026-08-21',
+      intro_scheduled_for: '2026-08-14',
     },
     { personId: 'host-one', personName: 'Host One' },
     { now: '2026-08-16T10:00:00Z' }
@@ -701,12 +874,12 @@ test('producer scheduling path allows ten days before air but rejects a later me
         {
           status: 'complete',
           intro_method: 'scheduled_with_producer',
-          intro_scheduled_for: '2026-08-22',
+          intro_scheduled_for: '2026-08-15',
         },
         { personId: 'host-one' },
         { now: '2026-08-16T10:00:00Z' }
       ),
-    /no later than ten days/i
+    /no later than seventeen days/i
   );
 });
 
@@ -763,7 +936,7 @@ test('manager can restore a task deadline to its air-date countdown rule', () =>
     (candidate) => candidate.task_id === 'guest-prep-sent'
   );
 
-  assert.equal(task.due_date, '2026-08-03');
+  assert.equal(task.due_date, '2026-07-27');
   assert.equal(task.due_date_overridden, false);
 });
 
@@ -1012,7 +1185,7 @@ test('bundle subchecks complete and reopen the parent with audit fields', () => 
   );
   const actor = { personId: 'producer-one', personName: 'Producer One' };
 
-  for (const subtaskId of ['social-media', 'email', 'blog']) {
+  for (const subtaskId of ['spotify', 'social-media', 'email', 'blog']) {
     value = applyEpisodeProductionTaskUpdate(
       value,
       'promotion-scheduled',
@@ -1068,7 +1241,7 @@ test('manager deadline override can be set and reset to the calculated date', ()
   task = updated.production_tasks.find(
     (candidate) => candidate.task_id === 'show-notes-brief'
   );
-  assert.equal(task.due_date, '2026-08-21');
+  assert.equal(task.due_date, '2026-08-10');
   assert.equal(task.due_date_overridden, false);
 });
 
@@ -1157,7 +1330,7 @@ test('waiver is an audited completion override and clears off-track state', () =
     (candidate) => candidate.task_id === 'guest-prep-sent'
   );
   const summary = getEpisodeProductionPlanSummary(value, {
-    today: '2026-08-04',
+    today: '2026-07-28',
   });
 
   assert.equal(task.completed_by_person_id, 'manager-one');
