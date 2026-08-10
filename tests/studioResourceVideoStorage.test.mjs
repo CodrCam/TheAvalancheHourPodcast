@@ -8,7 +8,9 @@ import {
 } from '../lib/studioResourceVideoStorage.js';
 import {
   MAX_STUDIO_RESOURCE_VIDEO_BYTES,
+  normalizeStudioResourceVideo,
   validateStudioResourceVideoFile,
+  validateStudioResourceVideoReference,
 } from '../lib/studioResourceVideoPolicy.mjs';
 
 process.env.STUDIO_RESOURCE_VIDEOS_S3_BUCKET = 'resource-videos';
@@ -66,6 +68,26 @@ test('accepts the supplied walkthrough but rejects non-MP4 and oversized files',
         size: MAX_STUDIO_RESOURCE_VIDEO_BYTES + 1,
       }),
     /2 GB or smaller/i
+  );
+});
+
+test('keeps legacy videos on the host path and rejects unknown resource paths', () => {
+  assert.equal(normalizeStudioResourceVideo({}).resource_path, 'host');
+  assert.throws(
+    () =>
+      validateStudioResourceVideoReference({
+        id: 'resource-video-123e4567-e89b-42d3-a456-426614174000',
+        title: 'Walkthrough',
+        file_name: 'Walkthrough.mp4',
+        object_key:
+          'studio-resources/videos/resource-video-123e4567-e89b-42d3-a456-426614174000-Walkthrough.mp4',
+        object_version_id: 'version-1',
+        content_type: 'video/mp4',
+        size: 2048,
+        active: true,
+        resource_path: 'finance',
+      }),
+    /resource path is invalid/i
   );
 });
 

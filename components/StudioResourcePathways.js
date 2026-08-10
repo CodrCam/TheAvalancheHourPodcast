@@ -48,6 +48,7 @@ function matchesQuery(item, query) {
 export default function StudioResourcePathways({
   pathways = [],
   activePathId = '',
+  featuredContent = null,
 }) {
   const [query, setQuery] = useState('');
   const activePath =
@@ -70,50 +71,56 @@ export default function StudioResourcePathways({
 
   return (
     <>
-      <section
-        className={styles.pathwayPicker}
-        aria-labelledby="resource-pathway-heading"
-      >
-        <div className={styles.pathwayPickerHeading}>
-          <div>
-            <span className={styles.eyebrow}>Choose your responsibility</span>
-            <h2 id="resource-pathway-heading">Follow the path for your work</h2>
+      {pathways.length > 1 ? (
+        <section
+          className={styles.pathwayPicker}
+          aria-labelledby="resource-pathway-heading"
+        >
+          <div className={styles.pathwayPickerHeading}>
+            <div>
+              <span className={styles.eyebrow}>Choose your responsibility</span>
+              <h2 id="resource-pathway-heading">
+                Follow the path for your work
+              </h2>
+            </div>
+            <p>
+              You only see paths your account can use. Switching paths changes
+              the instructions, not your permissions.
+            </p>
           </div>
-          <p>
-            You only see paths your account can use. Switching paths changes
-            the instructions, not your permissions.
-          </p>
-        </div>
-        <nav className={styles.pathwayTabs} aria-label="Resource pathways">
-          {pathways.map((pathway) => {
-            const Icon = PATH_ICONS[pathway.id] || AssignmentRoundedIcon;
-            const active = pathway.id === activePath.id;
-            return (
-              <Link
-                key={pathway.id}
-                href={{
-                  pathname: '/studio/resources',
-                  query: { path: pathway.id },
-                }}
-                scroll={false}
-                className={`${styles.pathwayTab} ${
-                  active ? styles.pathwayTabActive : ''
-                }`}
-                aria-current={active ? 'page' : undefined}
-              >
-                <span className={styles.pathwayTabIcon}>
-                  <Icon aria-hidden="true" />
-                </span>
-                <span>
-                  <small>{pathway.audience}</small>
-                  <strong>{pathway.title}</strong>
-                  <span>{pathway.summary}</span>
-                </span>
-              </Link>
-            );
-          })}
-        </nav>
-      </section>
+          <nav className={styles.pathwayTabs} aria-label="Resource pathways">
+            {pathways.map((pathway) => {
+              const Icon = PATH_ICONS[pathway.id] || AssignmentRoundedIcon;
+              const active = pathway.id === activePath.id;
+              return (
+                <Link
+                  key={pathway.id}
+                  href={{
+                    pathname: '/studio/resources',
+                    query: { path: pathway.id },
+                  }}
+                  scroll={false}
+                  className={`${styles.pathwayTab} ${
+                    active ? styles.pathwayTabActive : ''
+                  }`}
+                  aria-current={active ? 'page' : undefined}
+                >
+                  <span className={styles.pathwayTabIcon}>
+                    <Icon aria-hidden="true" />
+                  </span>
+                  <span>
+                    <small>{pathway.audience}</small>
+                    <strong>{pathway.title}</strong>
+                    <span>{pathway.summary}</span>
+                  </span>
+                </Link>
+              );
+            })}
+          </nav>
+        </section>
+      ) : null}
+
+      {featuredContent}
 
       <section
         className={styles.resourceFinder}

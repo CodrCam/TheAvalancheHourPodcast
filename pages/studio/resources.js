@@ -58,11 +58,13 @@ export default function StudioResourcesPage() {
     resourcePaths.find((pathway) => pathway.id === defaultResourcePath) ||
     resourcePaths[0];
   const showHostGuide = activePath?.id === 'host';
-  const featuredVideos = showHostGuide
-    ? (guide?.sections || [])
-        .flatMap((section) => section.videos || [])
-        .filter((video) => video.featured === true)
-    : [];
+  const featuredVideos = (guide?.sections || [])
+    .flatMap((section) => section.videos || [])
+    .filter(
+      (video) =>
+        video.featured === true &&
+        video.resource_path === activePath?.id
+    );
 
   return (
     <StudioLayout>
@@ -97,11 +99,16 @@ export default function StudioResourcesPage() {
 
       {!loading && !error ? (
         <>
-          <StudioFeaturedResourceTraining videos={featuredVideos} />
           <StudioResourcePathways
             key={activePath?.id || 'resources'}
             pathways={resourcePaths}
             activePathId={activePath?.id}
+            featuredContent={
+              <StudioFeaturedResourceTraining
+                videos={featuredVideos}
+                resourcePathId={activePath?.id}
+              />
+            }
           />
           {showHostGuide ? (
             <section

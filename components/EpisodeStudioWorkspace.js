@@ -44,7 +44,10 @@ import {
   isDeliverableComplete,
   mergeEpisodeStudioServerFields,
 } from '../lib/episodeStudioPresentation.mjs';
-import { getEpisodeProductionPlanSummary } from '../lib/episodeProductionPlan.mjs';
+import {
+  getEpisodeProductionPlanSummary,
+  mergeEpisodeProductionTaskDrafts,
+} from '../lib/episodeProductionPlan.mjs';
 import { getEpisodeStudioActionBlockers } from '../lib/episodeStudioActionReadiness.mjs';
 import {
   canDeleteEpisodeAsset,
@@ -673,24 +676,24 @@ export default function EpisodeStudioWorkspace({
       },
     });
   }, [episode, micKitLiveStatus]);
-  const workflowSummary = useMemo(
-    () => getEpisodeProductionPlanSummary(episode || {}),
-    [episode]
+  const workflowTasksWithDrafts = mergeEpisodeProductionTaskDrafts(
+    episode?.production_tasks || [],
+    workflowTaskDrafts
   );
-  const workflowTaskStateById = useMemo(
-    () =>
-      new Map(
-        (workflowSummary.task_states || []).map((state) => [
-          state.task_id,
-          state,
-        ])
-      ),
-    [workflowSummary]
+  const workflowSummary = getEpisodeProductionPlanSummary({
+    ...(episode || {}),
+    production_tasks: workflowTasksWithDrafts,
+  });
+  const workflowTaskStateById = new Map(
+    (workflowSummary.task_states || []).map((state) => [
+      state.task_id,
+      state,
+    ])
   );
   const overdueWorkflowTaskIds = new Set(
     workflowSummary.overdue_task_ids || []
   );
-  const overdueWorkflowTasks = (episode?.production_tasks || []).filter(
+  const overdueWorkflowTasks = workflowTasksWithDrafts.filter(
     (task) => overdueWorkflowTaskIds.has(task.task_id)
   );
   const automaticOffTrack = workflowSummary.off_track === true;
@@ -790,9 +793,6 @@ export default function EpisodeStudioWorkspace({
     : null;
   const workflowTaskEditorOwnerOptions = workflowOwnerOptions(
     workflowTaskEditorTask || {}
-  );
-  const workflowTasksWithDrafts = (episode?.production_tasks || []).map(
-    workflowTaskWithDraft
   );
   const workflowTaskWorkTask = workflowTaskWorkId
     ? workflowTasksWithDrafts.find(

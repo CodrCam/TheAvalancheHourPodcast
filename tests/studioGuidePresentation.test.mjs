@@ -63,6 +63,7 @@ const sampleVideo = {
   size: 1184604164,
   active: true,
   featured: true,
+  resource_path: 'host',
 };
 
 test('orders normalized guide sections by display order', () => {
@@ -133,9 +134,38 @@ test('publishes protected video metadata without exposing its S3 coordinates', (
   assert.equal(guide.sections[0].videos.length, 1);
   assert.equal(guide.sections[0].videos[0].title, 'Host walkthrough');
   assert.equal(guide.sections[0].videos[0].featured, true);
+  assert.equal(guide.sections[0].videos[0].resource_path, 'host');
   assert.equal(guide.sections[0].videos[0].object_key, undefined);
   assert.equal(guide.sections[0].videos[0].object_version_id, undefined);
   assert.match(studioGuideSearchText(source.sections[0]), /host walkthrough/);
+});
+
+test('publishes protected videos only to resource paths the account can use', () => {
+  const source = structuredClone(sampleGuide);
+  const producerVideo = {
+    ...sampleVideo,
+    id: 'resource-video-223e4567-e89b-42d3-a456-426614174000',
+    title: 'Producer walkthrough',
+    file_name: 'Producer Walkthrough.mp4',
+    object_key:
+      'studio-resources/videos/resource-video-223e4567-e89b-42d3-a456-426614174000-Producer Walkthrough.mp4',
+    resource_path: 'production',
+  };
+  source.sections[0].videos = [sampleVideo, producerVideo];
+
+  const hostGuide = sanitizeStudioGuideForHosts(source);
+  const producerGuide = sanitizeStudioGuideForHosts(source, {}, {
+    resourcePathIds: ['host', 'production'],
+  });
+
+  assert.deepEqual(
+    hostGuide.sections[0].videos.map((video) => video.title),
+    ['Host walkthrough']
+  );
+  assert.deepEqual(
+    producerGuide.sections[0].videos.map((video) => video.title),
+    ['Host walkthrough', 'Producer walkthrough']
+  );
 });
 
 test('hides inactive or malformed protected videos from hosts', () => {

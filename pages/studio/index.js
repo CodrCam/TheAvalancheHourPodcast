@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import AccountCircleRoundedIcon from '@mui/icons-material/AccountCircleRounded';
 import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded';
@@ -16,6 +16,7 @@ import StudioLayout, {
 import { buildMicKitAutomation } from '../../lib/micKitAutomation.mjs';
 import {
   buildStudioToday,
+  filterStudioTodayActions,
   isViewerMicKitRequestActionable,
 } from '../../lib/studioToday.mjs';
 import styles from '../../styles/Studio.module.css';
@@ -148,6 +149,9 @@ export function TodayWorkspace({
   const [profileNotConnected, setProfileNotConnected] = useState(false);
   const [inventoryAlertSku, setInventoryAlertSku] = useState('');
   const [inventoryNotice, setInventoryNotice] = useState('');
+  const [queueFilter, setQueueFilter] = useState('priority');
+  const queuePanelRef = useRef(null);
+  const queueHeadingRef = useRef(null);
 
   useEffect(() => {
     if (previewWorkspace) return undefined;
@@ -270,6 +274,15 @@ export function TodayWorkspace({
       workspace.operations,
     ]
   );
+  const visibleActions = useMemo(
+    () =>
+      filterStudioTodayActions(
+        today.all_actions || today.actions,
+        queueFilter,
+        { today: today.date }
+      ),
+    [queueFilter, today]
+  );
   const quickLinks = QUICK_LINKS.filter((link) => {
     if (link.permission) return permissions.has(link.permission);
     return link.anyPermission?.some((permission) =>
@@ -293,6 +306,31 @@ export function TodayWorkspace({
     : null;
   const mutedInventoryRows =
     workspace.operations?.inventory?.muted_rows || [];
+  const activeEpisodesHref = canManageEpisodes
+    ? '/studio/manage/episodes#production-queue'
+    : '/studio/episodes#my-episodes';
+  const queueLabel =
+    queueFilter === 'all'
+      ? 'All next actions'
+      : queueFilter === 'due_this_week'
+        ? 'Due this week'
+        : queueFilter === 'operations'
+          ? 'Operations attention'
+          : 'Priority queue';
+
+  function showQueue(filter) {
+    setQueueFilter(filter);
+    window.requestAnimationFrame(() => {
+      const reduceMotion = window.matchMedia?.(
+        '(prefers-reduced-motion: reduce)'
+      ).matches;
+      queuePanelRef.current?.scrollIntoView({
+        behavior: reduceMotion ? 'auto' : 'smooth',
+        block: 'start',
+      });
+      queueHeadingRef.current?.focus({ preventScroll: true });
+    });
+  }
 
   async function updateInventoryAlert(item, muted) {
     if (!canUpdateInventory || inventoryAlertSku) return;
@@ -351,36 +389,59 @@ export function TodayWorkspace({
           </p>
         </div>
         <div className={styles.todayMetrics} aria-label="Today summary">
-          <div className={styles.todayMetric}>
+          <button
+            type="button"
+            className={`${styles.todayMetric} ${styles.todayMetricInteractive}`}
+            onClick={() => showQueue('all')}
+            aria-pressed={queueFilter === 'all'}
+            disabled={loading}
+          >
             <span>Next actions</span>
             <strong>{loading ? '—' : today.metrics.action_count}</strong>
-          </div>
-          <div className={styles.todayMetric}>
+          </button>
+          <Link
+            href={activeEpisodesHref}
+            className={`${styles.todayMetric} ${styles.todayMetricInteractive}`}
+            aria-label={`Open ${today.metrics.active_episodes} active episodes`}
+          >
             <span>Active episodes</span>
             <strong>{loading ? '—' : today.metrics.active_episodes}</strong>
-          </div>
-          <div className={styles.todayMetric}>
+          </Link>
+          <button
+            type="button"
+            className={`${styles.todayMetric} ${styles.todayMetricInteractive}`}
+            onClick={() => showQueue('due_this_week')}
+            aria-pressed={queueFilter === 'due_this_week'}
+            disabled={loading}
+          >
             <span>Due this week</span>
             <strong>{loading ? '—' : today.metrics.due_this_week}</strong>
-          </div>
-          <div
-            className={`${styles.todayMetric} ${
-              today.metrics.off_track ? styles.todayMetricAlert : ''
-            }`}
-          >
-            <span>
-              {operationsAttention === null
-                ? 'Mic-kit requests'
-                : 'Ops attention'}
-            </span>
-            <strong>
-              {loading
-                ? '—'
-                : operationsAttention === null
-                  ? micKitMetric
-                  : operationsAttention}
-            </strong>
-          </div>
+          </button>
+          {operationsAttention === null ? (
+            <Link
+              href="/studio/mic-kits#request-queue"
+              className={`${styles.todayMetric} ${styles.todayMetricInteractive} ${
+                today.metrics.off_track ? styles.todayMetricAlert : ''
+              }`}
+              aria-label={`Open ${micKitMetric} mic-kit requests`}
+            >
+              <span>Mic-kit requests</span>
+              <strong>{loading ? '—' : micKitMetric}</strong>
+            </Link>
+          ) : (
+            <button
+              type="button"
+              className={`${styles.todayMetric} ${styles.todayMetricInteractive} ${
+                today.metrics.off_track ? styles.todayMetricAlert : ''
+              }`}
+              onClick={() => showQueue('operations')}
+              aria-pressed={queueFilter === 'operations'}
+              disabled={loading}
+            >
+              <span>Ops attention</span>
+              <strong>{loading ? '—' : operationsAttention}</strong>
+            </button>
+          )}
         </div>
       </section>
 
@@ -408,16 +469,25 @@ export function TodayWorkspace({
       ) : null}
 
       <div className={styles.todayLayout}>
-        <section className={styles.todayPanel}>
+        <section
+          ref={queuePanelRef}
+          id="priority-queue"
+          className={styles.todayPanel}
+        >
           <header className={styles.todayPanelHeader}>
             <div>
-              <span>Priority queue</span>
-              <h2>What needs attention</h2>
+              <span>{queueLabel}</span>
+              <h2 ref={queueHeadingRef} tabIndex={-1}>
+                What needs attention
+              </h2>
             </div>
             {!loading ? (
               <strong>
-                {today.actions.length
-                  ? `${today.actions.length} showing`
+                {visibleActions.length
+                  ? queueFilter === 'priority' &&
+                    visibleActions.length < today.metrics.action_count
+                    ? `${visibleActions.length} of ${today.metrics.action_count}`
+                    : `${visibleActions.length} showing`
                   : 'Clear'}
               </strong>
             ) : null}
@@ -443,9 +513,9 @@ export function TodayWorkspace({
                 <Link href="/studio/manage/access">Open Team Access</Link>
               ) : null}
             </div>
-          ) : today.actions.length ? (
+          ) : visibleActions.length ? (
             <div className={styles.todayActionList}>
-              {today.actions.map((action) => {
+              {visibleActions.map((action) => {
                 const actionClassName = `${styles.todayAction} ${
                   action.urgency === 'urgent'
                     ? styles.todayActionUrgent
@@ -547,10 +617,19 @@ export function TodayWorkspace({
             <div className={styles.todayEmpty}>
               <CheckCircleRoundedIcon aria-hidden="true" />
               <div>
-                <h3>You are caught up</h3>
+                <h3>
+                  {queueFilter === 'due_this_week'
+                    ? 'Nothing is due this week'
+                    : queueFilter === 'operations'
+                      ? 'Operations are clear'
+                      : 'You are caught up'}
+                </h3>
                 <p>
-                  There are no episode, mic-kit, operations, or team follow-ups
-                  in your queue right now.
+                  {queueFilter === 'due_this_week'
+                    ? 'There are no dated actions in the next seven days.'
+                    : queueFilter === 'operations'
+                      ? 'There are no order or inventory follow-ups in your queue right now.'
+                      : 'There are no episode, mic-kit, operations, or team follow-ups in your queue right now.'}
                 </p>
               </div>
             </div>

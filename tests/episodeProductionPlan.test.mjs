@@ -15,6 +15,7 @@ import {
   getProductionDueDate,
   isEpisodeProductionTaskComplete,
   isEpisodeProductionTaskOwner,
+  mergeEpisodeProductionTaskDrafts,
   moveEpisodeProductionTaskDefinition,
   normalizeEpisodeProductionTasks,
   normalizeProductionDate,
@@ -703,6 +704,36 @@ test('a task is not overdue until the day after its deadline', () => {
 
   assert.equal(onDeadline.off_track, false);
   assert.equal(afterDeadline.off_track, true);
+});
+
+test('an edited future deadline immediately clears stale overdue workflow state', () => {
+  const value = episode();
+  const beforeEdit = getEpisodeProductionPlanSummary(value, {
+    today: '2026-07-28',
+  });
+  const effectiveTasks = mergeEpisodeProductionTaskDrafts(
+    value.production_tasks,
+    {
+      'guest-prep-sent': {
+        due_date: '2026-07-29',
+        due_date_overridden: true,
+      },
+    }
+  );
+  const afterEdit = getEpisodeProductionPlanSummary(
+    { ...value, production_tasks: effectiveTasks },
+    { today: '2026-07-28' }
+  );
+
+  assert.equal(beforeEdit.off_track, true);
+  assert.equal(afterEdit.off_track, false);
+  assert.equal(
+    afterEdit.task_states.find(
+      (state) => state.task_id === 'guest-prep-sent'
+    ).overdue,
+    false
+  );
+  assert.equal(afterEdit.next_due_task.due_date, '2026-07-29');
 });
 
 test('recorded intro completion requires a selected raw recording asset', () => {

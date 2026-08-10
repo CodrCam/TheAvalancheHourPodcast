@@ -689,7 +689,7 @@ export function EpisodeStudiosDashboard({ studioLayout = false }) {
           </div>
         </section>
 
-        <section className={styles.queue}>
+        <section id="production-queue" className={styles.queue}>
           <div className={styles.queueHeader}>
             <h2>Production queue</h2>
             <input

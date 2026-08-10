@@ -695,6 +695,10 @@
   gap: 18px;
 }
 
+.queueSection {
+  scroll-margin-top: 24px;
+}
+
 .queueSection .requestCard {
   grid-template-columns: 1fr;
 }

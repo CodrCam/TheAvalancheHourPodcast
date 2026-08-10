@@ -22,14 +22,18 @@ export default async function handler(req, res) {
   if (!principal) return;
 
   try {
-    const result = await getStudioGuide({ forHosts: true });
+    const resourcePaths = getStudioResourcePathways(principal.permissions);
+    const result = await getStudioGuide({
+      forHosts: true,
+      resourcePathIds: resourcePaths.map((pathway) => pathway.id),
+    });
     return res.status(200).json({
       ok: true,
       ...result,
       canEdit: principal.permissions.includes(
         ADMIN_PERMISSIONS.RESOURCES_UPDATE
       ),
-      resource_paths: getStudioResourcePathways(principal.permissions),
+      resource_paths: resourcePaths,
       default_resource_path: getDefaultStudioResourcePath(
         principal.permissions
       ),

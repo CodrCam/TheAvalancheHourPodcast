@@ -507,7 +507,7 @@ export default function HostEpisodesPage() {
           )}
         </section>
 
-        <section className={styles.queue}>
+        <section id="my-episodes" className={styles.queue}>
           <div className={styles.queueHeader}>
             <h2>Episode Studios</h2>
           </div>

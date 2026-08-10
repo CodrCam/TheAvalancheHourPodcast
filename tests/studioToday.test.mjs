@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   buildStudioToday,
+  filterStudioTodayActions,
   isViewerMicKitRequestActionable,
 } from '../lib/studioToday.mjs';
 
@@ -28,6 +29,47 @@ test('gives a host a concrete next step for an active episode', () => {
   assert.equal(result.actions[0].title, 'Continue “Episode One”');
   assert.equal(result.actions[0].badge, '40% ready');
   assert.equal(result.metrics.due_this_week, 1);
+});
+
+test('uses the same action dates for the due-this-week metric and filter', () => {
+  const actions = [
+    { id: 'today', date: '2026-07-26', kind: 'episode' },
+    { id: 'in-seven-days', date: '2026-08-02', kind: 'intake' },
+    { id: 'later', date: '2026-08-03', kind: 'episode' },
+    { id: 'past-due', date: '2026-07-25', kind: 'episode' },
+    { id: 'undated', date: '', kind: 'mic_kit' },
+  ];
+
+  assert.deepEqual(
+    filterStudioTodayActions(actions, 'due_this_week', {
+      today: '2026-07-26',
+    }).map((action) => action.id),
+    ['today', 'in-seven-days']
+  );
+});
+
+test('keeps the default queue concise while making every next action available', () => {
+  const actions = Array.from({ length: 11 }, (_, index) => ({
+    id: `action-${index + 1}`,
+  }));
+
+  assert.equal(filterStudioTodayActions(actions, 'priority').length, 8);
+  assert.equal(filterStudioTodayActions(actions, 'all').length, 11);
+});
+
+test('filters the queue to operations follow-ups', () => {
+  const actions = [
+    { id: 'episode', kind: 'episode' },
+    { id: 'orders', kind: 'operations' },
+    { id: 'inventory', kind: 'operations' },
+  ];
+
+  assert.deepEqual(
+    filterStudioTodayActions(actions, 'operations').map(
+      (action) => action.id
+    ),
+    ['orders', 'inventory']
+  );
 });
 
 test('puts requested changes and off-track work ahead of routine progress', () => {

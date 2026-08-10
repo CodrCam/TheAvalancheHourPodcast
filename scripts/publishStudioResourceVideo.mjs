@@ -8,6 +8,7 @@ import {
   verifyStudioResourceVideoUploadToken,
 } from '../lib/studioResourceVideoStorage.js';
 import { validateStudioResourceVideoFile } from '../lib/studioResourceVideoPolicy.mjs';
+import { STUDIO_RESOURCE_VIDEO_PATHS } from '../lib/studioResourceVideoPolicy.mjs';
 import {
   getStudioGuide,
   publishStudioGuide,
@@ -25,7 +26,8 @@ function usage() {
     'Usage:',
     '  node scripts/publishStudioResourceVideo.mjs --file /path/video.mp4',
     '    [--section manual-orientation] [--title "Host Walkthrough"]',
-    '    [--description "..."] --publish',
+    '    [--description "..."] [--path host|production|operations]',
+    '    [--active true|false] --publish',
   ].join('\n');
 }
 
@@ -98,12 +100,21 @@ const description = argument(
   .trim()
   .slice(0, 800);
 const shouldPublish = process.argv.includes('--publish');
+const resourcePath = argument('path', 'host').trim();
+const activeArgument = argument('active', 'true').trim().toLowerCase();
+const videoActive = activeArgument === 'true';
 
 if (!argument('file') || !fs.existsSync(filePath)) {
   throw new Error(`Choose an existing MP4 file.\n${usage()}`);
 }
 if (!shouldPublish) {
   throw new Error(`Add --publish to confirm the backend write.\n${usage()}`);
+}
+if (!STUDIO_RESOURCE_VIDEO_PATHS.includes(resourcePath)) {
+  throw new Error(`Choose a valid resource path.\n${usage()}`);
+}
+if (!['true', 'false'].includes(activeArgument)) {
+  throw new Error(`Choose true or false for --active.\n${usage()}`);
 }
 
 const stat = fs.statSync(filePath);
@@ -123,8 +134,40 @@ const duplicate = current.guide.sections
   .flatMap((section) => section.videos || [])
   .find((video) => video.file_name === file.file_name);
 if (duplicate) {
+  const video = {
+    ...duplicate,
+    title,
+    description,
+    active: videoActive,
+    featured: true,
+    resource_path: resourcePath,
+  };
+  const guide = {
+    ...current.guide,
+    sections: current.guide.sections.map((section) => ({
+      ...section,
+      videos: (section.videos || []).map((candidate) =>
+        candidate.id === duplicate.id ? video : candidate
+      ),
+    })),
+  };
+  const published = await publishStudioGuide(guide, {
+    expectedUpdatedAt: current.updated_at || '',
+    expectedDraftUpdatedAt: current.draft_updated_at || '',
+    updatedBy: 'codex-resource-video-import',
+  });
   process.stdout.write(
-    `${JSON.stringify({ ok: true, skipped: true, video: duplicate }, null, 2)}\n`
+    `${JSON.stringify(
+      {
+        ok: true,
+        updated: true,
+        section_id: sectionId,
+        video,
+        published_at: published.updated_at,
+      },
+      null,
+      2
+    )}\n`
   );
   process.exit(0);
 }
@@ -145,8 +188,9 @@ const video = {
   object_version_id: verified.object_version_id,
   content_type: verified.content_type,
   size: verified.size,
-  active: true,
+  active: videoActive,
   featured: true,
+  resource_path: resourcePath,
 };
 const guide = {
   ...current.guide,

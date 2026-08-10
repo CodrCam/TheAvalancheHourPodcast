@@ -50,6 +50,7 @@ export default async function handler(req, res) {
       size: verified.size,
       active: true,
       featured: false,
+      resource_path: 'host',
     };
     logAdminAction(req, principal, 'studio_resource_video.complete', {
       video_id: video.id,

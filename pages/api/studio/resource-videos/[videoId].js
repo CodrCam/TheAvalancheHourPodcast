@@ -5,6 +5,7 @@ import {
 import { getStudioGuide } from '../../../../lib/studioGuideStore';
 import { validateStudioResourceVideoReference } from '../../../../lib/studioResourceVideoPolicy.mjs';
 import { createStudioResourceVideoPlaybackUrl } from '../../../../lib/studioResourceVideoStorage';
+import { getStudioResourcePathways } from '../../../../lib/studioResourcePathways.mjs';
 
 function findPublishedVideo(guide, videoId) {
   for (const section of guide?.sections || []) {
@@ -40,7 +41,12 @@ export default async function handler(req, res) {
       includeDraft: wantsDraft && canPreviewDraft,
     });
     const video = findPublishedVideo(result.guide, videoId);
-    if (!video) {
+    const allowedResourcePaths = new Set(
+      getStudioResourcePathways(principal.permissions).map(
+        (pathway) => pathway.id
+      )
+    );
+    if (!video || !allowedResourcePaths.has(video.resource_path)) {
       return res.status(404).json({
         ok: false,
         error: 'This resource video is not available.',

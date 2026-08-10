@@ -510,12 +510,65 @@
 }
 
 .todayMetric {
+  position: relative;
   min-width: 0;
   padding: 17px;
   border: 1px solid rgba(255, 255, 255, 0.13);
   border-radius: 15px;
   background: rgba(255, 255, 255, 0.075);
   backdrop-filter: blur(12px);
+}
+
+.todayMetricInteractive {
+  width: 100%;
+  margin: 0;
+  padding-right: 40px;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+  appearance: none;
+  cursor: pointer;
+  transition:
+    border-color 150ms ease,
+    background 150ms ease,
+    transform 150ms ease;
+}
+
+.todayMetricInteractive::after {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  color: rgba(242, 250, 252, 0.58);
+  font-size: 1rem;
+  line-height: 1;
+  content: '→';
+  transition: transform 150ms ease;
+}
+
+.todayMetricInteractive:hover {
+  border-color: rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.13);
+  transform: translateY(-2px);
+}
+
+.todayMetricInteractive:hover::after {
+  transform: translateX(2px);
+}
+
+.todayMetricInteractive:focus-visible {
+  outline: 3px solid rgba(186, 221, 230, 0.82);
+  outline-offset: 2px;
+}
+
+.todayMetricInteractive[aria-pressed='true'] {
+  border-color: rgba(186, 221, 230, 0.65);
+  background: rgba(186, 221, 230, 0.18);
+}
+
+.todayMetricInteractive:disabled {
+  cursor: wait;
+  transform: none;
 }
 
 .todayMetric span,
@@ -555,6 +608,7 @@
 
 .todayPanel {
   overflow: hidden;
+  scroll-margin-top: 24px;
   border: 1px solid var(--studio-line);
   border-radius: 21px;
   background: rgba(255, 255, 255, 0.84);
@@ -573,6 +627,10 @@
 .todayPanelHeader span,
 .todayPanelHeader h2 {
   display: block;
+}
+
+.todayPanelHeader h2:focus {
+  outline: none;
 }
 
 .todayPanelHeader span {
@@ -2802,6 +2860,25 @@
 .resourceVideoEditorMeta > span {
   color: var(--studio-muted);
   font-size: 0.68rem;
+}
+
+.resourceVideoEditorMeta > label {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  color: var(--studio-muted);
+  font-size: 0.72rem;
+  font-weight: 760;
+}
+
+.resourceVideoEditorMeta > label select {
+  min-height: 34px;
+  padding: 5px 28px 5px 9px;
+  color: var(--studio-ink);
+  font: inherit;
+  border: 1px solid var(--studio-line);
+  border-radius: 8px;
+  background: #fff;
 }
 
 .resourceVideoEditorToggles {

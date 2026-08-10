@@ -966,7 +966,7 @@ export default function ManageStudioResourcesPage() {
                     <div>
                       <h2>Protected videos</h2>
                       <p>
-                        MP4 videos play directly on the Host Resources page.
+                        MP4 videos play directly on the Resource Center page.
                         The original stays private in S3 and viewers receive a
                         temporary playback URL.
                       </p>
@@ -1056,6 +1056,21 @@ export default function ManageStudioResourcesPage() {
                             }
                           />
                           <div className={styles.resourceVideoEditorMeta}>
+                            <label>
+                              Resource path
+                              <select
+                                value={video.resource_path || 'host'}
+                                onChange={(event) =>
+                                  updateVideo(selectedSection.id, video.id, {
+                                    resource_path: event.target.value,
+                                  })
+                                }
+                              >
+                                <option value="host">Host</option>
+                                <option value="production">Producer</option>
+                                <option value="operations">Operations</option>
+                              </select>
+                            </label>
                             <div className={styles.resourceVideoEditorToggles}>
                               <label className={styles.toggle}>
                                 <input
@@ -1067,7 +1082,7 @@ export default function ManageStudioResourcesPage() {
                                     })
                                   }
                                 />
-                                Show this video to hosts
+                                Show this video in its resource path
                               </label>
                               <label className={styles.toggle}>
                                 <input
@@ -1079,7 +1094,7 @@ export default function ManageStudioResourcesPage() {
                                     })
                                   }
                                 />
-                                Feature at the top of Host Resources
+                                Feature at the top of this resource path
                               </label>
                             </div>
                             <span>{video.file_name}</span>

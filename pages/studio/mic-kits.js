@@ -1833,7 +1833,10 @@ export default function MicKitsPage({ adminMode = false }) {
       ) : null}
 
       <div className={styles.planningGrid}>
-      <section className={`${styles.section} ${styles.queueSection}`}>
+      <section
+        id="request-queue"
+        className={`${styles.section} ${styles.queueSection}`}
+      >
         <div className={styles.sectionHeading}>
           <div>
             <span>Upcoming demand</span>
