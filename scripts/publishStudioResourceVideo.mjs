@@ -146,6 +146,7 @@ const video = {
   content_type: verified.content_type,
   size: verified.size,
   active: true,
+  featured: true,
 };
 const guide = {
   ...current.guide,

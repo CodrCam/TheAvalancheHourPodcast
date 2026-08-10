@@ -121,6 +121,7 @@ test('creates expiring inline playback for one immutable object version', () => 
     content_type: 'video/mp4',
     size: 1184604164,
     active: true,
+    featured: true,
   });
 
   assert.match(url, /X-Amz-Expires=14400/);

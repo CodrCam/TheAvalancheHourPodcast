@@ -2269,6 +2269,43 @@
   margin: 22px 0;
 }
 
+.featuredResourceTraining {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.55fr) minmax(0, 1.45fr);
+  gap: clamp(20px, 3vw, 36px);
+  align-items: center;
+  margin-bottom: 28px;
+  padding: clamp(20px, 3vw, 30px);
+  border: 1px solid rgba(53, 107, 131, 0.2);
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at top left, rgba(202, 224, 231, 0.65), transparent 42%),
+    linear-gradient(135deg, #f5f9f9, #fffdfa);
+  box-shadow: 0 18px 48px rgba(25, 48, 60, 0.09);
+}
+
+.featuredResourceTrainingIntro h2 {
+  margin: 8px 0 10px;
+  color: var(--studio-ink);
+  font-size: clamp(1.45rem, 2.8vw, 2.15rem);
+  letter-spacing: -0.04em;
+}
+
+.featuredResourceTrainingIntro p {
+  margin: 0;
+  color: var(--studio-muted);
+  font-size: 0.85rem;
+  line-height: 1.65;
+}
+
+.resourceVideosFeatured {
+  margin: 0;
+}
+
+.resourceVideosFeatured .resourceVideoCard {
+  box-shadow: 0 18px 40px rgba(16, 27, 34, 0.2);
+}
+
 .resourceVideoCard {
   overflow: hidden;
   border: 1px solid rgba(20, 38, 56, 0.13);
@@ -2315,7 +2352,9 @@
 .resourceVideoPlayer {
   display: block;
   width: 100%;
+  aspect-ratio: 16 / 9;
   max-height: min(72vh, 760px);
+  object-fit: contain;
   background: #000;
 }
 
@@ -2763,6 +2802,12 @@
 .resourceVideoEditorMeta > span {
   color: var(--studio-muted);
   font-size: 0.68rem;
+}
+
+.resourceVideoEditorToggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px 18px;
 }
 
 .resourceVideoEditorPlayer {
@@ -3778,6 +3823,10 @@
   .resourceVideoHeading,
   .resourceVideoUploadProgress > div {
     flex-direction: column;
+  }
+
+  .featuredResourceTraining {
+    grid-template-columns: 1fr;
   }
 
   .intakeMetrics,

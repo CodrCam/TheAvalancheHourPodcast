@@ -1056,18 +1056,32 @@ export default function ManageStudioResourcesPage() {
                             }
                           />
                           <div className={styles.resourceVideoEditorMeta}>
-                            <label className={styles.toggle}>
-                              <input
-                                type="checkbox"
-                                checked={video.active}
-                                onChange={(event) =>
-                                  updateVideo(selectedSection.id, video.id, {
-                                    active: event.target.checked,
-                                  })
-                                }
-                              />
-                              Show this video to hosts
-                            </label>
+                            <div className={styles.resourceVideoEditorToggles}>
+                              <label className={styles.toggle}>
+                                <input
+                                  type="checkbox"
+                                  checked={video.active}
+                                  onChange={(event) =>
+                                    updateVideo(selectedSection.id, video.id, {
+                                      active: event.target.checked,
+                                    })
+                                  }
+                                />
+                                Show this video to hosts
+                              </label>
+                              <label className={styles.toggle}>
+                                <input
+                                  type="checkbox"
+                                  checked={video.featured === true}
+                                  onChange={(event) =>
+                                    updateVideo(selectedSection.id, video.id, {
+                                      featured: event.target.checked,
+                                    })
+                                  }
+                                />
+                                Feature at the top of Host Resources
+                              </label>
+                            </div>
                             <span>{video.file_name}</span>
                           </div>
                         </div>

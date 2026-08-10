@@ -62,6 +62,7 @@ const sampleVideo = {
   content_type: 'video/mp4',
   size: 1184604164,
   active: true,
+  featured: true,
 };
 
 test('orders normalized guide sections by display order', () => {
@@ -131,6 +132,7 @@ test('publishes protected video metadata without exposing its S3 coordinates', (
   const guide = sanitizeStudioGuideForHosts(source);
   assert.equal(guide.sections[0].videos.length, 1);
   assert.equal(guide.sections[0].videos[0].title, 'Host walkthrough');
+  assert.equal(guide.sections[0].videos[0].featured, true);
   assert.equal(guide.sections[0].videos[0].object_key, undefined);
   assert.equal(guide.sections[0].videos[0].object_version_id, undefined);
   assert.match(studioGuideSearchText(source.sections[0]), /host walkthrough/);

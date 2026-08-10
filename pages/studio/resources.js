@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import StudioLayout from '../../components/StudioLayout';
 import ResourceModeSwitch from '../../components/ResourceModeSwitch';
 import StudioResourceLibrary from '../../components/StudioResourceLibrary';
+import StudioFeaturedResourceTraining from '../../components/StudioFeaturedResourceTraining';
 import StudioResourcePathways from '../../components/StudioResourcePathways';
 import CampaignRoundedIcon from '@mui/icons-material/CampaignRounded';
 import styles from '../../styles/Studio.module.css';
@@ -57,6 +58,11 @@ export default function StudioResourcesPage() {
     resourcePaths.find((pathway) => pathway.id === defaultResourcePath) ||
     resourcePaths[0];
   const showHostGuide = activePath?.id === 'host';
+  const featuredVideos = showHostGuide
+    ? (guide?.sections || [])
+        .flatMap((section) => section.videos || [])
+        .filter((video) => video.featured === true)
+    : [];
 
   return (
     <StudioLayout>
@@ -91,6 +97,7 @@ export default function StudioResourcesPage() {
 
       {!loading && !error ? (
         <>
+          <StudioFeaturedResourceTraining videos={featuredVideos} />
           <StudioResourcePathways
             key={activePath?.id || 'resources'}
             pathways={resourcePaths}
@@ -122,6 +129,7 @@ export default function StudioResourcesPage() {
                 updatedAt={updatedAt}
                 showHeader={false}
                 showAnnouncement={false}
+                hideFeaturedVideos
               />
             </section>
           ) : null}
