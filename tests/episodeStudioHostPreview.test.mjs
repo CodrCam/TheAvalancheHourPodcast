@@ -12,6 +12,23 @@ test('allows managers and assigned producers to enter host preview', () => {
   assert.equal(canPreviewEpisodeAsHost({ canHost: true }), false);
 });
 
+test('does not offer host preview to a host-only episode viewer', () => {
+  assert.equal(
+    canPreviewEpisodeAsHost(
+      { canManage: true, canHost: true, canConfigure: true },
+      ['host']
+    ),
+    false
+  );
+  assert.equal(
+    canPreviewEpisodeAsHost(
+      { canManage: true, canHost: true, canReview: true },
+      ['host', 'producer']
+    ),
+    true
+  );
+});
+
 test('host preview exposes the host surface but remains read only', () => {
   const preview = getEpisodeStudioViewCapabilities(
     {
@@ -45,4 +62,21 @@ test('unauthorized host preview requests retain actual capabilities', () => {
   assert.equal(capabilities.hostPreview, false);
   assert.equal(capabilities.canUseHostPreview, false);
   assert.equal(capabilities.canHost, true);
+});
+
+test('rejects an explicit host-preview request from a host-only viewer', () => {
+  const capabilities = getEpisodeStudioViewCapabilities(
+    {
+      canHost: true,
+      canManage: true,
+      canConfigure: true,
+    },
+    'host',
+    ['host']
+  );
+
+  assert.equal(capabilities.hostPreview, false);
+  assert.equal(capabilities.canUseHostPreview, false);
+  assert.equal(capabilities.canHost, true);
+  assert.equal(capabilities.canManage, true);
 });

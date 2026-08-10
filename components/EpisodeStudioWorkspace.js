@@ -454,6 +454,20 @@ function rememberDeletionNotice(value) {
   storeEpisodeStudioDeletionNotice(window.sessionStorage, value);
 }
 
+function getRecordedIntroductionAssets(episode = {}) {
+  const acceptedDeliverables = new Set([
+    'recording-files',
+    'intro-audio',
+  ]);
+  return (Array.isArray(episode.assets) ? episode.assets : []).filter(
+    (asset) =>
+      asset.status === 'uploaded' &&
+      acceptedDeliverables.has(asset.deliverable_id) &&
+      String(asset.content_type || '').startsWith('audio/') &&
+      !isEpisodeAssetExpired(asset)
+  );
+}
+
 export default function EpisodeStudioWorkspace({
   admin = false,
   previewData = null,
@@ -744,7 +758,9 @@ export default function EpisodeStudioWorkspace({
     (deliverable) => deliverable.id === 'producer-proof-audio'
   );
   const hostDeliverables = (episode?.deliverables || []).filter(
-    (deliverable) => deliverable.section !== 'producer_proof'
+    (deliverable) =>
+      deliverable.section !== 'producer_proof' &&
+      deliverable.id !== 'intro-audio'
   );
   const producerProofAssets = (episode?.assets || []).filter(
     (asset) => asset.deliverable_id === 'producer-proof-audio'
@@ -2287,6 +2303,8 @@ export default function EpisodeStudioWorkspace({
     const baselineDeadlineLabel = Number(task.days_before_air) === 0
       ? 'the air date'
       : `${task.days_before_air} days before air`;
+    const recordedIntroductionAssets =
+      task.kind === 'intro' ? getRecordedIntroductionAssets(episode) : [];
     const linkedRequirements = (task.linked_deliverable_ids || []).map(
       (deliverableId) => {
         const deliverable = (episode.deliverables || []).find(
@@ -2476,18 +2494,43 @@ export default function EpisodeStudioWorkspace({
                 onChange={() =>
                   updateProductionTaskLocal(task.task_id, {
                     intro_method: 'scheduled_with_producer',
+                    evidence_asset_id: '',
                   })
                 }
               />
               I sent the script and scheduled the producer recording
             </label>
             {task.intro_method === 'recorded' ? (
-              <Link
-                href={`${packageHref}#deliverable-intro-audio`}
-                onClick={guardWorkspaceNavigation}
-              >
-                Go to the private intro upload
-              </Link>
+              <>
+                <label>
+                  Recorded introduction file
+                  <select
+                    value={task.evidence_asset_id || ''}
+                    onChange={(event) =>
+                      updateProductionTaskLocal(task.task_id, {
+                        evidence_asset_id: event.target.value,
+                      })
+                    }
+                  >
+                    <option value="">Choose the intro recording</option>
+                    {recordedIntroductionAssets.map((asset) => (
+                      <option key={asset.asset_id} value={asset.asset_id}>
+                        {asset.label || asset.file_name}
+                      </option>
+                    ))}
+                  </select>
+                  <small>
+                    Select the finished intro so an interview track cannot be
+                    mistaken for it.
+                  </small>
+                </label>
+                <Link
+                  href={`${packageHref}#deliverable-recording-files`}
+                  onClick={guardWorkspaceNavigation}
+                >
+                  Go to the raw recording uploads
+                </Link>
+              </>
             ) : null}
             {task.intro_method === 'scheduled_with_producer' ? (
               <label>
@@ -2581,6 +2624,7 @@ export default function EpisodeStudioWorkspace({
             ? {
                 intro_method: task.intro_method,
                 intro_scheduled_for: task.intro_scheduled_for,
+                evidence_asset_id: task.evidence_asset_id || '',
               }
             : null),
         },
@@ -2622,7 +2666,12 @@ export default function EpisodeStudioWorkspace({
               disabled={
                 saving ||
                 !context.dependenciesComplete ||
-                (task.kind === 'intro' && !task.intro_method)
+                (task.kind === 'intro' && !task.intro_method) ||
+                (task.kind === 'intro' &&
+                  task.intro_method === 'recorded' &&
+                  !getRecordedIntroductionAssets(episode).some(
+                    (asset) => asset.asset_id === task.evidence_asset_id
+                  ))
               }
               onClick={() =>
                 saveTaskStatus('complete', `${task.label} completed.`)
@@ -4088,8 +4137,12 @@ export default function EpisodeStudioWorkspace({
 
             <div className={styles.deliverableList}>
               {hostDeliverables.map((deliverable, index) => {
+                const stepDeliverableIds =
+                  deliverable.id === 'recording-files'
+                    ? new Set(['recording-files', 'intro-audio'])
+                    : new Set([deliverable.id]);
                 const stepAssets = (episode.assets || []).filter(
-                  (asset) => asset.deliverable_id === deliverable.id
+                  (asset) => stepDeliverableIds.has(asset.deliverable_id)
                 );
                 const isMicKitPlan = deliverable.id === 'mic-kit-plan';
                 const hasLiveMicKitStatus = Boolean(
@@ -4874,16 +4927,23 @@ export default function EpisodeStudioWorkspace({
               {(episode.assets || []).length ? (
                 <div className={styles.producerPackageGroups}>
                   {[
-                    ...episode.deliverables.map((deliverable, index) => ({
-                      id: deliverable.id,
-                      label: `Step ${String(index + 1).padStart(2, '0')} · ${
-                        deliverable.label
-                      }`,
-                      assets: episode.assets.filter(
-                        (asset) =>
-                          asset.deliverable_id === deliverable.id
-                      ),
-                    })),
+                    ...episode.deliverables
+                      .filter(
+                        (deliverable) => deliverable.id !== 'intro-audio'
+                      )
+                      .map((deliverable, index) => ({
+                        id: deliverable.id,
+                        label: `Step ${String(index + 1).padStart(2, '0')} · ${
+                          deliverable.label
+                        }`,
+                        assets: episode.assets.filter((asset) =>
+                          deliverable.id === 'recording-files'
+                            ? ['recording-files', 'intro-audio'].includes(
+                                asset.deliverable_id
+                              )
+                            : asset.deliverable_id === deliverable.id
+                        ),
+                      })),
                     {
                       id: 'unassigned',
                       label: 'Unassigned legacy files',

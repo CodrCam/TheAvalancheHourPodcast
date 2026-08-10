@@ -135,6 +135,9 @@ test('creates the complete default workflow from the air date', () => {
   assert.deepEqual(recordingPackage.linked_deliverable_ids, [
     'recording-files',
   ]);
+  const intro = tasks.find((task) => task.task_id === 'intro-ready');
+  assert.deepEqual(intro.linked_deliverable_ids, ['recording-files']);
+  assert.match(intro.description, /with the raw recording tracks/i);
   const writtenPackage = tasks.find(
     (task) => task.task_id === 'show-notes-brief'
   );
@@ -702,7 +705,7 @@ test('a task is not overdue until the day after its deadline', () => {
   assert.equal(afterDeadline.off_track, true);
 });
 
-test('recorded intro completion requires the linked intro asset', () => {
+test('recorded intro completion requires a selected raw recording asset', () => {
   let value = episode();
   value.production_tasks = waiveDependencies(value.production_tasks, 'intro-ready');
 
@@ -715,12 +718,12 @@ test('recorded intro completion requires the linked intro asset', () => {
         { personId: 'host-one', personName: 'Host One' },
         { now: '2026-08-16T10:00:00Z' }
       ),
-    /upload the recorded intro/i
+    /choose the recorded intro from the raw recording uploads/i
   );
 
   value.assets.push({
     asset_id: 'intro-one',
-    deliverable_id: 'intro-audio',
+    deliverable_id: 'recording-files',
     status: 'uploaded',
   });
   const updated = applyEpisodeProductionTaskUpdate(
@@ -742,6 +745,28 @@ test('recorded intro completion requires the linked intro asset', () => {
   assert.equal(intro.completed_at, '2026-08-16T10:00:00.000Z');
   assert.equal(intro.completed_by_person_id, 'host-one');
   assert.equal(isEpisodeProductionTaskComplete(intro, updated), true);
+});
+
+test('legacy intro-only uploads remain valid recorded-intro evidence', () => {
+  const value = episode({
+    assets: [
+      {
+        asset_id: 'legacy-intro',
+        deliverable_id: 'intro-audio',
+        status: 'uploaded',
+      },
+    ],
+  });
+  const task = {
+    ...value.production_tasks.find(
+      (candidate) => candidate.task_id === 'intro-ready'
+    ),
+    status: 'complete',
+    intro_method: 'recorded',
+    evidence_asset_id: 'legacy-intro',
+  };
+
+  assert.equal(isEpisodeProductionTaskComplete(task, value), true);
 });
 
 test('microphone plan completion requires every assigned host and any connected guest', () => {
@@ -1572,7 +1597,7 @@ test('task IDs, kinds, and linked package requirements remain immutable', () => 
         episode(),
         'intro-ready',
         {
-          linked_deliverable_ids: ['recording-files'],
+          linked_deliverable_ids: ['photos'],
           label: 'Renamed intro',
         },
         actor

@@ -740,6 +740,55 @@ test('removing an asset also clears sponsor-read completion tied to that file', 
   );
 });
 
+test('removing the selected intro recording reopens the intro task', () => {
+  const completedAt = '2026-08-10T12:00:00.000Z';
+  const productionTasks = createDefaultEpisodeProductionTasks(
+    '2026-08-19'
+  ).map((task) =>
+    task.task_id === 'intro-ready'
+      ? {
+          ...task,
+          status: 'complete',
+          intro_method: 'recorded',
+          evidence_asset_id: 'intro-current',
+          completed_at: completedAt,
+          completed_by_person_id: 'host-one',
+          completed_by_name: 'Host One',
+        }
+      : task
+  );
+  const episode = normalizeEpisodeStudio({
+    ...sampleEpisode(),
+    production_tasks: productionTasks,
+    assets: [
+      {
+        asset_id: 'intro-current',
+        object_key:
+          'episodes/episode-one/recording/intro-current-intro.wav',
+        object_version_id: 'version-intro',
+        file_name: 'intro.wav',
+        content_type: 'audio/wav',
+        size: 100,
+        category: 'recording',
+        deliverable_id: 'recording-files',
+      },
+    ],
+  });
+
+  const updated = removeEpisodeAssetFromEpisode(
+    episode,
+    'intro-current'
+  );
+  const intro = updated.production_tasks.find(
+    (task) => task.task_id === 'intro-ready'
+  );
+
+  assert.equal(intro.status, 'in_progress');
+  assert.equal(intro.evidence_asset_id, '');
+  assert.equal(intro.completed_at, '');
+  assert.equal(intro.completed_by_person_id, '');
+});
+
 test('removing the current proof reopens its approval and downstream publishing work', () => {
   const completedAt = '2026-08-10T12:00:00.000Z';
   const productionTasks = createDefaultEpisodeProductionTasks(

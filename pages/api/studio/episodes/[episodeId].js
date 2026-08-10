@@ -161,10 +161,21 @@ function daysBeforeDate(dateValue, days) {
   return parsed.toISOString().slice(0, 10);
 }
 
-function hasUploadedDeliverableAsset(episode = {}, deliverableId = '') {
-  return (Array.isArray(episode.assets) ? episode.assets : []).some(
+function getUploadedDeliverableAsset(
+  episode = {},
+  deliverableIds = [],
+  assetId = ''
+) {
+  const allowedDeliverableIds = new Set(
+    (Array.isArray(deliverableIds) ? deliverableIds : [deliverableIds])
+      .map((value) => String(value || '').trim())
+      .filter(Boolean)
+  );
+  const requestedAssetId = String(assetId || '').trim();
+  return (Array.isArray(episode.assets) ? episode.assets : []).find(
     (asset) =>
-      asset.deliverable_id === deliverableId &&
+      (!requestedAssetId || asset.asset_id === requestedAssetId) &&
+      allowedDeliverableIds.has(asset.deliverable_id) &&
       asset.status === 'uploaded' &&
       !isEpisodeAssetExpired(asset)
   );
@@ -819,7 +830,8 @@ export default async function handler(req, res) {
           canAdminOverride,
           canAdvanceProduction,
         },
-        String(req.query.view || '')
+        String(req.query.view || ''),
+        episodeMembership
       );
       const sponsorData = await sponsorReadResponseData(
         resolveMessageAuthors(
@@ -1357,15 +1369,27 @@ export default async function handler(req, res) {
           });
         }
         patch.intro_method = introMethod;
-        if (
-          introMethod === 'recorded' &&
-          !hasUploadedDeliverableAsset(result.episode, 'intro-audio')
-        ) {
-          return res.status(400).json({
-            ok: false,
-            error:
-              'Upload the recorded intro audio before completing this workflow step.',
-          });
+        if (introMethod === 'recorded') {
+          const evidenceAssetId = String(
+            patch.evidence_asset_id ?? task.evidence_asset_id ?? ''
+          ).trim();
+          const recordedIntro = getUploadedDeliverableAsset(
+            result.episode,
+            ['recording-files', 'intro-audio'],
+            evidenceAssetId
+          );
+          if (
+            !evidenceAssetId ||
+            !recordedIntro ||
+            !String(recordedIntro.content_type || '').startsWith('audio/')
+          ) {
+            return res.status(400).json({
+              ok: false,
+              error:
+                'Choose the recorded introduction from the raw recording uploads before completing this workflow step.',
+            });
+          }
+          patch.evidence_asset_id = recordedIntro.asset_id;
         }
         if (introMethod === 'scheduled_with_producer') {
           const scheduledFor = cleanWorkflowDate(
