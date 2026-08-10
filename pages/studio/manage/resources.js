@@ -12,6 +12,7 @@ import SaveRoundedIcon from '@mui/icons-material/SaveRounded';
 import PublishRoundedIcon from '@mui/icons-material/PublishRounded';
 import VisibilityRoundedIcon from '@mui/icons-material/VisibilityRounded';
 import ArrowBackRoundedIcon from '@mui/icons-material/ArrowBackRounded';
+import CloudUploadRoundedIcon from '@mui/icons-material/CloudUploadRounded';
 import StudioLayout from '../../../components/StudioLayout';
 import StudioFormattedContent from '../../../components/StudioFormattedContent';
 import ResourceModeSwitch from '../../../components/ResourceModeSwitch';
@@ -21,6 +22,14 @@ import {
   normalizeStudioGuide,
   sanitizeStudioGuideForHosts,
 } from '../../../lib/studioGuidePresentation.mjs';
+import {
+  isEpisodeAssetUploadReadyForCompletion,
+  uploadAuthorizedFile,
+} from '../../../lib/episodeAssetUploadClient.mjs';
+import {
+  MAX_STUDIO_RESOURCE_VIDEO_BYTES,
+  validateStudioResourceVideoFile,
+} from '../../../lib/studioResourceVideoPolicy.mjs';
 import styles from '../../../styles/Studio.module.css';
 
 function cloneDefaultGuide() {
@@ -130,6 +139,7 @@ function createBlankSection(index) {
     published: false,
     sort_order: index * 10,
     links: [],
+    videos: [],
   };
 }
 
@@ -158,6 +168,7 @@ export default function ManageStudioResourcesPage() {
   const [previewing, setPreviewing] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [videoUpload, setVideoUpload] = useState(null);
 
   const dirty = useMemo(
     () => fingerprint(guide) !== fingerprint(baseline),
@@ -296,6 +307,7 @@ export default function ManageStudioResourcesPage() {
         id: `${link.id}-copy-${Date.now().toString(36)}`,
         active: false,
       })),
+      videos: [],
     };
     const sections = [...guide.sections];
     const index = sections.findIndex((item) => item.id === section.id);
@@ -351,6 +363,118 @@ export default function ManageStudioResourcesPage() {
     updateSection(sectionId, {
       links: (section.links || []).filter((link) => link.id !== linkId),
     });
+  }
+
+  function updateVideo(sectionId, videoId, patch) {
+    const section = guide.sections.find((item) => item.id === sectionId);
+    if (!section) return;
+    updateSection(sectionId, {
+      videos: (section.videos || []).map((video) =>
+        video.id === videoId ? { ...video, ...patch } : video
+      ),
+    });
+  }
+
+  function removeVideo(sectionId, videoId) {
+    const section = guide.sections.find((item) => item.id === sectionId);
+    if (!section) return;
+    updateSection(sectionId, {
+      videos: (section.videos || []).filter((video) => video.id !== videoId),
+    });
+  }
+
+  function isVideoSaved(videoId) {
+    return baseline.sections.some((section) =>
+      (section.videos || []).some((video) => video.id === videoId)
+    );
+  }
+
+  async function uploadVideo(sectionId, file) {
+    if (!file || videoUpload) return;
+    setError('');
+    setMessage('');
+    try {
+      validateStudioResourceVideoFile({
+        file_name: file.name,
+        content_type: file.type,
+        size: file.size,
+      });
+      setVideoUpload({
+        sectionId,
+        fileName: file.name,
+        percent: 0,
+        indeterminate: false,
+      });
+      const prepareResponse = await fetch(
+        '/api/studio/resource-videos/presign',
+        {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            file: {
+              file_name: file.name,
+              content_type: file.type,
+              size: file.size,
+            },
+          }),
+        }
+      );
+      const prepared = await prepareResponse.json();
+      if (!prepareResponse.ok || !prepared.ok) {
+        throw new Error(prepared.error || 'Could not prepare the video upload.');
+      }
+
+      const storageResponse = await uploadAuthorizedFile(
+        file,
+        prepared.upload,
+        {
+          onProgress(progress) {
+            setVideoUpload((current) =>
+              current
+                ? {
+                    ...current,
+                    percent: Math.round(Number(progress.percent) || 0),
+                    indeterminate: progress.indeterminate === true,
+                  }
+                : current
+            );
+          },
+        }
+      );
+      if (!isEpisodeAssetUploadReadyForCompletion(storageResponse)) {
+        throw new Error('Secure storage did not accept the resource video.');
+      }
+
+      const completeResponse = await fetch(
+        '/api/studio/resource-videos/complete',
+        {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            upload_token: prepared.upload.upload_token,
+          }),
+        }
+      );
+      const completed = await completeResponse.json();
+      if (!completeResponse.ok || !completed.ok) {
+        throw new Error(
+          completed.error || 'Could not verify the resource-video upload.'
+        );
+      }
+      const section = guide.sections.find((item) => item.id === sectionId);
+      updateSection(sectionId, {
+        videos: [...(section?.videos || []), completed.video],
+      });
+      setMessage(
+        'Video uploaded securely. Save the draft, review playback, and publish when ready.'
+      );
+    } catch (uploadError) {
+      setError(uploadError.message || 'Could not upload the resource video.');
+    } finally {
+      setVideoUpload(null);
+    }
   }
 
   function currentGuidePayload() {
@@ -481,6 +605,7 @@ export default function ManageStudioResourcesPage() {
           guide={hostPreviewGuide}
           updatedAt={meta.draft_updated_at || meta.updated_at}
           previewLabel={dirty ? 'Unsaved preview' : 'Draft preview'}
+          previewVideos
           headerActions={
             <>
               <button
@@ -832,6 +957,156 @@ export default function ManageStudioResourcesPage() {
                         more lines and use the formatting buttons when needed.
                       </small>
                     </div>
+                  </div>
+
+                  <div
+                    className={styles.editorPanelHeader}
+                    style={{ marginTop: 26 }}
+                  >
+                    <div>
+                      <h2>Protected videos</h2>
+                      <p>
+                        MP4 videos play directly on the Host Resources page.
+                        The original stays private in S3 and viewers receive a
+                        temporary playback URL.
+                      </p>
+                    </div>
+                    <label
+                      className={styles.secondaryButton}
+                      aria-disabled={Boolean(videoUpload)}
+                    >
+                      <CloudUploadRoundedIcon
+                        fontSize="small"
+                        aria-hidden="true"
+                      />
+                      {videoUpload ? 'Uploading…' : 'Upload MP4'}
+                      <input
+                        className={styles.hiddenFileInput}
+                        type="file"
+                        accept="video/mp4,.mp4"
+                        disabled={Boolean(videoUpload)}
+                        onChange={(event) => {
+                          const file = event.target.files?.[0];
+                          event.target.value = '';
+                          uploadVideo(selectedSection.id, file);
+                        }}
+                      />
+                    </label>
+                  </div>
+
+                  <p className={styles.resourceVideoUploadHelp}>
+                    MP4 only · up to{' '}
+                    {Math.round(
+                      MAX_STUDIO_RESOURCE_VIDEO_BYTES / (1024 * 1024 * 1024)
+                    )}{' '}
+                    GB · saved as a protected resource, not an episode file
+                  </p>
+
+                  {videoUpload?.sectionId === selectedSection.id ? (
+                    <div
+                      className={styles.resourceVideoUploadProgress}
+                      aria-live="polite"
+                    >
+                      <div>
+                        <strong>{videoUpload.fileName}</strong>
+                        <span>
+                          {videoUpload.indeterminate
+                            ? 'Uploading securely…'
+                            : `${videoUpload.percent}% uploaded`}
+                        </span>
+                      </div>
+                      <progress
+                        max="100"
+                        value={
+                          videoUpload.indeterminate
+                            ? undefined
+                            : videoUpload.percent
+                        }
+                      />
+                    </div>
+                  ) : null}
+
+                  <div className={styles.resourceVideoEditorList}>
+                    {(selectedSection.videos || []).map((video) => (
+                      <article
+                        className={styles.resourceVideoEditorCard}
+                        key={video.id}
+                      >
+                        <div className={styles.resourceVideoEditorFields}>
+                          <input
+                            className={styles.input}
+                            value={video.title}
+                            placeholder="Video title"
+                            aria-label="Video title"
+                            onChange={(event) =>
+                              updateVideo(selectedSection.id, video.id, {
+                                title: event.target.value,
+                              })
+                            }
+                          />
+                          <textarea
+                            className={styles.textarea}
+                            value={video.description}
+                            placeholder="Optional description shown above the player"
+                            aria-label="Video description"
+                            onChange={(event) =>
+                              updateVideo(selectedSection.id, video.id, {
+                                description: event.target.value,
+                              })
+                            }
+                          />
+                          <div className={styles.resourceVideoEditorMeta}>
+                            <label className={styles.toggle}>
+                              <input
+                                type="checkbox"
+                                checked={video.active}
+                                onChange={(event) =>
+                                  updateVideo(selectedSection.id, video.id, {
+                                    active: event.target.checked,
+                                  })
+                                }
+                              />
+                              Show this video to hosts
+                            </label>
+                            <span>{video.file_name}</span>
+                          </div>
+                        </div>
+                        {isVideoSaved(video.id) ? (
+                          <video
+                            className={styles.resourceVideoEditorPlayer}
+                            controls
+                            controlsList="nodownload noremoteplayback"
+                            disablePictureInPicture
+                            playsInline
+                            preload="metadata"
+                            src={`/api/studio/resource-videos/${encodeURIComponent(
+                              video.id
+                            )}?draft=1`}
+                            aria-label={`Preview ${video.title}`}
+                          />
+                        ) : (
+                          <p className={styles.resourceVideoSaveNotice}>
+                            Save the draft to enable the protected playback
+                            preview.
+                          </p>
+                        )}
+                        <button
+                          type="button"
+                          className={`${styles.iconButton} ${styles.dangerButton}`}
+                          onClick={() =>
+                            removeVideo(selectedSection.id, video.id)
+                          }
+                          aria-label={`Remove ${video.title || 'resource video'}`}
+                        >
+                          <DeleteOutlineRoundedIcon aria-hidden="true" />
+                        </button>
+                      </article>
+                    ))}
+                    {!selectedSection.videos?.length ? (
+                      <div className={styles.emptyState}>
+                        <p>This section does not have a protected video yet.</p>
+                      </div>
+                    ) : null}
                   </div>
 
                   <div className={styles.editorPanelHeader} style={{ marginTop: 26 }}>

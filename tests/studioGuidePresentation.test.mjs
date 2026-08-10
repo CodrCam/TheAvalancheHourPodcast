@@ -51,6 +51,19 @@ const sampleGuide = {
   manager_notes: ['Replace old links'],
 };
 
+const sampleVideo = {
+  id: 'resource-video-123e4567-e89b-42d3-a456-426614174000',
+  title: 'Host walkthrough',
+  description: 'Learn the complete host workflow.',
+  file_name: 'Host Walkthrough.mp4',
+  object_key:
+    'studio-resources/videos/resource-video-123e4567-e89b-42d3-a456-426614174000-Host Walkthrough.mp4',
+  object_version_id: 'version-1',
+  content_type: 'video/mp4',
+  size: 1184604164,
+  active: true,
+};
+
 test('orders normalized guide sections by display order', () => {
   const guide = normalizeStudioGuide(sampleGuide);
   assert.deepEqual(
@@ -109,6 +122,48 @@ test('search text includes body, category, summary, and active link labels', () 
   assert.match(text, /microphone setup/);
   assert.match(text, /wear headphones/);
   assert.match(text, /tutorial/);
+});
+
+test('publishes protected video metadata without exposing its S3 coordinates', () => {
+  const source = structuredClone(sampleGuide);
+  source.sections[0].videos = [sampleVideo];
+
+  const guide = sanitizeStudioGuideForHosts(source);
+  assert.equal(guide.sections[0].videos.length, 1);
+  assert.equal(guide.sections[0].videos[0].title, 'Host walkthrough');
+  assert.equal(guide.sections[0].videos[0].object_key, undefined);
+  assert.equal(guide.sections[0].videos[0].object_version_id, undefined);
+  assert.match(studioGuideSearchText(source.sections[0]), /host walkthrough/);
+});
+
+test('hides inactive or malformed protected videos from hosts', () => {
+  const source = structuredClone(sampleGuide);
+  source.sections[0].videos = [
+    { ...sampleVideo, active: false },
+    { ...sampleVideo, id: 'unsafe-video', active: true },
+  ];
+
+  const guide = sanitizeStudioGuideForHosts(source);
+  assert.deepEqual(guide.sections[0].videos, []);
+});
+
+test('rejects malformed and duplicate protected video references', () => {
+  const malformed = structuredClone(sampleGuide);
+  malformed.sections[0].videos = [
+    { ...sampleVideo, object_key: 'public/untrusted.mp4' },
+  ];
+  assert.throws(
+    () => validateStudioGuide(malformed),
+    /stored object key is invalid/i
+  );
+
+  const duplicate = structuredClone(sampleGuide);
+  duplicate.sections[0].videos = [sampleVideo];
+  duplicate.sections[1].videos = [sampleVideo];
+  assert.throws(
+    () => validateStudioGuide(duplicate),
+    /duplicate resource video ID/i
+  );
 });
 
 test('rejects unsafe resource URLs before publishing', () => {

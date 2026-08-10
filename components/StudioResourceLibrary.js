@@ -22,6 +22,14 @@ function formatUpdatedAt(value) {
   })}`;
 }
 
+function formatVideoSize(value) {
+  const bytes = Number(value) || 0;
+  if (!bytes) return '';
+  const gibibytes = bytes / (1024 * 1024 * 1024);
+  if (gibibytes >= 1) return `${gibibytes.toFixed(1)} GB`;
+  return `${Math.max(1, Math.round(bytes / (1024 * 1024)))} MB`;
+}
+
 export default function StudioResourceLibrary({
   guide,
   updatedAt = '',
@@ -31,6 +39,7 @@ export default function StudioResourceLibrary({
   previewLabel = '',
   showHeader = true,
   showAnnouncement = true,
+  previewVideos = false,
 }) {
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('All');
@@ -217,6 +226,42 @@ export default function StudioResourceLibrary({
               </AccordionSummary>
               <AccordionDetails className={styles.resourceDetails}>
                 <StudioFormattedContent value={section.body} />
+                {section.videos?.length ? (
+                  <div className={styles.resourceVideos}>
+                    {section.videos.map((video) => (
+                      <article
+                        className={styles.resourceVideoCard}
+                        key={video.id}
+                      >
+                        <div className={styles.resourceVideoHeading}>
+                          <div>
+                            <h3>{video.title}</h3>
+                            {video.description ? (
+                              <p>{video.description}</p>
+                            ) : null}
+                          </div>
+                          {formatVideoSize(video.size) ? (
+                            <span>{formatVideoSize(video.size)} MP4</span>
+                          ) : null}
+                        </div>
+                        <video
+                          className={styles.resourceVideoPlayer}
+                          controls
+                          controlsList="nodownload noremoteplayback"
+                          disablePictureInPicture
+                          playsInline
+                          preload="metadata"
+                          aria-label={video.title}
+                          src={`/api/studio/resource-videos/${encodeURIComponent(
+                            video.id
+                          )}${previewVideos ? '?draft=1' : ''}`}
+                        >
+                          Your browser does not support inline video playback.
+                        </video>
+                      </article>
+                    ))}
+                  </div>
+                ) : null}
                 {section.links?.length ? (
                   <div className={styles.resourceLinks}>
                     {section.links.map((link) => (

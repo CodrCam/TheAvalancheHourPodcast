@@ -2100,6 +2100,7 @@
 
 .primaryButton:disabled,
 .secondaryButton:disabled,
+.secondaryButton[aria-disabled='true'],
 .expandButton:disabled,
 .iconButton:disabled {
   opacity: 0.48;
@@ -2260,6 +2261,62 @@
   margin-top: 22px;
   padding-top: 20px;
   border-top: 1px solid var(--studio-line);
+}
+
+.resourceVideos {
+  display: grid;
+  gap: 18px;
+  margin: 22px 0;
+}
+
+.resourceVideoCard {
+  overflow: hidden;
+  border: 1px solid rgba(20, 38, 56, 0.13);
+  border-radius: 16px;
+  background: #101b22;
+  box-shadow: 0 14px 34px rgba(20, 38, 56, 0.12);
+}
+
+.resourceVideoHeading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 16px 18px;
+  color: #f7fafb;
+}
+
+.resourceVideoHeading h3,
+.resourceVideoHeading p {
+  margin: 0;
+}
+
+.resourceVideoHeading h3 {
+  font-size: 1rem;
+  letter-spacing: -0.02em;
+}
+
+.resourceVideoHeading p {
+  margin-top: 5px;
+  color: #b9c8cf;
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.resourceVideoHeading > span {
+  flex: 0 0 auto;
+  color: #9fb3bd;
+  font-size: 0.66rem;
+  font-weight: 780;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.resourceVideoPlayer {
+  display: block;
+  width: 100%;
+  max-height: min(72vh, 760px);
+  background: #000;
 }
 
 .resourceLink {
@@ -2625,6 +2682,106 @@
   display: grid;
   gap: 10px;
   margin-top: 10px;
+}
+
+.hiddenFileInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  clip-path: inset(50%);
+}
+
+.resourceVideoUploadHelp {
+  margin: 8px 0 14px;
+  color: var(--studio-muted);
+  font-size: 0.72rem;
+}
+
+.resourceVideoUploadProgress {
+  display: grid;
+  gap: 9px;
+  margin-bottom: 14px;
+  padding: 13px 15px;
+  border: 1px solid rgba(53, 107, 131, 0.18);
+  border-radius: 12px;
+  background: #f2f7f8;
+}
+
+.resourceVideoUploadProgress > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+  font-size: 0.75rem;
+}
+
+.resourceVideoUploadProgress span {
+  color: var(--studio-muted);
+}
+
+.resourceVideoUploadProgress progress {
+  width: 100%;
+  accent-color: #356f89;
+}
+
+.resourceVideoEditorList {
+  display: grid;
+  gap: 12px;
+}
+
+.resourceVideoEditorCard {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 0.8fr) auto;
+  gap: 14px;
+  align-items: start;
+  padding: 14px;
+  border: 1px solid rgba(20, 38, 56, 0.1);
+  border-radius: 13px;
+  background: #f8faf9;
+}
+
+.resourceVideoEditorFields {
+  display: grid;
+  gap: 9px;
+}
+
+.resourceVideoEditorFields .textarea {
+  min-height: 82px;
+}
+
+.resourceVideoEditorMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 9px;
+}
+
+.resourceVideoEditorMeta > span {
+  color: var(--studio-muted);
+  font-size: 0.68rem;
+}
+
+.resourceVideoEditorPlayer {
+  display: block;
+  width: 100%;
+  max-height: 220px;
+  border-radius: 10px;
+  background: #000;
+}
+
+.resourceVideoSaveNotice {
+  align-self: center;
+  margin: 0;
+  padding: 14px;
+  color: var(--studio-muted);
+  font-size: 0.74rem;
+  line-height: 1.5;
+  border-radius: 10px;
+  background: #eef3f4;
 }
 
 .linkEditorRow {
@@ -3613,8 +3770,14 @@
   }
 
   .linkEditorRow,
+  .resourceVideoEditorCard,
   .accessRow {
     grid-template-columns: 1fr;
+  }
+
+  .resourceVideoHeading,
+  .resourceVideoUploadProgress > div {
+    flex-direction: column;
   }
 
   .intakeMetrics,
