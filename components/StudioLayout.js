@@ -22,6 +22,7 @@ import ArticleRoundedIcon from '@mui/icons-material/ArticleRounded';
 import GroupsRoundedIcon from '@mui/icons-material/GroupsRounded';
 import HandshakeRoundedIcon from '@mui/icons-material/HandshakeRounded';
 import HealthAndSafetyRoundedIcon from '@mui/icons-material/HealthAndSafetyRounded';
+import HistoryRoundedIcon from '@mui/icons-material/HistoryRounded';
 import InboxRoundedIcon from '@mui/icons-material/InboxRounded';
 import EmailRoundedIcon from '@mui/icons-material/EmailRounded';
 import OpenInNewRoundedIcon from '@mui/icons-material/OpenInNewRounded';
@@ -54,6 +55,7 @@ const NAV_ICONS = {
   sponsors: HandshakeRoundedIcon,
   mic_kit_checkout: HeadsetMicRoundedIcon,
   system_health: HealthAndSafetyRoundedIcon,
+  access_log: HistoryRoundedIcon,
 };
 
 const StudioSessionContext = createContext(null);
@@ -157,6 +159,29 @@ export default function StudioLayout({
       router.beforePopState(() => true);
     };
   }, [hasUnsavedChanges, router, unsavedChangesMessage]);
+
+  useEffect(() => {
+    if (sessionState !== 'ready') return undefined;
+
+    async function heartbeat() {
+      if (document.visibilityState !== 'visible') return;
+      try {
+        await fetch('/api/studio/session', {
+          method: 'POST',
+          credentials: 'same-origin',
+        });
+      } catch {
+        // A missed heartbeat must not interrupt work in the Studio.
+      }
+    }
+
+    const interval = window.setInterval(heartbeat, 5 * 60 * 1000);
+    document.addEventListener('visibilitychange', heartbeat);
+    return () => {
+      window.clearInterval(interval);
+      document.removeEventListener('visibilitychange', heartbeat);
+    };
+  }, [sessionState]);
 
   const navItems = useMemo(() => {
     return getVisibleStudioNavigationItems(session?.permissions);

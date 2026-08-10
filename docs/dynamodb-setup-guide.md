@@ -539,6 +539,11 @@ npm run seed:dynamo-orders -- --apply --overwrite
 - Host resources, host-profile bindings, and Episode Studios use that same
   site-content table. Episode Studio writes fail safely when it is not
   configured rather than falling back to browser storage.
+- Successful Cognito sign-ins, visible-page heartbeats, and explicit sign-outs
+  use that same site-content table under isolated `access_session#...` keys.
+  The admin Access Log reads those records with `audit:read` permission and
+  retains them for 400 days by default (`ACCESS_LOG_RETENTION_DAYS` can be set
+  from 30–730 days).
 - Episode guest questionnaires also use the site-content table under a
   separate `guest_questionnaire#<episodeId>` key. Guest shipping answers and
   private upload metadata stay in that record and are deleted with the

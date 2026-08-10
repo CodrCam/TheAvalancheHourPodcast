@@ -7,9 +7,13 @@ import {
   serializeCookie,
 } from '../../../lib/cognitoOAuth';
 import {
+  getDisplayNameFromCognitoPayload,
   getGroupsFromCognitoPayload,
+  getRoleFromCognitoPayload,
+  getUsernameFromCognitoPayload,
   verifyCognitoToken,
 } from '../../../lib/cognitoAuth';
+import { recordAccessSession } from '../../../lib/accessLogStore';
 import { getTeamLandingForGroups } from '../../../lib/teamLanding.mjs';
 
 function getCookie(req, name) {
@@ -75,8 +79,37 @@ export async function getServerSideProps({ req, res, query }) {
 
     res.setHeader('Set-Cookie', cookies);
     const payload = await verifyCognitoToken(tokens.access_token);
+    let identityPayload = payload;
+    if (tokens.id_token) {
+      try {
+        const verifiedIdentity = await verifyCognitoToken(tokens.id_token);
+        if (verifiedIdentity?.sub === payload?.sub) {
+          identityPayload = verifiedIdentity;
+        }
+      } catch {
+        // The verified access token is enough to authorize the session.
+      }
+    }
     const groups = getGroupsFromCognitoPayload(payload);
     const destination = getTeamLandingForGroups(groups);
+
+    try {
+      await recordAccessSession(req, {
+        subject: payload?.sub || '',
+        username: getUsernameFromCognitoPayload(identityPayload),
+        displayName: getDisplayNameFromCognitoPayload(identityPayload),
+        role: getRoleFromCognitoPayload(payload),
+        groups,
+        sessionId:
+          payload?.jti ||
+          payload?.origin_jti ||
+          `${payload?.sub || ''}:${payload?.iat || ''}`,
+        sessionIssuedAt: payload?.iat || 0,
+        sessionExpiresAt: payload?.exp || 0,
+      });
+    } catch (accessLogError) {
+      console.error('access login recording failed:', accessLogError);
+    }
 
     return {
       redirect: {

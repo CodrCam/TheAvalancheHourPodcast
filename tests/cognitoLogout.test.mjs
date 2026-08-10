@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import logoutHandler from '../pages/api/store/admin/auth/logout.js';
 
-test('sign out clears local authentication and returns to the website', () => {
+test('sign out clears local authentication and returns to the website', async () => {
   const headers = new Map();
   let redirect = null;
   const req = {
@@ -18,7 +18,7 @@ test('sign out clears local authentication and returns to the website', () => {
     },
   };
 
-  logoutHandler(req, res);
+  await logoutHandler(req, res);
 
   assert.deepEqual(redirect, {
     status: 303,

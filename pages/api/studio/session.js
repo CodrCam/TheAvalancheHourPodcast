@@ -2,11 +2,15 @@ import {
   ADMIN_PERMISSIONS,
   requirePermissionAsync,
 } from '../../../lib/adminAuth';
+import {
+  recordAccessSession,
+  touchAccessSession,
+} from '../../../lib/accessLogStore';
 import { getStudioSupportContact } from '../../../lib/studioSupportContact.mjs';
 
 export default async function handler(req, res) {
-  if (req.method !== 'GET') {
-    res.setHeader('Allow', 'GET');
+  if (!['GET', 'POST'].includes(req.method)) {
+    res.setHeader('Allow', 'GET,POST');
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
@@ -18,6 +22,17 @@ export default async function handler(req, res) {
   if (!principal) return;
 
   res.setHeader('Cache-Control', 'private, no-store');
+  try {
+    const touched = await touchAccessSession(principal);
+    if (!touched) await recordAccessSession(req, principal);
+  } catch (error) {
+    console.error('access session heartbeat failed:', error);
+  }
+
+  if (req.method === 'POST') {
+    return res.status(204).end();
+  }
+
   return res.status(200).json({
     support_contact: getStudioSupportContact(),
     user: {

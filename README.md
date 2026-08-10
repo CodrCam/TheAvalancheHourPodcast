@@ -169,7 +169,12 @@ DYNAMODB_SITE_CONTENT_TABLE
 DYNAMODB_SPONSORS_TABLE
 DYNAMODB_MIC_KITS_TABLE
 DYNAMODB_STUDIO_NOTIFICATIONS_INDEX
+ACCESS_LOG_RETENTION_DAYS
 ```
+
+`ACCESS_LOG_RETENTION_DAYS` is optional (400 days by default, constrained to
+30–730 days). Successful Cognito sessions are stored in the existing site-content
+table and are visible only to accounts with `audit:read` access.
 
 The DynamoDB client can fall back to the standard `AWS_ACCESS_KEY_ID`,
 `AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN`, and `AWS_REGION` variables when
