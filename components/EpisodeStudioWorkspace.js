@@ -2735,7 +2735,7 @@ export default function EpisodeStudioWorkspace({
                 </p>
               </div>
               <div className={styles.workspaceHeaderActions}>
-                {canManage && !productionView ? (
+                {canManage ? (
                   <button
                     type="button"
                     className={styles.hostPreviewButton}
@@ -2800,6 +2800,166 @@ export default function EpisodeStudioWorkspace({
                 </Link>
               ) : null}
             </nav>
+
+            {canManage ? (
+              <EpisodeStudioSettingsDrawer
+                open={settingsOpen}
+                onClose={() => setSettingsOpen(false)}
+                footer={
+                  <>
+                    <button
+                      type="button"
+                      className={styles.secondaryButton}
+                      onClick={() => setSettingsOpen(false)}
+                    >
+                      Close
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.primaryButton}
+                      disabled={Boolean(actionBlockers.save)}
+                      title={actionBlockers.save || undefined}
+                      onClick={async () => {
+                        const saved = await saveDraft();
+                        if (saved) setSettingsOpen(false);
+                      }}
+                    >
+                      <SaveRoundedIcon aria-hidden="true" />
+                      Save settings
+                    </button>
+                  </>
+                }
+              >
+                <section className={styles.producerPanel}>
+                  <div className={styles.panelHeading}>
+                    <div>
+                      <span className={styles.eyebrow}>Producer setup</span>
+                      <h2>Schedule and assignments</h2>
+                    </div>
+                    <span>Changes publish when you save.</span>
+                  </div>
+                  <div className={styles.producerGrid}>
+                    <label>
+                      Episode title
+                      <input
+                        value={episode.title}
+                        onChange={(event) =>
+                          updateEpisode({ title: event.target.value })
+                        }
+                      />
+                    </label>
+                    <label>
+                      Season
+                      <input
+                        value={episode.season}
+                        onChange={(event) =>
+                          updateEpisode({ season: event.target.value })
+                        }
+                      />
+                    </label>
+                    <label>
+                      Air date
+                      <FriendlyDateField
+                        value={episode.target_release_date}
+                        onChange={(event) =>
+                          updateEpisode({
+                            target_release_date: event.target.value,
+                          })
+                        }
+                        ariaLabel="air date"
+                      />
+                    </label>
+                    <label>
+                      Host package due
+                      <FriendlyDateField
+                        value={episode.due_date}
+                        onChange={(event) =>
+                          updateEpisode({ due_date: event.target.value })
+                        }
+                        ariaLabel="host package due date"
+                      />
+                    </label>
+                    <EpisodeRecordingFields
+                      schedule={episode}
+                      onChange={updateEpisode}
+                    />
+                    <label>
+                      Producer
+                      <select
+                        value={episode.producer_person_id || ''}
+                        onChange={(event) => {
+                          const producerPersonId = event.target.value;
+                          const producer = producers.find(
+                            (candidate) =>
+                              candidate.person_id === producerPersonId
+                          );
+                          updateEpisode({
+                            producer_person_id: producerPersonId,
+                            producer_email:
+                              producer?.account_email || episode.producer_email,
+                          });
+                        }}
+                      >
+                        <option value="">Choose later</option>
+                        {producers.map((producer) => (
+                          <option
+                            key={producer.person_id}
+                            value={producer.person_id}
+                          >
+                            {producer.name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className={styles.fullField}>
+                      Producer notification email
+                      <input
+                        type="email"
+                        value={episode.producer_email}
+                        onChange={(event) =>
+                          updateEpisode({ producer_email: event.target.value })
+                        }
+                        placeholder="producer@example.com"
+                      />
+                    </label>
+                  </div>
+                  <div className={styles.assignmentPicker}>
+                    <strong>Assigned hosts</strong>
+                    <div>
+                      {people.map((person) => {
+                        const assigned = episode.host_person_ids.includes(
+                          person.person_id
+                        );
+                        return (
+                          <label
+                            key={person.person_id}
+                            className={assigned ? styles.assignmentActive : ''}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={assigned}
+                              onChange={(event) => {
+                                const ids = event.target.checked
+                                  ? [
+                                      ...episode.host_person_ids,
+                                      person.person_id,
+                                    ]
+                                  : episode.host_person_ids.filter(
+                                      (personId) =>
+                                        personId !== person.person_id
+                                    );
+                                updateEpisode({ host_person_ids: ids });
+                              }}
+                            />
+                            {person.name}
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </section>
+              </EpisodeStudioSettingsDrawer>
+            ) : null}
 
             {hostPreviewActive ? (
               <section className={styles.hostPreviewBanner} role="status">
@@ -3838,167 +3998,6 @@ export default function EpisodeStudioWorkspace({
                 </p>
               )}
             </section>
-
-            {canManage ? (
-              <EpisodeStudioSettingsDrawer
-                open={settingsOpen}
-                onClose={() => setSettingsOpen(false)}
-                footer={
-                  <>
-                    <button
-                      type="button"
-                      className={styles.secondaryButton}
-                      onClick={() => setSettingsOpen(false)}
-                    >
-                      Close
-                    </button>
-                    <button
-                      type="button"
-                      className={styles.primaryButton}
-                      disabled={Boolean(actionBlockers.save)}
-                      title={actionBlockers.save || undefined}
-                      onClick={async () => {
-                        const saved = await saveDraft();
-                        if (saved) setSettingsOpen(false);
-                      }}
-                    >
-                      <SaveRoundedIcon aria-hidden="true" />
-                      Save settings
-                    </button>
-                  </>
-                }
-              >
-              <section className={styles.producerPanel}>
-                <div className={styles.panelHeading}>
-                  <div>
-                    <span className={styles.eyebrow}>Producer setup</span>
-                    <h2>Schedule and assignments</h2>
-                  </div>
-                  <span>Changes publish when you save.</span>
-                </div>
-                <div className={styles.producerGrid}>
-                  <label>
-                    Episode title
-                    <input
-                      value={episode.title}
-                      onChange={(event) =>
-                        updateEpisode({ title: event.target.value })
-                      }
-                    />
-                  </label>
-                  <label>
-                    Season
-                    <input
-                      value={episode.season}
-                      onChange={(event) =>
-                        updateEpisode({ season: event.target.value })
-                      }
-                    />
-                  </label>
-                  <label>
-                    Air date
-                    <FriendlyDateField
-                      value={episode.target_release_date}
-                      onChange={(event) =>
-                        updateEpisode({
-                          target_release_date: event.target.value,
-                        })
-                      }
-                      ariaLabel="air date"
-                    />
-                  </label>
-                  <label>
-                    Host package due
-                    <FriendlyDateField
-                      value={episode.due_date}
-                      onChange={(event) =>
-                        updateEpisode({ due_date: event.target.value })
-                      }
-                      ariaLabel="host package due date"
-                    />
-                  </label>
-                  <EpisodeRecordingFields
-                    schedule={episode}
-                    onChange={updateEpisode}
-                  />
-                  <label>
-                    Producer
-                    <select
-                      value={episode.producer_person_id || ''}
-                      onChange={(event) => {
-                        const producerPersonId = event.target.value;
-                        const producer = producers.find(
-                          (candidate) =>
-                            candidate.person_id === producerPersonId
-                        );
-                        updateEpisode({
-                          producer_person_id: producerPersonId,
-                          producer_email:
-                            producer?.account_email ||
-                            episode.producer_email,
-                        });
-                      }}
-                    >
-                      <option value="">Choose later</option>
-                      {producers.map((producer) => (
-                        <option
-                          key={producer.person_id}
-                          value={producer.person_id}
-                        >
-                          {producer.name}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label className={styles.fullField}>
-                    Producer notification email
-                    <input
-                      type="email"
-                      value={episode.producer_email}
-                      onChange={(event) =>
-                        updateEpisode({ producer_email: event.target.value })
-                      }
-                      placeholder="producer@example.com"
-                    />
-                  </label>
-                </div>
-                <div className={styles.assignmentPicker}>
-                  <strong>Assigned hosts</strong>
-                  <div>
-                    {people.map((person) => {
-                      const assigned = episode.host_person_ids.includes(
-                        person.person_id
-                      );
-                      return (
-                        <label
-                          key={person.person_id}
-                          className={assigned ? styles.assignmentActive : ''}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={assigned}
-                            onChange={(event) => {
-                              const ids = event.target.checked
-                                ? [
-                                    ...episode.host_person_ids,
-                                    person.person_id,
-                                  ]
-                                : episode.host_person_ids.filter(
-                                    (personId) =>
-                                      personId !== person.person_id
-                                  );
-                              updateEpisode({ host_person_ids: ids });
-                            }}
-                          />
-                          {person.name}
-                        </label>
-                      );
-                    })}
-                  </div>
-                </div>
-              </section>
-              </EpisodeStudioSettingsDrawer>
-            ) : null}
 
             <section
               className={styles.hostProductionSection}
