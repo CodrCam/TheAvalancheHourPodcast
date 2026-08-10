@@ -593,20 +593,23 @@ export default async function handler(req, res) {
   try {
     const episodeId = String(req.query.episodeId || '').trim();
     const result = await getEpisodeStudio(episodeId);
+    const canManage = principal.permissions.includes(
+      ADMIN_PERMISSIONS.EPISODES_MANAGE
+    );
     if (!result.episode) {
       return res
         .status(404)
         .json({ ok: false, error: 'Episode Studio not found.' });
     }
     if (result.episode.deletion_finalized_at) {
-      return res
-        .status(404)
-        .json({ ok: false, error: 'Episode Studio not found.' });
+      return res.status(410).json({
+        ok: false,
+        code: 'EPISODE_STUDIO_DELETED',
+        canManage,
+        error: 'This Episode Studio has been permanently deleted.',
+      });
     }
 
-    const canManage = principal.permissions.includes(
-      ADMIN_PERMISSIONS.EPISODES_MANAGE
-    );
     const binding = await getStudioBindingForSubject(principal.subject);
     const membershipIdentity = binding
       ? {
@@ -715,6 +718,10 @@ export default async function handler(req, res) {
           return res.status(202).json({
             ok: true,
             pending_deletion: true,
+            deletion_status:
+              cleanup.storage_cleanup_pending === true
+                ? 'cleaning'
+                : 'scheduled',
             storage_cleanup_pending:
               cleanup.storage_cleanup_pending === true,
             deletion_ready_at: safeReadyAt.toISOString(),
@@ -740,6 +747,8 @@ export default async function handler(req, res) {
 
         return res.status(200).json({
           ok: true,
+          deletion_status: 'deleted',
+          message: 'The Episode Studio was permanently deleted.',
           durable_cleanup_active: true,
           ...deletion,
         });

@@ -66,6 +66,7 @@ import {
   buildEpisodeCalendarFile,
   episodeCalendarFilename,
 } from '../lib/episodeCalendar.mjs';
+import { storeEpisodeStudioDeletionNotice } from '../lib/episodeStudioDeletionNotice.mjs';
 import styles from '../styles/EpisodeStudio.module.css';
 
 const STATUS_LABELS = {
@@ -443,6 +444,16 @@ function EpisodeStudioPreviewLayout({ children }) {
   );
 }
 
+function episodeStudioListHref({ admin = false, canManage = false } = {}) {
+  if (admin) return '/admin/studios';
+  return canManage ? '/studio/manage/episodes' : '/studio/episodes';
+}
+
+function rememberDeletionNotice(value) {
+  if (typeof window === 'undefined') return;
+  storeEpisodeStudioDeletionNotice(window.sessionStorage, value);
+}
+
 export default function EpisodeStudioWorkspace({
   admin = false,
   previewData = null,
@@ -522,6 +533,7 @@ export default function EpisodeStudioWorkspace({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const [deletionRedirectMessage, setDeletionRedirectMessage] = useState('');
   const [messageDraft, setMessageDraft] = useState('');
   const [workflowTaskDrafts, setWorkflowTaskDrafts] = useState({});
   const [workflowTaskEditor, setWorkflowTaskEditor] = useState(null);
@@ -572,6 +584,19 @@ export default function EpisodeStudioWorkspace({
         );
         const data = await response.json();
         if (!response.ok) {
+          if (data.code === 'EPISODE_STUDIO_DELETED') {
+            if (!alive) return;
+            const redirectHref = episodeStudioListHref({
+              admin,
+              canManage: data.canManage === true,
+            });
+            rememberDeletionNotice({ status: 'deleted' });
+            setDeletionRedirectMessage(
+              'This Episode Studio was already permanently deleted.'
+            );
+            await router.replace(redirectHref);
+            return;
+          }
           throw new Error(data.error || 'Could not open this Episode Studio.');
         }
         if (!alive) return;
@@ -609,7 +634,7 @@ export default function EpisodeStudioWorkspace({
     return () => {
       alive = false;
     };
-  }, [episodeId, previewData, router.isReady, router.query.view]);
+  }, [admin, episodeId, previewData, router, router.isReady, router.query.view]);
 
   const completion = useMemo(() => {
     if (!episode) return getEpisodeCompletion({});
@@ -787,11 +812,7 @@ export default function EpisodeStudioWorkspace({
     : admin
       ? AdminLayout
       : StudioLayout;
-  const listHref = admin
-    ? '/admin/studios'
-    : canManage
-      ? '/studio/manage/episodes'
-      : '/studio/episodes';
+  const listHref = episodeStudioListHref({ admin, canManage });
   const productionView = workspaceView === 'production';
   const episodeRouteId = episode?.episode_id || episodeId;
   const episodeBaseHref = previewData
@@ -2209,22 +2230,34 @@ export default function EpisodeStudioWorkspace({
         if (data.episode) {
           mergeServerFields(data.episode, ['deleted_at', 'updated_at']);
         }
-        const readyAt = new Date(data.deletion_ready_at);
-        setMessage(
+        const noticeStatus = data.storage_cleanup_pending
+          ? 'cleaning'
+          : 'scheduled';
+        rememberDeletionNotice({
+          status: noticeStatus,
+          title: episode.title,
+          deletion_ready_at: data.deletion_ready_at,
+        });
+        setDeletionRedirectMessage(
           data.storage_cleanup_pending
-            ? 'This Studio remains locked while automatic cleanup removes private storage in bounded batches. You can retry now; hourly cleanup will also continue safely.'
-            : `This Studio is locked for protected deletion. Return after ${
-                Number.isNaN(readyAt.getTime())
-                  ? 'the upload-safety window closes'
-                  : readyAt.toLocaleString()
-              } to finish removing the active Studio. Automatic private-storage sweeps will continue catching any transfer that was already underway.`
+            ? 'Protected deletion is in progress.'
+            : 'Protected deletion is scheduled.'
         );
+        await router.replace(listHref);
         return;
       }
 
+      rememberDeletionNotice({
+        status: 'deleted',
+        title: episode.title,
+      });
+      setDeletionRedirectMessage(
+        `“${episode.title}” was permanently deleted.`
+      );
       setBaseline(JSON.stringify(episode));
       await router.replace(listHref);
     } catch (deleteError) {
+      setDeletionRedirectMessage('');
       setError(
         deleteError.message ||
           'Could not permanently delete this Episode Studio.'
@@ -2643,8 +2676,53 @@ export default function EpisodeStudioWorkspace({
 
         {loading ? (
           <section className={styles.loadingCard}>Opening Episode Studio…</section>
+        ) : deletionRedirectMessage ? (
+          <section className={styles.successCard} role="status">
+            <strong>{deletionRedirectMessage}</strong>{' '}
+            Returning to the production calendar…
+          </section>
         ) : error && !episode ? (
-          <section className={styles.errorCard}>{error}</section>
+          <section className={styles.errorCard}>
+            <strong>{error}</strong>
+            <p>
+              Use the production calendar to open another active Episode
+              Studio.
+            </p>
+          </section>
+        ) : episode?.deleted_at ? (
+          <>
+            <section className={styles.deletionStatusCard} role="status">
+              <span className={styles.deletionStatusIcon} aria-hidden="true">
+                <DeleteOutlineRoundedIcon />
+              </span>
+              <div>
+                <span className={styles.eyebrow}>Protected deletion</span>
+                <h1>Deletion is scheduled</h1>
+                <p>
+                  <strong>“{episode.title}” is locked immediately.</strong>{' '}
+                  Automatic cleanup will permanently remove its private files
+                  and Studio content after previously issued upload links are
+                  no longer valid.
+                </p>
+                <p>
+                  No further action is normally required. Until cleanup
+                  finishes, the production calendar may show this Studio as
+                  “Deletion scheduled.”
+                </p>
+              </div>
+            </section>
+            {error ? <p className={styles.errorCard}>{error}</p> : null}
+            {message ? <p className={styles.successCard}>{message}</p> : null}
+            {canManage ? (
+              <EpisodeStudioDeletionControl
+                episode={episode}
+                saving={saving}
+                uploading={Boolean(uploadingAsset)}
+                deleting={deletingStudio}
+                onDelete={deleteStudio}
+              />
+            ) : null}
+          </>
         ) : episode ? (
           <>
             <header className={styles.workspaceHeader}>

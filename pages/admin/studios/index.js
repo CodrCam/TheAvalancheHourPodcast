@@ -8,6 +8,10 @@ import AdminLayout from '../../../components/AdminLayout';
 import { EpisodeRecordingFields } from '../../../components/EpisodeRecordingSchedule';
 import FriendlyDateField from '../../../components/FriendlyDateField';
 import StudioLayout from '../../../components/StudioLayout';
+import {
+  consumeEpisodeStudioDeletionNotice,
+  getEpisodeStudioDeletionNoticeCopy,
+} from '../../../lib/episodeStudioDeletionNotice.mjs';
 import styles from '../../../styles/EpisodeStudio.module.css';
 
 const STATUS_LABELS = {
@@ -114,6 +118,7 @@ export function EpisodeStudiosDashboard({ studioLayout = false }) {
   const [query, setQuery] = useState('');
   const [viewMonth, setViewMonth] = useState(monthStart(new Date()));
   const [error, setError] = useState('');
+  const [deletionNotice, setDeletionNotice] = useState(null);
   const createPanelRef = useRef(null);
   const titleInputRef = useRef(null);
   const focusCreateRef = useRef(false);
@@ -158,6 +163,14 @@ export function EpisodeStudiosDashboard({ studioLayout = false }) {
 
   useEffect(() => {
     loadStudios();
+  }, []);
+
+  useEffect(() => {
+    const notice = consumeEpisodeStudioDeletionNotice(window.sessionStorage);
+    const frame = window.requestAnimationFrame(() => {
+      setDeletionNotice(notice);
+    });
+    return () => window.cancelAnimationFrame(frame);
   }, []);
 
   useEffect(() => {
@@ -209,24 +222,37 @@ export function EpisodeStudiosDashboard({ studioLayout = false }) {
     );
   }, [episodes, query]);
   const stats = useMemo(
-    () => ({
-      scheduled: episodes.length,
-      hostWork: episodes.filter((episode) =>
-        ['planning', 'in_progress', 'needs_changes'].includes(episode.status)
-      ).length,
-      producerReady: episodes.filter((episode) =>
-        ['submitted', 'submitted_with_gaps'].includes(episode.status)
-      ).length,
-      accepted: episodes.filter((episode) => episode.status === 'accepted')
-        .length,
-      offTrack: episodes.filter(
-        (episode) => isEpisodeOffTrack(episode)
-      ).length,
-    }),
+    () => {
+      const activeEpisodes = episodes.filter(
+        (episode) => !episode.deletion_pending
+      );
+      return {
+        scheduled: activeEpisodes.length,
+        hostWork: activeEpisodes.filter((episode) =>
+          ['planning', 'in_progress', 'needs_changes'].includes(episode.status)
+        ).length,
+        producerReady: activeEpisodes.filter((episode) =>
+          ['submitted', 'submitted_with_gaps'].includes(episode.status)
+        ).length,
+        accepted: activeEpisodes.filter(
+          (episode) => episode.status === 'accepted'
+        ).length,
+        offTrack: activeEpisodes.filter((episode) =>
+          isEpisodeOffTrack(episode)
+        ).length,
+      };
+    },
     [episodes]
   );
   const createDirty =
     showCreate && JSON.stringify(form) !== JSON.stringify(EMPTY_FORM);
+  const deletionNoticeCopy = useMemo(
+    () =>
+      deletionNotice
+        ? getEpisodeStudioDeletionNoticeCopy(deletionNotice)
+        : null,
+    [deletionNotice]
+  );
 
   function toggleHost(personId) {
     setForm((current) => ({
@@ -383,6 +409,19 @@ export function EpisodeStudiosDashboard({ studioLayout = false }) {
           </p>
         ) : null}
         {error ? <p className={styles.errorCard}>{error}</p> : null}
+        {deletionNoticeCopy ? (
+          <section
+            className={
+              deletionNotice.status === 'deleted'
+                ? styles.successCard
+                : styles.feedbackBanner
+            }
+            role="status"
+          >
+            <strong>{deletionNoticeCopy.heading}</strong>
+            <p>{deletionNoticeCopy.body}</p>
+          </section>
+        ) : null}
 
         {showCreate ? (
           <form
@@ -633,7 +672,7 @@ export function EpisodeStudiosDashboard({ studioLayout = false }) {
                       <strong>{episode.title}</strong>
                       <span>
                         {episode.deletion_pending
-                          ? 'Deletion pending'
+                          ? 'Deletion scheduled'
                           : isEpisodeOffTrack(episode)
                             ? 'Off track'
                           : episode.workflow?.required_task_count
@@ -690,32 +729,42 @@ export function EpisodeStudiosDashboard({ studioLayout = false }) {
                 <div>
                   <strong>
                     {episode.deletion_pending
-                      ? 'Deletion pending'
+                      ? 'Deletion scheduled'
                       : STATUS_LABELS[episode.status] || episode.status}
                   </strong>
                   <span>Status</span>
                 </div>
                 <div className={styles.rowProgress}>
                   <strong>
-                    {episode.workflow?.required_task_count
+                    {episode.deletion_pending
+                      ? 'Protected cleanup in progress'
+                      : episode.workflow?.required_task_count
                       ? `${episode.workflow.completion_percent}% production complete`
                       : `${episode.completion.host_percent}% host-ready`}
                   </strong>
-                  <span>{nextWorkflowLabel(episode)}</span>
-                  <span className={styles.progressTrack}>
-                    <span
-                      style={{
-                        width: `${
-                          episode.workflow?.required_task_count
-                            ? episode.workflow.completion_percent
-                            : episode.completion.host_percent
-                        }%`,
-                      }}
-                    />
+                  <span>
+                    {episode.deletion_pending
+                      ? 'Automatic cleanup will remove the private Studio.'
+                      : nextWorkflowLabel(episode)}
                   </span>
+                  {!episode.deletion_pending ? (
+                    <span className={styles.progressTrack}>
+                      <span
+                        style={{
+                          width: `${
+                            episode.workflow?.required_task_count
+                              ? episode.workflow.completion_percent
+                              : episode.completion.host_percent
+                          }%`,
+                        }}
+                      />
+                    </span>
+                  ) : null}
                 </div>
                 <span>
-                  {episode.workflow?.required_task_count
+                  {episode.deletion_pending
+                    ? 'View deletion status →'
+                    : episode.workflow?.required_task_count
                     ? 'Open production →'
                     : 'Open package →'}
                 </span>

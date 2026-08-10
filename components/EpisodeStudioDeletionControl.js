@@ -71,12 +71,12 @@ export default function EpisodeStudioDeletionControl({
           <div>
             <strong>
               {deletionPending
-                ? 'Finish deleting this Episode Studio'
+                ? 'Deletion is already scheduled'
                 : 'Delete this Episode Studio'}
             </strong>
             <p>
               {deletionPending
-                ? 'The Studio is locked while previously issued upload links expire. Automatic cleanup will keep rechecking private storage; you can also return after the displayed safety window to finish now.'
+                ? 'The Studio is locked and automatic cleanup will finish after previously issued upload links expire. No further action is normally required; retrying only asks cleanup to check again now.'
                 : `Permanently remove the Studio and all ${assetCount} ${
                     assetCount === 1 ? 'file' : 'files'
                   } stored for it${
@@ -95,7 +95,7 @@ export default function EpisodeStudioDeletionControl({
             }}
           >
             <DeleteOutlineRoundedIcon aria-hidden="true" />
-            {deletionPending ? 'Finish deletion…' : 'Delete Studio…'}
+            {deletionPending ? 'Retry cleanup…' : 'Delete Studio…'}
           </button>
         </div>
       </details>
@@ -119,12 +119,16 @@ export default function EpisodeStudioDeletionControl({
               <WarningAmberRoundedIcon />
             </span>
             <div>
-              <span className={styles.eyebrow}>Permanent deletion</span>
-              <h2 id="delete-studio-title">Delete this Studio?</h2>
+              <span className={styles.eyebrow}>Protected deletion</span>
+              <h2 id="delete-studio-title">
+                {deletionPending
+                  ? 'Retry protected cleanup?'
+                  : 'Schedule permanent deletion?'}
+              </h2>
               <p id="delete-studio-description">
                 {deletionPending
-                  ? 'Finish the protected storage sweep after all previously issued upload links have expired. A minimal cleanup marker temporarily retains the episode storage identifier, which may contain words from an older episode title, so automatic sweeps can remove any transfer already underway. It is normally purged within 30 days; questionnaire answers, notes, files, assignments, and the full title are removed sooner.'
-                  : 'Deletion first locks the Studio until every previously issued upload link expires. After the safety window, the active Studio and questionnaire are removed. A minimal marker temporarily keeps the storage identifier, which may contain words from an older title, while automatic storage checks continue; it is normally purged within 30 days.'}
+                  ? 'Deletion is already scheduled and the Studio is locked. Automatic cleanup needs no further action; this retry simply checks whether the upload-safety window has closed and private storage can be removed now.'
+                  : 'This first step immediately locks the Studio and returns you to the production calendar. Automatic cleanup permanently removes the active Studio, questionnaire, notes, assignments, and files after every issued upload link expires. The calendar clearly marks it as “Deletion scheduled” until that finishes.'}
               </p>
             </div>
             <div className={styles.deleteSummary}>
@@ -162,7 +166,7 @@ export default function EpisodeStudioDeletionControl({
                 disabled={deleting}
                 onClick={close}
               >
-                Keep Studio
+                {deletionPending ? 'Close' : 'Keep Studio'}
               </button>
               <button
                 type="button"
@@ -175,11 +179,11 @@ export default function EpisodeStudioDeletionControl({
                 <DeleteOutlineRoundedIcon aria-hidden="true" />
                 {deleting
                   ? deletionPending
-                    ? 'Finishing protected deletion…'
-                    : 'Locking Studio for deletion…'
+                    ? 'Checking protected cleanup…'
+                    : 'Scheduling protected deletion…'
                   : deletionPending
-                    ? 'Finish permanent deletion'
-                    : 'Start protected deletion'}
+                    ? 'Retry cleanup now'
+                    : 'Lock and schedule deletion'}
               </button>
             </div>
           </section>

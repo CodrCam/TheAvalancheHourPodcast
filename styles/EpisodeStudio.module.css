@@ -2489,6 +2489,45 @@
   background: rgba(255, 255, 255, 0.75);
 }
 
+.deletionStatusCard {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+  margin: 0 0 24px;
+  padding: 24px;
+  color: #67421e;
+  border: 1px solid rgba(188, 126, 58, 0.3);
+  border-radius: 15px;
+  background: #fff8ec;
+}
+
+.deletionStatusCard h1 {
+  margin: 4px 0 10px;
+  color: #563019;
+  font-size: clamp(1.45rem, 2.5vw, 2rem);
+}
+
+.deletionStatusCard p {
+  max-width: 760px;
+  margin: 7px 0 0;
+  line-height: 1.6;
+}
+
+.deletionStatusIcon {
+  display: grid;
+  width: 46px;
+  height: 46px;
+  place-items: center;
+  color: #a34735;
+  border-radius: 50%;
+  background: #fbe3dc;
+}
+
+.deletionStatusIcon svg {
+  font-size: 1.45rem;
+}
+
 .producerPanel,
 .reviewPanel {
   margin: 32px 0;
