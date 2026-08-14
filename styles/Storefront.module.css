@@ -638,6 +638,205 @@
   background: #1b3948 !important;
 }
 
+.featuredReading {
+  position: relative;
+  display: grid;
+  min-height: 650px;
+  margin-top: clamp(56px, 9vw, 112px);
+  overflow: hidden;
+  border: 1px solid rgba(16, 34, 45, 0.28);
+  background: var(--ink);
+  box-shadow: 0 30px 70px rgba(16, 34, 45, 0.16);
+  color: var(--white);
+  grid-template-columns: minmax(320px, 0.82fr) minmax(0, 1.18fr);
+}
+
+.bookCoverLink {
+  position: relative;
+  display: grid;
+  min-width: 0;
+  place-items: center;
+  padding: clamp(38px, 5vw, 64px);
+  overflow: hidden;
+  background:
+    linear-gradient(150deg, rgba(200, 228, 237, 0.96), rgba(112, 163, 181, 0.88)),
+    repeating-radial-gradient(
+      ellipse at 18% 28%,
+      transparent 0 34px,
+      rgba(16, 34, 45, 0.17) 35px 36px,
+      transparent 37px 58px
+    );
+  color: inherit;
+  text-decoration: none;
+}
+
+.bookCoverLink::after {
+  position: absolute;
+  inset: 0;
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  content: '';
+  pointer-events: none;
+}
+
+.bookCover {
+  display: block;
+  width: min(100%, 370px);
+  aspect-ratio: 5 / 8;
+  box-shadow: 0 28px 58px rgba(5, 19, 27, 0.36);
+  object-fit: cover;
+  transition: transform 420ms cubic-bezier(0.2, 0.7, 0.2, 1),
+    box-shadow 420ms ease;
+}
+
+.bookCoverLink:hover .bookCover,
+.bookCoverLink:focus-visible .bookCover {
+  box-shadow: 0 34px 68px rgba(5, 19, 27, 0.44);
+  transform: translateY(-5px) rotate(-0.6deg);
+}
+
+.bookReleaseBadge {
+  position: absolute;
+  top: 22px;
+  left: 22px;
+  display: inline-flex;
+  min-height: 32px;
+  align-items: center;
+  padding: 0 12px;
+  background: rgba(11, 29, 38, 0.88);
+  color: var(--white);
+  font-size: 0.67rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  backdrop-filter: blur(8px);
+}
+
+.bookFeatureCopy {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  justify-content: center;
+  padding: clamp(46px, 7vw, 88px);
+  overflow: hidden;
+}
+
+.bookFeatureCopy::before {
+  position: absolute;
+  inset: -30%;
+  background:
+    repeating-radial-gradient(
+      ellipse at 62% 42%,
+      transparent 0 46px,
+      rgba(200, 228, 237, 0.11) 47px 48px,
+      transparent 49px 76px
+    );
+  content: '';
+  opacity: 0.8;
+  pointer-events: none;
+  transform: rotate(-7deg);
+}
+
+.bookFeatureCopy > * {
+  position: relative;
+  z-index: 1;
+}
+
+.bookEyebrow {
+  margin: 0 0 14px !important;
+  color: var(--ice);
+  font-size: 0.72rem !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.18em !important;
+  line-height: 1.2 !important;
+  text-transform: uppercase;
+}
+
+.bookTitle {
+  margin: 0 !important;
+  color: var(--white);
+  font-family: 'Amatic SC', cursive !important;
+  font-size: clamp(4.4rem, 7.5vw, 7rem) !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.025em !important;
+  line-height: 0.82 !important;
+}
+
+.bookSubtitle {
+  max-width: 650px;
+  margin: 20px 0 0 !important;
+  color: var(--ice);
+  font-size: clamp(1rem, 1.6vw, 1.25rem) !important;
+  font-weight: 700 !important;
+  line-height: 1.45 !important;
+}
+
+.bookByline {
+  margin: 10px 0 0 !important;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.78rem !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.12em !important;
+  text-transform: uppercase;
+}
+
+.bookDescription {
+  max-width: 650px;
+  margin: 28px 0 0 !important;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 1rem !important;
+  line-height: 1.75 !important;
+}
+
+.bookMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 28px;
+}
+
+.bookMeta span {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  padding: 0 12px;
+  border: 1px solid rgba(200, 228, 237, 0.28);
+  background: rgba(200, 228, 237, 0.08);
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.bookFeatureAction {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  margin-top: 34px;
+}
+
+.bookButton {
+  flex: 0 0 auto;
+  min-height: 50px;
+  border-radius: 0 !important;
+  background: var(--signal) !important;
+  box-shadow: none !important;
+  color: #101d24 !important;
+}
+
+.bookButton:hover {
+  background: #ff8751 !important;
+}
+
+.bookExternalNote {
+  max-width: 280px;
+  margin: 0 !important;
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 0.72rem !important;
+  line-height: 1.55 !important;
+}
+
 .whyMerch {
   position: relative;
   overflow: hidden;
@@ -787,6 +986,19 @@
   .storyCard2 .productActions {
     padding: 0 24px 24px !important;
   }
+
+  .featuredReading {
+    grid-template-columns: minmax(290px, 0.76fr) minmax(0, 1.24fr);
+  }
+
+  .bookFeatureCopy {
+    padding: 48px;
+  }
+
+  .bookFeatureAction {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }
 
 @media (max-width: 760px) {
@@ -887,6 +1099,24 @@
     padding: 0 24px 24px !important;
   }
 
+  .featuredReading {
+    min-height: 0;
+    grid-template-columns: 1fr;
+  }
+
+  .bookCoverLink {
+    min-height: 0;
+    padding: 48px 32px;
+  }
+
+  .bookCover {
+    width: min(100%, 330px);
+  }
+
+  .bookFeatureCopy {
+    padding: 52px 32px;
+  }
+
   .whyMerchInner {
     gap: 44px;
     min-height: auto;
@@ -950,11 +1180,36 @@
   .anchorSnowProfile span {
     min-height: 56px;
   }
+
+  .featuredReading {
+    margin-top: 48px;
+  }
+
+  .bookCoverLink {
+    padding: 40px 26px;
+  }
+
+  .bookCover {
+    width: min(100%, 280px);
+  }
+
+  .bookFeatureCopy {
+    padding: 44px 26px;
+  }
+
+  .bookTitle {
+    font-size: 4.4rem !important;
+  }
+
+  .bookButton {
+    width: 100%;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .productCard,
-  .productImage {
+  .productImage,
+  .bookCover {
     transition: none;
   }
 }

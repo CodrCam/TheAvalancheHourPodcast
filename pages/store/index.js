@@ -17,6 +17,7 @@ import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded';
 import GraphicEqRoundedIcon from '@mui/icons-material/GraphicEqRounded';
 import TerrainRoundedIcon from '@mui/icons-material/TerrainRounded';
+import OpenInNewRoundedIcon from '@mui/icons-material/OpenInNewRounded';
 
 import Navbar from '../../components/Navbar';
 import VariantPickerDialog from '../../components/VariantPickerDialog';
@@ -99,6 +100,15 @@ const PRODUCT_LABELS = {
   'avalanche-hour-sticker': 'Small signal',
 };
 
+const STARTING_ZONE_EBOOK = Object.freeze({
+  title: 'The Starting Zone',
+  subtitle: 'At the Interface of Avalanche Science and Practice',
+  author: 'Karl Birkeland',
+  price: '$49.99',
+  image: '/images/store/books/the-starting-zone-ebook.jpg',
+  url: 'https://www.thestartingzonebook.com/product-page/the-starting-zone-ebook-1',
+});
+
 function productLabel(product) {
   const taxonomy = getProductTaxonomy(product);
   const managedLabel = String(product.label || '').trim();
@@ -155,6 +165,84 @@ function CatalogStoryAnchor() {
         <span>persistent layer</span>
         <span>old snow</span>
       </div>
+    </Box>
+  );
+}
+
+function FeaturedReading() {
+  return (
+    <Box
+      component="section"
+      className={styles.featuredReading}
+      aria-labelledby="starting-zone-ebook-title"
+    >
+      <Box
+        component="a"
+        href={STARTING_ZONE_EBOOK.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={styles.bookCoverLink}
+        aria-label={`View ${STARTING_ZONE_EBOOK.title} by ${STARTING_ZONE_EBOOK.author} on The Starting Zone website (opens in a new tab)`}
+      >
+        <Box
+          component="img"
+          src={getOptimizedPublicImage(STARTING_ZONE_EBOOK.image)}
+          alt={`Cover of ${STARTING_ZONE_EBOOK.title} by ${STARTING_ZONE_EBOOK.author}`}
+          loading="lazy"
+          decoding="async"
+          className={styles.bookCover}
+        />
+        <span className={styles.bookReleaseBadge}>Independent release</span>
+      </Box>
+
+      <Box className={styles.bookFeatureCopy}>
+        <Typography component="p" className={styles.bookEyebrow}>
+          Featured field reading
+        </Typography>
+        <Typography
+          component="h3"
+          id="starting-zone-ebook-title"
+          className={styles.bookTitle}
+        >
+          {STARTING_ZONE_EBOOK.title}
+        </Typography>
+        <Typography component="p" className={styles.bookSubtitle}>
+          {STARTING_ZONE_EBOOK.subtitle}
+        </Typography>
+        <Typography component="p" className={styles.bookByline}>
+          By {STARTING_ZONE_EBOOK.author}
+        </Typography>
+        <Typography component="p" className={styles.bookDescription}>
+          An evolving, interactive e-book connecting current avalanche science
+          with practical decision-making for avalanche professionals and
+          experienced backcountry travelers.
+        </Typography>
+
+        <Box className={styles.bookMeta} aria-label="eBook details">
+          <span>Digital eBook</span>
+          <span>{STARTING_ZONE_EBOOK.price}</span>
+          <span>Online access</span>
+        </Box>
+
+        <Box className={styles.bookFeatureAction}>
+          <Button
+            component="a"
+            href={STARTING_ZONE_EBOOK.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            variant="contained"
+            endIcon={<OpenInNewRoundedIcon />}
+            className={styles.bookButton}
+            aria-label="View and buy The Starting Zone eBook on thestartingzonebook.com (opens in a new tab)"
+          >
+            View and buy the eBook
+          </Button>
+          <Typography component="p" className={styles.bookExternalNote}>
+            Opens thestartingzonebook.com. Purchase and access are handled by
+            The Starting Zone.
+          </Typography>
+        </Box>
+      </Box>
     </Box>
   );
 }
@@ -400,7 +488,7 @@ export default function StoreIndexPage({
         <title>Store — The Avalanche Hour</title>
         <meta
           name="description"
-          content="Official merch from The Avalanche Hour Podcast."
+          content="Official merch from The Avalanche Hour Podcast and featured avalanche field resources."
         />
       </Head>
 
@@ -513,6 +601,8 @@ export default function StoreIndexPage({
             </Box>
 
             {renderStoreContent()}
+
+            <FeaturedReading />
           </Container>
         </Box>
 
