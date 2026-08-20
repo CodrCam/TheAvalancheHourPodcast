@@ -16,6 +16,7 @@ import {
 import { Send, Mic, Person, Work, Schedule } from '@mui/icons-material';
 import Navbar from '../components/Navbar';
 import PublicPageHero from '../components/PublicPageHero';
+import PublicFormHumanCheck from '../components/PublicFormHumanCheck';
 import SEO from '../components/SEO';
 import publicStyles from '../styles/PublicSite.module.css';
 
@@ -32,6 +33,8 @@ export default function BeAGuest() {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
   const [errors, setErrors] = useState({});
+  const [turnstileToken, setTurnstileToken] = useState('');
+  const [humanCheckResetKey, setHumanCheckResetKey] = useState(0);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -64,6 +67,8 @@ export default function BeAGuest() {
     
     if (!formData.background.trim()) {
       newErrors.background = 'Please tell us a bit about yourself';
+    } else if (formData.background.trim().length < 20) {
+      newErrors.background = 'Please include a few words about your experience';
     }
     
     setErrors(newErrors);
@@ -84,6 +89,11 @@ export default function BeAGuest() {
       }
       return;
     }
+
+    if (!turnstileToken) {
+      setError('Please complete the security check before submitting.');
+      return;
+    }
     
     setLoading(true);
     setError('');
@@ -95,7 +105,7 @@ export default function BeAGuest() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({ ...formData, turnstileToken }),
       });
       
       const data = await response.json();
@@ -124,6 +134,8 @@ export default function BeAGuest() {
       console.error('Guest application error:', error);
       setError('Network error. Please check your connection and try again.');
     } finally {
+      setTurnstileToken('');
+      setHumanCheckResetKey((current) => current + 1);
       setLoading(false);
     }
   };
@@ -335,6 +347,14 @@ export default function BeAGuest() {
                   />
                 </Grid>
 
+                <Grid item xs={12}>
+                  <PublicFormHumanCheck
+                    action="guest_application"
+                    onToken={setTurnstileToken}
+                    resetKey={humanCheckResetKey}
+                  />
+                </Grid>
+
               </Grid>
               
               <Divider sx={{ my: 4 }} />
@@ -345,7 +365,7 @@ export default function BeAGuest() {
                   type="submit"
                   variant="contained"
                   size="large"
-                  disabled={loading}
+                  disabled={loading || !turnstileToken}
                   startIcon={loading ? <CircularProgress size={20} /> : <Send />}
                   sx={{ 
                     minWidth: 200,

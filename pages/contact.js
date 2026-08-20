@@ -27,6 +27,7 @@ import {
 } from '@mui/icons-material';
 import Navbar from '../components/Navbar';
 import PublicPageHero from '../components/PublicPageHero';
+import PublicFormHumanCheck from '../components/PublicFormHumanCheck';
 import SurveyBanner from '../components/SurveyBanner';
 import SEO from '../components/SEO';
 import SlabsAndSluffsCallout from '../components/SlabsAndSluffsCallout';
@@ -49,9 +50,14 @@ export default function Contact() {
   const [error, setError] = useState('');
   const [errors, setErrors] = useState({});
   const [wasSponsorship, setWasSponsorship] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState('');
+  const [humanCheckResetKey, setHumanCheckResetKey] = useState(0);
 
   const handleChange = (event) => {
     const { name, value, type, checked } = event.target;
+    if (name === 'isSponsorship') {
+      setTurnstileToken('');
+    }
     setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value
@@ -81,8 +87,8 @@ export default function Contact() {
     
     if (!formData.message.trim()) {
       newErrors.message = 'Message is required';
-    } else if (formData.message.trim().length < 10) {
-      newErrors.message = 'Message must be at least 10 characters long';
+    } else if (formData.message.trim().length < 20) {
+      newErrors.message = 'Please include a few words of useful detail';
     }
     
     // Sponsorship specific validation
@@ -100,6 +106,10 @@ export default function Contact() {
         event.preventDefault();
 
         if (!validateForm()) return;
+        if (!turnstileToken) {
+          setError('Please complete the security check before submitting.');
+          return;
+        }
 
         setLoading(true);
         setError('');
@@ -109,7 +119,7 @@ export default function Contact() {
           const response = await fetch('/api/contact', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(formData),
+            body: JSON.stringify({ ...formData, turnstileToken }),
           });
 
           const data = await response.json();
@@ -143,6 +153,8 @@ export default function Contact() {
           console.error('Contact form error:', err);
           setError('Network error. Please check your connection and try again.');
         } finally {
+          setTurnstileToken('');
+          setHumanCheckResetKey((current) => current + 1);
           setLoading(false);
         }
     };
@@ -360,7 +372,7 @@ export default function Contact() {
                         placeholder={formData.isSponsorship ? "Sponsorship Inquiry" : "Brief description of your message"}
                       />
                     </Grid>
-                    
+
                     <Grid item xs={12}>
                       <TextField
                         required
@@ -382,13 +394,21 @@ export default function Contact() {
                         }
                       />
                     </Grid>
+
+                    <Grid item xs={12}>
+                      <PublicFormHumanCheck
+                        action={formData.isSponsorship ? 'sponsorship' : 'contact'}
+                        onToken={setTurnstileToken}
+                        resetKey={humanCheckResetKey}
+                      />
+                    </Grid>
                     
                     <Grid item xs={12}>
                       <Button
                         type="submit"
                         variant="contained"
                         size="large"
-                        disabled={loading}
+                        disabled={loading || !turnstileToken}
                         startIcon={loading ? <CircularProgress size={20} /> : <Send />}
                         sx={{ 
                           minWidth: 150,

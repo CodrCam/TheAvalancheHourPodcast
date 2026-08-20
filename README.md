@@ -122,10 +122,18 @@ The application reads environment variables in these groups:
 ```text
 NEXT_PUBLIC_BASE_URL
 NEXT_PUBLIC_GA_MEASUREMENT_ID
+NEXT_PUBLIC_TURNSTILE_SITE_KEY
+TURNSTILE_SECRET_KEY
 SPOTIFY_CLIENT_ID
 SPOTIFY_CLIENT_SECRET
 CONTACT_EMAIL
 ```
+
+`NEXT_PUBLIC_TURNSTILE_SITE_KEY` and `TURNSTILE_SECRET_KEY` are the public and
+server keys for the Cloudflare Turnstile widget protecting the Guest,
+Contact, and Sponsorship forms. Both production values are required before a
+production deploy; the server fails closed when the secret is absent. Local
+development uses Cloudflare's documented testing keys.
 
 #### Cognito authentication
 

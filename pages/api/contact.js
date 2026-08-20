@@ -1,10 +1,13 @@
 // pages/api/contact.js
 import nodemailer from 'nodemailer';
-import { escapeHtml } from '../../lib/escapeHtml';
+import { escapeHtml } from '../../lib/escapeHtml.js';
 import {
+  assessPublicFormSpam,
   normalizePublicFormFields,
   protectPublicFormRequest,
   safeEmailHeader,
+  validatePublicFormNarrative,
+  verifyPublicFormHuman,
 } from '../../lib/publicFormSafety.mjs';
 
 // Email configuration from environment variables
@@ -20,7 +23,11 @@ export default async function handler(req, res) {
   }
 
   try {
-    const protection = protectPublicFormRequest(req, { scope: 'contact' });
+    const protection = protectPublicFormRequest(req, {
+      scope: 'contact-and-sponsorship',
+      limit: 5,
+      windowMs: 60 * 60 * 1000,
+    });
     if (protection.rate) {
       res.setHeader('X-RateLimit-Limit', String(protection.rate.limit));
       res.setHeader(
@@ -36,6 +43,19 @@ export default async function handler(req, res) {
     }
 
     const isSponsorship = req.body?.isSponsorship === true;
+    const spamAssessment = assessPublicFormSpam(req.body, {
+      kind: isSponsorship ? 'sponsorship' : 'contact',
+    });
+    if (spamAssessment.spam) {
+      console.warn('Public contact form spam suppressed', {
+        scope: isSponsorship ? 'sponsorship' : 'contact',
+        reasons: spamAssessment.reasons,
+      });
+      return res.status(200).json({
+        success: true,
+        message: 'Submission received.',
+      });
+    }
     const normalized = normalizePublicFormFields(req.body, {
       name: { label: 'Name', required: true, max: 120 },
       email: { label: 'Email', required: true, max: 254 },
@@ -43,7 +63,7 @@ export default async function handler(req, res) {
       message: {
         label: 'Message',
         required: true,
-        min: 10,
+        min: 20,
         max: 5000,
       },
       companyName: {
@@ -70,12 +90,33 @@ export default async function handler(req, res) {
       sponsorshipGoals,
     } = normalized.values;
 
+    const messageError = validatePublicFormNarrative(message, {
+      label: 'Message',
+      minLetters: 18,
+      minWords: 3,
+    });
+    if (messageError) {
+      return res.status(400).json({
+        error: 'Invalid submission',
+        details: [messageError],
+      });
+    }
+
     // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       return res.status(400).json({
         error: 'Invalid email format'
       });
+    }
+
+    const humanVerification = await verifyPublicFormHuman(req, {
+      action: isSponsorship ? 'sponsorship' : 'contact',
+    });
+    if (!humanVerification.ok) {
+      return res
+        .status(humanVerification.status)
+        .json(humanVerification.body);
     }
 
     const safeName = escapeHtml(name);

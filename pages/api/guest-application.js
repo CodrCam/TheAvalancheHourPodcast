@@ -1,10 +1,13 @@
 // pages/api/guest-application.js
 import nodemailer from 'nodemailer';
-import { escapeHtml } from '../../lib/escapeHtml';
+import { escapeHtml } from '../../lib/escapeHtml.js';
 import {
+  assessPublicFormSpam,
   normalizePublicFormFields,
   protectPublicFormRequest,
   safeEmailHeader,
+  validatePublicFormNarrative,
+  verifyPublicFormHuman,
 } from '../../lib/publicFormSafety.mjs';
 
 // Email configuration from environment variables
@@ -21,6 +24,8 @@ export default async function handler(req, res) {
   try {
     const protection = protectPublicFormRequest(req, {
       scope: 'guest-application',
+      limit: 3,
+      windowMs: 60 * 60 * 1000,
     });
     if (protection.rate) {
       res.setHeader('X-RateLimit-Limit', String(protection.rate.limit));
@@ -36,13 +41,26 @@ export default async function handler(req, res) {
       return res.status(protection.status).json(protection.body);
     }
 
+    const spamAssessment = assessPublicFormSpam(req.body, {
+      kind: 'guest_application',
+    });
+    if (spamAssessment.spam) {
+      console.warn('Guest application spam suppressed', {
+        reasons: spamAssessment.reasons,
+      });
+      return res.status(200).json({
+        success: true,
+        message: 'Submission received.',
+      });
+    }
+
     const normalized = normalizePublicFormFields(req.body, {
       name: { label: 'Name', required: true, max: 120 },
       email: { label: 'Email', required: true, max: 254 },
       background: {
         label: 'Background',
         required: true,
-        min: 10,
+        min: 20,
         max: 4000,
       },
       topics: { label: 'Topics', max: 4000 },
@@ -56,12 +74,33 @@ export default async function handler(req, res) {
     }
     const { name, email, background, topics, contact } = normalized.values;
 
+    const backgroundError = validatePublicFormNarrative(background, {
+      label: 'Background',
+      minLetters: 18,
+      minWords: 3,
+    });
+    if (backgroundError) {
+      return res.status(400).json({
+        error: 'Invalid submission',
+        details: [backgroundError],
+      });
+    }
+
     // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       return res.status(400).json({
         error: 'Invalid email format'
       });
+    }
+
+    const humanVerification = await verifyPublicFormHuman(req, {
+      action: 'guest_application',
+    });
+    if (!humanVerification.ok) {
+      return res
+        .status(humanVerification.status)
+        .json(humanVerification.body);
     }
 
     const safeName = escapeHtml(name);
