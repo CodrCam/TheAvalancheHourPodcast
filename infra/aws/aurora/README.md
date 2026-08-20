@@ -6,9 +6,10 @@ with one normalized season plan: proposed episodes, host assignments, reviewed
 public guest candidates, episode types, topics, public research sources, and
 sponsor/ad commitments.
 
-The application does not use this database yet. Applying the migration does not
-enable a website feature, import a workbook, seed data, create credentials, or
-change the existing DynamoDB records.
+Applying `001_season_mastermind.sql` does not enable a website feature, import a
+workbook, seed data, create credentials, or change the existing DynamoDB
+records. The separate, explicitly reviewed `002_seed_season_11.sql` migration
+adds only the privacy-allowlisted Season 11 schedule described below.
 
 ## Schema
 
@@ -71,6 +72,27 @@ RETURNING *;
 
 An empty result means another editor changed the plan first.
 
+## Reviewed Season 11 seed
+
+[`002_seed_season_11.sql`](./002_seed_season_11.sql) is a transactional,
+idempotent seed generated from the reviewed projection in
+`lib/season11MastermindSeed.mjs`. It creates one Season 11 record, 38 episode
+plans, 35 host assignments, 18 reviewed guest candidates and their 18 episode
+links, and four sponsor commitments. The schedule has 29 regular episodes and
+nine Slabs n Sluffs slots; 37 plans begin in `researching` and the one workbook
+row marked recording-finished begins in `recording`.
+
+The seed corrects Schedule rows 16–20 to January 2027 and preserves episode
+numbers `11.10` and `11.20`. It adds no topics or research sources because the
+reviewed schedule fixture contains none. It does not include the workbook index,
+host production tabs, contact data, guest intake, questionnaires, logistics,
+files, credentials, or private sponsor data.
+
+Every inserted key is deterministic. A retry against an unchanged seed is a
+no-op followed by a full verification; a conflicting row or later editorial
+change aborts the transaction rather than overwriting live work. The seed also
+aborts if the sum of connectable database sizes is at least 0.8 GiB.
+
 ## Soft links to existing AWS data
 
 The following values are deliberately nullable soft references because Aurora
@@ -132,7 +154,8 @@ IAM database user and connection instructions shown for the
 the narrowly scoped `rds-db:connect` permission for that database user.
 
 1. Open CloudShell in the cluster's AWS Region.
-2. Upload `001_season_mastermind.sql` into the current CloudShell directory, or
+2. Upload `001_season_mastermind.sql` and, when the reviewed Season 11 data is
+   approved, `002_seed_season_11.sql` into the current CloudShell directory; or
    clone this repository and change into `infra/aws/aurora`.
 3. Confirm `psql` is available. In the current Amazon Linux CloudShell image,
    install it only if needed:
@@ -183,6 +206,9 @@ the narrowly scoped `rds-db:connect` permission for that database user.
    psql --no-psqlrc --set ON_ERROR_STOP=1 \
      --file 001_season_mastermind.sql
 
+   psql --no-psqlrc --set ON_ERROR_STOP=1 \
+     --file 002_seed_season_11.sql
+
    unset PGPASSWORD
    ```
 
@@ -220,12 +246,23 @@ SELECT
   (SELECT count(*) FROM season_mastermind.episode_plan) AS episode_plans,
   (SELECT count(*) FROM season_mastermind.episode_host) AS host_assignments,
   (SELECT count(*) FROM season_mastermind.guest_candidate) AS guests,
+  (SELECT count(*) FROM season_mastermind.episode_guest) AS guest_links,
+  (SELECT count(*) FROM season_mastermind.episode_topic) AS topic_links,
+  (SELECT count(*) FROM season_mastermind.episode_source) AS source_links,
   (SELECT count(*) FROM season_mastermind.sponsor_commitment) AS commitments;
+
+SELECT
+  sum(pg_database_size(datname)) AS total_connectable_database_bytes,
+  pg_size_pretty(sum(pg_database_size(datname))) AS total_connectable_database_size
+FROM pg_database
+WHERE datallowconn;
 ```
 
 The table count must be `10`, ten `touch_updated_at` triggers should appear, and
-all row counts should remain `0` until an application and reviewed migration plan
-are explicitly approved.
+all row counts remain `0` after the schema-only migration. After the reviewed
+Season 11 seed, the counts must be `1`, `38`, `35`, `18`, `18`, `0`, `0`, and
+`4` in the order queried above. Investigate and stop if the total connectable
+database size unexpectedly approaches the 0.8 GiB guardrail.
 
 ## Free Plan guardrails and cleanup
 

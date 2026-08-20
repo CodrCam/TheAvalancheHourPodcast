@@ -92,8 +92,6 @@ Resources:
 
   SeasonMastermindFunction:
     Type: AWS::Serverless::Function
-    DependsOn:
-      - SeasonMastermindLogGroup
     Properties:
       Description: Bounded IAM-only proxy API for public Season Mastermind planning metadata.
       CodeUri: season_mastermind_api/
