@@ -16,6 +16,9 @@ import CalendarMonthRoundedIcon from '@mui/icons-material/CalendarMonthRounded';
 import HeadsetMicRoundedIcon from '@mui/icons-material/HeadsetMicRounded';
 import CampaignRoundedIcon from '@mui/icons-material/CampaignRounded';
 import DashboardRoundedIcon from '@mui/icons-material/DashboardRounded';
+import ViewKanbanRoundedIcon from '@mui/icons-material/ViewKanbanRounded';
+import QuizRoundedIcon from '@mui/icons-material/QuizRounded';
+import ChecklistRoundedIcon from '@mui/icons-material/ChecklistRounded';
 import CategoryRoundedIcon from '@mui/icons-material/CategoryRounded';
 import ReceiptLongRoundedIcon from '@mui/icons-material/ReceiptLongRounded';
 import ArticleRoundedIcon from '@mui/icons-material/ArticleRounded';
@@ -27,12 +30,15 @@ import InboxRoundedIcon from '@mui/icons-material/InboxRounded';
 import EmailRoundedIcon from '@mui/icons-material/EmailRounded';
 import OpenInNewRoundedIcon from '@mui/icons-material/OpenInNewRounded';
 import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
+import ExpandMoreRoundedIcon from '@mui/icons-material/ExpandMoreRounded';
 import SmsRoundedIcon from '@mui/icons-material/SmsRounded';
 import SupportAgentRoundedIcon from '@mui/icons-material/SupportAgentRounded';
 import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 import NotificationBell from './NotificationBell';
 import {
   getVisibleStudioNavigationItems,
+  isStudioNavigationItemActive,
+  STUDIO_NAV_DISCLOSURES,
   STUDIO_NAV_SECTIONS,
 } from '../lib/studioNavigation.mjs';
 import styles from '../styles/Studio.module.css';
@@ -41,7 +47,10 @@ const NAV_ICONS = {
   home: HomeRoundedIcon,
   resources: MenuBookRoundedIcon,
   inbox: InboxRoundedIcon,
+  mastermind: ViewKanbanRoundedIcon,
+  questionnaires: QuizRoundedIcon,
   episodes: PodcastsRoundedIcon,
+  production: ChecklistRoundedIcon,
   profile: AccountCircleRoundedIcon,
   mic_kits: HeadsetMicRoundedIcon,
   calendar: CalendarMonthRoundedIcon,
@@ -94,13 +103,22 @@ export default function StudioLayout({
   requiredPermission = '',
   accessDeniedRedirect = '/studio',
   wide = false,
+  previewSession = null,
+  previewSupportContact = null,
+  previewPath = '',
+  previewHrefMap = null,
 }) {
   const router = useRouter();
-  const [session, setSession] = useState(null);
-  const [supportContact, setSupportContact] = useState(null);
-  const [sessionState, setSessionState] = useState('loading');
+  const preview = previewSession !== null;
+  const [session, setSession] = useState(previewSession);
+  const [supportContact, setSupportContact] = useState(previewSupportContact);
+  const [sessionState, setSessionState] = useState(
+    preview ? 'ready' : 'loading'
+  );
+  const [expandedNavGroups, setExpandedNavGroups] = useState({});
 
   useEffect(() => {
+    if (preview) return undefined;
     let alive = true;
 
     async function loadSession() {
@@ -141,7 +159,14 @@ export default function StudioLayout({
     return () => {
       alive = false;
     };
-  }, [accessDeniedRedirect, requiredPermission, router]);
+  }, [
+    accessDeniedRedirect,
+    preview,
+    previewSession,
+    previewSupportContact,
+    requiredPermission,
+    router,
+  ]);
 
   useEffect(() => {
     if (!hasUnsavedChanges) return undefined;
@@ -161,7 +186,7 @@ export default function StudioLayout({
   }, [hasUnsavedChanges, router, unsavedChangesMessage]);
 
   useEffect(() => {
-    if (sessionState !== 'ready') return undefined;
+    if (preview || sessionState !== 'ready') return undefined;
 
     async function heartbeat() {
       if (document.visibilityState !== 'visible') return;
@@ -181,14 +206,43 @@ export default function StudioLayout({
       window.clearInterval(interval);
       document.removeEventListener('visibilitychange', heartbeat);
     };
-  }, [sessionState]);
+  }, [preview, sessionState]);
 
   const navItems = useMemo(() => {
-    return getVisibleStudioNavigationItems(session?.permissions);
+    return getVisibleStudioNavigationItems(
+      session?.permissions,
+      session?.features,
+      session?.capabilities
+    );
   }, [session]);
-  const studioHomeHref = session?.permissions?.includes('studio:read')
+  const logicalStudioHomeHref = session?.permissions?.includes('studio:read')
     ? '/studio'
     : '/studio/mic-kits';
+  const studioHomeHref =
+    previewHrefMap?.[logicalStudioHomeHref] || logicalStudioHomeHref;
+  const currentPath = previewPath || router.pathname;
+  const overviewNavItems = navItems.filter(
+    (item) => item.section === 'overview'
+  );
+  const primaryWorkNavItems = navItems.filter(
+    (item) => item.section === 'work' && !item.disclosure
+  );
+  const teamToolNavItems = navItems.filter(
+    (item) => item.disclosure === 'team_tools'
+  );
+  const planningAdminNavItems = navItems.filter(
+    (item) => item.disclosure === 'planning_admin'
+  );
+  const teamToolsActive = teamToolNavItems.some((item) =>
+    isStudioNavigationItemActive(item, currentPath)
+  );
+  const planningAdminActive = planningAdminNavItems.some((item) =>
+    isStudioNavigationItemActive(item, currentPath)
+  );
+
+  function hrefFor(href) {
+    return previewHrefMap?.[href] || href;
+  }
 
   function confirmNavigation(event, href) {
     if (
@@ -207,6 +261,34 @@ export default function StudioLayout({
     if (!window.confirm(unsavedChangesMessage)) {
       event.preventDefault();
     }
+  }
+
+  function handleNavDisclosureToggle(group, event) {
+    const open = event.currentTarget.open;
+    setExpandedNavGroups((current) =>
+      current[group] === open ? current : { ...current, [group]: open }
+    );
+  }
+
+  function renderNavigationLink(item, { nested = false } = {}) {
+    const active = isStudioNavigationItemActive(item, currentPath);
+    const Icon = NAV_ICONS[item.icon] || HomeRoundedIcon;
+    const href = hrefFor(item.href);
+
+    return (
+      <Link
+        href={href}
+        key={item.href}
+        className={`${styles.navLink} ${
+          nested ? styles.navLinkNested : ''
+        } ${active ? styles.navLinkActive : ''}`}
+        aria-current={active ? 'page' : undefined}
+        onClick={(event) => confirmNavigation(event, href)}
+      >
+        <Icon aria-hidden="true" />
+        <span>{item.label}</span>
+      </Link>
+    );
   }
 
   if (sessionState !== 'ready') {
@@ -237,58 +319,93 @@ export default function StudioLayout({
         </Link>
 
         <nav aria-label="Team Studio navigation" className={styles.nav}>
-          {navItems.map((item, index) => {
-            const active =
-              item.activePaths?.some((path) =>
-                router.pathname.startsWith(path)
-              ) ||
-              (item.exact
-                ? router.pathname === item.href
-                : router.pathname.startsWith(item.href));
-            const beginsSection =
-              item.section && navItems[index - 1]?.section !== item.section;
-            const Icon = NAV_ICONS[item.icon] || HomeRoundedIcon;
+          {overviewNavItems.length ? (
+            <div className={styles.navOverview}>
+              {overviewNavItems.map((item) => renderNavigationLink(item))}
+            </div>
+          ) : null}
 
-            return (
-              <div
-                key={item.href}
-                className={`${styles.navItemBase} ${
-                  item.section === 'manage' || item.section === 'operations'
-                    ? styles.navItemManager
-                    : ''
-                }`}
-              >
-                {beginsSection ? (
-                  <span
-                    className={
-                      index === 0
-                        ? styles.navLabel
-                        : styles.navLabelSecondary
-                    }
-                  >
-                    {STUDIO_NAV_SECTIONS[item.section] || item.section}
-                  </span>
-                ) : null}
-                <Link
-                  href={item.href}
-                  className={`${styles.navLink} ${
-                    active ? styles.navLinkActive : ''
-                  }`}
-                  aria-current={active ? 'page' : undefined}
-                  onClick={(event) => confirmNavigation(event, item.href)}
-                >
-                  <Icon aria-hidden="true" />
-                  <span>{item.label}</span>
-                </Link>
+          {primaryWorkNavItems.length || teamToolNavItems.length ? (
+            <div
+              className={styles.navSection}
+              role="group"
+              aria-labelledby="studio-navigation-work"
+            >
+              <span className={styles.navLabel} id="studio-navigation-work">
+                {STUDIO_NAV_SECTIONS.work}
+              </span>
+              <div className={styles.navPrimaryLinks}>
+                {primaryWorkNavItems.map((item) =>
+                  renderNavigationLink(item)
+                )}
               </div>
-            );
-          })}
+              {teamToolNavItems.length ? (
+                <details
+                  className={styles.navDisclosure}
+                  open={
+                    expandedNavGroups.team_tools ?? teamToolsActive
+                  }
+                  onToggle={(event) =>
+                    handleNavDisclosureToggle('team_tools', event)
+                  }
+                >
+                  <summary>
+                    <span className={styles.navDisclosureTitle}>
+                      <MenuBookRoundedIcon aria-hidden="true" />
+                      {STUDIO_NAV_DISCLOSURES.team_tools}
+                    </span>
+                    <small>{teamToolNavItems.length} links</small>
+                    <ExpandMoreRoundedIcon
+                      className={styles.navDisclosureChevron}
+                      aria-hidden="true"
+                    />
+                  </summary>
+                  <div className={styles.navDisclosureLinks}>
+                    {teamToolNavItems.map((item) =>
+                      renderNavigationLink(item, { nested: true })
+                    )}
+                  </div>
+                </details>
+              ) : null}
+            </div>
+          ) : null}
+
+          {planningAdminNavItems.length ? (
+            <details
+              className={`${styles.navDisclosure} ${styles.navPlanning}`}
+              open={
+                expandedNavGroups.planning_admin ?? planningAdminActive
+              }
+              onToggle={(event) =>
+                handleNavDisclosureToggle('planning_admin', event)
+              }
+            >
+              <summary>
+                <span className={styles.navDisclosureTitle}>
+                  <DashboardRoundedIcon aria-hidden="true" />
+                  {STUDIO_NAV_DISCLOSURES.planning_admin}
+                </span>
+                <small>{planningAdminNavItems.length} links</small>
+                <ExpandMoreRoundedIcon
+                  className={styles.navDisclosureChevron}
+                  aria-hidden="true"
+                />
+              </summary>
+              <div className={styles.navDisclosureLinks}>
+                {planningAdminNavItems.map((item) =>
+                  renderNavigationLink(item, { nested: true })
+                )}
+              </div>
+            </details>
+          ) : null}
         </nav>
 
         <div className={styles.sidebarFooter}>
           <div className={styles.account}>
             <strong>
-              {(session.groups || []).map(formatGroup).join(' + ')}
+              {preview
+                ? 'Local UI preview'
+                : (session.groups || []).map(formatGroup).join(' + ')}
             </strong>
             <span>{session.display_name || session.username}</span>
           </div>
@@ -302,12 +419,14 @@ export default function StudioLayout({
               <OpenInNewRoundedIcon aria-hidden="true" />
               View website
             </Link>
-            <form action="/api/store/admin/auth/logout" method="post">
-              <button type="submit" className={styles.signOutButton}>
-                <LogoutRoundedIcon aria-hidden="true" />
-                Sign out
-              </button>
-            </form>
+            {!preview ? (
+              <form action="/api/store/admin/auth/logout" method="post">
+                <button type="submit" className={styles.signOutButton}>
+                  <LogoutRoundedIcon aria-hidden="true" />
+                  Sign out
+                </button>
+              </form>
+            ) : null}
           </div>
         </div>
       </aside>
@@ -319,6 +438,9 @@ export default function StudioLayout({
             data-future-messaging-slot
             aria-hidden="true"
           />
+          {preview ? (
+            <span className={styles.previewBadge}>Local sample · no live data</span>
+          ) : null}
           {supportContact ? (
             <details className={styles.technicalHelp}>
               <summary>

@@ -1,7 +1,12 @@
 import { useRouter } from 'next/router';
 import EpisodeStudioWorkspace from '../../components/EpisodeStudioWorkspace';
+import StudioLayout from '../../components/StudioLayout';
 import { createDefaultEpisodeProductionTasks } from '../../lib/episodeProductionPlan.mjs';
 import { normalizeEpisodeStudio } from '../../lib/episodeStudioPresentation.mjs';
+import {
+  STUDIO_PREVIEW_HREF_MAP,
+  STUDIO_PREVIEW_SESSION,
+} from '../../lib/studioPreviewFixtures.mjs';
 
 const PREVIEW_EPISODE = normalizeEpisodeStudio({
   episode_id: 'studio-usability-preview',
@@ -64,6 +69,7 @@ const PREVIEW_DATA = {
   asset_uploads_configured: true,
   canUploadAssets: true,
   canUseHostPreview: true,
+  list_href: '/dev/studio-production-preview',
 };
 
 export async function getServerSideProps({ req }) {
@@ -86,11 +92,39 @@ export default function EpisodeStudioUsabilityPreview() {
   const router = useRouter();
   const workspaceView =
     router.query.workspace === 'production' ? 'production' : 'package';
+  const producerObserver = router.query.viewer === 'producer';
+  const previewData = producerObserver
+    ? {
+        ...PREVIEW_DATA,
+        canManage: false,
+        canHost: false,
+        canReview: false,
+        canConfigure: false,
+        canAdminOverride: false,
+        canUploadAssets: false,
+        canUseHostPreview: false,
+        hostDraftReadOnly: true,
+        episode_roles: ['producer'],
+        viewer_person_id: 'caleb-merrill',
+      }
+    : PREVIEW_DATA;
   return (
-    <EpisodeStudioWorkspace
-      admin
-      previewData={PREVIEW_DATA}
-      workspaceView={workspaceView}
-    />
+    <StudioLayout
+      requiredPermission="episodes:read"
+      previewSession={STUDIO_PREVIEW_SESSION}
+      previewPath={
+        workspaceView === 'production'
+          ? '/studio/episodes/studio-usability-preview/production'
+          : '/studio/episodes/studio-usability-preview'
+      }
+      previewHrefMap={STUDIO_PREVIEW_HREF_MAP}
+      wide
+    >
+      <EpisodeStudioWorkspace
+        previewData={previewData}
+        previewInStudio
+        workspaceView={workspaceView}
+      />
+    </StudioLayout>
   );
 }

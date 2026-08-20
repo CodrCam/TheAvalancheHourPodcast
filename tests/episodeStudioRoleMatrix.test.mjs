@@ -14,6 +14,7 @@ const episode = {
   target_release_date: '2026-10-01',
   host_person_ids: ['regular-host', 'manager-host', 'dual-host-producer'],
   producer_person_id: 'admin-producer',
+  production_lead_person_id: 'production-lead',
   created_by_person_id: 'episode-creator',
   deliverables: [
     {
@@ -104,6 +105,26 @@ test('an unrelated signed-in host cannot access the episode', () => {
   assert.equal(result.canHost, false);
   assert.equal(result.canReview, false);
   assert.equal(result.canUploadAssets, false);
+});
+
+test('the assigned production lead can access the accepted handoff', () => {
+  const result = getEpisodeRelationshipCapabilities(
+    {
+      ...episode,
+      status: 'accepted',
+      production_stage: 'lead_review',
+    },
+    { person_id: 'production-lead' },
+    {
+      groups: [ACCESS_GROUPS.HOST],
+      permissions: getPermissionsForGroups([ACCESS_GROUPS.HOST]),
+    }
+  );
+  assert.equal(result.canAccess, true);
+  assert.deepEqual(result.roles, ['production_lead']);
+  assert.equal(result.canHost, false);
+  assert.equal(result.canReview, false);
+  assert.equal(result.canConfigure, false);
 });
 
 test('host upload locks follow workflow status while the assigned producer can continue', () => {

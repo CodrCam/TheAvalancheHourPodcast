@@ -159,6 +159,110 @@
   border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+.navOverview,
+.navPrimaryLinks,
+.navDisclosure,
+.navDisclosureLinks {
+  display: grid;
+  gap: 5px;
+}
+
+.navSection,
+.navPlanning {
+  margin-top: 8px;
+  padding-top: 13px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.navDisclosure {
+  margin-top: 4px;
+}
+
+.navDisclosure > summary {
+  display: flex;
+  min-height: 40px;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  color: rgba(232, 243, 246, 0.68);
+  font-size: 0.76rem;
+  font-weight: 730;
+  list-style: none;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: color 150ms ease, background 150ms ease;
+}
+
+.navDisclosure > summary::-webkit-details-marker {
+  display: none;
+}
+
+.navDisclosure > summary:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.navDisclosure > summary:focus-visible {
+  outline: 3px solid rgba(198, 229, 238, 0.46);
+  outline-offset: 2px;
+}
+
+.navDisclosureTitle {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 9px;
+}
+
+.navDisclosureTitle svg {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  color: rgba(197, 222, 230, 0.72);
+}
+
+.navDisclosure > summary small {
+  margin-left: auto;
+  color: rgba(228, 240, 244, 0.44);
+  font-size: 0.62rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.navDisclosureChevron {
+  width: 18px !important;
+  height: 18px !important;
+  flex: 0 0 auto;
+  transition: transform 150ms ease;
+}
+
+.navDisclosure[open] .navDisclosureChevron {
+  transform: rotate(180deg);
+}
+
+.navDisclosureLinks {
+  gap: 3px;
+  margin: 4px 0 0 10px;
+  padding-left: 8px;
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.navLinkNested {
+  min-height: 39px;
+  padding-block: 8px;
+  font-size: 0.84rem;
+}
+
+.navPlanning {
+  margin-top: 12px;
+}
+
+.navPlanning > summary {
+  min-height: 44px;
+  color: rgba(243, 249, 250, 0.78);
+}
+
 .navLink {
   display: flex;
   min-height: 46px;
@@ -184,6 +288,11 @@
   color: #fff;
   background: rgba(255, 255, 255, 0.07);
   transform: translateX(2px);
+}
+
+.navLink:focus-visible {
+  outline: 3px solid rgba(198, 229, 238, 0.46);
+  outline-offset: 2px;
 }
 
 .navLinkActive {
@@ -293,6 +402,19 @@
 .futureMessagingSlot {
   width: 0;
   height: 42px;
+}
+
+.previewBadge {
+  margin-right: auto;
+  padding: 7px 11px;
+  color: #315f73;
+  font-size: 0.69rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border: 1px solid rgba(49, 95, 115, 0.18);
+  border-radius: 999px;
+  background: rgba(232, 241, 243, 0.9);
 }
 
 .technicalHelp {
@@ -597,6 +719,449 @@
 .todayMetricAlert {
   border-color: rgba(249, 164, 113, 0.38);
   background: rgba(178, 73, 37, 0.2);
+}
+
+.seasonHome {
+  overflow: hidden;
+  margin-top: 24px;
+  border: 1px solid rgba(38, 80, 98, 0.16);
+  border-radius: 25px;
+  background:
+    radial-gradient(circle at 92% 3%, rgba(157, 195, 205, 0.2), transparent 30%),
+    linear-gradient(145deg, rgba(252, 253, 251, 0.98), rgba(238, 245, 245, 0.94));
+  box-shadow: 0 18px 54px rgba(25, 48, 60, 0.075);
+}
+
+.seasonHomeHeader {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(260px, 0.6fr);
+  gap: 36px;
+  align-items: end;
+  padding: clamp(25px, 4vw, 39px);
+}
+
+.seasonHomeIntro .eyebrow {
+  color: #4e7788;
+}
+
+.seasonHomeTitleRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 13px;
+  align-items: center;
+  margin-top: 6px;
+}
+
+.seasonHomeTitleRow h2 {
+  margin: 0;
+  color: #142f3f;
+  font-size: clamp(2rem, 4vw, 3.3rem);
+  letter-spacing: -0.055em;
+  line-height: 1;
+}
+
+.seasonHomeTitleRow > span {
+  padding: 6px 10px;
+  color: #2f667d;
+  font-size: 0.68rem;
+  font-weight: 820;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border: 1px solid rgba(47, 102, 125, 0.2);
+  border-radius: 999px;
+  background: rgba(232, 241, 243, 0.88);
+}
+
+.seasonHomeIntro > p {
+  max-width: 760px;
+  margin: 15px 0 0;
+  color: #637782;
+  font-size: 0.94rem;
+  line-height: 1.65;
+}
+
+.seasonHomeSource {
+  display: grid;
+  gap: 5px;
+  padding: 17px 19px;
+  border-left: 3px solid #d4b06c;
+  border-radius: 0 13px 13px 0;
+  background: rgba(255, 255, 255, 0.62);
+}
+
+.seasonHomeSource > span {
+  color: #846b3e;
+  font-size: 0.65rem;
+  font-weight: 820;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.seasonHomeSource strong {
+  color: #263f4c;
+  font-size: 0.96rem;
+}
+
+.seasonHomeSource small {
+  color: #718089;
+  font-size: 0.73rem;
+  line-height: 1.45;
+}
+
+.seasonStats {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  border-top: 1px solid rgba(27, 63, 79, 0.1);
+  border-bottom: 1px solid rgba(27, 63, 79, 0.1);
+  background: rgba(255, 255, 255, 0.57);
+}
+
+.seasonStats > div {
+  min-width: 0;
+  padding: 20px clamp(14px, 2vw, 23px);
+  border-right: 1px solid rgba(27, 63, 79, 0.09);
+}
+
+.seasonStats > div:last-child {
+  border-right: 0;
+}
+
+.seasonStats strong,
+.seasonStats span {
+  display: block;
+}
+
+.seasonStats strong {
+  color: #173e50;
+  font-size: clamp(1.45rem, 2.7vw, 2rem);
+  letter-spacing: -0.045em;
+}
+
+.seasonStats span {
+  margin-top: 5px;
+  overflow: hidden;
+  color: #6b7e87;
+  font-size: 0.66rem;
+  font-weight: 760;
+  letter-spacing: 0.04em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.seasonHomeDetailRow {
+  display: grid;
+  grid-template-columns: minmax(0, 0.72fr) minmax(0, 1.28fr);
+  gap: 14px;
+  padding: 18px clamp(20px, 4vw, 39px) 4px;
+}
+
+.seasonPlanHealth,
+.seasonNextReleases {
+  min-width: 0;
+  padding: 17px 18px;
+  border: 1px solid rgba(31, 75, 92, 0.1);
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.66);
+}
+
+.seasonPlanHealth > span,
+.seasonNextReleases > span {
+  display: block;
+  color: #5b7783;
+  font-size: 0.64rem;
+  font-weight: 820;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.seasonPlanHealth p {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px 13px;
+  margin: 9px 0 0;
+}
+
+.seasonPlanHealth p strong,
+.seasonPlanHealth p span {
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.seasonPlanHealth p strong {
+  color: #263f4c;
+}
+
+.seasonPlanHealth p span {
+  color: #74838a;
+}
+
+.seasonPlanLoadButton {
+  min-height: 36px;
+  margin-top: 12px;
+  padding: 7px 11px;
+  color: #315b6e;
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: 800;
+  border: 1px solid rgba(42, 80, 99, 0.2);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.9);
+  cursor: pointer;
+}
+
+.seasonPlanLoadButton:hover,
+.seasonPlanLoadButton:focus-visible {
+  border-color: rgba(42, 80, 99, 0.42);
+  background: #fff;
+}
+
+.seasonNextReleases > div {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 16px;
+  margin-top: 9px;
+}
+
+.seasonNextReleases > div > span {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px;
+  align-items: baseline;
+  min-width: 0;
+}
+
+.seasonNextReleases time {
+  color: #4c7282;
+  font-size: 0.69rem;
+  font-weight: 800;
+}
+
+.seasonNextReleases strong {
+  overflow: hidden;
+  color: #304a56;
+  font-size: 0.76rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.seasonNextReleases > p {
+  margin: 9px 0 0;
+  color: #74838a;
+  font-size: 0.76rem;
+  line-height: 1.5;
+}
+
+.seasonWorkflowHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  align-items: end;
+  padding: 25px clamp(20px, 4vw, 39px) 15px;
+}
+
+.seasonWorkflowHeader span,
+.seasonWorkflowHeader h3 {
+  display: block;
+}
+
+.seasonWorkflowHeader span {
+  color: #4e7788;
+  font-size: 0.65rem;
+  font-weight: 820;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.seasonWorkflowHeader h3 {
+  margin: 4px 0 0;
+  color: #223e4c;
+  font-size: 1.2rem;
+  letter-spacing: -0.025em;
+}
+
+.seasonWorkflowHeader > p {
+  max-width: 390px;
+  margin: 0;
+  color: #718089;
+  font-size: 0.76rem;
+  line-height: 1.5;
+  text-align: right;
+}
+
+.seasonWorkflowEntry {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin: 0 clamp(20px, 4vw, 39px) 14px;
+  padding: 13px 15px;
+  color: #345362;
+  border: 1px solid rgba(64, 115, 133, 0.16);
+  border-left: 3px solid #d2ae69;
+  border-radius: 13px;
+  background: rgba(238, 246, 247, 0.78);
+}
+
+.seasonWorkflowEntry > div:first-child {
+  display: grid;
+  gap: 3px;
+}
+
+.seasonWorkflowEntry strong {
+  font-size: 0.78rem;
+}
+
+.seasonWorkflowEntry span {
+  color: #667982;
+  font-size: 0.72rem;
+  line-height: 1.5;
+}
+
+.seasonWorkflowEntry > div:last-child {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 8px;
+}
+
+.seasonWorkflowEntry a {
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 11px;
+  color: #284f61;
+  font-size: 0.7rem;
+  font-weight: 790;
+  text-decoration: none;
+  border: 1px solid rgba(47, 102, 125, 0.2);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.seasonWorkflowEntry a:hover {
+  border-color: rgba(47, 102, 125, 0.42);
+  background: #fff;
+}
+
+.seasonWorkflowEntry a:focus-visible {
+  outline: 3px solid rgba(47, 102, 125, 0.24);
+  outline-offset: 2px;
+}
+
+.seasonWorkflow {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0 clamp(20px, 4vw, 39px) clamp(25px, 4vw, 39px);
+  list-style: none;
+}
+
+.seasonWorkflow > li {
+  min-width: 0;
+}
+
+.seasonWorkflowCard {
+  position: relative;
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  grid-template-rows: auto 1fr;
+  gap: 11px;
+  min-height: 190px;
+  height: 100%;
+  padding: 16px;
+  color: inherit;
+  text-decoration: none;
+  border: 1px solid rgba(27, 71, 88, 0.13);
+  border-radius: 17px;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 8px 24px rgba(31, 61, 74, 0.045);
+  transition: transform 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
+}
+
+a.seasonWorkflowCard:hover {
+  border-color: rgba(47, 102, 125, 0.32);
+  box-shadow: 0 12px 30px rgba(31, 61, 74, 0.1);
+  transform: translateY(-2px);
+}
+
+a.seasonWorkflowCard:focus-visible {
+  outline: 3px solid rgba(47, 102, 125, 0.34);
+  outline-offset: 3px;
+}
+
+.seasonWorkflowCard > svg {
+  align-self: center;
+  width: 18px;
+  height: 18px;
+  color: #5b7d8b;
+}
+
+.seasonWorkflowNumber {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  color: rgba(47, 102, 125, 0.36);
+  font-size: 0.68rem;
+  font-weight: 850;
+  letter-spacing: 0.09em;
+}
+
+.seasonWorkflowIcon {
+  display: grid;
+  grid-row: 1 / span 2;
+  place-items: center;
+  align-self: start;
+  width: 42px;
+  height: 42px;
+  color: #2f667d;
+  border-radius: 12px;
+  background: #e8f1f3;
+}
+
+.seasonWorkflowIcon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.seasonWorkflowCopy {
+  display: flex;
+  flex-direction: column;
+  grid-row: 1 / span 2;
+  min-width: 0;
+  padding-top: 1px;
+}
+
+.seasonWorkflowCopy strong {
+  padding-right: 22px;
+  color: #203d4b;
+  font-size: 0.91rem;
+  line-height: 1.3;
+}
+
+.seasonWorkflowCopy small {
+  margin-top: 8px;
+  color: #718089;
+  font-size: 0.73rem;
+  line-height: 1.5;
+}
+
+.seasonWorkflowCopy em {
+  margin-top: auto;
+  padding-top: 16px;
+  color: #2f667d;
+  font-size: 0.68rem;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.seasonWorkflowCardUnavailable {
+  opacity: 0.66;
+  box-shadow: none;
+}
+
+.seasonWorkflowCardUnavailable .seasonWorkflowCopy em {
+  color: #737f84;
 }
 
 .todayLayout {
@@ -3733,8 +4298,52 @@
 
   .nav {
     display: flex;
+    gap: 6px;
     overflow-x: auto;
     padding-top: 4px;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: thin;
+  }
+
+  .navOverview,
+  .navSection,
+  .navPrimaryLinks,
+  .navDisclosure[open],
+  .navDisclosureLinks {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .navSection,
+  .navPlanning,
+  .navDisclosure,
+  .navDisclosureLinks {
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .navDisclosure {
+    flex: 0 0 auto;
+  }
+
+  .navDisclosure > summary {
+    min-width: max-content;
+    min-height: 46px;
+    padding: 10px 11px;
+    border-color: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.035);
+  }
+
+  .navDisclosure > summary small {
+    display: none;
+  }
+
+  .navLinkNested {
+    min-height: 46px;
+    font-size: 0.78rem;
   }
 
   .navLabel,
@@ -4059,24 +4668,23 @@
   }
 
   .nav {
-    display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
+    display: flex;
     gap: 6px;
-    overflow: visible;
+    overflow-x: auto;
     padding: 4px 12px 10px;
+    scroll-snap-type: x proximity;
   }
 
-  .navItemBase {
-    grid-column: span 3;
-  }
-
-  .navItemManager {
-    grid-column: span 2;
+  .navOverview,
+  .navSection,
+  .navDisclosure {
+    flex: 0 0 auto;
+    scroll-snap-align: start;
   }
 
   .navLink {
-    min-width: 0;
-    min-height: 42px;
+    min-width: max-content;
+    min-height: 44px;
     justify-content: center;
     gap: 6px;
     padding: 8px 6px;
@@ -4116,5 +4724,98 @@
     flex: 0 1 145px;
     padding: 6px 9px;
     font-size: 0.7rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .navLink,
+  .navDisclosure > summary,
+  .navDisclosureChevron {
+    transition: none;
+  }
+
+  .navLink:hover {
+    transform: none;
+  }
+}
+
+@media (max-width: 1180px) {
+  .seasonWorkflow {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .seasonWorkflowCard {
+    min-height: 160px;
+  }
+}
+
+@media (max-width: 760px) {
+  .seasonHomeHeader,
+  .seasonHomeDetailRow {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .seasonStats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .seasonStats > div {
+    border-bottom: 1px solid rgba(27, 63, 79, 0.09);
+  }
+
+  .seasonStats > div:nth-child(2n) {
+    border-right: 0;
+  }
+
+  .seasonStats > div:last-child {
+    grid-column: 1 / -1;
+    border-bottom: 0;
+  }
+
+  .seasonWorkflowHeader {
+    display: block;
+  }
+
+  .seasonWorkflowHeader > p {
+    margin-top: 7px;
+    text-align: left;
+  }
+
+  .seasonWorkflowEntry {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .seasonWorkflowEntry > div:last-child {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 520px) {
+  .seasonHome {
+    border-radius: 20px;
+  }
+
+  .seasonHomeHeader {
+    padding: 24px 20px;
+  }
+
+  .seasonHomeTitleRow h2 {
+    font-size: 2.2rem;
+  }
+
+  .seasonNextReleases > div,
+  .seasonWorkflow {
+    grid-template-columns: 1fr;
+  }
+
+  .seasonWorkflowCard {
+    min-height: 148px;
+  }
+
+  .seasonWorkflowEntry a {
+    flex: 1 1 140px;
+    justify-content: center;
   }
 }

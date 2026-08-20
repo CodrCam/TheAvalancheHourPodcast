@@ -1151,6 +1151,7 @@
 .shareResult button,
 .linkActions button,
 .markSharedButton,
+.requestUpdateButton,
 .applyButton {
   min-height: 42px;
   display: inline-flex;
@@ -1173,6 +1174,7 @@
 .shareResult button svg,
 .linkActions button svg,
 .markSharedButton svg,
+.requestUpdateButton svg,
 .applyButton svg {
   width: 17px;
   height: 17px;
@@ -1212,6 +1214,7 @@
 .stickySaveBar button:disabled,
 .linkActions button:disabled,
 .markSharedButton:disabled,
+.requestUpdateButton:disabled,
 .applyButton:disabled {
   opacity: 0.48;
   cursor: default;
@@ -1297,6 +1300,121 @@
   color: #688176;
   font-size: 0.61rem;
   line-height: 1.4;
+}
+
+.linkChoiceGuide {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.linkChoiceGuide > div {
+  display: grid;
+  gap: 3px;
+  padding: 11px 12px;
+  border: 1px solid rgba(53, 107, 131, 0.16);
+  border-radius: 10px;
+  background: #f6fafb;
+}
+
+.linkChoiceGuide span {
+  color: #547b8a;
+  font-size: 0.57rem;
+  font-weight: 850;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.linkChoiceGuide strong,
+.linkLifecycleNote strong,
+.revokeGuidance strong,
+.submittedUpdateNote strong {
+  color: #294a59;
+  font-size: 0.69rem;
+}
+
+.linkChoiceGuide p {
+  margin: 1px 0 0;
+  color: #6b7d84;
+  font-size: 0.62rem;
+  line-height: 1.45;
+}
+
+.linkChoiceGuide .linkChoiceReplacement {
+  border-color: rgba(181, 132, 55, 0.2);
+  background: #fffaf0;
+}
+
+.linkChoiceReplacement span {
+  color: #80662f;
+}
+
+.linkChoiceReplacement strong {
+  color: #634f24;
+}
+
+.linkLifecycleNote,
+.revokeGuidance,
+.submittedUpdateNote {
+  display: grid;
+  gap: 4px;
+  margin-top: 12px;
+  padding: 11px 12px;
+  border-radius: 10px;
+}
+
+.linkLifecycleNote {
+  border: 1px solid rgba(53, 107, 131, 0.16);
+  background: #f6fafb;
+}
+
+.linkLifecycleNote span,
+.revokeGuidance span,
+.submittedUpdateNote span {
+  color: #6b7d84;
+  font-size: 0.62rem;
+  line-height: 1.48;
+}
+
+.revokeGuidance {
+  border: 1px solid rgba(158, 79, 53, 0.18);
+  background: #fff8f4;
+}
+
+.revokeGuidance strong {
+  color: #874b39;
+}
+
+.revokeGuidance span {
+  color: #806a62;
+}
+
+.submittedUpdateNote {
+  border: 1px solid rgba(111, 122, 129, 0.18);
+  background: #f7f8f8;
+}
+
+.submittedUpdateNote strong {
+  color: #4f6068;
+}
+
+.updateRequestedNote {
+  border-color: rgba(57, 126, 89, 0.2);
+  background: #eff8f2;
+}
+
+.updateRequestedNote strong {
+  color: #35694f;
+}
+
+.updateRequestedNote span {
+  color: #688176;
+}
+
+.requestUpdateButton {
+  width: 100%;
+  margin-top: 7px;
+  background: #387657;
 }
 
 .linkActions {

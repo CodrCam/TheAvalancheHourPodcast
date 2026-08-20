@@ -5,6 +5,7 @@ import {
   createGuestQuestionnaireUploadAuthorization,
   deriveGuestQuestionnaireUploaderId,
   getConfiguredGuestQuestionnaireUploadSlot,
+  getGuestQuestionnaireUploadMutationLock,
   isGuestQuestionnaireUploaderId,
   sanitizeGuestQuestionnaireUploadSlot,
   validateGuestQuestionnaireUploadFile,
@@ -52,6 +53,31 @@ function assetUpload(slotKey = 'photo') {
     slot_key: slotKey,
   };
 }
+
+test('submitted files stay immutable while a corrected response is open', () => {
+  assert.deepEqual(
+    getGuestQuestionnaireUploadMutationLock({
+      response: { status: 'update_requested' },
+    }),
+    {
+      code: 'GUEST_UPLOADS_UPDATE_LOCKED',
+      message:
+        'Previously submitted files are preserved and cannot be added, replaced, or removed while this response update is open.',
+    }
+  );
+  assert.equal(
+    getGuestQuestionnaireUploadMutationLock({
+      response: { status: 'draft' },
+    }),
+    null
+  );
+  assert.equal(
+    getGuestQuestionnaireUploadMutationLock({
+      response: { status: 'submitted' },
+    })?.code,
+    'GUEST_UPLOADS_LOCKED'
+  );
+});
 
 test('guest questionnaire upload policy accepts only bounded resume and photo formats', () => {
   assert.deepEqual(

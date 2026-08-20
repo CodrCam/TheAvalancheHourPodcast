@@ -24,6 +24,7 @@ import {
 import { publishEpisodeNotifications } from '../../../../lib/episodeStudioEvents';
 import { isEpisodeAssetStorageConfigured } from '../../../../lib/episodeAssetStorage';
 import { createDefaultEpisodeProductionTasks } from '../../../../lib/episodeProductionPlan.mjs';
+import { summarizeCurrentSeasonEpisodes } from '../../../../lib/currentSeason.mjs';
 
 function dateDaysBefore(value, days = 10) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(String(value || ''))) return '';
@@ -57,8 +58,12 @@ async function getStudioDirectory() {
       capabilities: getPersonStudioCapabilities(person),
     };
   });
-  const hosts = people.filter((person) => person.capabilities.host);
-  const producers = people.filter((person) => person.capabilities.producer);
+  const hosts = people.filter(
+    (person) => person.active && person.capabilities.host
+  );
+  const producers = people.filter(
+    (person) => person.active && person.capabilities.producer
+  );
 
   return {
     hosts,
@@ -79,6 +84,7 @@ export default async function handler(req, res) {
       : ADMIN_PERMISSIONS.EPISODES_READ;
   const principal = await requirePermissionAsync(req, res, permission);
   if (!principal) return;
+  res.setHeader('Cache-Control', 'private, no-store');
 
   try {
     const canManage = principal.permissions.includes(
@@ -92,12 +98,18 @@ export default async function handler(req, res) {
     ]);
 
     if (req.method === 'GET') {
+      const sharedCalendar = upcomingEpisodeCalendarEntries(episodes);
+      const seasonOverview = summarizeCurrentSeasonEpisodes(
+        episodes,
+        sharedCalendar
+      );
       if (calendarOnly) {
         res.setHeader('Cache-Control', 'no-store, private');
         return res.status(200).json({
           ok: true,
           configured,
-          calendar: upcomingEpisodeCalendarEntries(episodes),
+          calendar: sharedCalendar,
+          season_overview: seasonOverview,
         });
       }
 
@@ -150,8 +162,12 @@ export default async function handler(req, res) {
         configured,
         canManage,
         profile_connection: profileConnection,
+        calendar: sharedCalendar,
+        season_overview: seasonOverview,
         episodes: visibleEpisodes.map((episode) => ({
           ...episodeStudioSummary(episode),
+          producer_name:
+            directory.peopleById.get(episode.producer_person_id)?.name || '',
           my_roles: membershipIdentity
             ? getEpisodeStudioMembership(episode, membershipIdentity)
             : [],
@@ -182,7 +198,10 @@ export default async function handler(req, res) {
     if (
       !hostPersonIds.length ||
       hostPersonIds.some(
-        (personId) => !directory.peopleById.get(personId)?.capabilities.host
+        (personId) => {
+          const person = directory.peopleById.get(personId);
+          return person?.active !== true || person.capabilities.host !== true;
+        }
       )
     ) {
       return res.status(400).json({
@@ -194,14 +213,35 @@ export default async function handler(req, res) {
     const now = new Date().toISOString();
     const episodeId = createEpisodeStudioId(input.title);
     const creatorBinding = await getStudioBindingForSubject(principal.subject);
+    const creationExceptionKind = String(
+      input.creation_exception_kind || ''
+    ).trim();
+    const creationExceptionReason = String(
+      input.creation_exception_reason || ''
+    ).trim();
+    if (
+      !['legacy', 'urgent_exception'].includes(creationExceptionKind) ||
+      creationExceptionReason.length < 10 ||
+      creationExceptionReason.length > 500
+    ) {
+      return res.status(400).json({
+        ok: false,
+        error:
+          'Manual creation requires an approved exception type and a 10–500 character reason.',
+      });
+    }
     const producerPersonId = String(input.producer_person_id || '').trim();
     const producer = producerPersonId
       ? directory.peopleById.get(producerPersonId)
       : null;
-    if (producerPersonId && !producer?.capabilities.producer) {
+    if (
+      !producerPersonId ||
+      producer?.active !== true ||
+      producer?.capabilities?.producer !== true
+    ) {
       return res.status(400).json({
         ok: false,
-        error: 'Choose a valid producer profile.',
+        error: 'Choose a current producer profile.',
       });
     }
     const producerEmail =
@@ -279,6 +319,9 @@ export default async function handler(req, res) {
       title: result.episode.title,
       host_person_ids: result.episode.host_person_ids,
       target_release_date: result.episode.target_release_date,
+      creation_path: 'manual_exception',
+      creation_exception_kind: creationExceptionKind,
+      creation_exception_reason: creationExceptionReason,
     });
 
     return res.status(201).json({

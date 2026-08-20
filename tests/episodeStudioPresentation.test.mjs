@@ -2114,6 +2114,7 @@ test('finds every personal episode relationship without duplicating episodes', (
     ...sampleEpisode(),
     host_person_ids: ['cam-griffin'],
     producer_person_id: 'cam-griffin',
+    production_lead_person_id: 'cam-griffin',
     created_by_person_id: 'cam-griffin',
     created_by: 'cam@example.com',
   };
@@ -2121,8 +2122,25 @@ test('finds every personal episode relationship without duplicating episodes', (
   assert.deepEqual(getEpisodeStudioMembership(episode, identity), [
     'host',
     'producer',
+    'production_lead',
     'creator',
   ]);
+});
+
+test('recognizes the assigned production lead as an episode member', () => {
+  const episode = {
+    ...sampleEpisode(),
+    status: 'accepted',
+    production_stage: 'lead_review',
+    production_lead_person_id: 'production-lead',
+  };
+
+  assert.deepEqual(
+    getEpisodeStudioMembership(episode, {
+      person_id: 'production-lead',
+    }),
+    ['production_lead']
+  );
 });
 
 test('recognizes legacy episode creators by a verified account identifier', () => {

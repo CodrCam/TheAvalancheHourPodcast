@@ -3,14 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import ChevronLeftRoundedIcon from '@mui/icons-material/ChevronLeftRounded';
 import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded';
-import SendRoundedIcon from '@mui/icons-material/SendRounded';
-import FriendlyDateField from '../../../components/FriendlyDateField';
-import PlainTextArea from '../../../components/PlainTextArea';
 import StudioLayout from '../../../components/StudioLayout';
-import {
-  EMPTY_EPISODE_REQUEST_FORM,
-  buildEpisodeRequestItem,
-} from '../../../lib/episodeRequest.mjs';
 import styles from '../../../styles/EpisodeStudio.module.css';
 
 const STATUS_LABELS = {
@@ -25,6 +18,7 @@ const STATUS_LABELS = {
 const RELATIONSHIP_LABELS = {
   host: 'Host',
   producer: 'Producer',
+  production_lead: 'Production lead',
   creator: 'Created by you',
   workflow_assignee: 'Workflow owner',
 };
@@ -81,19 +75,48 @@ export default function HostEpisodesPage() {
   const [canManageAccess, setCanManageAccess] = useState(false);
   const [loading, setLoading] = useState(true);
   const [calendarLoading, setCalendarLoading] = useState(true);
-  const [showRequestForm, setShowRequestForm] = useState(false);
-  const [requestForm, setRequestForm] = useState(
-    EMPTY_EPISODE_REQUEST_FORM
-  );
-  const [requestSaving, setRequestSaving] = useState(false);
-  const [requestError, setRequestError] = useState('');
-  const [requestSuccess, setRequestSuccess] = useState(null);
   const [error, setError] = useState('');
   const [calendarError, setCalendarError] = useState('');
   const [viewMonth, setViewMonth] = useState(monthStart(new Date()));
 
   useEffect(() => {
     let alive = true;
+
+    function applyCalendarEntries(entries) {
+      if (!alive) return;
+      const nextEntries = Array.isArray(entries) ? entries : [];
+      setCalendarEntries(nextEntries);
+      if (nextEntries[0]?.target_release_date) {
+        const firstDate = new Date(
+          `${nextEntries[0].target_release_date}T12:00:00`
+        );
+        if (!Number.isNaN(firstDate.getTime())) {
+          setViewMonth(monthStart(firstDate));
+        }
+      }
+    }
+
+    async function loadCalendarForUnconnectedProfile() {
+      try {
+        const response = await fetch('/api/studio/episodes?scope=calendar', {
+          credentials: 'same-origin',
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(
+            data.error || 'Could not load the episode calendar.'
+          );
+        }
+        applyCalendarEntries(data.calendar);
+      } catch (err) {
+        if (alive) {
+          setCalendarError(
+            err.message || 'Could not load the episode calendar.'
+          );
+        }
+      }
+    }
+
     async function loadEpisodes() {
       try {
         const response = await fetch('/api/studio/episodes?scope=mine', {
@@ -104,60 +127,27 @@ export default function HostEpisodesPage() {
           if (data.code === 'PROFILE_NOT_CONNECTED') {
             setNotConnected(true);
             setCanManageAccess(data.can_manage_access === true);
+            await loadCalendarForUnconnectedProfile();
             return;
           }
           throw new Error(data.error || 'Could not load your episodes.');
         }
         if (alive) {
           setEpisodes(data.episodes || []);
+          applyCalendarEntries(data.calendar);
           setProfileName(data.profile_connection?.person_name || '');
           setNotConnected(false);
         }
       } catch (err) {
         if (alive) setError(err.message || 'Could not load your episodes.');
       } finally {
-        if (alive) setLoading(false);
+        if (alive) {
+          setLoading(false);
+          setCalendarLoading(false);
+        }
       }
     }
     loadEpisodes();
-    return () => {
-      alive = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    let alive = true;
-    async function loadCalendar() {
-      try {
-        const response = await fetch('/api/studio/episodes?scope=calendar', {
-          credentials: 'same-origin',
-        });
-        const data = await response.json();
-        if (!response.ok) {
-          throw new Error(data.error || 'Could not load the episode calendar.');
-        }
-        if (!alive) return;
-        const nextEntries = data.calendar || [];
-        setCalendarEntries(nextEntries);
-        if (nextEntries[0]?.target_release_date) {
-          const firstDate = new Date(
-            `${nextEntries[0].target_release_date}T12:00:00`
-          );
-          if (!Number.isNaN(firstDate.getTime())) {
-            setViewMonth(monthStart(firstDate));
-          }
-        }
-      } catch (err) {
-        if (alive) {
-          setCalendarError(
-            err.message || 'Could not load the episode calendar.'
-          );
-        }
-      } finally {
-        if (alive) setCalendarLoading(false);
-      }
-    }
-    loadCalendar();
     return () => {
       alive = false;
     };
@@ -195,77 +185,41 @@ export default function HostEpisodesPage() {
     }
     return entriesByDate;
   }, [calendarEntries]);
-  const requestDirty =
-    showRequestForm &&
-    Object.values(requestForm).some((value) => String(value || '').trim());
-
-  function closeRequestForm() {
-    setRequestForm(EMPTY_EPISODE_REQUEST_FORM);
-    setShowRequestForm(false);
-    setRequestError('');
-  }
-
-  async function submitEpisodeRequest(event) {
-    event.preventDefault();
-    if (requestSaving) return;
-    setRequestSaving(true);
-    setRequestError('');
-    setRequestSuccess(null);
-    try {
-      const item = buildEpisodeRequestItem(requestForm);
-      const response = await fetch('/api/studio/intake', {
-        method: 'POST',
-        credentials: 'same-origin',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ item }),
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Could not send this episode request.');
-      }
-      setRequestSuccess(data.item);
-      setRequestForm(EMPTY_EPISODE_REQUEST_FORM);
-      setShowRequestForm(false);
-    } catch (err) {
-      setRequestError(err.message || 'Could not send this episode request.');
-    } finally {
-      setRequestSaving(false);
-    }
-  }
 
   return (
-    <StudioLayout
-      hasUnsavedChanges={requestDirty}
-      unsavedChangesMessage="Discard this episode request?"
-    >
+    <StudioLayout>
       <div className={styles.workspace}>
+        <nav
+          className={styles.episodeWorkspaceTabs}
+          aria-label="Host Studio sections"
+        >
+          <Link
+            href="/studio/episodes"
+            className={styles.episodeWorkspaceTabActive}
+            aria-current="page"
+          >
+            Episodes
+          </Link>
+          <Link href="/studio/episodes/ideas">Ideas &amp; requests</Link>
+        </nav>
         <header className={styles.pageHeader}>
           <div>
-            <span className={styles.eyebrow}>Production workspace</span>
-            <h1>My Episodes</h1>
+            <span className={styles.eyebrow}>Season workflow · Step 3</span>
+            <h1>Host Studio</h1>
             <p>
               Find every episode connected to you as a host, producer, or
-              creator. Open the shared form to prepare material and keep the
-              production team current.
+              creator. Open an assigned Studio below, or pitch and track a new
+              episode in Ideas &amp; requests.
             </p>
           </div>
           {!loading && !notConnected && profileName ? (
-            <button
-              type="button"
+            <Link
+              href="/studio/episodes/ideas?new=1"
               className={styles.primaryButton}
-              onClick={() => {
-                if (showRequestForm) {
-                  closeRequestForm();
-                } else {
-                  setRequestError('');
-                  setRequestSuccess(null);
-                  setShowRequestForm(true);
-                }
-              }}
             >
               <AddRoundedIcon aria-hidden="true" />
-              {showRequestForm ? 'Cancel request' : 'Request an episode'}
-            </button>
+              Pitch an episode
+            </Link>
           ) : null}
         </header>
 
@@ -297,121 +251,6 @@ export default function HostEpisodesPage() {
         </section>
 
         {error ? <p className={styles.errorCard}>{error}</p> : null}
-        {requestError ? (
-          <p className={styles.errorCard} role="alert">
-            {requestError}
-          </p>
-        ) : null}
-        {requestSuccess ? (
-          <div className={styles.successCard} role="status">
-            <strong>Episode request sent.</strong>{' '}
-            A manager can now review and schedule it in Team follow-ups.{' '}
-            <Link href={`/studio/inbox?item=${requestSuccess.item_id}`}>
-              Open the request
-            </Link>
-            .
-          </div>
-        ) : null}
-
-        {showRequestForm ? (
-          <form className={styles.createPanel} onSubmit={submitEpisodeRequest}>
-            <h2>Request an episode</h2>
-            <p>
-              Share the story and listener value. This creates a tracked team
-              request; a manager will confirm the schedule and create the
-              Episode Studio.
-            </p>
-            <div className={styles.createGrid}>
-              <label>
-                Working episode title
-                <input
-                  value={requestForm.working_title}
-                  maxLength={150}
-                  onChange={(event) =>
-                    setRequestForm((current) => ({
-                      ...current,
-                      working_title: event.target.value,
-                    }))
-                  }
-                  placeholder="e.g. Decision-making in persistent slab terrain"
-                  autoFocus
-                  required
-                />
-              </label>
-              <label>
-                Proposed guest
-                <input
-                  value={requestForm.proposed_guest}
-                  maxLength={180}
-                  onChange={(event) =>
-                    setRequestForm((current) => ({
-                      ...current,
-                      proposed_guest: event.target.value,
-                    }))
-                  }
-                  placeholder="Name or organization (optional)"
-                />
-              </label>
-              <label>
-                Preferred air date
-                <FriendlyDateField
-                  value={requestForm.preferred_air_date}
-                  onChange={(event) =>
-                    setRequestForm((current) => ({
-                      ...current,
-                      preferred_air_date: event.target.value,
-                    }))
-                  }
-                  ariaLabel="preferred air date"
-                />
-              </label>
-              <div className={styles.requestVisibilityNote}>
-                <strong>Visible to the signed-in team</strong>
-                <span>
-                  Keep private guest contact details out of the pitch. They can
-                  be added after the Studio is approved.
-                </span>
-              </div>
-              <label className={styles.fullField}>
-                Pitch and listener takeaway
-                <small>
-                  Explain the story, why it matters now, and what the audience
-                  should learn.
-                </small>
-                <PlainTextArea
-                  value={requestForm.pitch}
-                  maxLength={5000}
-                  minLength={10}
-                  onValueChange={(pitch) =>
-                    setRequestForm((current) => ({ ...current, pitch }))
-                  }
-                  required
-                />
-              </label>
-            </div>
-            <div className={styles.createActions}>
-              <button
-                type="button"
-                className={styles.secondaryButton}
-                onClick={closeRequestForm}
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className={styles.primaryButton}
-                disabled={
-                  requestSaving ||
-                  requestForm.working_title.trim().length < 3 ||
-                  requestForm.pitch.trim().length < 10
-                }
-              >
-                <SendRoundedIcon aria-hidden="true" />
-                {requestSaving ? 'Sending…' : 'Send episode request'}
-              </button>
-            </div>
-          </form>
-        ) : null}
 
         <section
           className={`${styles.calendarPanel} ${styles.readOnlyCalendar}`}
@@ -459,7 +298,7 @@ export default function HostEpisodesPage() {
           <p className={styles.readOnlyCalendarNote}>
             See the upcoming air schedule without opening another host&apos;s
             work. Calendar entries are not links; Studios assigned to you stay
-            available in My Episodes below.
+            available in your Host Studio below.
           </p>
           {calendarError ? (
             <p className={styles.readOnlyCalendarError} role="alert">
@@ -509,7 +348,7 @@ export default function HostEpisodesPage() {
 
         <section id="my-episodes" className={styles.queue}>
           <div className={styles.queueHeader}>
-            <h2>Episode Studios</h2>
+            <h2>Your episodes</h2>
           </div>
           {loading ? (
             <div className={styles.emptyState}>Loading your assignments…</div>
@@ -517,7 +356,7 @@ export default function HostEpisodesPage() {
             <div className={styles.emptyState}>
               <h2>Your account is not connected to a team profile</h2>
               <p>
-                Your episode assignments are safe, but My Episodes cannot match
+                Your episode assignments are safe, but Host Studio cannot match
                 them to this login until the one-time profile connection is
                 complete.
               </p>
@@ -539,9 +378,9 @@ export default function HostEpisodesPage() {
             episodes.map((episode) => (
               <Link
                 key={episode.episode_id}
-                href={`/studio/episodes/${episode.episode_id}${
-                  episode.workflow?.required_task_count ? '/production' : ''
-                }`}
+                href={`/studio/episodes/${encodeURIComponent(
+                  episode.episode_id
+                )}`}
                 className={`${styles.episodeRow} ${
                   (episode.effective_delivery_health ||
                     episode.delivery_health) === 'off_track'
@@ -583,39 +422,23 @@ export default function HostEpisodesPage() {
                 </div>
                 <div className={styles.rowProgress}>
                   <strong>
-                    {episode.workflow?.required_task_count
-                      ? `${episode.workflow.completion_percent}% production complete`
-                      : `${episode.completion.host_percent}% host-ready`}
+                    {episode.completion.host_percent}% host-ready
                   </strong>
-                  {episode.workflow?.next_due_task ? (
-                    <span>
-                      Next: {episode.workflow.next_due_task.label} ·{' '}
-                      {formatDate(episode.workflow.next_due_task.due_date)}
-                    </span>
-                  ) : null}
                   <span className={styles.progressTrack}>
                     <span
                       style={{
-                        width: `${
-                          episode.workflow?.required_task_count
-                            ? episode.workflow.completion_percent
-                            : episode.completion.host_percent
-                        }%`,
+                        width: `${episode.completion.host_percent}%`,
                       }}
                     />
                   </span>
                 </div>
-                <span>
-                  {episode.workflow?.required_task_count
-                    ? 'Open production →'
-                    : 'Open package →'}
-                </span>
+                <span>Open Host Studio →</span>
               </Link>
             ))
           ) : (
             <div className={styles.emptyState}>
               {profileName
-                ? `${profileName} is connected, but no episodes currently list this profile as a host, producer, or creator.`
+                ? `${profileName} is connected, but no episodes currently list this profile as a host, producer, production lead, or creator.`
                 : 'Your account is connected, but no episodes are connected to this profile yet.'}
             </div>
           )}

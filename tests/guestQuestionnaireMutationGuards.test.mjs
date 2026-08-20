@@ -86,7 +86,8 @@ test('questionnaire writes that depend on current Studio state are episode-versi
 
   for (const [start, end] of [
     ["if (action === 'save_configuration')", "} else if (action === 'issue_link')"],
-    ["} else if (action === 'issue_link')", "} else if (action === 'mark_shared')"],
+    ["} else if (action === 'issue_link')", "} else if (action === 'request_update')"],
+    ["} else if (action === 'request_update')", "} else if (action === 'mark_shared')"],
     ["} else if (action === 'revoke_link')", '} else {'],
   ]) {
     const actionBlock = between(persistenceRoute, start, end);

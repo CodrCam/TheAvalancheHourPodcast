@@ -146,7 +146,7 @@ export default function StudioAccessPage() {
       busyPersonId ||
       currentPersonId ||
       !window.confirm(
-        `Connect your signed-in account to ${person.name}? My Episodes and My Profile will use this identity.`
+        `Connect your signed-in account to ${person.name}? Host Studio and My Profile will use this identity.`
       )
     ) {
       return;
@@ -177,7 +177,7 @@ export default function StudioAccessPage() {
       );
       setCurrentPersonId(person.person_id);
       setMessage(
-        `Your signed-in account is now connected to ${person.name}. My Episodes and My Profile are ready.`
+        `Your signed-in account is now connected to ${person.name}. Host Studio and My Profile are ready.`
       );
     } catch (err) {
       setError(err.message || 'Could not connect your account.');
@@ -265,7 +265,7 @@ export default function StudioAccessPage() {
             {currentPersonId
               ? `${
                   currentAccountLabel || 'This account'
-                } can now use My Episodes and My Profile through its connected team profile.`
+                } can now use Host Studio and My Profile through its connected team profile.`
               : 'Choose your own team profile below and select “Connect my account.” The server uses your verified login automatically, so there is no Cognito ID to copy.'}
           </p>
         </section>

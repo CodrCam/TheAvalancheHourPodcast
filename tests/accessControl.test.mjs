@@ -26,6 +26,7 @@ test('keeps host access limited to the Studio and the host own profile', () => {
     ACCESS_PERMISSIONS.NOTIFICATIONS_UPDATE,
     ACCESS_PERMISSIONS.INTAKE_READ,
     ACCESS_PERMISSIONS.INTAKE_CREATE,
+    ACCESS_PERMISSIONS.MASTERMIND_READ,
   ]);
   assert.equal(
     permissions.includes(ACCESS_PERMISSIONS.PROFILES_UPDATE),
@@ -34,6 +35,10 @@ test('keeps host access limited to the Studio and the host own profile', () => {
   assert.equal(permissions.includes(ACCESS_PERMISSIONS.ORDERS_READ), false);
   assert.equal(
     permissions.includes(ACCESS_PERMISSIONS.EPISODES_MANAGE),
+    false
+  );
+  assert.equal(
+    permissions.includes(ACCESS_PERMISSIONS.MASTERMIND_MANAGE),
     false
   );
 });
@@ -57,6 +62,14 @@ test('gives Studio managers host access plus Studio management permissions', () 
   );
   assert.equal(
     permissions.includes(ACCESS_PERMISSIONS.PROFILES_UPDATE),
+    true
+  );
+  assert.equal(
+    permissions.includes(ACCESS_PERMISSIONS.MASTERMIND_READ),
+    true
+  );
+  assert.equal(
+    permissions.includes(ACCESS_PERMISSIONS.MASTERMIND_MANAGE),
     true
   );
   assert.equal(permissions.includes(ACCESS_PERMISSIONS.ORDERS_READ), false);
@@ -113,6 +126,14 @@ test('gives logistics users the operations resource center without Studio manage
   assert.equal(
     permissions.includes(ACCESS_PERMISSIONS.PRODUCTS_PUBLISH),
     true
+  );
+  assert.equal(
+    permissions.includes(ACCESS_PERMISSIONS.MASTERMIND_READ),
+    false
+  );
+  assert.equal(
+    permissions.includes(ACCESS_PERMISSIONS.MASTERMIND_MANAGE),
+    false
   );
 });
 

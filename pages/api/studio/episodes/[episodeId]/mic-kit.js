@@ -1,6 +1,7 @@
 import { ADMIN_PERMISSIONS } from '../../../../../lib/adminAuth';
 import { logAdminAction } from '../../../../../lib/adminAudit';
 import { requireEpisodeStudioAccess } from '../../../../../lib/episodeStudioAccess';
+import { getHostDraftObserverMutationBlocker } from '../../../../../lib/episodeStudioDraftAccess.mjs';
 import {
   EPISODE_MIC_KIT_DELIVERABLE_ID,
   applyEpisodeMicKitPlanUpdate,
@@ -112,6 +113,13 @@ async function participantIdentity(access, participantType, hostPersonId) {
 
 function responsePayload(access, trackerResult) {
   const deliverable = microphonePlanDeliverable(access.episode);
+  const hostDraftReadOnly = Boolean(
+    getHostDraftObserverMutationBlocker({
+      status: access.episode.status,
+      canHost: access.roles.includes('host'),
+      canManage: access.canManage,
+    })
+  );
   const viewerHostPersonId =
     access.roles.includes('host') &&
     access.episode.host_person_ids.includes(access.binding?.person_id || '')
@@ -158,10 +166,14 @@ function responsePayload(access, trackerResult) {
         !HOST_LOCKED_STATUSES.has(access.episode.status)
     ),
     can_coordinate_requests: Boolean(
-      requestableHostPersonIds(access).length || canRequestForGuest(access)
+      !hostDraftReadOnly &&
+        (requestableHostPersonIds(access).length || canRequestForGuest(access))
     ),
-    requestable_host_person_ids: requestableHostPersonIds(access),
-    can_request_guest: canRequestForGuest(access),
+    requestable_host_person_ids: hostDraftReadOnly
+      ? []
+      : requestableHostPersonIds(access),
+    can_request_guest: !hostDraftReadOnly && canRequestForGuest(access),
+    host_draft_read_only: hostDraftReadOnly,
     plans,
     guest_plan: guestPlan,
     request_coverage: requestCoverage,
@@ -203,6 +215,16 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'POST') {
+      const hostDraftBlocker = getHostDraftObserverMutationBlocker({
+        status: access.episode.status,
+        canHost: access.roles.includes('host'),
+        canManage: access.canManage,
+      });
+      if (hostDraftBlocker) {
+        return res
+          .status(hostDraftBlocker.status)
+          .json({ ok: false, ...hostDraftBlocker });
+      }
       if (HOST_LOCKED_STATUSES.has(access.episode.status)) {
         return res.status(409).json({
           ok: false,

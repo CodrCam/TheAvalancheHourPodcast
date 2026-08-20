@@ -2,6 +2,7 @@ import {
   ADMIN_PERMISSIONS,
   requirePermissionAsync,
 } from '../../../../../lib/adminAuth';
+import { getHostDraftObserverMutationBlocker } from '../../../../../lib/episodeStudioDraftAccess.mjs';
 import { logAdminAction } from '../../../../../lib/adminAudit';
 import {
   applyGuestQuestionnaireProjectionToEpisode,
@@ -11,6 +12,7 @@ import {
   GuestQuestionnaireValidationError,
   mergeGuestQuestionnaireConfiguration,
   projectGuestQuestionnaireResponse,
+  reopenGuestQuestionnaireResponse,
   sanitizeGuestQuestionnaireForStudio,
 } from '../../../../../lib/guestQuestionnairePresentation.mjs';
 import {
@@ -24,8 +26,10 @@ import {
 } from '../../../../../lib/guestQuestionnaireToken.mjs';
 import {
   completeGuestQuestionnaireWorkflowTask,
+  GUEST_QUESTIONNAIRE_RECEIVED_TASK_ID,
   GUEST_QUESTIONNAIRE_SENT_TASK_ID,
   reopenGuestQuestionnaireSentTaskForNewLink,
+  reopenGuestQuestionnaireWorkflowForUpdate,
 } from '../../../../../lib/guestQuestionnaireWorkflow.mjs';
 import {
   isEpisodeAssetStorageConfigured,
@@ -49,6 +53,7 @@ import {
 const ACTIONS = new Set([
   'save_configuration',
   'issue_link',
+  'request_update',
   'mark_shared',
   'revoke_link',
   'apply_response',
@@ -80,6 +85,7 @@ function responseBody({
   canIssue,
   canApply,
   canRevoke,
+  canRequestUpdate,
   extra = {},
 }) {
   const uploadStorageRequired = (record.upload_slots || []).some(
@@ -94,6 +100,7 @@ function responseBody({
     can_issue: canIssue,
     can_apply: canApply,
     can_revoke: canRevoke,
+    can_request_update: canRequestUpdate,
     can_view_shipping: canViewShipping,
     uploads_configured: uploadsConfigured,
     ...sanitizeGuestQuestionnaireForStudio(record, { canViewShipping }),
@@ -217,11 +224,21 @@ export default async function handler(req, res) {
       linkStatus: effectiveLinkStatus,
       responseStatus: record.response.status,
     });
-    const canViewShipping = capabilities.can_view_shipping;
-    const canEdit = capabilities.can_edit;
-    const canIssue = capabilities.can_issue;
-    const canApply = capabilities.can_apply;
-    const canRevoke = capabilities.can_revoke;
+    const hostDraftReadOnly = Boolean(
+      getHostDraftObserverMutationBlocker({
+        status: episode.status,
+        canHost: relationship.canHost,
+        canManage,
+      })
+    );
+    const canViewShipping =
+      !hostDraftReadOnly && capabilities.can_view_shipping;
+    const canEdit = !hostDraftReadOnly && capabilities.can_edit;
+    const canIssue = !hostDraftReadOnly && capabilities.can_issue;
+    const canApply = !hostDraftReadOnly && capabilities.can_apply;
+    const canRevoke = !hostDraftReadOnly && capabilities.can_revoke;
+    const canRequestUpdate =
+      !hostDraftReadOnly && capabilities.can_request_update;
 
     if (req.method === 'GET') {
       return res.status(200).json(
@@ -234,6 +251,8 @@ export default async function handler(req, res) {
           canIssue,
           canApply,
           canRevoke,
+          canRequestUpdate,
+          extra: { host_draft_read_only: hostDraftReadOnly },
         })
       );
     }
@@ -242,6 +261,16 @@ export default async function handler(req, res) {
         ok: false,
         error: 'Content-Type must be application/json',
       });
+    }
+    const hostDraftBlocker = getHostDraftObserverMutationBlocker({
+      status: episode.status,
+      canHost: relationship.canHost,
+      canManage,
+    });
+    if (hostDraftBlocker) {
+      return res
+        .status(hostDraftBlocker.status)
+        .json({ ok: false, ...hostDraftBlocker });
     }
     if (!stored.configured) {
       return res.status(503).json({
@@ -264,6 +293,13 @@ export default async function handler(req, res) {
             'Only an assigned producer or Studio manager can revoke this locked questionnaire link.',
         });
       }
+    } else if (action === 'request_update' && !canRequestUpdate) {
+      return res.status(409).json({
+        ok: false,
+        code: 'GUEST_RESPONSE_UPDATE_NOT_AVAILABLE',
+        error:
+          'Only the assigned producer or a Studio manager can request a corrected response after submission.',
+      });
     } else if (action === 'save_configuration' && !canEdit) {
       return res.status(409).json({
         ok: false,
@@ -392,6 +428,69 @@ export default async function handler(req, res) {
           issued.token
         )}`,
       };
+    } else if (action === 'request_update') {
+      const uploadStorageRequired = (record.upload_slots || []).some(
+        (slot) => slot.visible !== false && slot.status === 'enabled'
+      );
+      if (uploadStorageRequired && !isEpisodeAssetStorageConfigured()) {
+        return res.status(503).json({
+          ok: false,
+          code: 'GUEST_QUESTIONNAIRE_UPLOADS_NOT_CONFIGURED',
+          error:
+            'Secure guest file storage must be configured before requesting a questionnaire update.',
+        });
+      }
+      if (!isGuestQuestionnaireTokenConfigured()) {
+        return res.status(503).json({
+          ok: false,
+          code: 'GUEST_QUESTIONNAIRE_LINKS_NOT_CONFIGURED',
+          error:
+            'Guest questionnaire share links are not configured securely.',
+        });
+      }
+      const now = new Date();
+      const issued = issueGuestQuestionnaireToken({
+        episodeId,
+        expiresInDays: req.body?.expires_in_days,
+        now,
+      });
+      const reopenedQuestionnaire = reopenGuestQuestionnaireResponse(record, {
+        now,
+      });
+      const reopenedWorkflow = reopenGuestQuestionnaireWorkflowForUpdate(
+        episode,
+        { actorPersonId, actorName, now }
+      );
+      saved = await saveGuestQuestionnaireWithEpisode(
+        {
+          episode: reopenedWorkflow.episode,
+          questionnaire: {
+            ...reopenedQuestionnaire,
+            link: {
+              status: 'active',
+              token_jti_hash: issued.token_jti_hash,
+              issued_at: issued.issued_at,
+              expires_at: issued.expires_at,
+              revoked_at: '',
+              issued_by_person_id: actorPersonId,
+            },
+            upload_budget: resetGuestQuestionnaireUploadBudget(
+              issued.token_jti_hash
+            ),
+            updated_by_person_id: actorPersonId,
+          },
+        },
+        {
+          expectedQuestionnaireUpdatedAt: expectedUpdatedAt,
+          expectedEpisodeUpdatedAt: episode.updated_at,
+        }
+      );
+      extra = {
+        share_token: issued.token,
+        share_path: `/studio/guest-questionnaire#token=${encodeURIComponent(
+          issued.token
+        )}`,
+      };
     } else if (action === 'mark_shared') {
       if (getGuestQuestionnaireLinkState(record.link).status !== 'active') {
         return res.status(409).json({
@@ -419,9 +518,31 @@ export default async function handler(req, res) {
           )
         : { questionnaire: record, episode, configured: true };
     } else if (action === 'revoke_link') {
+      let revokeEpisode = episode;
+      if (record.response.status === 'update_requested') {
+        const sent = completeGuestQuestionnaireWorkflowTask(
+          revokeEpisode,
+          GUEST_QUESTIONNAIRE_SENT_TASK_ID,
+          {
+            actorPersonId,
+            actorName,
+            note: 'The corrected-response request was cancelled.',
+          }
+        );
+        const received = completeGuestQuestionnaireWorkflowTask(
+          sent.episode,
+          GUEST_QUESTIONNAIRE_RECEIVED_TASK_ID,
+          {
+            actorPersonId,
+            actorName,
+            note: 'The prior submitted guest response remains current.',
+          }
+        );
+        revokeEpisode = received.episode;
+      }
       saved = await saveGuestQuestionnaireWithEpisode(
         {
-          episode,
+          episode: revokeEpisode,
           questionnaire: {
             ...record,
             link: {
@@ -430,6 +551,10 @@ export default async function handler(req, res) {
               token_jti_hash: '',
               revoked_at: new Date().toISOString(),
             },
+            response:
+              record.response.status === 'update_requested'
+                ? { ...record.response, status: 'submitted' }
+                : record.response,
             updated_by_person_id: actorPersonId,
           },
         },
@@ -549,6 +674,7 @@ export default async function handler(req, res) {
         canIssue: nextCapabilities.can_issue,
         canApply: nextCapabilities.can_apply,
         canRevoke: nextCapabilities.can_revoke,
+        canRequestUpdate: nextCapabilities.can_request_update,
         extra,
       })
     );

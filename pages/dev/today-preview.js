@@ -1,25 +1,12 @@
 import { TodayWorkspace } from '../studio';
-
-const previewSession = {
-  display_name: 'Caleb Merrill',
-  username: 'caleb@example.com',
-  groups: ['admin'],
-  permissions: [
-    'studio:read',
-    'resources:read',
-    'episodes:read',
-    'episodes:manage',
-    'profile:self:read',
-    'mic_kits:read',
-    'mic_kits:manage',
-    'orders:read',
-    'inventory:read',
-    'products:read',
-    'intake:read',
-    'intake:create',
-    'intake:manage',
-  ],
-};
+import StudioLayout from '../../components/StudioLayout';
+import {
+  STUDIO_PREVIEW_EPISODES,
+  STUDIO_PREVIEW_HREF_MAP,
+  STUDIO_PREVIEW_MASTERMIND_OVERVIEW,
+  STUDIO_PREVIEW_SEASON,
+  STUDIO_PREVIEW_SESSION,
+} from '../../lib/studioPreviewFixtures.mjs';
 
 const previewWorkspace = {
   guide: {
@@ -32,38 +19,9 @@ const previewWorkspace = {
         'Use the Episode Studio deadline as the source of truth and flag any schedule conflict in the episode discussion.',
     },
   },
-  episodes: [
-    {
-      episode_id: 'forecasting-through-change',
-      title: 'Forecasting Through Change',
-      status: 'in_progress',
-      due_date: '2026-07-29',
-      target_release_date: '2026-08-05',
-      delivery_health: 'off_track',
-      completion: { host_percent: 55 },
-      my_roles: ['creator'],
-    },
-    {
-      episode_id: 'mentorship-in-the-mountains',
-      title: 'Mentorship in the Mountains',
-      status: 'submitted',
-      due_date: '2026-08-01',
-      target_release_date: '2026-08-08',
-      delivery_health: 'on_track',
-      completion: { host_percent: 100 },
-      my_roles: [],
-    },
-    {
-      episode_id: 'snowpack-communication',
-      title: 'Snowpack Communication',
-      status: 'in_progress',
-      due_date: '2026-08-06',
-      target_release_date: '2026-08-13',
-      delivery_health: 'on_track',
-      completion: { host_percent: 72 },
-      my_roles: [],
-    },
-  ],
+  episodes: STUDIO_PREVIEW_EPISODES,
+  season: STUDIO_PREVIEW_SEASON,
+  mastermind: STUDIO_PREVIEW_MASTERMIND_OVERVIEW,
   micKits: {
     tracker: { requests: [], kits: [] },
     automation: {
@@ -94,10 +52,7 @@ const previewWorkspace = {
       },
     ],
   },
-  operations: {
-    orders: { unshipped: 3 },
-    inventory: { low_stock: 2, sold_out: 1 },
-  },
+  operations: null,
 };
 
 export async function getServerSideProps() {
@@ -109,21 +64,18 @@ export async function getServerSideProps() {
 
 export default function TodayPreviewPage() {
   return (
-    <main
-      style={{
-        minHeight: '100vh',
-        padding: '32px 0 70px',
-        color: '#142638',
-        background:
-          'linear-gradient(150deg, #f8f7f2 0%, #f1f4f3 52%, #eef2f2 100%)',
-      }}
+    <StudioLayout
+      requiredPermission="studio:read"
+      previewSession={STUDIO_PREVIEW_SESSION}
+      previewPath="/studio"
+      previewHrefMap={STUDIO_PREVIEW_HREF_MAP}
+      wide
     >
-      <div style={{ width: 'min(1180px, calc(100% - 32px))', margin: '0 auto' }}>
-        <TodayWorkspace
-          previewSession={previewSession}
-          previewWorkspace={previewWorkspace}
-        />
-      </div>
-    </main>
+      <TodayWorkspace
+        previewSession={STUDIO_PREVIEW_SESSION}
+        previewWorkspace={previewWorkspace}
+        previewHrefMap={STUDIO_PREVIEW_HREF_MAP}
+      />
+    </StudioLayout>
   );
 }

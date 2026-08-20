@@ -1,0 +1,145 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >-
+  Isolated, Free-Plan-friendly Season Mastermind backend with one
+  IAM-authenticated Lambda Function URL and Aurora IAM database authentication.
+
+Parameters:
+  AuroraEndpoint:
+    Type: String
+    AllowedPattern: '^[A-Za-z0-9](?:[A-Za-z0-9.-]{1,251})[A-Za-z0-9]$'
+    ConstraintDescription: Provide only the Aurora DNS hostname, without a scheme or port.
+    Description: Exact Aurora PostgreSQL cluster endpoint used for TLS and IAM token signing.
+
+  AuroraDbClusterResourceId:
+    Type: String
+    AllowedPattern: '^cluster-[A-Za-z0-9]+$'
+    ConstraintDescription: Provide the immutable RDS DB cluster resource ID beginning with cluster-.
+    Description: Immutable resource ID used to scope rds-db:connect.
+
+  DatabaseName:
+    Type: String
+    Default: postgres
+    AllowedPattern: '^[A-Za-z_][A-Za-z0-9_]{0,62}$'
+    Description: PostgreSQL database containing the season_mastermind schema.
+
+  DatabaseUser:
+    Type: String
+    Default: season_mastermind_app
+    AllowedPattern: '^[A-Za-z_][A-Za-z0-9_]{0,62}$'
+    Description: Dedicated LOGIN role with rds_iam and bounded schema grants.
+
+  BackendEnabled:
+    Type: String
+    Default: "false"
+    AllowedValues:
+      - "true"
+      - "false"
+    Description: Default-off kill switch for every backend operation.
+
+  WritesEnabled:
+    Type: String
+    Default: "false"
+    AllowedValues:
+      - "true"
+      - "false"
+    Description: Separate default-off switch for manager mutations.
+
+Resources:
+  SeasonMastermindLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}/season-mastermind
+      RetentionInDays: 1
+      LogGroupClass: STANDARD
+      Tags:
+        - Key: application
+          Value: avalanche-hour
+        - Key: component
+          Value: season-mastermind
+
+  SeasonMastermindExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: season-mastermind-runtime-only
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: WriteOnlyThisFunctionsLogs
+                Effect: Allow
+                Action:
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !GetAtt SeasonMastermindLogGroup.Arn
+              - Sid: ConnectOnlyAsSeasonMastermindDatabaseUser
+                Effect: Allow
+                Action: rds-db:connect
+                Resource: !Sub >-
+                  arn:${AWS::Partition}:rds-db:${AWS::Region}:${AWS::AccountId}:dbuser:${AuroraDbClusterResourceId}/${DatabaseUser}
+      Tags:
+        - Key: application
+          Value: avalanche-hour
+        - Key: component
+          Value: season-mastermind
+
+  SeasonMastermindFunction:
+    Type: AWS::Serverless::Function
+    DependsOn:
+      - SeasonMastermindLogGroup
+    Properties:
+      Description: Bounded IAM-only proxy API for public Season Mastermind planning metadata.
+      CodeUri: season_mastermind_api/
+      Handler: app.handler
+      Runtime: python3.13
+      Architectures:
+        - arm64
+      MemorySize: 128
+      Timeout: 10
+      RecursiveLoop: Terminate
+      Tracing: Disabled
+      Role: !GetAtt SeasonMastermindExecutionRole.Arn
+      FunctionUrlConfig:
+        AuthType: AWS_IAM
+        InvokeMode: BUFFERED
+      LoggingConfig:
+        LogFormat: JSON
+        ApplicationLogLevel: INFO
+        SystemLogLevel: WARN
+        LogGroup: !Ref SeasonMastermindLogGroup
+      Environment:
+        Variables:
+          MASTERMIND_BACKEND_ENABLED: !Ref BackendEnabled
+          MASTERMIND_WRITES_ENABLED: !Ref WritesEnabled
+          MASTERMIND_DB_HOST: !Ref AuroraEndpoint
+          MASTERMIND_DB_PORT: "5432"
+          MASTERMIND_DB_NAME: !Ref DatabaseName
+          MASTERMIND_DB_USER: !Ref DatabaseUser
+          MASTERMIND_DB_SSL_MODE: verify-full
+          MASTERMIND_DB_CONNECT_TIMEOUT_SECONDS: "3"
+          MASTERMIND_SQL_STATEMENT_TIMEOUT_MS: "2000"
+          MASTERMIND_SQL_LOCK_TIMEOUT_MS: "500"
+          MASTERMIND_DEFAULT_PAGE_SIZE: "20"
+      Tags:
+        application: avalanche-hour
+        component: season-mastermind
+
+Outputs:
+  SeasonMastermindFunctionUrl:
+    Description: IAM-authenticated URL; the server-side caller must SigV4-sign requests.
+    Value: !GetAtt SeasonMastermindFunctionUrl.FunctionUrl
+
+  SeasonMastermindFunctionArn:
+    Description: Scope the trusted proxy caller's two Lambda invoke actions to this ARN only.
+    Value: !GetAtt SeasonMastermindFunction.Arn
+
+  SeasonMastermindExecutionRoleArn:
+    Description: Runtime role with logs and one exact rds-db:connect resource only.
+    Value: !GetAtt SeasonMastermindExecutionRole.Arn

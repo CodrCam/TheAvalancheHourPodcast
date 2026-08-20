@@ -147,8 +147,9 @@ export default function AdminLogin({
             <span>Private team workspace</span>
             <h1>Welcome back.</h1>
             <p>
-              Sign in to open episode production, team resources, mic-kit
-              logistics, and the work assigned to you.
+              Sign in to open Season 11 planning, guest preparation, Host
+              Studio, producer tasks, team resources, mic-kit logistics, and
+              the work assigned to you.
             </p>
           </div>
 

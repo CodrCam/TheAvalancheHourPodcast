@@ -1,0 +1,101 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >-
+  Free-Plan-friendly operational hardening for The Avalanche Hour: a capped,
+  IAM-authenticated resilience probe Lambda Function URL.
+
+Parameters:
+  ProbeEndpoints:
+    Type: String
+    Default: >-
+      https://theavalanchehour.com/,https://theavalanchehour.com/episodes
+    AllowedPattern: '^https://[^,\s]+(,https://[^,\s]+){0,4}$'
+    ConstraintDescription: Provide one to five comma-separated HTTPS URLs without spaces.
+    Description: Comma-separated public HTTPS endpoints checked by the resilience probe.
+
+  ProbeAllowedHosts:
+    Type: String
+    Default: theavalanchehour.com,www.theavalanchehour.com
+    AllowedPattern: '^[A-Za-z0-9.-]+(,[A-Za-z0-9.-]+){0,4}$'
+    ConstraintDescription: Provide one to five comma-separated DNS hostnames without spaces.
+    Description: Exact DNS hostnames that the probe and its redirects may contact.
+
+Resources:
+  ResilienceProbeLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}/resilience-probe
+      RetentionInDays: 1
+      LogGroupClass: STANDARD
+      Tags:
+        - Key: application
+          Value: avalanche-hour
+        - Key: component
+          Value: resilience-probe
+
+  ResilienceProbeExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: write-resilience-probe-logs
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: WriteOnlyThisFunctionsLogs
+                Effect: Allow
+                Action:
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !GetAtt ResilienceProbeLogGroup.Arn
+      Tags:
+        - Key: application
+          Value: avalanche-hour
+        - Key: component
+          Value: resilience-probe
+
+  ResilienceProbeFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: Checks a small deployment-time allowlist of public site endpoints.
+      CodeUri: resilience_probe/
+      Handler: app.handler
+      Runtime: python3.13
+      Architectures:
+        - arm64
+      MemorySize: 128
+      Timeout: 5
+      RecursiveLoop: Terminate
+      Tracing: Disabled
+      Role: !GetAtt ResilienceProbeExecutionRole.Arn
+      FunctionUrlConfig:
+        AuthType: AWS_IAM
+        InvokeMode: BUFFERED
+      LoggingConfig:
+        LogFormat: JSON
+        ApplicationLogLevel: INFO
+        SystemLogLevel: WARN
+        LogGroup: !Ref ResilienceProbeLogGroup
+      Environment:
+        Variables:
+          PROBE_ENDPOINTS: !Ref ProbeEndpoints
+          PROBE_ALLOWED_HOSTS: !Ref ProbeAllowedHosts
+          PROBE_REQUEST_TIMEOUT_SECONDS: "2"
+      Tags:
+        application: avalanche-hour
+        component: resilience-probe
+
+Outputs:
+  ResilienceProbeUrl:
+    Description: IAM-authenticated URL; requests must be SigV4 signed.
+    Value: !GetAtt ResilienceProbeFunctionUrl.FunctionUrl
+
+  ResilienceProbeFunctionArn:
+    Description: Use this ARN in the invoking principal's two-action IAM policy.
+    Value: !GetAtt ResilienceProbeFunction.Arn

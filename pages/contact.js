@@ -41,7 +41,8 @@ export default function Contact() {
     isSponsorship: false,
     companyName: '',
     sponsorshipBudget: '',
-    sponsorshipGoals: ''
+    sponsorshipGoals: '',
+    website: ''
   });
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -126,7 +127,8 @@ export default function Contact() {
               isSponsorship: false,
               companyName: '',
               sponsorshipBudget: '',
-              sponsorshipGoals: ''
+              sponsorshipGoals: '',
+              website: ''
             });
 
             // Scroll to success message (async to allow render)
@@ -207,6 +209,20 @@ export default function Contact() {
                 </Typography>
                 
                 <Box component="form" onSubmit={handleSubmit} noValidate>
+                  <Box
+                    aria-hidden="true"
+                    sx={{ position: 'absolute', left: '-10000px', width: 1, height: 1, overflow: 'hidden' }}
+                  >
+                    <label htmlFor="contact-website">Website</label>
+                    <input
+                      id="contact-website"
+                      name="website"
+                      value={formData.website}
+                      onChange={handleChange}
+                      tabIndex={-1}
+                      autoComplete="off"
+                    />
+                  </Box>
                   <Grid container spacing={3}>
                     {/* Sponsorship Checkbox */}
                     <Grid item xs={12}>
@@ -257,6 +273,7 @@ export default function Contact() {
                         helperText={errors.name}
                         disabled={loading}
                         autoComplete="name"
+                        inputProps={{ maxLength: 120 }}
                       />
                     </Grid>
                     
@@ -274,6 +291,7 @@ export default function Contact() {
                         helperText={errors.email}
                         disabled={loading}
                         autoComplete="email"
+                        inputProps={{ maxLength: 254 }}
                       />
                     </Grid>
 
@@ -293,6 +311,7 @@ export default function Contact() {
                             helperText={errors.companyName}
                             disabled={loading}
                             autoComplete="organization"
+                            inputProps={{ maxLength: 200 }}
                           />
                         </Grid>
 
@@ -305,6 +324,7 @@ export default function Contact() {
                             value={formData.sponsorshipBudget}
                             onChange={handleChange}
                             disabled={loading}
+                            inputProps={{ maxLength: 200 }}
                             placeholder="e.g., $1,000-$5,000"
                           />
                         </Grid>
@@ -320,6 +340,7 @@ export default function Contact() {
                             value={formData.sponsorshipGoals}
                             onChange={handleChange}
                             disabled={loading}
+                            inputProps={{ maxLength: 3000 }}
                             placeholder="Tell us about your marketing objectives and target audience..."
                           />
                         </Grid>
@@ -335,6 +356,7 @@ export default function Contact() {
                         value={formData.subject}
                         onChange={handleChange}
                         disabled={loading}
+                        inputProps={{ maxLength: 200 }}
                         placeholder={formData.isSponsorship ? "Sponsorship Inquiry" : "Brief description of your message"}
                       />
                     </Grid>

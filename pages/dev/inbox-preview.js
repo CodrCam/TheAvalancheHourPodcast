@@ -1,16 +1,52 @@
 import StudioInboxPage from '../studio/inbox';
+import StudioLayout from '../../components/StudioLayout';
+import {
+  STUDIO_PREVIEW_HREF_MAP,
+  STUDIO_PREVIEW_SESSION,
+} from '../../lib/studioPreviewFixtures.mjs';
 
 const previewData = {
   configured: true,
   canManage: true,
+  canStartMastermind: true,
   viewer_person_id: 'caleb-merrill',
-  showCreate: true,
+  showCreate: false,
+  mastermindSeasons: [
+    {
+      season_id: '11111111-1111-4111-8111-111111111111',
+      label: 'Season 11',
+      status: 'planning',
+    },
+  ],
+  mastermindHosts: [
+    { person_id: 'caleb-merrill', name: 'Caleb Merrill' },
+    { person_id: 'dom-baker', name: 'Dom Baker' },
+    { person_id: 'angie-link', name: 'Angie Lake' },
+  ],
   assignees: [
     { person_id: 'caleb-merrill', name: 'Caleb Merrill' },
     { person_id: 'dom-baker', name: 'Dom Baker' },
     { person_id: 'angie-link', name: 'Angie Lake' },
   ],
   items: [
+    {
+      item_id: 'episode-request-season-11-field-decisions',
+      kind: 'request',
+      title: 'Episode request: Field decisions after rapid loading',
+      details:
+        'Working title: Field decisions after rapid loading\nProposed guest: Reviewed public candidate\nPreferred air date: 2026-11-04\nPitch / listener takeaway:\nCompare the observations that changed the decision before and after the storm.',
+      status: 'reviewing',
+      priority: 'normal',
+      target_date: '2026-08-28',
+      assigned_to_person_id: 'caleb-merrill',
+      assigned_to_name: 'Caleb Merrill',
+      created_by_person_id: 'dom-baker',
+      created_by_name: 'Dom Baker',
+      created_by_role: 'host',
+      created_at: '2026-08-18T15:00:00.000Z',
+      updated_at: '2026-08-18T16:00:00.000Z',
+      comments: [],
+    },
     {
       item_id: 'recording-room-access',
       kind: 'blocker',
@@ -86,18 +122,14 @@ export async function getServerSideProps() {
 
 export default function InboxPreviewPage() {
   return (
-    <main
-      style={{
-        minHeight: '100vh',
-        padding: '42px 0 80px',
-        color: '#142638',
-        background:
-          'linear-gradient(150deg, #f8f7f2 0%, #f1f4f3 52%, #eef2f2 100%)',
-      }}
+    <StudioLayout
+      requiredPermission="intake:read"
+      previewSession={STUDIO_PREVIEW_SESSION}
+      previewPath="/studio/inbox"
+      previewHrefMap={STUDIO_PREVIEW_HREF_MAP}
+      wide
     >
-      <div style={{ width: 'min(1260px, calc(100% - 32px))', margin: '0 auto' }}>
-        <StudioInboxPage previewData={previewData} />
-      </div>
-    </main>
+      <StudioInboxPage previewData={previewData} />
+    </StudioLayout>
   );
 }

@@ -12,6 +12,7 @@ import {
 } from '../../../../../../lib/episodeAssetPolicy.mjs';
 import { restoreEpisodeAssetDeletionMetadata } from '../../../../../../lib/episodeAssetDeletionRecovery.mjs';
 import { requireEpisodeStudioAccess } from '../../../../../../lib/episodeStudioAccess';
+import { getHostDraftObserverMutationBlocker } from '../../../../../../lib/episodeStudioDraftAccess.mjs';
 import {
   isEpisodeAssetExpired,
   removeEpisodeAssetFromEpisode,
@@ -82,6 +83,13 @@ function questionnaireSlotForAsset(questionnaire, assetId) {
     getGuestQuestionnaireSlotAssets(questionnaire, slot.key).some(
       (candidate) => candidate.asset_id === assetId
     )
+  );
+}
+
+function questionnaireUpdateLocksAsset(questionnaire, assetId) {
+  return Boolean(
+    questionnaire?.response?.status === 'update_requested' &&
+      questionnaireSlotForAsset(questionnaire, assetId)
   );
 }
 
@@ -267,6 +275,16 @@ export default async function handler(req, res) {
         .status(400)
         .json({ ok: false, error: 'Content-Type must be application/json' });
     }
+    const hostDraftBlocker = getHostDraftObserverMutationBlocker({
+      status: access.episode.status,
+      canHost: access.roles.includes('host'),
+      canManage: access.canManage,
+    });
+    if (hostDraftBlocker) {
+      return res
+        .status(hostDraftBlocker.status)
+        .json({ ok: false, ...hostDraftBlocker });
+    }
     if (
       !canDeleteEpisodeAsset({
         roles: access.roles,
@@ -324,6 +342,14 @@ export default async function handler(req, res) {
           currentQuestionnaire,
           assetId
         );
+        if (questionnaireUpdateLocksAsset(currentQuestionnaire, assetId)) {
+          return res.status(409).json({
+            ok: false,
+            code: 'GUEST_UPLOADS_UPDATE_LOCKED',
+            error:
+              'This previously submitted guest file is preserved while a corrected response is open. Cancel or complete the guest update before deleting it.',
+          });
+        }
         if (!currentAsset && !currentQuestionnaireSlot) {
           saved = {
             episode: currentEpisode,

@@ -24,6 +24,7 @@ import {
   isGuestQuestionnairePublicAccessAllowed,
 } from '../../../../lib/guestQuestionnaireToken.mjs';
 import {
+  assertGuestQuestionnaireUploadMutationsAllowed,
   GuestQuestionnaireUploadApiError,
   requireGuestQuestionnaireUploadAccess,
   sendGuestQuestionnaireUploadError,
@@ -95,12 +96,7 @@ function assertCurrentGuestAccess(questionnaire, episode, tokenPayload) {
       { status: 410, code: 'GUEST_QUESTIONNAIRE_UNAVAILABLE' }
     );
   }
-  if (questionnaire.response.status === 'submitted') {
-    throw new GuestQuestionnaireUploadApiError(
-      'This questionnaire has already been submitted, so its files are locked.',
-      { status: 409, code: 'GUEST_UPLOADS_LOCKED' }
-    );
-  }
+  assertGuestQuestionnaireUploadMutationsAllowed(questionnaire);
 }
 
 function assertCurrentEpisodeStep(episode, configuredSlot) {

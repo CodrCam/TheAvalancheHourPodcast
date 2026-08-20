@@ -142,6 +142,54 @@ test('does not generate reminders for a deleted episode', () => {
   assert.deepEqual(entries, []);
 });
 
+test('host drafts do not create producer or admin production work', () => {
+  const entries = generateEpisodeReminderEntries(
+    [
+      {
+        episode_id: 'host-draft',
+        title: 'Host research draft',
+        status: 'in_progress',
+        host_person_ids: ['host-1'],
+        producer_person_id: 'producer-1',
+        production_tasks: [
+          {
+            task_id: 'host-research',
+            label: 'Review source material',
+            owner_type: 'hosts',
+            due_date: '2026-08-19',
+            required: true,
+            status: 'not_started',
+          },
+          {
+            task_id: 'producer-edit',
+            label: 'Begin edit',
+            owner_type: 'producer',
+            due_date: '2026-08-19',
+            required: true,
+            status: 'not_started',
+          },
+        ],
+      },
+    ],
+    {
+      today: '2026-08-19',
+      generatedAt: '2026-08-19T08:00:00.000Z',
+      adminPersonIds: ['admin-1'],
+    }
+  );
+
+  assert.deepEqual(
+    entries.map((entry) => entry.notification.recipient_person_id),
+    ['host-1']
+  );
+  assert.equal(entries[0].notification.entity_id, 'host-draft:host-research');
+  assert.equal(
+    entries[0].notification.deep_link,
+    '/studio/episodes/host-draft#host-research-review'
+  );
+  assert.match(entries[0].notification.preview, /producer queue will stay quiet/i);
+});
+
 test('includes configured admins in episode reminders with grouped observer records', () => {
   const entries = generateStudioReminderEntries(
     {

@@ -72,7 +72,7 @@ test('filters the queue to operations follow-ups', () => {
   );
 });
 
-test('puts requested changes and off-track work ahead of routine progress', () => {
+test('keeps requested changes with the host instead of activating production', () => {
   const result = buildStudioToday(
     {
       episodes: [
@@ -88,13 +88,54 @@ test('puts requested changes and off-track work ahead of routine progress', () =
     { today: '2026-07-26' }
   );
 
-  assert.equal(result.actions[0].title.includes('recovery plan'), true);
+  assert.equal(result.actions[0].title.includes('requested changes'), true);
   assert.equal(result.actions[0].urgency, 'urgent');
   assert.equal(
     result.actions[0].href,
-    '/studio/episodes/episode-two/production#production-workflow'
+    '/studio/episodes/episode-two'
   );
   assert.equal(result.metrics.off_track, 1);
+});
+
+test('a producer can watch a host draft without receiving draft actions', () => {
+  const draft = episode({
+    my_roles: ['producer'],
+    workflow: {
+      next_due_task: {
+        task_id: 'guest-prep',
+        label: 'Prepare guest brief',
+        due_date: '2026-07-28',
+        owner_type: 'producer',
+        owner_label: 'Assigned producer',
+      },
+    },
+  });
+  const producer = buildStudioToday(
+    { episodes: [draft] },
+    { today: '2026-07-26' }
+  );
+
+  assert.equal(producer.actions.length, 0);
+  assert.equal(producer.metrics.active_episodes, 1);
+});
+
+test('deletion-scheduled Studios disappear from Today work', () => {
+  const result = buildStudioToday(
+    {
+      episodes: [
+        episode({
+          deletion_pending: true,
+          deleted_at: '2026-07-26T12:00:00.000Z',
+          delivery_health: 'off_track',
+        }),
+      ],
+    },
+    { today: '2026-07-26' }
+  );
+
+  assert.equal(result.episode_actions.length, 0);
+  assert.equal(result.metrics.active_episodes, 0);
+  assert.equal(result.metrics.off_track, 0);
 });
 
 test('routes workflow work to Production while routine package work stays on Package', () => {

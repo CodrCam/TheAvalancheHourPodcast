@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   EMPTY_EPISODE_REQUEST_FORM,
   buildEpisodeRequestItem,
+  isEpisodeRequestItem,
   normalizeEpisodeRequestForm,
   validateEpisodeRequestForm,
 } from '../lib/episodeRequest.mjs';
@@ -61,6 +62,18 @@ test('omits blank optional fields from the Team Inbox details', () => {
   assert.doesNotMatch(item.details, /Preferred air date:/);
   assert.match(item.details, /Working title: A field debrief/);
   assert.match(item.details, /Pitch \/ listener takeaway:/);
+});
+
+test('recognizes only the canonical Episode request handoff source', () => {
+  assert.equal(isEpisodeRequestItem(buildEpisodeRequestItem(completeRequest)), true);
+  assert.equal(
+    isEpisodeRequestItem({ kind: 'idea', title: 'Episode request: Wrong kind' }),
+    false
+  );
+  assert.equal(
+    isEpisodeRequestItem({ kind: 'request', title: 'Mic kit request' }),
+    false
+  );
 });
 
 test('enforces required and maximum text lengths after trimming', () => {

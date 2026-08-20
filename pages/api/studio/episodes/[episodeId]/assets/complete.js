@@ -16,6 +16,7 @@ import {
   resetProducerProofApprovalForNewAsset,
 } from '../../../../../../lib/episodeAssetPolicy.mjs';
 import { requireEpisodeStudioAccess } from '../../../../../../lib/episodeStudioAccess';
+import { getHostDraftObserverMutationBlocker } from '../../../../../../lib/episodeStudioDraftAccess.mjs';
 import {
   EPISODE_ASSET_RETENTION_DAYS,
   getEpisodeAssetRetentionExpiresAt,
@@ -57,6 +58,16 @@ export default async function handler(req, res) {
     ADMIN_PERMISSIONS.EPISODES_UPDATE
   );
   if (!access) return;
+  const hostDraftBlocker = getHostDraftObserverMutationBlocker({
+    status: access.episode.status,
+    canHost: access.roles.includes('host'),
+    canManage: access.canManage,
+  });
+  if (hostDraftBlocker) {
+    return res
+      .status(hostDraftBlocker.status)
+      .json({ ok: false, ...hostDraftBlocker });
+  }
   try {
     const payload = verifyEpisodeAssetUploadToken(
       req.body?.upload_token,

@@ -37,6 +37,64 @@ test('normalizes a team request and raises blockers by default', () => {
   assert.equal(blocker.priority, 'high');
 });
 
+test('preserves only the allowlisted structured episode-request snapshot', () => {
+  const request = normalizeStudioIntakeItem(
+    item({
+      episode_request: {
+        working_title: 'Persistent slab decisions',
+        premise: 'A field-based decision story.',
+        listener_takeaway: 'Back off earlier.',
+        research_notes: 'Compare two public accident reports.',
+        proposed_guest: 'Example Forecaster',
+        preferred_air_date: '2027-01-15',
+        planning_horizon: 'current_season',
+        source_episode_idea_id: 'idea-one',
+        owner_person_id: 'Host A',
+        guest_email: 'must-not-survive@example.com',
+      },
+    })
+  );
+
+  assert.deepEqual(request.episode_request, {
+    working_title: 'Persistent slab decisions',
+    premise: 'A field-based decision story.',
+    listener_takeaway: 'Back off earlier.',
+    research_notes: 'Compare two public accident reports.',
+    proposed_guest: 'Example Forecaster',
+    preferred_air_date: '2027-01-15',
+    planning_horizon: 'current_season',
+    source_episode_idea_id: 'idea-one',
+    owner_person_id: 'Host A',
+  });
+  assert.equal('guest_email' in request.episode_request, false);
+});
+
+test('preserves authoritative People IDs without truncation or lossy canonicalization', () => {
+  const personId = `Profile ${'A'.repeat(220)}`;
+  const normalized = normalizeStudioIntakeItem(item({
+    assigned_to_person_id: personId,
+    created_by_person_id: personId,
+    episode_request: {
+      working_title: 'Long identity test',
+      owner_person_id: personId,
+    },
+    comments: [
+      {
+        comment_id: 'comment-long-id',
+        body: 'Identity remains exact.',
+        author_person_id: personId,
+        author_name: 'Host One',
+        created_at: '2026-08-19T12:30:00.000Z',
+      },
+    ],
+  }));
+
+  assert.equal(normalized.assigned_to_person_id, personId);
+  assert.equal(normalized.created_by_person_id, personId);
+  assert.equal(normalized.episode_request.owner_person_id, personId);
+  assert.equal(normalized.comments[0].author_person_id, personId);
+});
+
 test('requires a useful title, details, and creator', () => {
   assert.doesNotThrow(() => validateStudioIntakeItem(item()));
   assert.throws(

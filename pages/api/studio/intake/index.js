@@ -17,6 +17,7 @@ import {
   listStudioIntakeItems,
   saveStudioIntakeItem,
 } from '../../../../lib/studioIntakeStore';
+import { isSeasonMastermindConfigured } from '../../../../lib/seasonMastermindClient.mjs';
 
 export const config = { api: { bodyParser: { sizeLimit: '64kb' } } };
 
@@ -73,6 +74,10 @@ export default async function handler(req, res) {
     const canManage = principal.permissions.includes(
       ADMIN_PERMISSIONS.INTAKE_MANAGE
     );
+    const canStartMastermind =
+      canManage &&
+      principal.permissions.includes(ADMIN_PERMISSIONS.MASTERMIND_MANAGE) &&
+      isSeasonMastermindConfigured();
     if (req.method === 'GET') {
       const [result, actor, assignees] = await Promise.all([
         listStudioIntakeItems(),
@@ -84,6 +89,7 @@ export default async function handler(req, res) {
         ...result,
         summary: summarizeStudioIntake(result.items),
         canManage,
+        canStartMastermind,
         viewer_person_id: actor.person_id,
         assignees,
       });

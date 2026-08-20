@@ -33,6 +33,8 @@ const EMPTY_FORM = {
   recording_time_zone: '',
   recording_duration_minutes: 60,
   recording_location: '',
+  creation_exception_kind: '',
+  creation_exception_reason: '',
   producer_person_id: '',
   producer_email: '',
   host_person_ids: [],
@@ -298,9 +300,14 @@ export function EpisodeStudiosDashboard({ studioLayout = false }) {
     if (
       !form.title.trim() ||
       !form.target_release_date ||
-      !form.host_person_ids.length
+      !form.host_person_ids.length ||
+      !form.producer_person_id ||
+      !form.creation_exception_kind ||
+      form.creation_exception_reason.trim().length < 10
     ) {
-      setError('Add a title, air date, and at least one host.');
+      setError(
+        'Add a title, air date, host, producer, exception type, and a short reason.'
+      );
       return;
     }
     const recordingStarted = Boolean(
@@ -345,17 +352,18 @@ export function EpisodeStudiosDashboard({ studioLayout = false }) {
 
   return (
     <Layout
+      {...(studioLayout ? { requiredPermission: 'episodes:manage' } : {})}
       hasUnsavedChanges={createDirty}
       unsavedChangesMessage="Discard this new Episode Studio setup?"
     >
       <div className={styles.workspace}>
         <header className={styles.pageHeader}>
           <div>
-            <span className={styles.eyebrow}>Production workspace</span>
-            <h1>Episode Studios</h1>
+            <span className={styles.eyebrow}>Studio manager workspace</span>
+            <h1>Schedule &amp; assignments</h1>
             <p>
-              Schedule the season, assign one or several hosts, and see whether
-              every episode package is ready for the producer.
+              Create Episode Studios, place them on the season calendar, and
+              assign the hosts and producer before work begins.
             </p>
           </div>
           <button
@@ -374,6 +382,30 @@ export function EpisodeStudiosDashboard({ studioLayout = false }) {
             New Episode Studio
           </button>
         </header>
+
+        {studioLayout ? (
+          <section
+            className={styles.creationPathNotice}
+            aria-labelledby="episode-creation-path-title"
+          >
+            <div>
+              <span>Season 11 creation path</span>
+              <strong id="episode-creation-path-title">
+                Move reviewed plans from Mastermind into production.
+              </strong>
+              <p>
+                Episode requests begin in Host Studio, are reviewed in
+                Follow-ups, and become Episode Studios from a Ready Mastermind
+                plan. Use manual creation only for an approved exception or a
+                legacy episode that has no planning record.
+              </p>
+            </div>
+            <div>
+              <Link href="/studio/mastermind">Open Mastermind</Link>
+              <Link href="/studio/inbox">Review requests</Link>
+            </div>
+          </section>
+        ) : null}
 
         <section className={styles.summaryGrid} aria-label="Production summary">
           <div className={styles.summaryCard}>
@@ -431,10 +463,46 @@ export function EpisodeStudiosDashboard({ studioLayout = false }) {
           >
             <h2>Create an Episode Studio</h2>
             <p>
-              The air date places it on the calendar. The assigned hosts
-              immediately share one production form.
+              Manual exception path: the air date places it on the calendar,
+              and the assigned hosts immediately share one production form.
+              Use a Ready Mastermind plan whenever one exists so the planning
+              and production records stay linked.
             </p>
             <div className={styles.createGrid}>
+              <label>
+                Exception type
+                <select
+                  value={form.creation_exception_kind}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      creation_exception_kind: event.target.value,
+                    }))
+                  }
+                  required
+                >
+                  <option value="">Choose a reason</option>
+                  <option value="legacy">Legacy episode</option>
+                  <option value="urgent_exception">Urgent exception</option>
+                </select>
+              </label>
+              <label className={styles.fullField}>
+                Exception note
+                <textarea
+                  value={form.creation_exception_reason}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      creation_exception_reason: event.target.value,
+                    }))
+                  }
+                  minLength={10}
+                  maxLength={500}
+                  rows={3}
+                  placeholder="Why this episode cannot start from a reviewed Mastermind plan"
+                  required
+                />
+              </label>
               <label>
                 Working episode title
                 <input
@@ -510,7 +578,7 @@ export function EpisodeStudiosDashboard({ studioLayout = false }) {
                     }));
                   }}
                 >
-                  <option value="">Choose later</option>
+                  <option value="">Choose a producer</option>
                   {producers.map((producer) => (
                     <option
                       key={producer.person_id}

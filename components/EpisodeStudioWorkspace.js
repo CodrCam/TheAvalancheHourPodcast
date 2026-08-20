@@ -48,7 +48,10 @@ import {
   getEpisodeProductionPlanSummary,
   mergeEpisodeProductionTaskDrafts,
 } from '../lib/episodeProductionPlan.mjs';
-import { getEpisodeStudioActionBlockers } from '../lib/episodeStudioActionReadiness.mjs';
+import {
+  getEpisodeStudioActionBlockers,
+  getHostResearchReviewFingerprint,
+} from '../lib/episodeStudioActionReadiness.mjs';
 import {
   canDeleteEpisodeAsset,
   EPISODE_ASSET_MAX_BYTES,
@@ -73,8 +76,8 @@ import { storeEpisodeStudioDeletionNotice } from '../lib/episodeStudioDeletionNo
 import styles from '../styles/EpisodeStudio.module.css';
 
 const STATUS_LABELS = {
-  planning: 'Planning',
-  in_progress: 'Host in progress',
+  planning: 'Host research & review',
+  in_progress: 'Host review in progress',
   submitted: 'Ready for production',
   submitted_with_gaps: 'Producer working · known gaps',
   needs_changes: 'Changes requested',
@@ -447,6 +450,10 @@ function EpisodeStudioPreviewLayout({ children }) {
   );
 }
 
+function EpisodeStudioEmbeddedPreviewLayout({ children }) {
+  return children;
+}
+
 function episodeStudioListHref({ admin = false, canManage = false } = {}) {
   if (admin) return '/admin/studios';
   return canManage ? '/studio/manage/episodes' : '/studio/episodes';
@@ -474,6 +481,7 @@ function getRecordedIntroductionAssets(episode = {}) {
 export default function EpisodeStudioWorkspace({
   admin = false,
   previewData = null,
+  previewInStudio = false,
   workspaceView = 'package',
 }) {
   const router = useRouter();
@@ -503,6 +511,9 @@ export default function EpisodeStudioWorkspace({
   );
   const [canAdvanceProduction, setCanAdvanceProduction] = useState(
     () => previewData?.canAdvanceProduction === true
+  );
+  const [hostDraftReadOnly, setHostDraftReadOnly] = useState(
+    () => previewData?.hostDraftReadOnly === true
   );
   const [productionHandoffAvailable, setProductionHandoffAvailable] =
     useState(() => previewData?.production_handoff_available !== false);
@@ -561,6 +572,8 @@ export default function EpisodeStudioWorkspace({
   const [pendingChecklistFocusId, setPendingChecklistFocusId] = useState('');
   const [micKitPlanDirty, setMicKitPlanDirty] = useState(false);
   const [micKitLiveStatus, setMicKitLiveStatus] = useState(null);
+  const [reviewedHostPackageFingerprint, setReviewedHostPackageFingerprint] =
+    useState('');
   const checklistFocusFrameRef = useRef(null);
   const activeMicKitEpisodeId = String(
     episode?.episode_id || episodeId || ''
@@ -627,6 +640,7 @@ export default function EpisodeStudioWorkspace({
         setCanConfigure(data.canConfigure === true);
         setCanAdminOverride(data.canAdminOverride === true);
         setCanAdvanceProduction(data.canAdvanceProduction === true);
+        setHostDraftReadOnly(data.hostDraftReadOnly === true);
         setProductionHandoffAvailable(
           data.production_handoff_available !== false
         );
@@ -676,6 +690,20 @@ export default function EpisodeStudioWorkspace({
       },
     });
   }, [episode, micKitLiveStatus]);
+  const hostResearchReviewFingerprint = useMemo(
+    () => getHostResearchReviewFingerprint(episode || {}, micKitLiveStatus),
+    [episode, micKitLiveStatus]
+  );
+  const hostResearchReviewConfirmed = Boolean(
+    hostResearchReviewFingerprint &&
+      reviewedHostPackageFingerprint === hostResearchReviewFingerprint
+  );
+  const hostResearchReviewEligible = Boolean(
+    completion.can_submit || completion.can_submit_with_gaps
+  );
+  const packageWithProducer = ['submitted', 'submitted_with_gaps', 'accepted'].includes(
+    episode?.status
+  );
   const workflowTasksWithDrafts = mergeEpisodeProductionTaskDrafts(
     episode?.production_tasks || [],
     workflowTaskDrafts
@@ -824,11 +852,14 @@ export default function EpisodeStudioWorkspace({
         viewerPersonId
       ));
   const Layout = previewData
-    ? EpisodeStudioPreviewLayout
+    ? previewInStudio
+      ? EpisodeStudioEmbeddedPreviewLayout
+      : EpisodeStudioPreviewLayout
     : admin
       ? AdminLayout
       : StudioLayout;
-  const listHref = episodeStudioListHref({ admin, canManage });
+  const listHref = previewData?.list_href ||
+    episodeStudioListHref({ admin, canManage });
   const productionView = workspaceView === 'production';
   const episodeRouteId = episode?.episode_id || episodeId;
   const episodeBaseHref = previewData
@@ -837,10 +868,14 @@ export default function EpisodeStudioWorkspace({
       ? `/admin/studios/${encodeURIComponent(episodeRouteId)}`
       : `/studio/episodes/${encodeURIComponent(episodeRouteId)}`;
   const packageHref = previewData
-    ? `${episodeBaseHref}?workspace=package`
+    ? `${episodeBaseHref}?workspace=package${
+        hostDraftReadOnly ? '&viewer=producer' : ''
+      }`
     : `${episodeBaseHref}${hostPreviewActive ? '?view=host' : ''}`;
   const productionHref = previewData
-    ? `${episodeBaseHref}?workspace=production`
+    ? `${episodeBaseHref}?workspace=production${
+        hostDraftReadOnly ? '&viewer=producer' : ''
+      }`
     : `${episodeBaseHref}/production${hostPreviewActive ? '?view=host' : ''}`;
   const questionnaireHref = previewData
     ? `${episodeBaseHref}?workspace=questionnaire`
@@ -853,6 +888,7 @@ export default function EpisodeStudioWorkspace({
     saving,
     uploading: Boolean(uploadingAsset),
     productionHandoffAvailable,
+    hostResearchReviewConfirmed,
   });
   const hostEditBlocker = hostPreviewReadOnly
     ? 'Host preview is read-only. Exit preview to make changes.'
@@ -877,6 +913,9 @@ export default function EpisodeStudioWorkspace({
       );
       setCanAdvanceProduction(
         enabled ? false : previewData.canAdvanceProduction === true
+      );
+      setHostDraftReadOnly(
+        enabled ? false : previewData.hostDraftReadOnly === true
       );
       setPeople(enabled ? [] : previewData.people || []);
       setProducers(enabled ? [] : previewData.producers || []);
@@ -1399,8 +1438,29 @@ export default function EpisodeStudioWorkspace({
       if (typeof data.canUploadAssets === 'boolean') {
         setCanUploadAssets(data.canUploadAssets);
       }
+      if (typeof data.canManage === 'boolean') {
+        setCanManage(data.canManage);
+      }
+      if (typeof data.canHost === 'boolean') {
+        setCanHost(data.canHost);
+      }
+      if (typeof data.canReview === 'boolean') {
+        setCanReview(data.canReview);
+      }
+      if (typeof data.canConfigure === 'boolean') {
+        setCanConfigure(data.canConfigure);
+      }
+      if (typeof data.canAdminOverride === 'boolean') {
+        setCanAdminOverride(data.canAdminOverride);
+      }
       if (typeof data.canAdvanceProduction === 'boolean') {
         setCanAdvanceProduction(data.canAdvanceProduction);
+      }
+      if (typeof data.hostDraftReadOnly === 'boolean') {
+        setHostDraftReadOnly(data.hostDraftReadOnly);
+      }
+      if (typeof data.canUseHostPreview === 'boolean') {
+        setCanUseHostPreview(data.canUseHostPreview);
       }
       if (typeof data.production_handoff_available === 'boolean') {
         setProductionHandoffAvailable(data.production_handoff_available);
@@ -1504,11 +1564,20 @@ export default function EpisodeStudioWorkspace({
   }
 
   async function submitEpisode(submissionMode) {
+    if (!hostResearchReviewConfirmed) {
+      setError(
+        'Complete the Host research & review confirmation before sending this package to the producer.'
+      );
+      document
+        .getElementById('host-research-review')
+        ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
     const provisional = submissionMode === 'with_gaps';
     const confirmed = window.confirm(
       provisional
-        ? 'Send this episode to the producer with the acknowledged missing items?'
-        : 'Send this complete episode package to the producer?'
+        ? 'You confirmed the host research review. Send this episode to the producer with the acknowledged missing items?'
+        : 'You confirmed the host research review. Send this complete episode package to the producer?'
     );
     if (!confirmed) return;
 
@@ -1516,6 +1585,7 @@ export default function EpisodeStudioWorkspace({
       {
         action: 'submit',
         submission_mode: submissionMode,
+        host_research_review_confirmed: true,
         deliverables: episode.deliverables,
       },
       provisional
@@ -2720,7 +2790,7 @@ export default function EpisodeStudioWorkspace({
       <div className={styles.workspace}>
         <Link href={listHref} className={styles.backLink}>
           <ArrowBackRoundedIcon aria-hidden="true" />
-          {admin || canManage ? 'Production calendar' : 'My episodes'}
+          {admin || canManage ? 'Schedule & assignments' : 'Host Studio'}
         </Link>
 
         {loading ? (
@@ -2838,9 +2908,11 @@ export default function EpisodeStudioWorkspace({
                 className={productionView ? styles.episodeWorkspaceTabActive : ''}
                 aria-current={productionView ? 'page' : undefined}
               >
-                Production board
+                {hostDraftReadOnly
+                  ? 'Production board · locked'
+                  : 'Production board'}
               </Link>
-              {!previewData && !hostPreviewActive ? (
+              {!previewData && !hostPreviewActive && !hostDraftReadOnly ? (
                 <Link
                   href={questionnaireHref}
                   onClick={guardWorkspaceNavigation}
@@ -2849,6 +2921,26 @@ export default function EpisodeStudioWorkspace({
                 </Link>
               ) : null}
             </nav>
+
+            {hostDraftReadOnly ? (
+              <section className={styles.hostDraftReadOnlyBanner} role="status">
+                <WarningAmberRoundedIcon aria-hidden="true" />
+                <div>
+                  <strong>Shared host draft · producer controls locked</strong>
+                  <span>
+                    The assigned host is still researching and assembling this
+                    package. You can read the shared package and use the episode
+                    discussion, but checklist, review, and production actions
+                    begin only after the host submits Step 3.
+                  </span>
+                </div>
+                {productionView ? (
+                  <Link className={styles.secondaryButton} href={packageHref}>
+                    Return to episode package
+                  </Link>
+                ) : null}
+              </section>
+            ) : null}
 
             {canManage ? (
               <EpisodeStudioSettingsDrawer
@@ -3075,12 +3167,15 @@ export default function EpisodeStudioWorkspace({
                 }`}
                 disabled={
                   hostPreviewReadOnly ||
+                  hostDraftReadOnly ||
                   automaticOffTrack ||
                   Boolean(actionBlockers.deliveryHealth)
                 }
                 title={
                   hostPreviewReadOnly
                     ? 'Exit host preview to change the delivery outlook.'
+                    : hostDraftReadOnly
+                      ? 'The host draft is read-only for producers until Step 3 submission.'
                     : automaticOffTrack
                       ? 'Complete or waive the overdue workflow step before returning this episode to on track.'
                     : actionBlockers.deliveryHealth || undefined
@@ -3136,11 +3231,95 @@ export default function EpisodeStudioWorkspace({
               </div>
             </section>
             <p className={styles.stageExplanation}>
-              {completion.remaining_reason}
+              {hostResearchReviewEligible &&
+              !hostResearchReviewConfirmed &&
+              !packageWithProducer
+                ? 'Required material is ready. Complete the host research review before submission.'
+                : completion.remaining_reason}
             </p>
 
+            {!productionView ? (
+              <section
+                className={styles.hostWorkflowGuide}
+                aria-labelledby="host-workflow-guide-heading"
+              >
+                <header>
+                  <span className={styles.eyebrow}>Host Studio process</span>
+                  <h2 id="host-workflow-guide-heading">
+                    Plan, review, then submit
+                  </h2>
+                  <p>
+                    Season planning starts the episode. The assigned host owns
+                    the research and package review before the producer queue
+                    begins.
+                  </p>
+                </header>
+                <ol>
+                  <li data-state="complete">
+                    <span>1</span>
+                    <div>
+                      <strong>Editorial plan received</strong>
+                      <small>
+                        {episode.source_mastermind_plan_id
+                          ? 'Season Mastermind supplied the production starting point.'
+                          : 'The episode brief supplied the production starting point.'}
+                      </small>
+                    </div>
+                  </li>
+                  <li
+                    data-state={
+                      packageWithProducer || hostResearchReviewConfirmed
+                        ? 'complete'
+                        : 'current'
+                    }
+                  >
+                    <span>2</span>
+                    <div>
+                      <strong>Host research &amp; review</strong>
+                      <small>
+                        Verify the premise, public-source claims, guest-facing
+                        brief, recording package, and permissions.
+                      </small>
+                    </div>
+                  </li>
+                  <li data-state={packageWithProducer ? 'complete' : 'pending'}>
+                    <span>3</span>
+                    <div>
+                      <strong>Explicitly submit to producer</strong>
+                      <small>
+                        Submission locks the host package and starts the named
+                        producer&apos;s queue.
+                      </small>
+                    </div>
+                  </li>
+                </ol>
+              </section>
+            ) : null}
+
             {productionView ? (
-              <>
+              hostDraftReadOnly ? (
+                <section
+                  className={styles.hostDraftProductionLock}
+                  aria-labelledby="host-draft-production-lock-heading"
+                >
+                  <WarningAmberRoundedIcon aria-hidden="true" />
+                  <div>
+                    <span className={styles.eyebrow}>Production queue</span>
+                    <h2 id="host-draft-production-lock-heading">
+                      Waiting for host submission
+                    </h2>
+                    <p>
+                      The host is still researching and reviewing the episode
+                      package. Production checklist, review, and delivery
+                      controls unlock after the host explicitly submits Step 3.
+                    </p>
+                    <Link className={styles.primaryButton} href={packageHref}>
+                      Review shared host draft
+                    </Link>
+                  </div>
+                </section>
+              ) : (
+                <>
                 <section
                   className={styles.workflowPanel}
                   id="production-workflow"
@@ -3717,7 +3896,8 @@ export default function EpisodeStudioWorkspace({
                 ) : null}
                 {error ? <p className={styles.errorCard}>{error}</p> : null}
                 {message ? <p className={styles.successCard}>{message}</p> : null}
-              </>
+                </>
+              )
             ) : null}
 
             {!productionView ? (
@@ -4054,6 +4234,9 @@ export default function EpisodeStudioWorkspace({
             >
             <EpisodeChecklistWorkspace
               id="host-production-heading"
+              eyebrow="Step 2 · Host research & package"
+              title="Research, verify, and assemble the episode"
+              description="Review the editorial plan, validate the public story and source material, then complete each response and file the producer needs."
               remainingCount={completion.missing.length}
               totalCount={completion.required}
               canCustomize={canConfigure && !hostPreviewReadOnly}
@@ -4888,6 +5071,87 @@ export default function EpisodeStudioWorkspace({
             )}
             </section>
 
+            {checklistMode === 'view' && canHost ? (
+              <section
+                className={styles.hostResearchReviewPanel}
+                id="host-research-review"
+                aria-labelledby="host-research-review-heading"
+              >
+                <div>
+                  <span className={styles.eyebrow}>Step 2 · Host gate</span>
+                  <h2 id="host-research-review-heading">
+                    Review the research and complete package
+                  </h2>
+                  <p>
+                    Before submission, the assigned host verifies that the
+                    episode tells the intended story and gives production a
+                    trustworthy, usable package.
+                  </p>
+                  <ul>
+                    <li>Premise, listener takeaway, and public-source claims</li>
+                    <li>Guest-facing biography and publishable public links</li>
+                    <li>Recordings, edit notes, show-notes brief, and credits</li>
+                    <li>Image selections, captions, permissions, and known gaps</li>
+                  </ul>
+                  <p className={styles.hostReviewPrivacyNote}>
+                    This check uses the Episode Studio package only. Private
+                    questionnaire-only responses remain in the restricted guest
+                    questionnaire workspace.
+                  </p>
+                </div>
+                {packageWithProducer ? (
+                  <div className={styles.hostReviewComplete} role="status">
+                    <CheckCircleRoundedIcon aria-hidden="true" />
+                    <span>
+                      <strong>Package submitted</strong>
+                      <small>
+                        Host fields are locked while the producer works.
+                      </small>
+                    </span>
+                  </div>
+                ) : (
+                  <div className={styles.hostReviewConfirmation}>
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={hostResearchReviewConfirmed}
+                        disabled={
+                          hostPreviewReadOnly ||
+                          saving ||
+                          Boolean(uploadingAsset) ||
+                          !hostResearchReviewEligible
+                        }
+                        aria-describedby="host-research-review-help"
+                        onChange={(event) =>
+                          setReviewedHostPackageFingerprint(
+                            event.target.checked
+                              ? hostResearchReviewFingerprint
+                              : ''
+                          )
+                        }
+                      />
+                      <span>
+                        <strong>I completed the host research review</strong>
+                        <small>
+                          I reviewed the public research, host notes, assets,
+                          credits, and any acknowledged gaps in this package.
+                        </small>
+                      </span>
+                    </label>
+                    <p id="host-research-review-help">
+                      {!hostResearchReviewEligible
+                        ? 'Complete every required item—or acknowledge every eligible gap—before this final review.'
+                        : hostPreviewReadOnly
+                          ? 'Exit host preview to confirm this step.'
+                          : hostResearchReviewConfirmed
+                            ? 'Review confirmed. Changing package material will require confirmation again.'
+                            : 'Checking this does not submit. Use the separate Step 3 button below when ready.'}
+                    </p>
+                  </div>
+                )}
+              </section>
+            ) : null}
+
             {checklistMode === 'view' ? (
             <section id="final-assets" className={styles.assetPackagePanel}>
               <div className={styles.panelHeading}>
@@ -5239,13 +5503,24 @@ export default function EpisodeStudioWorkspace({
             ) : null}
 
             {!productionView && canManage ? (
-              <EpisodeStudioDeletionControl
-                episode={episode}
-                saving={saving}
-                uploading={Boolean(uploadingAsset)}
-                deleting={deletingStudio}
-                onDelete={deleteStudio}
-              />
+              episode.source_mastermind_plan_id ? (
+                <section className={styles.linkedDeletionNotice} role="status">
+                  <strong>Permanent deletion is protected</strong>
+                  <p>
+                    This Studio is the production record linked from Season
+                    Mastermind. Keep the Studio intact so the planning handoff
+                    never points to a missing episode.
+                  </p>
+                </section>
+              ) : (
+                <EpisodeStudioDeletionControl
+                  episode={episode}
+                  saving={saving}
+                  uploading={Boolean(uploadingAsset)}
+                  deleting={deletingStudio}
+                  onDelete={deleteStudio}
+                />
+              )
             ) : null}
 
             {!productionView ? (
@@ -5256,6 +5531,11 @@ export default function EpisodeStudioWorkspace({
                     ? 'Host preview is read-only'
                     : dirty
                     ? 'You have unpublished episode material'
+                    : canHost &&
+                        !lockedForHost &&
+                        hostResearchReviewEligible &&
+                        !hostResearchReviewConfirmed
+                      ? 'Host research review is still required'
                     : canHost && lockedForHost
                       ? episode.status === 'accepted'
                         ? 'The producer accepted this package'
@@ -5263,8 +5543,10 @@ export default function EpisodeStudioWorkspace({
                       : 'Everything here is saved'}
                 </strong>
                 <span>
-                  {completion.can_submit
-                    ? 'All required material is ready.'
+                  {hostResearchReviewEligible && !hostResearchReviewConfirmed
+                    ? 'Review the package and confirm Step 2 before submitting.'
+                    : completion.can_submit
+                    ? 'All required material and the host review are ready.'
                     : `${completion.missing.length} required items are still missing.`}
                 </span>
               </div>
@@ -5299,7 +5581,7 @@ export default function EpisodeStudioWorkspace({
                         onClick={() => submitEpisode('with_gaps')}
                       >
                         <WarningAmberRoundedIcon aria-hidden="true" />
-                        Send with known gaps
+                        Step 3 · Submit with gaps
                       </button>
                       {actionBlockers.submitWithGaps ? (
                         <small
@@ -5324,7 +5606,7 @@ export default function EpisodeStudioWorkspace({
                         onClick={() => submitEpisode('complete')}
                       >
                         <SendRoundedIcon aria-hidden="true" />
-                        Send to producer
+                        Step 3 · Submit to producer
                       </button>
                       {actionBlockers.submit ? (
                         <small

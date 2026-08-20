@@ -12,6 +12,7 @@ import SendRoundedIcon from '@mui/icons-material/SendRounded';
 import TuneRoundedIcon from '@mui/icons-material/TuneRounded';
 import PlainTextArea from '../../components/PlainTextArea';
 import StudioLayout from '../../components/StudioLayout';
+import { isEpisodeRequestItem } from '../../lib/episodeRequest.mjs';
 import {
   STUDIO_INTAKE_KIND_LABELS,
   STUDIO_INTAKE_STATUS_LABELS,
@@ -27,6 +28,16 @@ const EMPTY_ITEM = {
   priority: 'normal',
 };
 
+const EMPTY_MASTERMIND_REVIEW = {
+  season_id: '',
+  working_title: '',
+  premise: '',
+  listener_takeaway: '',
+  episode_type: 'regular',
+  target_air_date: '',
+  owner_person_id: '',
+};
+
 const KIND_COPY = {
   blocker: 'Something is stopping the work',
   request: 'I need help or a team decision',
@@ -40,6 +51,35 @@ const KIND_ICONS = {
   idea: LightbulbOutlinedIcon,
   question: HelpOutlineRoundedIcon,
 };
+
+export function buildMastermindReviewPrefill(
+  item = {},
+  { seasonId = '', hosts = [] } = {}
+) {
+  const request =
+    item?.episode_request && typeof item.episode_request === 'object'
+      ? item.episode_request
+      : {};
+  const legacyTitle = String(item?.title || '').replace(
+    /^Episode request:\s*/i,
+    ''
+  );
+  const creatorId = String(
+    request.owner_person_id || item?.created_by_person_id || ''
+  );
+  const ownerAvailable = (Array.isArray(hosts) ? hosts : []).some(
+    (host) => String(host?.person_id || '') === creatorId
+  );
+  return {
+    ...EMPTY_MASTERMIND_REVIEW,
+    season_id: seasonId,
+    working_title: String(request.working_title || legacyTitle).slice(0, 180),
+    premise: String(request.premise || '').slice(0, 6000),
+    listener_takeaway: String(request.listener_takeaway || '').slice(0, 2400),
+    target_air_date: String(request.preferred_air_date || ''),
+    owner_person_id: ownerAvailable ? creatorId : '',
+  };
+}
 
 function formatDateTime(value) {
   const date = new Date(value || '');
@@ -79,6 +119,9 @@ export default function StudioInboxPage({ previewData = null }) {
   const [canManage, setCanManage] = useState(
     previewData?.canManage === true
   );
+  const [canStartMastermind, setCanStartMastermind] = useState(
+    previewData?.canStartMastermind === true
+  );
   const [configured, setConfigured] = useState(
     previewData?.configured !== false
   );
@@ -98,6 +141,17 @@ export default function StudioInboxPage({ previewData = null }) {
   const [managerDrafts, setManagerDrafts] = useState({});
   const [managerNote, setManagerNote] = useState('');
   const [comment, setComment] = useState('');
+  const [mastermindReviewOpen, setMastermindReviewOpen] = useState(false);
+  const [mastermindSourceId, setMastermindSourceId] = useState('');
+  const [mastermindReview, setMastermindReview] = useState(
+    EMPTY_MASTERMIND_REVIEW
+  );
+  const [mastermindSeasons, setMastermindSeasons] = useState([]);
+  const [mastermindHosts, setMastermindHosts] = useState([]);
+  const [mastermindLoading, setMastermindLoading] = useState(false);
+  const [mastermindSaving, setMastermindSaving] = useState(false);
+  const [mastermindError, setMastermindError] = useState('');
+  const [mastermindOutcome, setMastermindOutcome] = useState(null);
   const [loading, setLoading] = useState(!previewData);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -122,6 +176,7 @@ export default function StudioInboxPage({ previewData = null }) {
         setItems(nextItems);
         setAssignees(data.assignees || []);
         setCanManage(data.canManage === true);
+        setCanStartMastermind(data.canStartMastermind === true);
         setConfigured(data.configured !== false);
         setViewerPersonId(data.viewer_person_id || '');
         const requestedId = new URLSearchParams(window.location.search).get(
@@ -169,6 +224,9 @@ export default function StudioInboxPage({ previewData = null }) {
     filteredItems,
     selectedId
   );
+  const mastermindReviewMatchesSelected = Boolean(
+    selected && mastermindSourceId === selected.item_id
+  );
   const managerDraft = selected
     ? managerDrafts[selected.item_id] || {
         status: selected.status,
@@ -177,7 +235,6 @@ export default function StudioInboxPage({ previewData = null }) {
         assigned_to_person_id: selected.assigned_to_person_id || '',
       }
     : {};
-
   function updateManagerDraft(patch) {
     if (!selected) return;
     setManagerDrafts((current) => ({
@@ -204,6 +261,7 @@ export default function StudioInboxPage({ previewData = null }) {
     setComment('');
     setMessage('');
     setError('');
+    closeMastermindReview();
     if (!previewData) {
       router.replace(
         { pathname: '/studio/inbox', query: { item: itemId } },
@@ -288,9 +346,8 @@ export default function StudioInboxPage({ previewData = null }) {
     }
   }
 
-  async function saveTriage(event) {
-    event.preventDefault();
-    if (!selected || saving || !canManage) return;
+  async function persistTriage() {
+    if (!selected || saving || !canManage) return false;
     setSaving(true);
     setError('');
     setMessage('');
@@ -319,10 +376,199 @@ export default function StudioInboxPage({ previewData = null }) {
       });
       setManagerNote('');
       setMessage('Triage update saved.');
+      return true;
     } catch (triageError) {
       setError(triageError.message || 'Could not save this triage update.');
+      return false;
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function saveTriage(event) {
+    event.preventDefault();
+    await persistTriage();
+  }
+
+  function closeMastermindReview() {
+    setMastermindReviewOpen(false);
+    setMastermindSourceId('');
+    setMastermindReview(buildMastermindReviewPrefill(selected));
+    setMastermindSeasons([]);
+    setMastermindHosts([]);
+    setMastermindLoading(false);
+    setMastermindSaving(false);
+    setMastermindError('');
+    setMastermindOutcome(null);
+  }
+
+  async function openMastermindReview() {
+    if (
+      !selected ||
+      !isEpisodeRequestItem(selected) ||
+      !canManage ||
+      !canStartMastermind ||
+      mastermindLoading
+    ) {
+      return;
+    }
+    setMastermindReviewOpen(true);
+    setMastermindSourceId(selected.item_id);
+    setMastermindReview(EMPTY_MASTERMIND_REVIEW);
+    setMastermindSeasons([]);
+    setMastermindHosts([]);
+    setMastermindError('');
+    setMastermindOutcome(null);
+    if (previewData) {
+      const seasons = Array.isArray(previewData.mastermindSeasons)
+        ? previewData.mastermindSeasons
+        : [];
+      const hosts = Array.isArray(previewData.mastermindHosts)
+        ? previewData.mastermindHosts
+        : [];
+      setMastermindSeasons(seasons);
+      setMastermindHosts(hosts);
+      setMastermindReview(
+        buildMastermindReviewPrefill(selected, {
+          seasonId: seasons[0]?.season_id || '',
+          hosts,
+        })
+      );
+      if (!seasons.length) {
+        setMastermindError(
+          'Create or restore an active planning season before reviewing this request.'
+        );
+      }
+      return;
+    }
+
+    setMastermindLoading(true);
+    try {
+      const response = await fetch('/api/studio/mastermind', {
+        credentials: 'same-origin',
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || data.ok === false) {
+        throw new Error(
+          data.error || 'Could not open the Season Mastermind review.'
+        );
+      }
+      const seasons = (Array.isArray(data.seasons) ? data.seasons : [])
+        .filter((season) => season?.season_id && season?.label)
+        .map((season) => ({
+          season_id: String(season.season_id),
+          label: String(season.label),
+          status: String(season.status || ''),
+        }));
+      const hosts = (
+        Array.isArray(data.directory?.hosts) ? data.directory.hosts : []
+      )
+        .map((host) => ({
+          person_id: String(host.person_id || host.host_person_id || ''),
+          name: String(host.name || host.host_display_name || ''),
+        }))
+        .filter((host) => host.person_id && host.name);
+      const currentSeason =
+        seasons.find((season) => season.label === 'Season 11') ||
+        seasons.find((season) =>
+          ['active', 'planning'].includes(season.status)
+        ) ||
+        seasons[0];
+      setMastermindSeasons(seasons);
+      setMastermindHosts(hosts);
+      setMastermindReview(
+        buildMastermindReviewPrefill(selected, {
+          seasonId: currentSeason?.season_id || '',
+          hosts,
+        })
+      );
+      if (!currentSeason) {
+        setMastermindError(
+          'Create or restore an active planning season before reviewing this request.'
+        );
+      }
+    } catch (reviewError) {
+      setMastermindError(
+        reviewError.message || 'Could not open the Season Mastermind review.'
+      );
+    } finally {
+      setMastermindLoading(false);
+    }
+  }
+
+  async function submitMastermindReview(event) {
+    event.preventDefault();
+    if (
+      !selected ||
+      !isEpisodeRequestItem(selected) ||
+      !canManage ||
+      !canStartMastermind ||
+      mastermindSaving ||
+      mastermindOutcome ||
+      !mastermindReviewMatchesSelected
+    ) {
+      return;
+    }
+    setMastermindSaving(true);
+    setMastermindError('');
+    try {
+      if (previewData) {
+        setMastermindOutcome({
+          created: true,
+          plan: {
+            episode_plan_id: 'preview-reviewed-request',
+            ...mastermindReview,
+          },
+        });
+        return;
+      }
+      const response = await fetch(
+        '/api/studio/mastermind/handoffs/intake',
+        {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            item_id: selected.item_id,
+            plan: {
+              season_id: mastermindReview.season_id,
+              working_title: mastermindReview.working_title,
+              premise: mastermindReview.premise,
+              listener_takeaway: mastermindReview.listener_takeaway,
+              episode_type: mastermindReview.episode_type,
+              target_air_date: mastermindReview.target_air_date,
+              owner_person_id: mastermindReview.owner_person_id,
+              host_person_ids: mastermindReview.owner_person_id
+                ? [mastermindReview.owner_person_id]
+                : [],
+            },
+          }),
+        }
+      );
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || data.ok === false) {
+        if (
+          response.status === 409 &&
+          /plan_conflict|soft_link_conflict/i.test(String(data.code || ''))
+        ) {
+          throw new Error(
+            'This request already has a research plan with different reviewed fields. Open Season Mastermind to review the existing plan; this request was not changed.'
+          );
+        }
+        throw new Error(
+          data.error || 'Could not create the reviewed research plan.'
+        );
+      }
+      setMastermindOutcome({
+        created: data.created === true,
+        plan: data.plan || null,
+      });
+    } catch (reviewError) {
+      setMastermindError(
+        reviewError.message || 'Could not create the reviewed research plan.'
+      );
+    } finally {
+      setMastermindSaving(false);
     }
   }
 
@@ -333,9 +579,9 @@ export default function StudioInboxPage({ previewData = null }) {
           <span className={styles.eyebrow}>Work that needs a next step</span>
           <h1>Team follow-ups</h1>
           <p>
-            Keep blockers, unanswered questions, decisions, and useful ideas
-            visible beside the work. Use the team chat for ordinary
-            conversation.
+            Episode requests from Host Studio arrive here beside blockers,
+            unanswered questions, decisions, and useful ideas. Use the team
+            chat for ordinary conversation.
           </p>
         </div>
         <button
@@ -465,7 +711,11 @@ export default function StudioInboxPage({ previewData = null }) {
                     </span>
                     <span className={styles.intakeListCopy}>
                       <span className={styles.intakeListMeta}>
-                        <em>{STUDIO_INTAKE_KIND_LABELS[item.kind]}</em>
+                        <em>
+                          {isEpisodeRequestItem(item)
+                            ? 'Episode request'
+                            : STUDIO_INTAKE_KIND_LABELS[item.kind]}
+                        </em>
                         <small>
                           {STUDIO_INTAKE_STATUS_LABELS[item.status]}
                         </small>
@@ -634,7 +884,11 @@ export default function StudioInboxPage({ previewData = null }) {
               <div className={styles.intakeDetailHeader}>
                 <div>
                   <span className={styles.intakeDetailBadges}>
-                    <em>{STUDIO_INTAKE_KIND_LABELS[selected.kind]}</em>
+                    <em>
+                      {isEpisodeRequestItem(selected)
+                        ? 'Episode request'
+                        : STUDIO_INTAKE_KIND_LABELS[selected.kind]}
+                    </em>
                     <em data-priority={selected.priority}>
                       {selected.priority}
                     </em>
@@ -776,6 +1030,268 @@ export default function StudioInboxPage({ previewData = null }) {
                     </button>
                   </div>
                 </form>
+              ) : null}
+
+              {canManage && isEpisodeRequestItem(selected) ? (
+                <section
+                  className={styles.intakeTriage}
+                  aria-labelledby="mastermind-request-review-title"
+                >
+                  <div className={styles.intakeSectionHeading}>
+                    <div>
+                      <span className={styles.eyebrow}>
+                        Episode request · planning handoff
+                      </span>
+                      <h3 id="mastermind-request-review-title">
+                        Review for Season Mastermind
+                      </h3>
+                    </div>
+                    <LightbulbOutlinedIcon aria-hidden="true" />
+                  </div>
+                  <p className={styles.intakeCreateGuidance}>
+                    Approve a small set of public planning fields before this
+                    request becomes a research plan. The request details,
+                    comments, contact information, and status are never copied
+                    or changed by this handoff.
+                  </p>
+
+                  {!canStartMastermind ? (
+                    <p className={styles.intakeCreateGuidance}>
+                      Season Mastermind is not available for this account or
+                      environment yet. The episode request remains safely in
+                      this queue.
+                    </p>
+                  ) : !mastermindReviewOpen ||
+                    !mastermindReviewMatchesSelected ? (
+                    <div className={styles.intakeFormActions}>
+                      <button
+                        type="button"
+                        className={styles.secondaryButton}
+                        onClick={openMastermindReview}
+                        disabled={mastermindLoading}
+                      >
+                        <LightbulbOutlinedIcon aria-hidden="true" />
+                        Review planning fields
+                      </button>
+                    </div>
+                  ) : (
+                    <form onSubmit={submitMastermindReview}>
+                      {mastermindError ? (
+                        <p className={styles.intakeError} role="alert">
+                          {mastermindError}
+                        </p>
+                      ) : null}
+                      {mastermindOutcome ? (
+                        <div>
+                          <p className={styles.intakeSuccess} role="status">
+                            {mastermindOutcome.created
+                              ? 'Research plan created. The episode request and its status are unchanged.'
+                              : 'This request already has a research plan. No duplicate was created, and the request status is unchanged.'}
+                          </p>
+                          <div className={styles.intakeFormActions}>
+                            <button
+                              type="button"
+                              className={styles.secondaryButton}
+                              onClick={closeMastermindReview}
+                            >
+                              Close review
+                            </button>
+                            <button
+                              type="button"
+                              className={styles.primaryButton}
+                              onClick={() =>
+                                router.push(
+                                  previewData
+                                    ? '/dev/season-mastermind-preview'
+                                    : '/studio/mastermind'
+                                )
+                              }
+                            >
+                              Open Season Mastermind
+                              <ArrowForwardRoundedIcon aria-hidden="true" />
+                            </button>
+                          </div>
+                        </div>
+                      ) : mastermindLoading ? (
+                        <p className={styles.intakeCreateGuidance} role="status">
+                          Opening current seasons and host options…
+                        </p>
+                      ) : (
+                        <>
+                          <div className={styles.intakeTriageGrid}>
+                            <label>
+                              Planning season
+                              <small>
+                                Choose the authoritative season record.
+                              </small>
+                              <select
+                                value={mastermindReview.season_id}
+                                onChange={(event) =>
+                                  setMastermindReview((current) => ({
+                                    ...current,
+                                    season_id: event.target.value,
+                                  }))
+                                }
+                                required
+                              >
+                                <option value="">Choose a season</option>
+                                {mastermindSeasons.map((season) => (
+                                  <option
+                                    key={season.season_id}
+                                    value={season.season_id}
+                                  >
+                                    {season.label}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+                            <label>
+                              Episode type
+                              <small>Set the public season format.</small>
+                              <select
+                                value={mastermindReview.episode_type}
+                                onChange={(event) =>
+                                  setMastermindReview((current) => ({
+                                    ...current,
+                                    episode_type: event.target.value,
+                                  }))
+                                }
+                              >
+                                <option value="regular">Regular episode</option>
+                                <option value="slabs_and_sluffs">
+                                  Slabs and Sluffs
+                                </option>
+                                <option value="special">Special episode</option>
+                              </select>
+                            </label>
+                            <label className={styles.intakeFullField}>
+                              Reviewed public working title
+                              <small>
+                                Enter the approved title; the request title is
+                                intentionally not copied.
+                              </small>
+                              <input
+                                value={mastermindReview.working_title}
+                                maxLength={180}
+                                onChange={(event) =>
+                                  setMastermindReview((current) => ({
+                                    ...current,
+                                    working_title: event.target.value,
+                                  }))
+                                }
+                                required
+                              />
+                            </label>
+                            <label className={styles.intakeFullField}>
+                              Reviewed public premise
+                              <small>
+                                Summarize the approved editorial angle without
+                                private request discussion or contact details.
+                              </small>
+                              <PlainTextArea
+                                value={mastermindReview.premise}
+                                maxLength={6000}
+                                onValueChange={(premise) =>
+                                  setMastermindReview((current) => ({
+                                    ...current,
+                                    premise,
+                                  }))
+                                }
+                                required
+                              />
+                            </label>
+                            <label className={styles.intakeFullField}>
+                              Reviewed listener takeaway
+                              <small>
+                                Optional public-facing value for the audience.
+                              </small>
+                              <PlainTextArea
+                                value={mastermindReview.listener_takeaway}
+                                maxLength={2400}
+                                onValueChange={(listener_takeaway) =>
+                                  setMastermindReview((current) => ({
+                                    ...current,
+                                    listener_takeaway,
+                                  }))
+                                }
+                              />
+                            </label>
+                            <label>
+                              Target air date
+                              <small>Optional until the schedule is firm.</small>
+                              <input
+                                type="date"
+                                value={mastermindReview.target_air_date}
+                                onChange={(event) =>
+                                  setMastermindReview((current) => ({
+                                    ...current,
+                                    target_air_date: event.target.value,
+                                  }))
+                                }
+                              />
+                            </label>
+                            <label>
+                              Plan owner and proposed host
+                              <small>
+                                Optional; choose one current host or assign
+                                later in Mastermind.
+                              </small>
+                              <select
+                                value={mastermindReview.owner_person_id}
+                                onChange={(event) =>
+                                  setMastermindReview((current) => ({
+                                    ...current,
+                                    owner_person_id: event.target.value,
+                                  }))
+                                }
+                              >
+                                <option value="">Assign later</option>
+                                {mastermindHosts.map((host) => (
+                                  <option
+                                    key={host.person_id}
+                                    value={host.person_id}
+                                  >
+                                    {host.name}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+                          </div>
+                          <p className={styles.intakeCreateGuidance}>
+                            Creating the plan is idempotent: retrying the same
+                            reviewed handoff opens the existing plan instead of
+                            creating a duplicate.
+                          </p>
+                          <div className={styles.intakeFormActions}>
+                            <button
+                              type="button"
+                              className={styles.secondaryButton}
+                              onClick={closeMastermindReview}
+                              disabled={mastermindSaving}
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="submit"
+                              className={styles.primaryButton}
+                              disabled={
+                                mastermindSaving ||
+                                !mastermindReview.season_id ||
+                                !mastermindReview.working_title.trim() ||
+                                !mastermindReview.premise.trim()
+                              }
+                            >
+                              <LightbulbOutlinedIcon aria-hidden="true" />
+                              {mastermindSaving
+                                ? 'Creating research plan…'
+                                : 'Create research plan'}
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </form>
+                  )}
+                </section>
               ) : null}
 
               <section className={styles.intakeDiscussion}>

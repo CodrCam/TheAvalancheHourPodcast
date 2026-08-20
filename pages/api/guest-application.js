@@ -1,6 +1,11 @@
 // pages/api/guest-application.js
 import nodemailer from 'nodemailer';
 import { escapeHtml } from '../../lib/escapeHtml';
+import {
+  normalizePublicFormFields,
+  protectPublicFormRequest,
+  safeEmailHeader,
+} from '../../lib/publicFormSafety.mjs';
 
 // Email configuration from environment variables
 const EMAIL_USER = process.env.EMAIL_USER; // Your Gmail address
@@ -9,19 +14,47 @@ const TO_EMAIL = process.env.CONTACT_EMAIL || 'theavalanchehourpodcast@gmail.com
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
+    res.setHeader('Allow', 'POST');
     return res.status(405).json({ error: 'Method not allowed. Use POST.' });
   }
 
   try {
-    const { name, email, background, topics, contact } = req.body;
+    const protection = protectPublicFormRequest(req, {
+      scope: 'guest-application',
+    });
+    if (protection.rate) {
+      res.setHeader('X-RateLimit-Limit', String(protection.rate.limit));
+      res.setHeader(
+        'X-RateLimit-Remaining',
+        String(protection.rate.remaining)
+      );
+    }
+    if (!protection.ok) {
+      if (protection.retry_after_seconds) {
+        res.setHeader('Retry-After', String(protection.retry_after_seconds));
+      }
+      return res.status(protection.status).json(protection.body);
+    }
 
-    // Basic validation – guest app needs at least name, email, and background
-    if (!name || !email || !background) {
+    const normalized = normalizePublicFormFields(req.body, {
+      name: { label: 'Name', required: true, max: 120 },
+      email: { label: 'Email', required: true, max: 254 },
+      background: {
+        label: 'Background',
+        required: true,
+        min: 10,
+        max: 4000,
+      },
+      topics: { label: 'Topics', max: 4000 },
+      contact: { label: 'Contact preference', max: 1000 },
+    });
+    if (!normalized.ok) {
       return res.status(400).json({
-        error: 'Missing required fields',
-        details: 'Name, email, and background are required.'
+        error: 'Invalid submission',
+        details: normalized.errors,
       });
     }
+    const { name, email, background, topics, contact } = normalized.values;
 
     // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -50,7 +83,7 @@ export default async function handler(req, res) {
     const mailOptions = {
       from: EMAIL_USER,
       to: TO_EMAIL,
-      subject: `🎙️ Guest Application: ${name}`,
+      subject: `🎙️ Guest Application: ${safeEmailHeader(name)}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto;">
           <h2 style="color: #1976d2; border-bottom: 2px solid #1976d2; padding-bottom: 8px; margin-bottom: 16px;">
@@ -125,7 +158,7 @@ export default async function handler(req, res) {
     const confirmationHtmlBody = `
       Hello ${safeName}<br><br>
       Thank you for your submission to The Avalanche Hour Podcast. Our goal is to make this platform a meaningful resource for our community, and we appreciate your input.<br><br>
-      Your submission has been added to our guest list cache. We begin our planning for each season during the summer, and will contact you if we have an available slot.<br><br>
+      Your submission has been sent to our team for private review. We begin planning each season during the summer and will contact you if we have an available slot.<br><br>
       If you have any questions or comments, you can reply directly to this email.<br><br>
       Sincerely,<br>
       The Avalanche Hour Team
@@ -155,7 +188,7 @@ export default async function handler(req, res) {
 
     res.status(200).json({
       success: true,
-      message: 'Guest application received! Your submission has been added to our guest list cache.'
+      message: 'Guest application received and sent to our team for review.'
     });
 
   } catch (error) {
@@ -168,3 +201,7 @@ export default async function handler(req, res) {
     });
   }
 }
+
+export const config = {
+  api: { bodyParser: { sizeLimit: '32kb' } },
+};

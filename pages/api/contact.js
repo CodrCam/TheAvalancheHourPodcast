@@ -1,6 +1,11 @@
 // pages/api/contact.js
 import nodemailer from 'nodemailer';
 import { escapeHtml } from '../../lib/escapeHtml';
+import {
+  normalizePublicFormFields,
+  protectPublicFormRequest,
+  safeEmailHeader,
+} from '../../lib/publicFormSafety.mjs';
 
 // Email configuration from environment variables
 const EMAIL_USER = process.env.EMAIL_USER; // Your Gmail address
@@ -10,28 +15,60 @@ const TO_EMAIL = process.env.CONTACT_EMAIL || 'theavalanchehourpodcast@gmail.com
 export default async function handler(req, res) {
   // Only allow POST requests
   if (req.method !== 'POST') {
+    res.setHeader('Allow', 'POST');
     return res.status(405).json({ error: 'Method not allowed. Use POST.' });
   }
 
   try {
+    const protection = protectPublicFormRequest(req, { scope: 'contact' });
+    if (protection.rate) {
+      res.setHeader('X-RateLimit-Limit', String(protection.rate.limit));
+      res.setHeader(
+        'X-RateLimit-Remaining',
+        String(protection.rate.remaining)
+      );
+    }
+    if (!protection.ok) {
+      if (protection.retry_after_seconds) {
+        res.setHeader('Retry-After', String(protection.retry_after_seconds));
+      }
+      return res.status(protection.status).json(protection.body);
+    }
+
+    const isSponsorship = req.body?.isSponsorship === true;
+    const normalized = normalizePublicFormFields(req.body, {
+      name: { label: 'Name', required: true, max: 120 },
+      email: { label: 'Email', required: true, max: 254 },
+      subject: { label: 'Subject', max: 200 },
+      message: {
+        label: 'Message',
+        required: true,
+        min: 10,
+        max: 5000,
+      },
+      companyName: {
+        label: 'Company name',
+        required: isSponsorship,
+        max: 200,
+      },
+      sponsorshipBudget: { label: 'Budget range', max: 200 },
+      sponsorshipGoals: { label: 'Sponsorship goals', max: 3000 },
+    });
+    if (!normalized.ok) {
+      return res.status(400).json({
+        error: 'Invalid submission',
+        details: normalized.errors,
+      });
+    }
     const {
       name,
       email,
       message,
       subject,
-      isSponsorship,
       companyName,
       sponsorshipBudget,
-      sponsorshipGoals
-    } = req.body;
-
-    // Basic validation
-    if (!name || !email || !message) {
-      return res.status(400).json({
-        error: 'Missing required fields',
-        details: 'Name, email, and message are required.'
-      });
-    }
+      sponsorshipGoals,
+    } = normalized.values;
 
     // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -59,8 +96,8 @@ export default async function handler(req, res) {
 
     // Determine email subject and content based on inquiry type
     const emailSubject = isSponsorship
-      ? `🎯 SPONSORSHIP INQUIRY: ${companyName || name}`
-      : (subject || `Contact Form: Message from ${name}`);
+      ? `🎯 SPONSORSHIP INQUIRY: ${safeEmailHeader(companyName || name)}`
+      : safeEmailHeader(subject || `Contact Form: Message from ${name}`);
 
     // Email content for the podcast team
     const mailOptions = {
@@ -230,3 +267,7 @@ export default async function handler(req, res) {
     });
   }
 }
+
+export const config = {
+  api: { bodyParser: { sizeLimit: '32kb' } },
+};

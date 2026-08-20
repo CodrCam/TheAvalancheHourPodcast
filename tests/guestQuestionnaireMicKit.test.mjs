@@ -112,6 +112,134 @@ test('upserts one deterministic request without erasing logistics state', () => 
   assert.equal(second.request.admin_response, 'Kit reserved.');
 });
 
+test('a corrected response refreshes unfulfilled questionnaire shipping details', () => {
+  const firstQuestionnaire = questionnaire();
+  const first = upsertGuestMicKitRequest({
+    tracker: { kits: [], requests: [] },
+    questionnaire: firstQuestionnaire,
+    episode,
+    guestPlan,
+    now: '2026-08-04T12:00:00.000Z',
+  });
+  first.tracker.requests[0] = {
+    ...first.tracker.requests[0],
+    status: 'approved',
+    admin_response: 'Shipment approved.',
+  };
+
+  const corrected = questionnaire();
+  corrected.response.revision = 2;
+  corrected.response.answers.shipping_address_line_1 = '456 Corrected Lane';
+  corrected.response.answers.shipping_city = 'Leavenworth';
+  const result = upsertGuestMicKitRequest({
+    tracker: first.tracker,
+    questionnaire: corrected,
+    episode,
+    guestPlan,
+    now: '2026-08-05T12:00:00.000Z',
+  });
+
+  assert.equal(result.request.status, 'approved');
+  assert.equal(result.request.admin_response, 'Shipment approved.');
+  assert.equal(result.request.shipping.address_line_1, '456 Corrected Lane');
+  assert.equal(result.request.shipping.city, 'Leavenworth');
+  assert.equal(result.request.source_response_revision, 2);
+});
+
+test('a corrected no-kit response cancels an unfulfilled questionnaire request', () => {
+  const first = upsertGuestMicKitRequest({
+    tracker: { kits: [], requests: [] },
+    questionnaire: questionnaire(),
+    episode,
+    guestPlan,
+    now: '2026-08-04T12:00:00.000Z',
+  });
+  const requestId = first.request.request_id;
+  first.tracker.requests[0] = {
+    ...first.tracker.requests[0],
+    status: 'assigned',
+    kit_id: 'kit-one',
+  };
+  first.tracker.kits = [
+    {
+      kit_id: 'kit-one',
+      label: 'Kit one',
+      status: 'available',
+      next_request_id: requestId,
+      ship_by: '2026-09-10',
+    },
+  ];
+  const corrected = questionnaire();
+  corrected.response.revision = 2;
+
+  const result = upsertGuestMicKitRequest({
+    tracker: first.tracker,
+    questionnaire: corrected,
+    episode,
+    guestPlan: { ...guestPlan, choice: 'use_own_equipment' },
+    now: '2026-08-05T12:00:00.000Z',
+  });
+
+  assert.equal(result.request.status, 'cancelled');
+  assert.equal(result.request.review_resolution, 'own_equipment');
+  assert.equal(result.request.kit_id, '');
+  assert.equal(result.tracker.kits[0].next_request_id, '');
+  assert.match(result.request.notes, /no microphone-kit shipment is needed/i);
+});
+
+test('a corrected response flags rather than rewriting a physical shipment', () => {
+  const first = upsertGuestMicKitRequest({
+    tracker: { kits: [], requests: [] },
+    questionnaire: questionnaire(),
+    episode,
+    guestPlan,
+    now: '2026-08-04T12:00:00.000Z',
+  });
+  const requestId = first.request.request_id;
+  first.tracker.requests[0] = {
+    ...first.tracker.requests[0],
+    status: 'checked_out',
+    kit_id: 'kit-one',
+  };
+  first.tracker.kits = [
+    {
+      kit_id: 'kit-one',
+      label: 'Kit one',
+      status: 'with_holder',
+      checked_out_request_id: requestId,
+      tracking_request_id: requestId,
+      tracking_number: 'TRACKING-REDACTED',
+    },
+  ];
+  const corrected = questionnaire();
+  corrected.response.revision = 2;
+  corrected.response.answers.shipping_address_line_1 = '789 Too Late Lane';
+
+  const result = upsertGuestMicKitRequest({
+    tracker: first.tracker,
+    questionnaire: corrected,
+    episode,
+    guestPlan,
+    now: '2026-08-05T12:00:00.000Z',
+  });
+
+  assert.equal(result.request.status, 'checked_out');
+  assert.equal(result.request.shipping.address_line_1, '123 Private Lane');
+  assert.match(result.request.notes, /Action required:/);
+  assert.match(result.request.notes, /physical fulfillment/i);
+  assert.equal(result.request.source_response_revision, 2);
+
+  const retry = upsertGuestMicKitRequest({
+    tracker: result.tracker,
+    questionnaire: corrected,
+    episode,
+    guestPlan,
+    now: '2026-08-05T12:05:00.000Z',
+  });
+  assert.match(retry.request.notes, /Action required:/);
+  assert.equal(retry.request.shipping.address_line_1, '123 Private Lane');
+});
+
 test('does not create a tracker request when own equipment is confirmed', () => {
   for (const choice of ['use_own_equipment']) {
     const result = upsertGuestMicKitRequest({

@@ -25,7 +25,8 @@ export default function BeAGuest() {
     email: '',
     background: '',
     topics: '',
-    contact: ''
+    contact: '',
+    website: ''
   });
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -106,7 +107,8 @@ export default function BeAGuest() {
           email: '',
           background: '',
           topics: '',
-          contact: ''
+          contact: '',
+          website: ''
         });
         
         // Scroll to success message
@@ -158,8 +160,9 @@ export default function BeAGuest() {
                   Application submitted! 🎙️
                 </Typography>
                 <Typography>
-                  Thanks for your interest! We'll review your application and get back to you 
-                  within 1-2 weeks to discuss potential topics and scheduling.
+                  Thanks for your interest. Your application was sent privately
+                  to our team for review; we will contact you if there is a fit
+                  for an available episode.
                 </Typography>
               </Alert>
             </Fade>
@@ -224,6 +227,20 @@ export default function BeAGuest() {
             </Typography>
             
             <Box component="form" onSubmit={handleSubmit} noValidate>
+              <Box
+                aria-hidden="true"
+                sx={{ position: 'absolute', left: '-10000px', width: 1, height: 1, overflow: 'hidden' }}
+              >
+                <label htmlFor="guest-website">Website</label>
+                <input
+                  id="guest-website"
+                  name="website"
+                  value={formData.website}
+                  onChange={handleChange}
+                  tabIndex={-1}
+                  autoComplete="off"
+                />
+              </Box>
               <Grid container spacing={3}>
                 
                 {/* Basic Info */}
@@ -240,6 +257,7 @@ export default function BeAGuest() {
                     helperText={errors.name}
                     disabled={loading}
                     autoComplete="name"
+                    inputProps={{ maxLength: 120 }}
                   />
                 </Grid>
                 
@@ -257,6 +275,7 @@ export default function BeAGuest() {
                     helperText={errors.email}
                     disabled={loading}
                     autoComplete="email"
+                    inputProps={{ maxLength: 254 }}
                   />
                 </Grid>
                 
@@ -275,6 +294,7 @@ export default function BeAGuest() {
                     error={!!errors.background}
                     helperText={errors.background || "What's your role? What do you do in the avalanche/snow world? Any cool experiences?"}
                     disabled={loading}
+                    inputProps={{ maxLength: 4000 }}
                     placeholder="e.g., I'm a ski patroller at Whistler, been doing avalanche work for 10 years, love backcountry skiing..."
                   />
                 </Grid>
@@ -291,6 +311,7 @@ export default function BeAGuest() {
                     value={formData.topics}
                     onChange={handleChange}
                     disabled={loading}
+                    inputProps={{ maxLength: 4000 }}
                     placeholder="Any specific stories, experiences, or topics you'd be excited to discuss? Recent projects, lessons learned, funny stories, etc."
                     helperText="Don't worry if you're not sure - we'll brainstorm together!"
                   />
@@ -308,6 +329,7 @@ export default function BeAGuest() {
                     value={formData.contact}
                     onChange={handleChange}
                     disabled={loading}
+                    inputProps={{ maxLength: 1000 }}
                     placeholder="Phone number, best days/times, time zone, etc."
                     helperText="Helps us coordinate scheduling"
                   />

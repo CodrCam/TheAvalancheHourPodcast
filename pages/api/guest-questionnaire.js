@@ -3,6 +3,7 @@ import {
   applyGuestQuestionnaireProjectionToEpisode,
   GuestQuestionnaireValidationError,
   guestQuestionnaireResponseSummary,
+  guestQuestionnaireUpdateDraft,
   projectGuestQuestionnaireResponse,
   sanitizeGuestQuestionnaireForPublic,
   validateGuestQuestionnaireSubmission,
@@ -52,10 +53,12 @@ function isConflict(error) {
 }
 
 function publicResponse(record, episode) {
+  const updateDraft = guestQuestionnaireUpdateDraft(record);
   return {
     ok: true,
     questionnaire: sanitizeGuestQuestionnaireForPublic(record),
     submission: guestQuestionnaireResponseSummary(record),
+    ...(updateDraft ? { update_draft: updateDraft } : {}),
     episode: {
       title: episode.title,
       recording_date: episode.recording_date,
@@ -84,7 +87,12 @@ async function syncGuestMicKitRequest({
   guestPlan,
   now,
 }) {
-  if (!['request_kit', 'needs_follow_up'].includes(guestPlan?.choice)) {
+  const responseRevision = Math.max(
+    0,
+    Math.trunc(Number(questionnaire?.response?.revision) || 0)
+  );
+  const requestsKitWorkflow = ['request_kit', 'needs_follow_up'].includes(guestPlan?.choice);
+  if (!requestsKitWorkflow && responseRevision < 2) {
     return { request: null, configured: null };
   }
   let trackerResult = await getMicKitTracker();
@@ -100,7 +108,7 @@ async function syncGuestMicKitRequest({
       guestPlan,
       now,
     });
-    if (!synced.request || !synced.changed) {
+    if (!synced.changed) {
       return { request: synced.request, configured: true };
     }
     try {

@@ -10,6 +10,8 @@ import DoneAllRoundedIcon from '@mui/icons-material/DoneAllRounded';
 import NotificationsRoundedIcon from '@mui/icons-material/NotificationsRounded';
 import styles from '../styles/NotificationBell.module.css';
 
+const AUTOMATIC_REFRESH_INTERVAL_MS = 5 * 60 * 1000;
+
 function relativeTime(value, now = Date.now()) {
   const time = new Date(value).getTime();
   if (!Number.isFinite(time)) return '';
@@ -47,6 +49,7 @@ export default function NotificationBell({
   const rootRef = useRef(null);
   const headingRef = useRef(null);
   const buttonRef = useRef(null);
+  const lastAutomaticRefreshRef = useRef(0);
   const [open, setOpen] = useState(false);
   const previewMode = Boolean(previewData);
   const [groups, setGroups] = useState(previewData?.groups || []);
@@ -136,11 +139,24 @@ export default function NotificationBell({
   }, [previewMode]);
 
   useEffect(() => {
-    const initialRefresh = window.setTimeout(loadNotifications, 0);
-    const refresh = () => {
-      if (document.visibilityState === 'visible') loadNotifications();
+    const refresh = ({ force = false } = {}) => {
+      if (document.visibilityState !== 'visible') return;
+      const now = Date.now();
+      if (
+        !force &&
+        now - lastAutomaticRefreshRef.current <
+          AUTOMATIC_REFRESH_INTERVAL_MS
+      ) {
+        return;
+      }
+      lastAutomaticRefreshRef.current = now;
+      loadNotifications();
     };
-    const interval = window.setInterval(refresh, 60000);
+    const initialRefresh = window.setTimeout(() => refresh({ force: true }), 0);
+    const interval = window.setInterval(
+      refresh,
+      AUTOMATIC_REFRESH_INTERVAL_MS
+    );
     window.addEventListener('focus', refresh);
     document.addEventListener('visibilitychange', refresh);
     return () => {

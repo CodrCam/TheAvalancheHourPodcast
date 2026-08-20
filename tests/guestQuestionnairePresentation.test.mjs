@@ -1,14 +1,21 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  GUEST_RECORDING_PLAN_TASK_ID,
+  MICROPHONE_PLAN_TASK_ID,
+} from '../lib/episodeProductionPlan.mjs';
+import { getEpisodeAcceptancePatchBlocker } from '../lib/episodeStudioActionReadiness.mjs';
+import {
   applyGuestQuestionnaireProjectionToEpisode,
   createDefaultGuestQuestionnaire,
   getGuestQuestionnaireStudioCapabilities,
+  guestQuestionnaireUpdateDraft,
   isGuestQuestionActive,
   mergeGuestQuestionnaireConfiguration,
   mergeGuestQuestionnaireUploadSlot,
   normalizeGuestQuestionnaireRecord,
   projectGuestQuestionnaireResponse,
+  reopenGuestQuestionnaireResponse,
   sanitizeGuestQuestionnaireForStudio,
   sanitizeGuestQuestionnaireForLogistics,
   validateGuestQuestionnaireSubmission,
@@ -501,6 +508,57 @@ test('accepted and archived history is read-only while producer revocation stays
   assert.equal(submittedProducer.can_issue, false);
   assert.equal(submittedProducer.can_apply, true);
   assert.equal(submittedProducer.can_revoke, true);
+  assert.equal(submittedProducer.can_request_update, true);
+
+  const submittedHost = getGuestQuestionnaireStudioCapabilities({
+    canHost: true,
+    episodeStatus: 'in_progress',
+    linkStatus: 'active',
+    responseStatus: 'submitted',
+  });
+  assert.equal(submittedHost.can_request_update, false);
+});
+
+test('requesting an updated response preserves the current revision and pre-fills only non-shipping answers', () => {
+  const submitted = createDefaultGuestQuestionnaire('episode-one');
+  submitted.response = {
+    ...submitted.response,
+    status: 'submitted',
+    revision: 2,
+    response_id: 'response-one',
+    answers: {
+      ...requiredAnswers({ mic_kit_shipping_needed: 'yes' }),
+      shipping_address_line_1: '123 Private Road',
+      shipping_city: 'Private Town',
+    },
+    scheduling_acknowledgements: {
+      pre_interview: true,
+      interview: true,
+    },
+    submission_id_hash: 'old-submission-hash',
+    submission_payload_hash: 'old-payload-hash',
+    submitted_at: '2026-08-18T12:00:00.000Z',
+  };
+
+  const reopened = reopenGuestQuestionnaireResponse(submitted, {
+    now: new Date('2026-08-19T12:00:00.000Z'),
+  });
+  const normalized = normalizeGuestQuestionnaireRecord(reopened);
+  const draft = guestQuestionnaireUpdateDraft(normalized);
+
+  assert.equal(normalized.response.status, 'update_requested');
+  assert.equal(normalized.response.revision, 2);
+  assert.equal(normalized.response.submitted_at, '2026-08-18T12:00:00.000Z');
+  assert.equal(normalized.response.submission_id_hash, '');
+  assert.equal(normalized.response.submission_payload_hash, '');
+  assert.equal(draft.answers.guest_name, 'Alex Guest');
+  assert.equal(draft.answers.guest_email, 'alex@example.com');
+  assert.equal('shipping_address_line_1' in draft.answers, false);
+  assert.equal('shipping_city' in draft.answers, false);
+  assert.deepEqual(draft.scheduling_acknowledgements, {
+    pre_interview: true,
+    interview: true,
+  });
 });
 
 test('submission validation enforces profile formats, conditions, uploads, and both schedule acknowledgements', () => {
@@ -907,4 +965,184 @@ test('projection fills blanks, keeps project links in notes, sets no-profile sta
     ),
     true
   );
+});
+
+test('corrected recording and microphone evidence reopens only affected approvals', () => {
+  function projection(revision, answerOverrides = {}) {
+    const record = responseReadyRecord();
+    record.response = {
+      ...record.response,
+      status: 'submitted',
+      revision,
+      answers: requiredAnswers(answerOverrides),
+    };
+    return projectGuestQuestionnaireResponse(record);
+  }
+
+  const original = projection(1);
+  const priorAutofill = {
+    response_revision: 1,
+    production: original.production,
+  };
+  function approvedEpisode() {
+    return {
+      episode_id: 'episode-one',
+      status: 'submitted',
+      deliverables: [
+        { id: 'guest-details', value: '', guest_profile: {} },
+        {
+          id: 'mic-kit-plan',
+          mic_kit_plans: [],
+          guest_mic_kit_plan: original.production.guest_mic_kit_plan,
+        },
+      ],
+      production_tasks: [
+        {
+          task_id: GUEST_RECORDING_PLAN_TASK_ID,
+          required: true,
+          status: 'complete',
+          evidence_note: original.production.guest_recording_plan_note,
+          completed_at: '2026-08-10T12:00:00.000Z',
+          completed_by_person_id: 'producer-one',
+          completed_by_name: 'Producer One',
+        },
+        {
+          task_id: MICROPHONE_PLAN_TASK_ID,
+          required: true,
+          status: 'complete',
+          evidence_note: 'Approved microphone plans.',
+          completed_at: '2026-08-10T12:05:00.000Z',
+          completed_by_person_id: 'host-one',
+          completed_by_name: 'Host One',
+        },
+      ],
+    };
+  }
+
+  const recordingOnly = projection(2, {
+    recording_experience: 'I added new remote-recording details.',
+  });
+  const recordingApplied = applyGuestQuestionnaireProjectionToEpisode(
+    approvedEpisode(),
+    recordingOnly,
+    priorAutofill
+  );
+  const recordingTask = recordingApplied.episode.production_tasks.find(
+    (task) => task.task_id === GUEST_RECORDING_PLAN_TASK_ID
+  );
+  const unchangedMicTask = recordingApplied.episode.production_tasks.find(
+    (task) => task.task_id === MICROPHONE_PLAN_TASK_ID
+  );
+  assert.equal(recordingTask.status, 'in_progress');
+  assert.equal(recordingTask.completed_at, '');
+  assert.equal(recordingTask.completed_by_person_id, '');
+  assert.equal(recordingTask.completed_by_name, '');
+  assert.match(recordingTask.evidence_note, /new remote-recording details/);
+  assert.equal(unchangedMicTask.status, 'complete');
+  assert.equal(unchangedMicTask.completed_by_name, 'Host One');
+  assert.match(
+    getEpisodeAcceptancePatchBlocker({
+      action: 'review',
+      requestedStatus: 'accepted',
+      episode: recordingApplied.episode,
+    })?.error || '',
+    /guest recording setup review/i
+  );
+
+  const microphoneCorrection = projection(2, {
+    external_microphone: 'yes',
+  });
+  const microphoneApplied = applyGuestQuestionnaireProjectionToEpisode(
+    approvedEpisode(),
+    microphoneCorrection,
+    priorAutofill
+  );
+  const tasksById = new Map(
+    microphoneApplied.episode.production_tasks.map((task) => [
+      task.task_id,
+      task,
+    ])
+  );
+  for (const taskId of [
+    GUEST_RECORDING_PLAN_TASK_ID,
+    MICROPHONE_PLAN_TASK_ID,
+  ]) {
+    assert.equal(tasksById.get(taskId).status, 'in_progress', taskId);
+    assert.equal(tasksById.get(taskId).completed_at, '', taskId);
+    assert.equal(tasksById.get(taskId).completed_by_person_id, '', taskId);
+    assert.equal(tasksById.get(taskId).completed_by_name, '', taskId);
+  }
+  assert.equal(
+    microphoneApplied.episode.deliverables.find(
+      (deliverable) => deliverable.id === 'mic-kit-plan'
+    ).guest_mic_kit_plan.choice,
+    'use_own_equipment'
+  );
+  assert.match(
+    getEpisodeAcceptancePatchBlocker({
+      action: 'review',
+      requestedStatus: 'accepted',
+      episode: microphoneApplied.episode,
+    })?.error || '',
+    /guest recording setup review and microphone plan confirmation/i
+  );
+});
+
+test('an unchanged corrected recording plan preserves its approvals', () => {
+  function projection(revision) {
+    const record = responseReadyRecord();
+    record.response = {
+      ...record.response,
+      status: 'submitted',
+      revision,
+      answers: requiredAnswers(),
+    };
+    return projectGuestQuestionnaireResponse(record);
+  }
+
+  const original = projection(1);
+  const corrected = projection(2);
+  const applied = applyGuestQuestionnaireProjectionToEpisode(
+    {
+      episode_id: 'episode-one',
+      deliverables: [
+        { id: 'guest-details', value: '', guest_profile: {} },
+        {
+          id: 'mic-kit-plan',
+          mic_kit_plans: [],
+          guest_mic_kit_plan: original.production.guest_mic_kit_plan,
+        },
+      ],
+      production_tasks: [
+        {
+          task_id: GUEST_RECORDING_PLAN_TASK_ID,
+          status: 'complete',
+          evidence_note: original.production.guest_recording_plan_note,
+          completed_at: '2026-08-10T12:00:00.000Z',
+          completed_by_person_id: 'producer-one',
+          completed_by_name: 'Producer One',
+        },
+        {
+          task_id: MICROPHONE_PLAN_TASK_ID,
+          status: 'complete',
+          evidence_note: 'Approved microphone plans.',
+          completed_at: '2026-08-10T12:05:00.000Z',
+          completed_by_person_id: 'host-one',
+          completed_by_name: 'Host One',
+        },
+      ],
+    },
+    corrected,
+    {
+      response_revision: 1,
+      production: original.production,
+    }
+  );
+
+  for (const task of applied.episode.production_tasks) {
+    assert.equal(task.status, 'complete');
+    assert.match(task.completed_at, /^2026-08-10T12:0[05]:00\.000Z$/);
+    assert.notEqual(task.completed_by_person_id, '');
+    assert.notEqual(task.completed_by_name, '');
+  }
 });

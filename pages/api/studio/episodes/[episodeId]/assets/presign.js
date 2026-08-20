@@ -5,6 +5,7 @@ import {
   isEpisodeAssetStorageConfigured,
 } from '../../../../../../lib/episodeAssetStorage';
 import { recordEpisodeAssetUploadGrant } from '../../../../../../lib/episodeAssetGrantLifecycle.mjs';
+import { getHostDraftObserverMutationBlocker } from '../../../../../../lib/episodeStudioDraftAccess.mjs';
 import { saveEpisodeStudio } from '../../../../../../lib/episodeStudioStore';
 import {
   canUploadEpisodeAssetToDeliverable,
@@ -33,6 +34,16 @@ export default async function handler(req, res) {
     ADMIN_PERMISSIONS.EPISODES_UPDATE
   );
   if (!access) return;
+  const hostDraftBlocker = getHostDraftObserverMutationBlocker({
+    status: access.episode.status,
+    canHost: access.roles.includes('host'),
+    canManage: access.canManage,
+  });
+  if (hostDraftBlocker) {
+    return res
+      .status(hostDraftBlocker.status)
+      .json({ ok: false, ...hostDraftBlocker });
+  }
   const deliverableId = String(req.body?.deliverable_id || '').trim();
   const deliverable = access.episode.deliverables.find(
     (candidate) => candidate.id === deliverableId

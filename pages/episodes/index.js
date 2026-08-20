@@ -172,7 +172,7 @@ export default function Episodes() {
     <>
       <SEO
         title="Episodes - The Avalanche Hour Podcast"
-        description={`Browse all ${episodeStats?.total || 0} episodes of The Avalanche Hour Podcast. New episodes released 3 times per month from October through June.`}
+        description={`Browse all ${episodeStats?.total || 0} episodes of The Avalanche Hour Podcast. Season 11 runs October through May with weekly core-season conversations and monthly Slabs n Sluffs.`}
         keywords="avalanche podcast episodes, snow science interviews, backcountry safety, avalanche education episodes"
         url="/episodes"
       />
@@ -210,8 +210,8 @@ export default function Episodes() {
             {episodeStats?.total || 0} episodes
           </Typography>
           <Typography sx={{ color: 'rgba(255,255,255,.62)' }}>
-            New conversations arrive three times a month from October through
-            June.
+            Season 11 runs October through May, with weekly conversations in
+            the core winter season and monthly Slabs n Sluffs.
           </Typography>
         </PublicPageHero>
 
@@ -236,10 +236,10 @@ export default function Episodes() {
               <ScheduleIcon sx={{ fontSize: 34, color: '#10222d' }} />
               <Box>
               <Typography variant="h5" component="h2" sx={{ color: '#10222d', fontWeight: 850 }}>
-                Three new episodes per month
+                Season 11 · core winter conversations
               </Typography>
               <Typography variant="body1" sx={{ color: '#405965' }}>
-                October through June · timed to the North American avalanche season
+                October through May · weekly in the core season, plus monthly Slabs n Sluffs
               </Typography>
               </Box>
             </Box>
@@ -377,9 +377,10 @@ export default function Episodes() {
               About Our Release Schedule
             </Typography>
             <Typography variant="body1" color="text.secondary" paragraph>
-              The Avalanche Hour Podcast releases <strong>3 new episodes per month from October through June</strong>, 
-              perfectly timed with the North American avalanche season. This schedule ensures our content 
-              is most relevant when our community needs it most.
+              Season 11 runs <strong>October through May</strong>, with weekly
+              conversations during the core winter season and monthly Slabs n
+              Sluffs episodes. The cadence keeps new work close to the part of
+              the year when the avalanche community needs it most.
             </Typography>
             <Typography variant="body1" color="text.secondary">
               

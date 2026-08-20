@@ -233,6 +233,7 @@
 }
 
 .privacyNotice,
+.updateNotice,
 .fileNotice {
   display: flex;
   align-items: flex-start;
@@ -245,6 +246,7 @@
 }
 
 .privacyNotice > svg,
+.updateNotice > svg,
 .fileNotice > svg {
   width: 20px;
   height: 20px;
@@ -252,6 +254,7 @@
 }
 
 .privacyNotice strong,
+.updateNotice strong,
 .fileNotice strong {
   display: block;
   margin-bottom: 3px;
@@ -259,6 +262,7 @@
 }
 
 .privacyNotice p,
+.updateNotice p,
 .fileNotice p {
   margin: 0;
   color: #756e54;

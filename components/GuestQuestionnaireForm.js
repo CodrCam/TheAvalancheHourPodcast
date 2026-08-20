@@ -4,6 +4,7 @@ import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded';
 import EventAvailableRoundedIcon from '@mui/icons-material/EventAvailableRounded';
 import LockRoundedIcon from '@mui/icons-material/LockRounded';
 import OpenInNewRoundedIcon from '@mui/icons-material/OpenInNewRounded';
+import RefreshRoundedIcon from '@mui/icons-material/RefreshRounded';
 import SendRoundedIcon from '@mui/icons-material/SendRounded';
 import PlainTextArea from './PlainTextArea';
 import { buildGuestQuestionnaireSections } from '../lib/guestQuestionnaireSections.mjs';
@@ -382,6 +383,19 @@ export default function GuestQuestionnaireForm({ previewData = null }) {
         setQuestionnaire(data.questionnaire || null);
         setEpisode(data.episode || null);
         setSubmission(data.submission || null);
+        const updateDraft = data.update_draft || null;
+        if (updateDraft) {
+          setAnswers({
+            ...(updateDraft.answers || {}),
+            ...Object.fromEntries(
+              Object.entries(
+                updateDraft.scheduling_acknowledgements || {}
+              ).map(([key, value]) => [`__scheduling_${key}`, value === true])
+            ),
+          });
+        } else {
+          setAnswers({});
+        }
         setUploadSlots(
           data.submission?.upload_slots ||
             data.response?.upload_slots ||
@@ -467,6 +481,8 @@ export default function GuestQuestionnaireForm({ previewData = null }) {
       ),
     [questionnaire]
   );
+  const uploadMutationsLocked =
+    submission?.status === 'update_requested';
 
   function updateAnswer(key, value) {
     setAnswers((current) => ({ ...current, [key]: value }));
@@ -494,7 +510,14 @@ export default function GuestQuestionnaireForm({ previewData = null }) {
       return;
     }
     const selectedFiles = Array.from(fileList || []);
-    if (!selectedFiles.length || uploadBusy[slot.key] || submitted) return;
+    if (
+      !selectedFiles.length ||
+      uploadBusy[slot.key] ||
+      submitted ||
+      uploadMutationsLocked
+    ) {
+      return;
+    }
     if (input) input.value = '';
 
     const existingCount = Number(
@@ -628,7 +651,7 @@ export default function GuestQuestionnaireForm({ previewData = null }) {
 
   async function removeGuestUpload(slotKey, asset) {
     if (previewMode) return;
-    if (submitted || uploadBusy[slotKey]) return;
+    if (submitted || uploadMutationsLocked || uploadBusy[slotKey]) return;
     if (!window.confirm(`Remove ${asset.file_name || 'this file'}?`)) return;
     setUploadBusy((current) => ({ ...current, [slotKey]: true }));
     setPageError('');
@@ -832,6 +855,23 @@ export default function GuestQuestionnaireForm({ previewData = null }) {
               </div>
             </section>
 
+            {submission?.status === 'update_requested' ? (
+              <section className={styles.updateNotice} role="status">
+                <RefreshRoundedIcon aria-hidden="true" />
+                <div>
+                  <strong>The episode team requested an updated response.</strong>
+                  <p>
+                    Review the answers carried into this form, make any changes,
+                    re-enter restricted shipping details if needed, and submit the
+                    complete questionnaire again. Files from your previous
+                    submission are preserved and cannot be added, removed, or
+                    replaced during this update; contact the episode team if a
+                    file needs to change.
+                  </p>
+                </div>
+              </section>
+            ) : null}
+
             {pageError ? (
               <div className={styles.errorBanner} role="alert">
                 {pageError}
@@ -1008,8 +1048,9 @@ export default function GuestQuestionnaireForm({ previewData = null }) {
                     <span>Files</span>
                     <h2>Share the materials the episode team needs.</h2>
                     <p>
-                      Files upload directly to protected episode storage. You can
-                      remove or replace them until you submit this questionnaire.
+                      {uploadMutationsLocked
+                        ? 'Files from your previous submission are preserved below and are read-only for this update. Make corrections to answers and scheduling, then submit again; contact the episode team if a file needs to change.'
+                        : 'Files upload directly to protected episode storage. You can remove or replace them until you submit this questionnaire.'}
                     </p>
                   </header>
                   <div className={styles.publicUploadGrid}>
@@ -1054,7 +1095,12 @@ export default function GuestQuestionnaireForm({ previewData = null }) {
                               type="file"
                               accept={uploadAccept(slot.key)}
                               multiple={slot.key === 'photo'}
-                              disabled={full || uploadBusy[slot.key] || submitted}
+                              disabled={
+                                full ||
+                                uploadBusy[slot.key] ||
+                                submitted ||
+                                uploadMutationsLocked
+                              }
                               aria-invalid={Boolean(errors[errorKey])}
                               aria-describedby={
                                 errors[errorKey] ? uploadErrorId : undefined
@@ -1070,11 +1116,16 @@ export default function GuestQuestionnaireForm({ previewData = null }) {
                             <label
                               htmlFor={`guest-upload-${slot.key}`}
                               aria-disabled={
-                                full || uploadBusy[slot.key] || submitted
+                                full ||
+                                uploadBusy[slot.key] ||
+                                submitted ||
+                                uploadMutationsLocked
                               }
                             >
                               {uploadBusy[slot.key]
                                 ? 'Uploading…'
+                                : uploadMutationsLocked
+                                  ? 'Files preserved'
                                 : full
                                   ? 'File limit reached'
                                   : slot.key === 'photo'
@@ -1108,12 +1159,18 @@ export default function GuestQuestionnaireForm({ previewData = null }) {
                                   </span>
                                   <button
                                     type="button"
-                                    disabled={uploadBusy[slot.key] || submitted}
+                                    disabled={
+                                      uploadBusy[slot.key] ||
+                                      submitted ||
+                                      uploadMutationsLocked
+                                    }
                                     onClick={() =>
                                       removeGuestUpload(slot.key, asset)
                                     }
                                   >
-                                    Remove
+                                    {uploadMutationsLocked
+                                      ? 'Preserved'
+                                      : 'Remove'}
                                   </button>
                                 </li>
                               ))}

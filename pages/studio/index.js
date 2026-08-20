@@ -8,16 +8,16 @@ import HeadsetMicRoundedIcon from '@mui/icons-material/HeadsetMicRounded';
 import Inventory2RoundedIcon from '@mui/icons-material/Inventory2Rounded';
 import InboxRoundedIcon from '@mui/icons-material/InboxRounded';
 import MenuBookRoundedIcon from '@mui/icons-material/MenuBookRounded';
-import PodcastsRoundedIcon from '@mui/icons-material/PodcastsRounded';
-import ScheduleRoundedIcon from '@mui/icons-material/ScheduleRounded';
 import StudioLayout, {
   useStudioSession,
 } from '../../components/StudioLayout';
+import StudioOverviewDashboard from '../../components/StudioOverviewDashboard';
 import { buildMicKitAutomation } from '../../lib/micKitAutomation.mjs';
+import { summarizeCurrentSeasonEpisodes } from '../../lib/currentSeason.mjs';
+import { buildStudioOperationsInsightModel } from '../../lib/studioOperationsInsights.mjs';
 import {
   buildStudioToday,
   filterStudioTodayActions,
-  isViewerMicKitRequestActionable,
 } from '../../lib/studioToday.mjs';
 import styles from '../../styles/Studio.module.css';
 
@@ -28,13 +28,6 @@ const QUICK_LINKS = [
     detail: 'Track a blocker, question, or decision',
     icon: InboxRoundedIcon,
     permission: 'intake:read',
-  },
-  {
-    href: '/studio/episodes',
-    label: 'My Episodes',
-    detail: 'Open your production packages',
-    icon: PodcastsRoundedIcon,
-    permission: 'episodes:read',
   },
   {
     href: '/studio/resources',
@@ -56,13 +49,6 @@ const QUICK_LINKS = [
     detail: 'Request or track a recording kit',
     icon: HeadsetMicRoundedIcon,
     permission: 'mic_kits:read',
-  },
-  {
-    href: '/studio/manage/episodes',
-    label: 'Episode Calendar',
-    detail: 'Manage the production schedule',
-    icon: ScheduleRoundedIcon,
-    permission: 'episodes:manage',
   },
   {
     href: '/admin/orders',
@@ -94,14 +80,6 @@ function formatDate(value) {
   });
 }
 
-function titleDate() {
-  return new Date().toLocaleDateString(undefined, {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-  });
-}
-
 function inventoryItemName(item = {}) {
   return (
     [item.productName, item.label].filter(Boolean).join(' · ') ||
@@ -122,6 +100,7 @@ function inventoryItemStatus(item = {}) {
 export function TodayWorkspace({
   previewSession = null,
   previewWorkspace = null,
+  previewHrefMap = null,
 }) {
   const studioSession = useStudioSession();
   const session = previewSession || studioSession;
@@ -135,20 +114,36 @@ export function TodayWorkspace({
   const canUpdateInventory = permissions.has('inventory:update');
   const canViewOperations =
     permissions.has('orders:read') && permissions.has('inventory:read');
+  const mastermindEnabled =
+    permissions.has('mastermind:read') &&
+    session?.features?.season_mastermind === true;
   const [workspace, setWorkspace] = useState(
     previewWorkspace || {
       guide: null,
       episodes: [],
+      season: summarizeCurrentSeasonEpisodes(),
+      mastermind: null,
       micKits: null,
       operations: null,
       intake: null,
     }
   );
   const [loading, setLoading] = useState(!previewWorkspace);
+  const [episodeDataState, setEpisodeDataState] = useState(
+    previewWorkspace ? 'ready' : 'loading'
+  );
   const [error, setError] = useState('');
   const [profileNotConnected, setProfileNotConnected] = useState(false);
   const [inventoryAlertSku, setInventoryAlertSku] = useState('');
   const [inventoryNotice, setInventoryNotice] = useState('');
+  const [mastermindState, setMastermindState] = useState(
+    previewWorkspace?.mastermind
+      ? 'ready'
+      : mastermindEnabled
+        ? 'idle'
+        : 'disabled'
+  );
+  const [mastermindLoadAttempts, setMastermindLoadAttempts] = useState(0);
   const [queueFilter, setQueueFilter] = useState('priority');
   const queuePanelRef = useRef(null);
   const queueHeadingRef = useRef(null);
@@ -160,8 +155,16 @@ export function TodayWorkspace({
 
     async function loadWorkspace() {
       setLoading(true);
+      setEpisodeDataState('loading');
       setError('');
       setProfileNotConnected(false);
+      setMastermindState((current) =>
+        mastermindEnabled
+          ? current === 'ready'
+            ? current
+            : 'idle'
+          : 'disabled'
+      );
 
       const requests = {
         guide: fetchStudioData('/api/studio/resources'),
@@ -187,6 +190,7 @@ export function TodayWorkspace({
           : {}),
       };
       const entries = Object.entries(requests);
+      const coreEntryCount = entries.length;
       const results = await Promise.allSettled(
         entries.map(([, request]) => request)
       );
@@ -195,18 +199,28 @@ export function TodayWorkspace({
       const next = {
         guide: null,
         episodes: [],
+        season: summarizeCurrentSeasonEpisodes(),
+        mastermind: null,
         micKits: null,
         operations: null,
         intake: null,
       };
       const failures = [];
+      let nextEpisodeDataState = 'unavailable';
 
       results.forEach((result, index) => {
         const key = entries[index][0];
         if (result.status === 'fulfilled') {
           if (key === 'guide') next.guide = result.value.guide || null;
           else if (key === 'episodes') {
+            nextEpisodeDataState = 'ready';
             next.episodes = result.value.episodes || [];
+            next.season =
+              result.value.season_overview ||
+              summarizeCurrentSeasonEpisodes(
+                next.episodes,
+                result.value.calendar || []
+              );
           } else {
             next[key] = result.value;
           }
@@ -214,6 +228,7 @@ export function TodayWorkspace({
         }
 
         if (key === 'episodes' && result.reason?.code === 'PROFILE_NOT_CONNECTED') {
+          nextEpisodeDataState = 'profile_not_connected';
           setProfileNotConnected(true);
           return;
         }
@@ -231,8 +246,9 @@ export function TodayWorkspace({
       }
 
       setWorkspace(next);
+      setEpisodeDataState(nextEpisodeDataState);
       setError(
-        failures.length === entries.length
+        failures.length === coreEntryCount
           ? 'The Team Studio could not load right now. Please refresh and try again.'
           : ''
       );
@@ -246,11 +262,56 @@ export function TodayWorkspace({
   }, [
     canManageEpisodes,
     canManageMicKits,
+    mastermindEnabled,
     permissions,
     canViewOperations,
     previewWorkspace,
     session,
   ]);
+
+  async function loadMastermindOverview() {
+    if (
+      !mastermindEnabled ||
+      mastermindState === 'loading' ||
+      mastermindLoadAttempts >= 2
+    ) {
+      return;
+    }
+    setMastermindState('loading');
+    setMastermindLoadAttempts((current) => current + 1);
+    try {
+      const result = await fetchStudioData('/api/studio/mastermind/overview');
+      setWorkspace((current) => {
+        let nextSeason = current.season;
+        if (result.season) {
+          nextSeason =
+            result.season.label === current.season.label
+              ? { ...current.season, ...result.season }
+              : {
+                  ...result.season,
+                  schedule_slots: result.planning?.total || 0,
+                  regular_slots: result.planning?.by_type?.regular || 0,
+                  slabs_and_sluffs_slots:
+                    result.planning?.by_type?.slabs_and_sluffs || 0,
+                  regular_monthly_goal: 0,
+                  cadence:
+                    result.season.planning_goal ||
+                    'Season cadence is still being planned.',
+                  episode_studios: current.season.episode_studios || 0,
+                  next_releases: current.season.next_releases || [],
+                };
+        }
+        return {
+          ...current,
+          mastermind: result,
+          season: nextSeason,
+        };
+      });
+      setMastermindState('ready');
+    } catch {
+      setMastermindState('unavailable');
+    }
+  }
 
   const today = useMemo(
     () =>
@@ -289,26 +350,20 @@ export function TodayWorkspace({
       permissions.has(permission)
     );
   });
-  const firstName = String(
-    session?.display_name || session?.username || 'team'
-  )
-    .trim()
-    .split(/[\s@]/)[0];
-  const micKitMetric = canManageMicKits
-    ? Number(workspace.micKits?.automation?.metrics?.open_requests) || 0
-    : (workspace.micKits?.tracker?.requests || []).filter(
-        isViewerMicKitRequestActionable
-      ).length;
-  const operationsAttention = workspace.operations
-    ? (Number(workspace.operations.orders?.unshipped) || 0) +
-      (Number(workspace.operations.inventory?.low_stock) || 0) +
-      (Number(workspace.operations.inventory?.sold_out) || 0)
-    : null;
+  const season = workspace.season || summarizeCurrentSeasonEpisodes();
+  const operationsInsight = useMemo(
+    () =>
+      buildStudioOperationsInsightModel({
+        episodes: workspace.episodes,
+        season,
+        permissions: session?.permissions,
+        capabilities: session?.capabilities,
+      }),
+    [season, session?.capabilities, session?.permissions, workspace.episodes]
+  );
+  const planning = workspace.mastermind?.planning || null;
   const mutedInventoryRows =
     workspace.operations?.inventory?.muted_rows || [];
-  const activeEpisodesHref = canManageEpisodes
-    ? '/studio/manage/episodes#production-queue'
-    : '/studio/episodes#my-episodes';
   const queueLabel =
     queueFilter === 'all'
       ? 'All next actions'
@@ -316,7 +371,11 @@ export function TodayWorkspace({
         ? 'Due this week'
         : queueFilter === 'operations'
           ? 'Operations attention'
-          : 'Priority queue';
+      : 'Priority queue';
+
+  function hrefFor(href) {
+    return previewHrefMap?.[href] || href;
+  }
 
   function showQueue(filter) {
     setQueueFilter(filter);
@@ -378,72 +437,21 @@ export function TodayWorkspace({
 
   return (
     <>
-      <section className={styles.todayHeader}>
-        <div className={styles.todayHeaderCopy}>
-          <span className={styles.eyebrow}>{titleDate()}</span>
-          <h1>Today, {firstName}</h1>
-          <p>
-            {canManageEpisodes
-              ? 'The most important production and operations follow-ups are gathered here in priority order.'
-              : 'Your episode work, mic-kit status, and fastest paths into the team workspace are gathered here.'}
-          </p>
-        </div>
-        <div className={styles.todayMetrics} aria-label="Today summary">
-          <button
-            type="button"
-            className={`${styles.todayMetric} ${styles.todayMetricInteractive}`}
-            onClick={() => showQueue('all')}
-            aria-pressed={queueFilter === 'all'}
-            disabled={loading}
-          >
-            <span>Next actions</span>
-            <strong>{loading ? '—' : today.metrics.action_count}</strong>
-          </button>
-          <Link
-            href={activeEpisodesHref}
-            className={`${styles.todayMetric} ${styles.todayMetricInteractive}`}
-            aria-label={`Open ${today.metrics.active_episodes} active episodes`}
-          >
-            <span>Active episodes</span>
-            <strong>{loading ? '—' : today.metrics.active_episodes}</strong>
-          </Link>
-          <button
-            type="button"
-            className={`${styles.todayMetric} ${styles.todayMetricInteractive}`}
-            onClick={() => showQueue('due_this_week')}
-            aria-pressed={queueFilter === 'due_this_week'}
-            disabled={loading}
-          >
-            <span>Due this week</span>
-            <strong>{loading ? '—' : today.metrics.due_this_week}</strong>
-          </button>
-          {operationsAttention === null ? (
-            <Link
-              href="/studio/mic-kits#request-queue"
-              className={`${styles.todayMetric} ${styles.todayMetricInteractive} ${
-                today.metrics.off_track ? styles.todayMetricAlert : ''
-              }`}
-              aria-label={`Open ${micKitMetric} mic-kit requests`}
-            >
-              <span>Mic-kit requests</span>
-              <strong>{loading ? '—' : micKitMetric}</strong>
-            </Link>
-          ) : (
-            <button
-              type="button"
-              className={`${styles.todayMetric} ${styles.todayMetricInteractive} ${
-                today.metrics.off_track ? styles.todayMetricAlert : ''
-              }`}
-              onClick={() => showQueue('operations')}
-              aria-pressed={queueFilter === 'operations'}
-              disabled={loading}
-            >
-              <span>Ops attention</span>
-              <strong>{loading ? '—' : operationsAttention}</strong>
-            </button>
-          )}
-        </div>
-      </section>
+      <StudioOverviewDashboard
+        model={operationsInsight}
+        season={season}
+        planning={planning}
+        planningState={mastermindState}
+        planningLoadAttempts={mastermindLoadAttempts}
+        onLoadPlanning={loadMastermindOverview}
+        mastermindEnabled={mastermindEnabled}
+        dataState={episodeDataState}
+        loading={loading}
+        nextActionCount={today.metrics.action_count}
+        dueThisWeek={today.metrics.due_this_week}
+        onShowAllActions={() => showQueue('all')}
+        hrefFor={hrefFor}
+      />
 
       {workspace.guide?.announcement?.enabled ? (
         <section className={styles.announcement}>
@@ -674,8 +682,8 @@ export function TodayWorkspace({
           <section className={styles.todayPanel}>
             <header className={styles.todayPanelHeader}>
               <div>
-                <span>Jump back in</span>
-                <h2>Quick paths</h2>
+                <span>Team tools</span>
+                <h2>Supporting work</h2>
               </div>
             </header>
             <div className={styles.todayQuickLinks}>
@@ -698,17 +706,6 @@ export function TodayWorkspace({
               })}
             </div>
           </section>
-
-          <Link href="/studio/resources" className={styles.todayGuideCard}>
-            <span>Team field guide</span>
-            <strong>
-              {workspace.guide?.title || 'Recording, handoff, and season help'}
-            </strong>
-            <small>
-              {workspace.guide?.sections?.length || 0} published sections
-            </small>
-            <ArrowForwardRoundedIcon aria-hidden="true" />
-          </Link>
         </aside>
       </div>
     </>

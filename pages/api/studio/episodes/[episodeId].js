@@ -2,6 +2,11 @@ import {
   ADMIN_PERMISSIONS,
   requirePermissionAsync,
 } from '../../../../lib/adminAuth';
+import {
+  getHostDraftProducerActionBlocker,
+  getHostDraftViewerCapabilities,
+} from '../../../../lib/episodeStudioDraftAccess.mjs';
+import { getEpisodeAcceptancePatchBlocker } from '../../../../lib/episodeStudioActionReadiness.mjs';
 import { logAdminAction } from '../../../../lib/adminAudit';
 import {
   getEpisodeRelationshipCapabilities,
@@ -658,6 +663,14 @@ export default async function handler(req, res) {
           error: 'Only a Studio manager can delete an Episode Studio.',
         });
       }
+      if (String(result.episode.source_mastermind_plan_id || '').trim()) {
+        return res.status(409).json({
+          ok: false,
+          code: 'MASTERMIND_LINKED_STUDIO_DELETE_BLOCKED',
+          error:
+            'This Episode Studio is the live production record for a Season Mastermind plan and cannot be permanently deleted while that planning relationship is active.',
+        });
+      }
       if (!req.headers['content-type']?.includes('application/json')) {
         return res.status(400).json({
           ok: false,
@@ -821,15 +834,18 @@ export default async function handler(req, res) {
 
     if (req.method === 'GET') {
       const viewCapabilities = getEpisodeStudioViewCapabilities(
-        {
-          canManage,
-          canHost,
-          canReview,
-          canUploadAssets,
-          canConfigure,
-          canAdminOverride,
-          canAdvanceProduction,
-        },
+        getHostDraftViewerCapabilities(
+          {
+            canManage,
+            canHost,
+            canReview,
+            canUploadAssets,
+            canConfigure,
+            canAdminOverride,
+            canAdvanceProduction,
+          },
+          result.episode.status
+        ),
         String(req.query.view || ''),
         episodeMembership
       );
@@ -914,6 +930,17 @@ export default async function handler(req, res) {
         ok: false,
         error: 'Choose a valid Episode Studio action.',
       });
+    }
+    const hostDraftProducerBlocker = getHostDraftProducerActionBlocker({
+      status: result.episode.status,
+      action,
+      canHost,
+      canManage,
+    });
+    if (hostDraftProducerBlocker) {
+      return res
+        .status(hostDraftProducerBlocker.status)
+        .json({ ok: false, ...hostDraftProducerBlocker });
     }
     const expectedUpdatedAt = String(req.body?.expected_updated_at || '');
     let nextEpisode;
@@ -1836,6 +1863,18 @@ export default async function handler(req, res) {
           error: 'Hosts must submit the episode package before it is accepted.',
         });
       }
+      const acceptancePatchBlocker = getEpisodeAcceptancePatchBlocker({
+        action,
+        requestedStatus: status,
+        episode: result.episode,
+      });
+      if (acceptancePatchBlocker) {
+        return res.status(acceptancePatchBlocker.status).json({
+          ok: false,
+          code: acceptancePatchBlocker.code,
+          error: acceptancePatchBlocker.error,
+        });
+      }
       if (
         status === 'needs_changes' &&
         !['submitted', 'submitted_with_gaps', 'accepted'].includes(
@@ -2023,6 +2062,14 @@ export default async function handler(req, res) {
         result.episode
       );
       if (action === 'submit') {
+        if (req.body?.host_research_review_confirmed !== true) {
+          return res.status(400).json({
+            ok: false,
+            code: 'HOST_RESEARCH_REVIEW_REQUIRED',
+            error:
+              'Confirm the Host research & review step before sending this package to the producer.',
+          });
+        }
         const baseCompletion = getEpisodeCompletion(nextEpisode);
         const submissionMode = String(req.body?.submission_mode || 'complete');
         const provisional = submissionMode === 'with_gaps';
@@ -2171,15 +2218,27 @@ export default async function handler(req, res) {
       principal,
       currentAuthorName
     );
-    const sponsorData = await sponsorReadResponseData(
-      responseEpisode,
-      canConfigure
-    );
     const responseCanAdvanceProduction =
       saved.episode.status === 'accepted' &&
       saved.episode.production_stage === 'lead_review' &&
       Boolean(binding?.person_id) &&
       saved.episode.production_lead_person_id === binding.person_id;
+    const responseCapabilities = getHostDraftViewerCapabilities(
+      {
+        canManage: responseRelationship.canManage,
+        canHost: responseRelationship.canHost,
+        canReview: responseRelationship.canReview,
+        canUploadAssets: responseRelationship.canUploadAssets,
+        canConfigure: responseRelationship.canConfigure,
+        canAdminOverride: responseRelationship.canAdminOverride,
+        canAdvanceProduction: responseCanAdvanceProduction,
+      },
+      saved.episode.status
+    );
+    const sponsorData = await sponsorReadResponseData(
+      responseEpisode,
+      responseCapabilities.canConfigure
+    );
     return res.status(200).json({
       ok: true,
       episode: sponsorData.episode,
@@ -2189,13 +2248,7 @@ export default async function handler(req, res) {
       host_names: saved.episode.host_person_ids.map(
         (personId) => peopleById.get(personId)?.name || personId
       ),
-      canManage: responseRelationship.canManage,
-      canHost: responseRelationship.canHost,
-      canReview: responseRelationship.canReview,
-      canUploadAssets: responseRelationship.canUploadAssets,
-      canConfigure: responseRelationship.canConfigure,
-      canAdminOverride: responseRelationship.canAdminOverride,
-      canAdvanceProduction: responseCanAdvanceProduction,
+      ...responseCapabilities,
       production_handoff_available: productionLeadPersonIds.length > 0,
       production_lead_name:
         peopleById.get(saved.episode.production_lead_person_id)?.name ||

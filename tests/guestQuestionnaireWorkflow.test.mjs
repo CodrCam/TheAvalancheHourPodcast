@@ -10,6 +10,7 @@ import {
   GUEST_QUESTIONNAIRE_SENT_TASK_ID,
   reopenGuestQuestionnaireSentTask,
   reopenGuestQuestionnaireSentTaskForNewLink,
+  reopenGuestQuestionnaireWorkflowForUpdate,
 } from '../lib/guestQuestionnaireWorkflow.mjs';
 import {
   getGuestQuestionnaireSubmissionIdempotency,
@@ -21,6 +22,10 @@ import {
   consumeGuestQuestionnaireRateLimit,
   resetGuestQuestionnaireRateLimitsForTests,
 } from '../lib/guestQuestionnaireRateLimit.mjs';
+import {
+  getEpisodeAcceptancePatchBlocker,
+  getEpisodeStudioActionBlockers,
+} from '../lib/episodeStudioActionReadiness.mjs';
 
 test('questionnaire lifecycle completes sent and received gates without private evidence', () => {
   const episode = {
@@ -140,6 +145,87 @@ test('questionnaire lifecycle completes sent and received gates without private 
       (task) => task.task_id === MICROPHONE_PLAN_TASK_ID
     ).status,
     'complete'
+  );
+
+  const updateRequest = reopenGuestQuestionnaireWorkflowForUpdate(
+    {
+      ...received.episode,
+      status: 'submitted',
+      deliverables: [
+        {
+          id: 'mic-kit-plan',
+          mic_kit_plans: [
+            {
+              host_person_id: 'host-one',
+              choice: 'no_kit_needed',
+            },
+          ],
+        },
+      ],
+      production_tasks: received.episode.production_tasks.map((task) =>
+        [
+          MICROPHONE_PLAN_TASK_ID,
+          'guest-recording-plan-reviewed',
+        ].includes(task.task_id)
+          ? { ...task, status: 'complete' }
+          : task
+      ),
+    },
+    {
+      actorPersonId: 'producer-one',
+      actorName: 'Producer One',
+      now: new Date('2026-08-06T12:00:00.000Z'),
+    }
+  );
+  assert.equal(updateRequest.changed, true);
+  assert.equal(
+    updateRequest.episode.production_tasks.find(
+      (task) => task.task_id === GUEST_QUESTIONNAIRE_SENT_TASK_ID
+    ).status,
+    'in_progress'
+  );
+  assert.equal(
+    updateRequest.episode.production_tasks.find(
+      (task) => task.task_id === GUEST_QUESTIONNAIRE_RECEIVED_TASK_ID
+    ).status,
+    'in_progress'
+  );
+  assert.doesNotMatch(
+    updateRequest.episode.production_tasks
+      .filter((task) =>
+        [
+          GUEST_QUESTIONNAIRE_SENT_TASK_ID,
+          GUEST_QUESTIONNAIRE_RECEIVED_TASK_ID,
+        ].includes(task.task_id)
+      )
+      .map((task) => task.evidence_note)
+      .join(' '),
+    /email|shipping|address/i
+  );
+  assert.equal(
+    updateRequest.episode.production_tasks.find(
+      (task) => task.task_id === MICROPHONE_PLAN_TASK_ID
+    ).status,
+    'complete'
+  );
+  assert.equal(
+    updateRequest.episode.production_tasks.find(
+      (task) => task.task_id === 'guest-recording-plan-reviewed'
+    ).status,
+    'complete'
+  );
+  const updateRequestUiBlocker = getEpisodeStudioActionBlockers({
+    episode: updateRequest.episode,
+    productionHandoffAvailable: true,
+  }).accept;
+  assert.match(updateRequestUiBlocker, /guest questionnaire response receipt/i);
+  assert.equal(
+    getEpisodeAcceptancePatchBlocker({
+      action: 'review',
+      requestedStatus: 'accepted',
+      episode: updateRequest.episode,
+    })?.error,
+    updateRequestUiBlocker
   );
 });
 

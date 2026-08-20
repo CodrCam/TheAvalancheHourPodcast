@@ -102,10 +102,15 @@ test('Studio and guest presign routes record grant expiry before returning a URL
   }
 });
 
-test('the active guest link can manage questionnaire-owned files across link reissue', async () => {
+test('before submission, a reissued active guest link can manage questionnaire-owned files', async () => {
   const route = await source(
     '../pages/api/guest-questionnaire/uploads/[assetId].js'
   );
+  const handler = route.indexOf('export default async function handler');
+  const lock = route.indexOf('assertCurrentGuestAccess(', handler);
+  const ownership = route.indexOf('isGuestQuestionnaireUploaderId(', handler);
+  assert.ok(lock > handler);
+  assert.ok(ownership > lock);
   assert.match(route, /isGuestQuestionnaireUploaderId\(/);
   assert.match(
     route,

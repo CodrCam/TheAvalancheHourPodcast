@@ -77,6 +77,7 @@ function isStaleWorkspaceRequest(error) {
 
 function responseStatusLabel(response = {}) {
   const value = response || {};
+  if (value.status === 'update_requested') return 'Update requested';
   if (value.status === 'submitted') return 'Response received';
   if (value.status === 'draft') return 'Guest started';
   return 'Waiting for guest';
@@ -383,6 +384,7 @@ export default function EpisodeGuestQuestionnaireWorkspace({ admin = false }) {
   const [canIssue, setCanIssue] = useState(false);
   const [canApply, setCanApply] = useState(false);
   const [canRevoke, setCanRevoke] = useState(false);
+  const [canRequestUpdate, setCanRequestUpdate] = useState(false);
   const [canViewShipping, setCanViewShipping] = useState(false);
   const [configured, setConfigured] = useState(false);
   const [uploadsConfigured, setUploadsConfigured] = useState(true);
@@ -473,6 +475,7 @@ export default function EpisodeGuestQuestionnaireWorkspace({ admin = false }) {
       setCanIssue(false);
       setCanApply(false);
       setCanRevoke(false);
+      setCanRequestUpdate(false);
       setCanManage(false);
       setCanViewShipping(false);
       setConfigured(false);
@@ -523,6 +526,7 @@ export default function EpisodeGuestQuestionnaireWorkspace({ admin = false }) {
       setCanRevoke(
         questionnaireData.can_revoke === true || questionnaireData.can_edit === true
       );
+      setCanRequestUpdate(questionnaireData.can_request_update === true);
       setCanViewShipping(questionnaireData.can_view_shipping === true);
       setResponseRecord(questionnaireData.response || null);
       setShareLink(questionnaireData.link || null);
@@ -712,6 +716,9 @@ export default function EpisodeGuestQuestionnaireWorkspace({ admin = false }) {
     if (Object.prototype.hasOwnProperty.call(data, 'can_revoke')) {
       setCanRevoke(data.can_revoke === true);
     }
+    if (Object.prototype.hasOwnProperty.call(data, 'can_request_update')) {
+      setCanRequestUpdate(data.can_request_update === true);
+    }
     if (!preserveSharePath) setSharePath(data.share_path || '');
   }
 
@@ -758,7 +765,7 @@ export default function EpisodeGuestQuestionnaireWorkspace({ admin = false }) {
     if (
       regenerate &&
       !window.confirm(
-        'Create a new guest link? The previous link will stop working.'
+        'Issue a replacement guest link? The current link will stop working immediately. Responses already saved in Studio will be preserved.'
       )
     ) {
       return;
@@ -776,7 +783,7 @@ export default function EpisodeGuestQuestionnaireWorkspace({ admin = false }) {
       applyServerData(data);
       setMessage(
         regenerate
-          ? 'A new private guest link is ready. Copy it before leaving this page.'
+          ? 'Replacement link ready. The previous link no longer works. Copy the new link before leaving this page.'
           : 'Private guest link created. Copy it before leaving this page.'
       );
     } catch (linkError) {
@@ -797,12 +804,67 @@ export default function EpisodeGuestQuestionnaireWorkspace({ admin = false }) {
     }
   }
 
+  async function requestResponseUpdate() {
+    if (!canRequestUpdate) return;
+    if (dirty) {
+      setError(
+        'Save or discard questionnaire changes before requesting a guest update.'
+      );
+      return;
+    }
+    if (
+      !window.confirm(
+        'Request a corrected guest response and issue a fresh link? Any current guest link will stop working immediately. The previous submission remains current until the guest submits the update, and restricted shipping details must be entered again.'
+      )
+    ) {
+      return;
+    }
+    const actionGeneration = loadGenerationRef.current;
+    const actionEpisodeId = episodeId;
+    setLinkBusy(true);
+    clearFeedback();
+    try {
+      const data = await patchQuestionnaire({
+        action: 'request_update',
+        expected_updated_at: questionnaire?.updated_at || '',
+        expires_in_days: expiresInDays,
+      });
+      applyServerData(data);
+      setMessage(
+        'Guest update link ready. Copy it before leaving this page; the previous link no longer works.'
+      );
+    } catch (linkError) {
+      if (
+        !isStaleWorkspaceRequest(linkError) &&
+        loadGenerationRef.current === actionGeneration &&
+        activeEpisodeIdRef.current === actionEpisodeId
+      ) {
+        setError(linkError.message || 'Could not request the guest update.');
+      }
+    } finally {
+      if (
+        loadGenerationRef.current === actionGeneration &&
+        activeEpisodeIdRef.current === actionEpisodeId
+      ) {
+        setLinkBusy(false);
+      }
+    }
+  }
+
   async function revokeLink() {
     if (dirty) {
       setError('Save or discard questionnaire changes before revoking the guest link.');
       return;
     }
-    if (!window.confirm('Revoke this guest link now?')) return;
+    const cancellingUpdate = responseRecord?.status === 'update_requested';
+    const revokeConfirmed = window.confirm(
+      cancellingUpdate
+        ? 'Cancel this guest update request and revoke its link? Guest access will stop immediately, and the previous submitted response will remain current.'
+        : 'Revoke this guest link now? Guest access will stop immediately. Responses already saved in Studio will not be deleted.'
+    );
+    if (!revokeConfirmed) {
+      return;
+    }
     const actionGeneration = loadGenerationRef.current;
     const actionEpisodeId = episodeId;
     setLinkBusy(true);
@@ -814,7 +876,11 @@ export default function EpisodeGuestQuestionnaireWorkspace({ admin = false }) {
       });
       applyServerData(data);
       setSharePath('');
-      setMessage('The guest link has been revoked.');
+      setMessage(
+        cancellingUpdate
+          ? 'Guest update request cancelled and access revoked. The previous submitted response remains current.'
+          : 'Guest access revoked. Responses already saved in Studio were preserved.'
+      );
     } catch (linkError) {
       if (
         !isStaleWorkspaceRequest(linkError) &&
@@ -838,7 +904,9 @@ export default function EpisodeGuestQuestionnaireWorkspace({ admin = false }) {
     if (!url) return;
     try {
       await navigator.clipboard.writeText(url);
-      setMessage('Private guest link copied.');
+      setMessage(
+        'Current guest link copied. Send it in your usual message to the guest.'
+      );
       setError('');
     } catch {
       setError('Could not copy automatically. Select and copy the link below.');
@@ -861,7 +929,9 @@ export default function EpisodeGuestQuestionnaireWorkspace({ admin = false }) {
         expected_updated_at: questionnaire?.updated_at || '',
       });
       applyServerData(data, { preserveSharePath: true });
-      setMessage('Guest link marked as shared. The Production Board is updated.');
+      setMessage(
+        'Guest link marked as sent. The Production Board is updated.'
+      );
     } catch (shareError) {
       if (
         !isStaleWorkspaceRequest(shareError) &&
@@ -945,6 +1015,11 @@ export default function EpisodeGuestQuestionnaireWorkspace({ admin = false }) {
   }
 
   const responseAnswers = responseRecord?.answers || {};
+  const responseUpdateRequested =
+    responseRecord?.status === 'update_requested';
+  const responseReceived = ['submitted', 'update_requested'].includes(
+    responseRecord?.status
+  );
   const shippingRequested =
     responseAnswers.mic_kit_shipping_needed === 'yes';
   const responseQuestions = orderedQuestions.filter(
@@ -953,7 +1028,7 @@ export default function EpisodeGuestQuestionnaireWorkspace({ admin = false }) {
       (question.privacy === 'restricted_shipping' &&
         !canViewShipping &&
         shippingRequested &&
-        responseRecord?.status === 'submitted')
+        responseReceived)
   );
   const responseSections = buildGuestQuestionnaireSections(responseQuestions);
   const visibleResponseUploadSlots = configuredUploadSlots.filter(
@@ -971,7 +1046,9 @@ export default function EpisodeGuestQuestionnaireWorkspace({ admin = false }) {
     },
     0
   );
-  const activeLink = linkStatusLabel(shareLink) === 'Active';
+  const currentLinkStatus = linkStatusLabel(shareLink);
+  const activeLink = currentLinkStatus === 'Active';
+  const previouslyIssuedLink = Boolean(shareLink?.issued_at);
   const linkShared =
     episode?.guest_questionnaire_shared === true ||
     (episode?.production_tasks || []).some(
@@ -1028,7 +1105,20 @@ export default function EpisodeGuestQuestionnaireWorkspace({ admin = false }) {
               </Link>
             </nav>
 
-            {responseRecord?.status === 'submitted' ? (
+            {responseUpdateRequested ? (
+              <div className={styles.historyBanner}>
+                <RefreshRoundedIcon aria-hidden="true" />
+                <span>
+                  <strong>Guest update requested</strong>
+                  <small>
+                    The previous submission remains current until the guest
+                    submits the corrected response. Non-shipping answers are
+                    prefilled for the guest; restricted shipping details must
+                    be entered again.
+                  </small>
+                </span>
+              </div>
+            ) : responseRecord?.status === 'submitted' ? (
               <div className={styles.historyBanner}>
                 <LockRoundedIcon aria-hidden="true" />
                 <span>
@@ -1084,11 +1174,15 @@ export default function EpisodeGuestQuestionnaireWorkspace({ admin = false }) {
                 <span>Guest response</span>
                 <strong>{responseStatusLabel(responseRecord)}</strong>
                 <small>
-                  {responseRecord?.submitted_at
+                  {responseUpdateRequested && responseRecord?.submitted_at
+                    ? `Update requested · previous response submitted ${dateLabel(
+                        responseRecord.submitted_at
+                      )}`
+                    : responseRecord?.submitted_at
                     ? `Submitted ${dateLabel(responseRecord.submitted_at)}`
                     : 'Refresh this page after the guest submits.'}
                 </small>
-                {responseRecord?.status === 'submitted' ? (
+                {responseReceived ? (
                   <a href="#submitted-intake" className={styles.summaryCardLink}>
                     Review the full intake
                   </a>
@@ -1104,7 +1198,7 @@ export default function EpisodeGuestQuestionnaireWorkspace({ admin = false }) {
               </section>
             </div>
 
-            {responseRecord?.status === 'submitted' ? (
+            {responseReceived ? (
               <section
                 id="submitted-intake"
                 className={styles.intakeReview}
@@ -1112,12 +1206,20 @@ export default function EpisodeGuestQuestionnaireWorkspace({ admin = false }) {
               >
                 <header className={styles.intakeReviewHeader}>
                   <div>
-                    <span className={styles.eyebrow}>Submitted intake</span>
-                    <h2 id="submitted-intake-title">Review the guest response</h2>
+                    <span className={styles.eyebrow}>
+                      {responseUpdateRequested
+                        ? 'Previous submitted intake'
+                        : 'Submitted intake'}
+                    </span>
+                    <h2 id="submitted-intake-title">
+                      {responseUpdateRequested
+                        ? 'Review the current response'
+                        : 'Review the guest response'}
+                    </h2>
                     <p>
-                      The complete response is organized below for the episode
-                      team. Answers remain read-only, and restricted delivery
-                      details only appear to authorized roles.
+                      {responseUpdateRequested
+                        ? 'This previous submission remains the current response until the guest resubmits. Answers stay read-only, and restricted delivery details only appear to authorized roles.'
+                        : 'The complete response is organized below for the episode team. Answers remain read-only, and restricted delivery details only appear to authorized roles.'}
                     </p>
                   </div>
                   <div className={styles.intakeReviewActions}>
@@ -1140,7 +1242,11 @@ export default function EpisodeGuestQuestionnaireWorkspace({ admin = false }) {
                   <div>
                     <CheckCircleRoundedIcon aria-hidden="true" />
                     <span>
-                      <strong>Response received</strong>
+                      <strong>
+                        {responseUpdateRequested
+                          ? 'Previous response remains current'
+                          : 'Response received'}
+                      </strong>
                       <small>{dateLabel(responseRecord.submitted_at)}</small>
                     </span>
                   </div>
@@ -1753,19 +1859,20 @@ export default function EpisodeGuestQuestionnaireWorkspace({ admin = false }) {
                     The link is episode-specific, expires automatically, and can
                     be revoked. Only send it to the intended guest.
                   </p>
-                  {sharePath ? (
+                  {sharePath && responseRecord?.status !== 'submitted' ? (
                     <div className={styles.shareResult}>
                       <label>
-                        <span>Copy this link now</span>
+                        <span>Current active link · shown once</span>
                         <input readOnly value={shareUrlFromPath(sharePath)} />
                       </label>
                       <button type="button" onClick={copyShareLink}>
                         <ContentCopyRoundedIcon aria-hidden="true" />
-                        Copy private link
+                        Copy current link
                       </button>
                       <small>
-                        For security, the complete link is only shown when it is
-                        created.
+                        Copying keeps this same link. Studio does not message the
+                        guest for you—send it in your usual channel, then mark it
+                        as sent below.
                       </small>
                     </div>
                   ) : activeLink ? (
@@ -1778,17 +1885,56 @@ export default function EpisodeGuestQuestionnaireWorkspace({ admin = false }) {
                             : 'A guest link is active'}
                         </strong>
                         <small>
-                          {linkShared
-                            ? 'The Send guest prep form step is complete.'
-                            : 'Create a replacement if you no longer have the original.'}
+                          {canIssue
+                            ? 'The complete URL is only shown when it is created. To resend the same link, use the copy in your message history; otherwise issue a replacement below.'
+                            : responseRecord?.status === 'submitted'
+                              ? 'The saved response is locked. Revoke this link below if guest access should end immediately.'
+                              : 'This link cannot be replaced at the current episode stage. Revoke it below if access should end immediately.'}
                         </small>
+                      </span>
+                    </div>
+                  ) : null}
+                  {activeLink && canIssue ? (
+                    <div
+                      className={styles.linkChoiceGuide}
+                      aria-label="Choose how to share guest access"
+                    >
+                      <div>
+                        <span>Copy or resend</span>
+                        <strong>Keep the current link</strong>
+                        <p>
+                          Best when the intended guest simply needs the same
+                          link again. This does not create new access.
+                        </p>
+                      </div>
+                      <div className={styles.linkChoiceReplacement}>
+                        <span>New or reissue</span>
+                        <strong>Issue a replacement link</strong>
+                        <p>
+                          Creates a fresh URL for the guest. The current link
+                          stops working immediately. To change questions too,
+                          revoke first, edit and save, then issue the new link.
+                        </p>
+                      </div>
+                    </div>
+                  ) : !activeLink && previouslyIssuedLink ? (
+                    <div className={styles.linkLifecycleNote}>
+                      <strong>{currentLinkStatus} access stays closed</strong>
+                      <span>
+                        {canIssue
+                          ? 'Issue a new link only when the guest should regain access. The earlier link will remain invalid.'
+                          : 'A new link is not available at the current episode stage. Responses already saved in Studio remain preserved.'}
                       </span>
                     </div>
                   ) : null}
                   {canIssue ? (
                     <>
                       <label className={styles.expirationField}>
-                        <span>Link expires after</span>
+                        <span>
+                          {activeLink
+                            ? 'Replacement expires after'
+                            : 'Link expires after'}
+                        </span>
                         <select
                           value={expiresInDays}
                           disabled={linkBusy}
@@ -1823,8 +1969,10 @@ export default function EpisodeGuestQuestionnaireWorkspace({ admin = false }) {
                           {linkBusy
                             ? 'Working…'
                             : activeLink
-                              ? 'Replace link'
-                              : 'Create guest link'}
+                              ? 'Issue replacement link'
+                              : previouslyIssuedLink
+                                ? 'Issue new guest link'
+                                : 'Create guest link'}
                         </button>
                         {activeLink && canRevoke ? (
                           <button
@@ -1833,7 +1981,7 @@ export default function EpisodeGuestQuestionnaireWorkspace({ admin = false }) {
                             disabled={dirty || linkBusy}
                             onClick={revokeLink}
                           >
-                            Revoke
+                            Revoke access
                           </button>
                         ) : null}
                       </div>
@@ -1845,10 +1993,20 @@ export default function EpisodeGuestQuestionnaireWorkspace({ admin = false }) {
                           onClick={markLinkShared}
                         >
                           <CheckCircleRoundedIcon aria-hidden="true" />
-                          Mark link as shared
+                          Mark as sent to guest
                         </button>
                       ) : null}
                     </>
+                  ) : null}
+                  {activeLink ? (
+                    <div className={styles.revokeGuidance}>
+                      <strong>Revoke only to stop access now</strong>
+                      <span>
+                        Use revoke for a wrong recipient, a compromised link, or
+                        access that is no longer needed. Revoking the link does
+                        not delete responses already saved in Studio.
+                      </span>
+                    </div>
                   ) : null}
                   {!canIssue && canRevoke && activeLink ? (
                     <button
@@ -1857,12 +2015,67 @@ export default function EpisodeGuestQuestionnaireWorkspace({ admin = false }) {
                       disabled={dirty || linkBusy}
                       onClick={revokeLink}
                     >
-                      {linkBusy ? 'Revoking…' : 'Revoke active guest link'}
+                      {linkBusy ? 'Revoking…' : 'Revoke guest access'}
                     </button>
+                  ) : null}
+                  {responseRecord?.status === 'submitted' ? (
+                    <div className={styles.submittedUpdateNote}>
+                      <strong>Need a corrected guest response?</strong>
+                      <span>
+                        {canRequestUpdate
+                          ? 'Requesting an update creates a fresh link that is shown once and invalidates any earlier link. The previous submission remains current until the guest resubmits. Non-shipping answers are prefilled; restricted shipping details must be entered again.'
+                          : 'Only the assigned producer or a Studio manager can request a corrected response. The preserved submission remains available here for review.'}
+                      </span>
+                      {canRequestUpdate ? (
+                        <>
+                          <label className={styles.expirationField}>
+                            <span>Update link expires after</span>
+                            <select
+                              value={expiresInDays}
+                              disabled={linkBusy}
+                              onChange={(event) =>
+                                setExpiresInDays(Number(event.target.value))
+                              }
+                            >
+                              {LINK_EXPIRATION_OPTIONS.map((days) => (
+                                <option key={days} value={days}>
+                                  {days} days
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                          <button
+                            type="button"
+                            className={styles.requestUpdateButton}
+                            disabled={dirty || linkBusy || !uploadsConfigured}
+                            onClick={requestResponseUpdate}
+                          >
+                            <RefreshRoundedIcon aria-hidden="true" />
+                            {linkBusy
+                              ? 'Creating update link…'
+                              : 'Request update + create link'}
+                          </button>
+                        </>
+                      ) : null}
+                    </div>
+                  ) : responseUpdateRequested ? (
+                    <div
+                      className={`${styles.submittedUpdateNote} ${styles.updateRequestedNote}`}
+                    >
+                      <strong>Waiting for the corrected response</strong>
+                      <span>
+                        The previous submission remains current until the guest
+                        resubmits. Copy and send the fresh link above. The guest
+                        sees their non-shipping answers prefilled and must
+                        re-enter restricted shipping details. Revoking access
+                        cancels this update request and restores the previous
+                        submitted state.
+                      </span>
+                    </div>
                   ) : null}
                 </section>
 
-                {responseRecord?.status !== 'submitted' ? (
+                {!responseReceived ? (
                   <section className={styles.sidePanel}>
                     <div className={styles.sidePanelHeading}>
                       <div>
