@@ -319,11 +319,90 @@
   box-shadow: 0 5px 13px rgba(25, 52, 65, 0.1);
 }
 
+.filterDisclosure {
+  overflow: hidden;
+  border: 1px solid rgba(20, 38, 56, 0.1);
+  border-radius: 12px;
+  background: #f7f9f8;
+}
+
+.filterDisclosure summary {
+  display: flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 10px 12px;
+  color: #506873;
+  list-style: none;
+  cursor: pointer;
+}
+
+.filterDisclosure summary::-webkit-details-marker {
+  display: none;
+}
+
+.filterDisclosure summary > span:first-child {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 2px 8px;
+}
+
+.filterDisclosure summary svg {
+  width: 19px;
+  height: 19px;
+  grid-row: 1 / 3;
+  color: #5f7c89;
+}
+
+.filterDisclosure summary strong {
+  color: #294e5f;
+  font-size: 0.76rem;
+}
+
+.filterDisclosure summary small {
+  overflow: hidden;
+  color: #71828a;
+  font-size: 0.62rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.filterDisclosureState {
+  flex: 0 0 auto;
+  padding: 5px 8px;
+  color: #526d79;
+  font-size: 0.59rem;
+  font-weight: 800;
+  border-radius: 999px;
+  background: #e8f0f1;
+}
+
+.filterStateOpen {
+  display: none;
+}
+
+.filterDisclosure[open] .filterStateClosed {
+  display: none;
+}
+
+.filterDisclosure[open] .filterStateOpen {
+  display: inline;
+}
+
+.filterDisclosure[open] .filters {
+  border-top: 1px solid rgba(20, 38, 56, 0.09);
+}
+
 .filters {
   display: grid;
   grid-template-columns: minmax(210px, 1.5fr) auto repeat(5, minmax(120px, 0.72fr)) auto;
   gap: 9px;
   align-items: end;
+  padding: 12px;
+  background: #fff;
 }
 
 .filters label,
@@ -831,6 +910,11 @@
   box-shadow: 0 14px 38px rgba(20, 45, 58, 0.07);
 }
 
+.calendarPanel {
+  container-name: mastermind-calendar;
+  container-type: inline-size;
+}
+
 .calendarToolbar,
 .researchHeader {
   display: flex;
@@ -885,12 +969,126 @@
   height: 18px;
 }
 
+.calendarLayout {
+  display: grid;
+  min-width: 0;
+  align-items: stretch;
+}
+
 .calendarScroll {
+  min-width: 0;
   overflow-x: auto;
 }
 
 .calendarAgenda {
-  display: none;
+  display: grid;
+  min-width: 0;
+  align-content: start;
+  border-top: 1px solid var(--mastermind-line);
+  background: #f7faf9;
+}
+
+@container mastermind-calendar (min-width: 920px) {
+  .calendarLayout {
+    grid-template-columns: minmax(0, 1fr) minmax(270px, 320px);
+  }
+
+  .calendarLayout .calendarGrid {
+    min-width: 700px;
+    grid-template-columns: repeat(7, minmax(100px, 1fr));
+  }
+
+  .calendarAgenda {
+    border-top: 0;
+    border-left: 1px solid var(--mastermind-line);
+  }
+}
+
+.calendarAgendaHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px;
+  border-bottom: 1px solid var(--mastermind-line);
+  background: #fff;
+}
+
+.calendarAgendaHeader .sectionEyebrow {
+  margin-bottom: 4px;
+  color: #4e7c8e;
+  font-size: 0.58rem;
+}
+
+.calendarAgendaHeader h3 {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.calendarAgendaCount {
+  flex: 0 0 auto;
+  padding: 5px 8px;
+  color: #5d747e;
+  font-size: 0.58rem;
+  font-weight: 800;
+  border: 1px solid rgba(20, 38, 56, 0.09);
+  border-radius: 999px;
+  background: #f4f7f6;
+}
+
+.calendarAgendaList {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  padding: 12px;
+}
+
+.calendarAgendaList button {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  padding: 11px 12px;
+  color: #294e5f;
+  text-align: left;
+  border: 1px solid rgba(20, 38, 56, 0.1);
+  border-left: 4px solid #6e91a1;
+  border-radius: 10px;
+  background: #fff;
+  cursor: pointer;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease,
+    transform 150ms ease;
+}
+
+.calendarAgendaList button:hover,
+.calendarAgendaList button:focus-visible {
+  border-color: rgba(47, 102, 125, 0.28);
+  box-shadow: 0 8px 18px rgba(20, 45, 58, 0.08);
+  transform: translateY(-1px);
+}
+
+.calendarAgendaList button[data-status='ready'] {
+  border-left-color: #4e9278;
+}
+
+.calendarAgendaList button[data-status='scheduled'] {
+  border-left-color: #4b82a1;
+}
+
+.calendarAgendaList button[data-status='recording'] {
+  border-left-color: #a26480;
+}
+
+.calendarAgendaList time,
+.calendarAgendaList span,
+.calendarAgendaList > p {
+  color: #71828a;
+  font-size: 0.62rem;
+}
+
+.calendarAgendaList strong {
+  font-size: 0.76rem;
 }
 
 .calendarGrid {
@@ -1578,6 +1776,8 @@
 .page input:focus-visible,
 .page select:focus-visible,
 .page textarea:focus-visible,
+.filterDisclosure summary:focus-visible,
+.calendarScroll:focus-visible,
 .boardScroller:focus-visible,
 .listScroll:focus-visible {
   outline: 3px solid rgba(47, 102, 125, 0.25);
@@ -1633,6 +1833,10 @@
     padding: 11px;
   }
 
+  .filterDisclosure summary small {
+    display: none;
+  }
+
   .calendarBoundary {
     align-items: flex-start;
     flex-direction: column;
@@ -1658,6 +1862,15 @@
   .researchHeader {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .calendarLayout {
+    grid-template-columns: 1fr;
+  }
+
+  .calendarAgenda {
+    border-top: 1px solid var(--mastermind-line);
+    border-left: 0;
   }
 
   .firstSeason {
@@ -1729,46 +1942,12 @@
     display: none;
   }
 
-  .calendarAgenda {
-    display: grid;
-    gap: 8px;
+  .calendarAgendaHeader {
     padding: 14px 16px;
   }
 
-  .calendarAgenda button {
-    display: grid;
-    gap: 4px;
-    width: 100%;
-    padding: 12px 13px;
-    color: #294e5f;
-    text-align: left;
-    border: 1px solid rgba(20, 38, 56, 0.1);
-    border-left: 4px solid #6e91a1;
-    border-radius: 10px;
-    background: #fff;
-  }
-
-  .calendarAgenda button[data-status='ready'] {
-    border-left-color: #4e9278;
-  }
-
-  .calendarAgenda button[data-status='scheduled'] {
-    border-left-color: #4b82a1;
-  }
-
-  .calendarAgenda button[data-status='recording'] {
-    border-left-color: #a26480;
-  }
-
-  .calendarAgenda time,
-  .calendarAgenda span,
-  .calendarAgenda > p {
-    color: #71828a;
-    font-size: 0.64rem;
-  }
-
-  .calendarAgenda strong {
-    font-size: 0.78rem;
+  .calendarAgendaList {
+    padding: 12px 16px 16px;
   }
 
   .listHeader {
@@ -1880,8 +2059,14 @@
   .secondaryAction,
   .heroSecondaryAction,
   .stateAction,
-  .clearFilters {
+  .clearFilters,
+  .calendarAgendaList button {
     transition: none;
+  }
+
+  .calendarAgendaList button:hover,
+  .calendarAgendaList button:focus-visible {
+    transform: none;
   }
 }
 

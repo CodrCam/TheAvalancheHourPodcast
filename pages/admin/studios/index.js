@@ -12,6 +12,10 @@ import {
   consumeEpisodeStudioDeletionNotice,
   getEpisodeStudioDeletionNoticeCopy,
 } from '../../../lib/episodeStudioDeletionNotice.mjs';
+import {
+  episodeScheduleHref,
+  listEpisodeScheduleMonth,
+} from '../../../lib/episodeSchedulePresentation.mjs';
 import styles from '../../../styles/EpisodeStudio.module.css';
 
 const STATUS_LABELS = {
@@ -107,18 +111,38 @@ function nextWorkflowLabel(episode = {}) {
   return `${nextTask.label} · ${formatShortDate(nextTask.due_date)}`;
 }
 
-export function EpisodeStudiosDashboard({ studioLayout = false }) {
+export function EpisodeStudiosDashboard({
+  studioLayout = false,
+  previewData = null,
+}) {
   const router = useRouter();
-  const [episodes, setEpisodes] = useState([]);
-  const [people, setPeople] = useState([]);
-  const [producers, setProducers] = useState([]);
-  const [configured, setConfigured] = useState(true);
-  const [loading, setLoading] = useState(true);
+  const preview = previewData !== null;
+  const [episodes, setEpisodes] = useState(() => previewData?.episodes || []);
+  const [people, setPeople] = useState(() => previewData?.people || []);
+  const [producers, setProducers] = useState(
+    () => previewData?.producers || []
+  );
+  const [configured, setConfigured] = useState(
+    () => previewData?.configured !== false
+  );
+  const [loading, setLoading] = useState(!preview);
   const [creating, setCreating] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [query, setQuery] = useState('');
-  const [viewMonth, setViewMonth] = useState(monthStart(new Date()));
+  const [viewMonth, setViewMonth] = useState(() => {
+    const previewMonth = String(
+      previewData?.view_month ||
+        previewData?.episodes?.[0]?.target_release_date ||
+        ''
+    );
+    const previewDate = /^\d{4}-\d{2}/.test(previewMonth)
+      ? new Date(`${previewMonth.slice(0, 7)}-01T12:00:00`)
+      : null;
+    return previewDate && !Number.isNaN(previewDate.getTime())
+      ? monthStart(previewDate)
+      : monthStart(new Date());
+  });
   const [error, setError] = useState('');
   const [deletionNotice, setDeletionNotice] = useState(null);
   const createPanelRef = useRef(null);
@@ -126,6 +150,17 @@ export function EpisodeStudiosDashboard({ studioLayout = false }) {
   const focusCreateRef = useRef(false);
   const Layout = studioLayout ? StudioLayout : AdminLayout;
   const detailBase = studioLayout ? '/studio/episodes' : '/admin/studios';
+  const previewEpisodeHref = preview
+    ? previewData.episode_href || '/dev/episode-studio-usability-preview'
+    : '';
+
+  function hrefFor(href) {
+    return previewData?.href_map?.[href] || href;
+  }
+
+  function episodeHref(episode) {
+    return episodeScheduleHref(detailBase, episode, previewEpisodeHref);
+  }
 
   async function loadStudios() {
     setLoading(true);
@@ -164,16 +199,18 @@ export function EpisodeStudiosDashboard({ studioLayout = false }) {
   }
 
   useEffect(() => {
+    if (preview) return;
     loadStudios();
-  }, []);
+  }, [preview]);
 
   useEffect(() => {
+    if (preview) return;
     const notice = consumeEpisodeStudioDeletionNotice(window.sessionStorage);
     const frame = window.requestAnimationFrame(() => {
       setDeletionNotice(notice);
     });
     return () => window.cancelAnimationFrame(frame);
-  }, []);
+  }, [preview]);
 
   useEffect(() => {
     if (!showCreate || !focusCreateRef.current) return;
@@ -223,6 +260,10 @@ export function EpisodeStudiosDashboard({ studioLayout = false }) {
         )
     );
   }, [episodes, query]);
+  const monthEpisodes = useMemo(
+    () => listEpisodeScheduleMonth(episodes, viewMonth),
+    [episodes, viewMonth]
+  );
   const stats = useMemo(
     () => {
       const activeEpisodes = episodes.filter(
@@ -284,6 +325,7 @@ export function EpisodeStudiosDashboard({ studioLayout = false }) {
   }
 
   function openCreate(date = '') {
+    if (preview) return;
     focusCreateRef.current = true;
     if (date) {
       updateReleaseDate(date);
@@ -297,6 +339,7 @@ export function EpisodeStudiosDashboard({ studioLayout = false }) {
 
   async function createStudio(event) {
     event.preventDefault();
+    if (preview) return;
     if (
       !form.title.trim() ||
       !form.target_release_date ||
@@ -353,8 +396,16 @@ export function EpisodeStudiosDashboard({ studioLayout = false }) {
   return (
     <Layout
       {...(studioLayout ? { requiredPermission: 'episodes:manage' } : {})}
+      {...(preview
+        ? {
+            previewSession: previewData.session,
+            previewPath: '/studio/manage/episodes',
+            previewHrefMap: previewData.href_map,
+          }
+        : {})}
       hasUnsavedChanges={createDirty}
       unsavedChangesMessage="Discard this new Episode Studio setup?"
+      wide
     >
       <div className={styles.workspace}>
         <header className={styles.pageHeader}>
@@ -369,6 +420,10 @@ export function EpisodeStudiosDashboard({ studioLayout = false }) {
           <button
             type="button"
             className={styles.primaryButton}
+            disabled={preview}
+            title={
+              preview ? 'Creation is disabled in the local preview.' : ''
+            }
             onClick={() => {
               if (showCreate) {
                 setForm(EMPTY_FORM);
@@ -401,8 +456,8 @@ export function EpisodeStudiosDashboard({ studioLayout = false }) {
               </p>
             </div>
             <div>
-              <Link href="/studio/mastermind">Open Mastermind</Link>
-              <Link href="/studio/inbox">Review requests</Link>
+              <Link href={hrefFor('/studio/mastermind')}>Open Mastermind</Link>
+              <Link href={hrefFor('/studio/inbox')}>Review requests</Link>
             </div>
           </section>
         ) : null}
@@ -654,108 +709,195 @@ export function EpisodeStudiosDashboard({ studioLayout = false }) {
           </form>
         ) : null}
 
-        <section className={styles.calendarPanel}>
-          <div className={styles.calendarToolbar}>
-            <h2>{monthLabel(viewMonth)}</h2>
-            <div>
-              <button
-                className={styles.calendarToday}
-                type="button"
-                onClick={() => setViewMonth(monthStart(new Date()))}
-              >
-                Today
-              </button>
-              <button
-                type="button"
-                onClick={() =>
-                  setViewMonth(
-                    (current) =>
-                      new Date(current.getFullYear(), current.getMonth() - 1, 1)
-                  )
-                }
-                aria-label="Previous month"
-              >
-                <ChevronLeftRoundedIcon aria-hidden="true" />
-              </button>
-              <button
-                type="button"
-                onClick={() =>
-                  setViewMonth(
-                    (current) =>
-                      new Date(current.getFullYear(), current.getMonth() + 1, 1)
-                  )
-                }
-                aria-label="Next month"
-              >
-                <ChevronRightRoundedIcon aria-hidden="true" />
-              </button>
-            </div>
-          </div>
-          <div className={styles.calendarScroll}>
-            <div className={styles.calendarGrid}>
-              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-                <div key={day} className={styles.weekday}>
-                  {day}
-                </div>
-              ))}
-              {days.map((day) => (
-                <div
-                  key={day.key}
-                  className={`${styles.calendarDay} ${
-                    !day.inMonth ? styles.calendarDayMuted : ''
-                  }`}
-                >
+        <div className={styles.scheduleMonthShell}>
+          <div className={styles.scheduleMonthLayout}>
+            <section className={styles.calendarPanel}>
+              <div className={styles.calendarToolbar}>
+                <h2>{monthLabel(viewMonth)}</h2>
+                <div>
+                  <button
+                    className={styles.calendarToday}
+                    type="button"
+                    onClick={() => setViewMonth(monthStart(new Date()))}
+                  >
+                    Today
+                  </button>
                   <button
                     type="button"
-                    className={styles.calendarDayTarget}
-                    onClick={() => openCreate(day.key)}
-                    aria-label={`Create an episode for ${day.date.toLocaleDateString(
-                      undefined,
-                      {
-                        month: 'long',
-                        day: 'numeric',
-                        year: 'numeric',
-                      }
-                    )}`}
+                    onClick={() =>
+                      setViewMonth(
+                        (current) =>
+                          new Date(
+                            current.getFullYear(),
+                            current.getMonth() - 1,
+                            1
+                          )
+                      )
+                    }
+                    aria-label="Previous month"
                   >
-                    <span>{day.date.getDate()}</span>
-                    <small>+ episode</small>
+                    <ChevronLeftRoundedIcon aria-hidden="true" />
                   </button>
-                  {(episodesByDate.get(day.key) || []).map((episode) => (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setViewMonth(
+                        (current) =>
+                          new Date(
+                            current.getFullYear(),
+                            current.getMonth() + 1,
+                            1
+                          )
+                      )
+                    }
+                    aria-label="Next month"
+                  >
+                    <ChevronRightRoundedIcon aria-hidden="true" />
+                  </button>
+                </div>
+              </div>
+              <div
+                className={styles.calendarScroll}
+                role="region"
+                tabIndex={0}
+                aria-label={`${monthLabel(viewMonth)} calendar grid`}
+              >
+                <div className={styles.calendarGrid}>
+                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(
+                    (day) => (
+                      <div key={day} className={styles.weekday}>
+                        {day}
+                      </div>
+                    )
+                  )}
+                  {days.map((day) => (
+                    <div
+                      key={day.key}
+                      className={`${styles.calendarDay} ${
+                        !day.inMonth ? styles.calendarDayMuted : ''
+                      }`}
+                    >
+                      <button
+                        type="button"
+                        className={styles.calendarDayTarget}
+                        disabled={preview}
+                        onClick={() => openCreate(day.key)}
+                        aria-label={`Create an episode for ${day.date.toLocaleDateString(
+                          undefined,
+                          {
+                            month: 'long',
+                            day: 'numeric',
+                            year: 'numeric',
+                          }
+                        )}`}
+                      >
+                        <span>{day.date.getDate()}</span>
+                        <small>+ episode</small>
+                      </button>
+                      {(episodesByDate.get(day.key) || []).map((episode) => (
+                        <Link
+                          key={episode.episode_id}
+                          href={episodeHref(episode)}
+                          tabIndex={-1}
+                          className={`${styles.calendarEpisode} ${
+                            isEpisodeOffTrack(episode)
+                              ? styles.calendarEpisodeOffTrack
+                              : ''
+                          }`}
+                          aria-label={`Open ${episode.title}`}
+                          title={episode.title}
+                        >
+                          <strong>{episode.title}</strong>
+                          <span>
+                            {episode.deletion_pending
+                              ? 'Deletion scheduled'
+                              : isEpisodeOffTrack(episode)
+                                ? 'Off track'
+                                : episode.workflow?.required_task_count
+                                  ? `${episode.workflow.completion_percent}% workflow complete`
+                                  : `${episode.completion.host_percent}% host-ready · ${
+                                      STATUS_LABELS[episode.status] ||
+                                      episode.status
+                                    }`}
+                          </span>
+                        </Link>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+
+            <aside
+              className={styles.monthAgenda}
+              aria-labelledby="schedule-month-agenda-title"
+            >
+              <header className={styles.monthAgendaHeader}>
+                <div>
+                  <span className={styles.eyebrow}>Selected month</span>
+                  <h2
+                    id="schedule-month-agenda-title"
+                    aria-live="polite"
+                    aria-atomic="true"
+                  >
+                    {monthLabel(viewMonth)} assignments
+                  </h2>
+                </div>
+                <span className={styles.monthAgendaCount}>
+                  {loading
+                    ? 'Loading…'
+                    : `${monthEpisodes.length} ${
+                        monthEpisodes.length === 1 ? 'episode' : 'episodes'
+                      }`}
+                </span>
+              </header>
+              <div className={styles.monthAgendaList}>
+                {loading ? (
+                  <p className={styles.monthAgendaEmpty}>
+                    Loading this month…
+                  </p>
+                ) : monthEpisodes.length ? (
+                  monthEpisodes.map((episode) => (
                     <Link
                       key={episode.episode_id}
-                      href={`${detailBase}/${episode.episode_id}${
-                        episode.workflow?.required_task_count
-                          ? '/production'
-                          : ''
-                      }`}
-                      className={`${styles.calendarEpisode} ${
+                      href={episodeHref(episode)}
+                      className={`${styles.monthAgendaRow} ${
                         isEpisodeOffTrack(episode)
-                          ? styles.calendarEpisodeOffTrack
+                          ? styles.monthAgendaRowOffTrack
                           : ''
                       }`}
-                      aria-label={`Open ${episode.title}`}
-                      title={episode.title}
                     >
+                      <time dateTime={episode.target_release_date}>
+                        {formatShortDate(episode.target_release_date)}
+                      </time>
                       <strong>{episode.title}</strong>
                       <span>
+                        {episode.host_names.length
+                          ? episode.host_names.join(' + ')
+                          : 'Hosts unassigned'}
+                        {episode.producer_name
+                          ? ` · ${episode.producer_name}`
+                          : ' · Producer unassigned'}
+                      </span>
+                      <small>
                         {episode.deletion_pending
                           ? 'Deletion scheduled'
                           : isEpisodeOffTrack(episode)
                             ? 'Off track'
-                          : episode.workflow?.required_task_count
-                            ? `${episode.workflow.completion_percent}% workflow complete`
-                            : `${episode.completion.host_percent}% host-ready · ${
-                                STATUS_LABELS[episode.status] || episode.status
-                              }`}
-                      </span>
+                            : STATUS_LABELS[episode.status] || episode.status}
+                      </small>
                     </Link>
-                  ))}
-                </div>
-              ))}
-            </div>
+                  ))
+                ) : (
+                  <p className={styles.monthAgendaEmpty}>
+                    No episodes are scheduled for {monthLabel(viewMonth)}.
+                    {!preview ? ' Use a calendar day to create one.' : ''}
+                  </p>
+                )}
+              </div>
+            </aside>
           </div>
-        </section>
+        </div>
 
         <section id="production-queue" className={styles.queue}>
           <div className={styles.queueHeader}>
@@ -774,9 +916,7 @@ export function EpisodeStudiosDashboard({ studioLayout = false }) {
             filteredEpisodes.map((episode) => (
               <Link
                 key={episode.episode_id}
-                href={`${detailBase}/${episode.episode_id}${
-                  episode.workflow?.required_task_count ? '/production' : ''
-                }`}
+                href={episodeHref(episode)}
                 className={`${styles.episodeRow} ${
                   isEpisodeOffTrack(episode)
                     ? styles.episodeRowOffTrack

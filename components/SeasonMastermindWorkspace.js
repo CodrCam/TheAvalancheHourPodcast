@@ -550,80 +550,106 @@ function CalendarView({ plans, month, onMonthChange, onOpen }) {
         </div>
       </header>
 
-      <div className={styles.calendarScroll}>
-        <section
-          className={styles.calendarGrid}
-          aria-label={`${formatMonth(month)} episode plans`}
+      <div className={styles.calendarLayout}>
+        <div
+          className={styles.calendarScroll}
+          role="region"
+          tabIndex={0}
+          aria-label={`${formatMonth(month)} planning calendar grid`}
         >
-          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-            <div className={styles.weekday} aria-hidden="true" key={day}>
-              {day}
-            </div>
-          ))}
-          {days.map((day) => (
-            <div
-              className={`${styles.calendarDay} ${
-                day.inMonth ? '' : styles.outsideMonth
-              } ${day.key === todayKey ? styles.today : ''}`}
-              key={day.key}
-            >
-              <span className={styles.srOnly}>
-                {formatDate(day.key)}, {day.plans.length} plans
-              </span>
-              <time dateTime={day.key}>{day.date.getDate()}</time>
-              <div className={styles.calendarPlans}>
-                {day.plans.map((plan) => (
-                  <button
-                    type="button"
-                    key={plan.episode_plan_id}
-                    data-status={plan.status}
-                    onClick={() => onOpen(plan)}
-                    aria-label={`Open ${plan.working_title}, ${formatDate(
-                      plan.target_air_date
-                    )}, ${STATUS_LABELS[plan.status]}, ${
-                      TYPE_LABELS[plan.episode_type]
-                    }`}
-                  >
-                    <span>{plan.working_title}</span>
-                    <small>{TYPE_LABELS[plan.episode_type]}</small>
-                  </button>
-                ))}
+          <section
+            className={styles.calendarGrid}
+            aria-label={`${formatMonth(month)} episode plans`}
+          >
+            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
+              <div className={styles.weekday} aria-hidden="true" key={day}>
+                {day}
               </div>
-            </div>
-          ))}
-        </section>
-      </div>
+            ))}
+            {days.map((day) => (
+              <div
+                className={`${styles.calendarDay} ${
+                  day.inMonth ? '' : styles.outsideMonth
+                } ${day.key === todayKey ? styles.today : ''}`}
+                key={day.key}
+              >
+                <span className={styles.srOnly}>
+                  {formatDate(day.key)}, {day.plans.length} plans
+                </span>
+                <time dateTime={day.key}>{day.date.getDate()}</time>
+                <div className={styles.calendarPlans}>
+                  {day.plans.map((plan) => (
+                    <button
+                      type="button"
+                      key={plan.episode_plan_id}
+                      tabIndex={-1}
+                      data-status={plan.status}
+                      onClick={() => onOpen(plan)}
+                      aria-label={`Open ${plan.working_title}, ${formatDate(
+                        plan.target_air_date
+                      )}, ${STATUS_LABELS[plan.status]}, ${
+                        TYPE_LABELS[plan.episode_type]
+                      }`}
+                    >
+                      <span>{plan.working_title}</span>
+                      <small>{TYPE_LABELS[plan.episode_type]}</small>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </section>
+        </div>
 
-      <section
-        className={styles.calendarAgenda}
-        aria-label={`${formatMonth(month)} episode agenda`}
-      >
-        {agendaPlans.length ? (
-          agendaPlans.map((plan) => (
-            <button
-              type="button"
-              key={plan.episode_plan_id}
-              data-status={plan.status}
-              onClick={() => onOpen(plan)}
-              aria-label={`Open ${plan.working_title}, ${formatDate(
-                plan.target_air_date
-              )}, ${STATUS_LABELS[plan.status]}, ${
-                TYPE_LABELS[plan.episode_type]
-              }`}
-            >
-              <time dateTime={plan.target_air_date}>
-                {formatDate(plan.target_air_date)}
-              </time>
-              <strong>{plan.working_title}</strong>
-              <span>
-                {STATUS_LABELS[plan.status]} · {TYPE_LABELS[plan.episode_type]}
-              </span>
-            </button>
-          ))
-        ) : (
-          <p>No dated plans in this month.</p>
-        )}
-      </section>
+        <aside
+          className={styles.calendarAgenda}
+          aria-labelledby="mastermind-month-lineup-title"
+        >
+          <header className={styles.calendarAgendaHeader}>
+            <div>
+              <span className={styles.sectionEyebrow}>Month lineup</span>
+              <h3
+                id="mastermind-month-lineup-title"
+                aria-live="polite"
+                aria-atomic="true"
+              >
+                {formatMonth(month)}
+              </h3>
+            </div>
+            <span className={styles.calendarAgendaCount}>
+              {agendaPlans.length} {agendaPlans.length === 1 ? 'plan' : 'plans'}
+            </span>
+          </header>
+          <div className={styles.calendarAgendaList}>
+            {agendaPlans.length ? (
+              agendaPlans.map((plan) => (
+                <button
+                  type="button"
+                  key={plan.episode_plan_id}
+                  data-status={plan.status}
+                  onClick={() => onOpen(plan)}
+                  aria-label={`Open ${plan.working_title}, ${formatDate(
+                    plan.target_air_date
+                  )}, ${STATUS_LABELS[plan.status]}, ${
+                    TYPE_LABELS[plan.episode_type]
+                  }`}
+                >
+                  <time dateTime={plan.target_air_date}>
+                    {formatDate(plan.target_air_date)}
+                  </time>
+                  <strong>{plan.working_title}</strong>
+                  <span>
+                    {STATUS_LABELS[plan.status]} ·{' '}
+                    {TYPE_LABELS[plan.episode_type]}
+                  </span>
+                </button>
+              ))
+            ) : (
+              <p>No dated plans in this month.</p>
+            )}
+          </div>
+        </aside>
+      </div>
 
       {unscheduled.length ? (
         <section className={styles.unscheduled}>
@@ -2050,128 +2076,151 @@ function SeasonMastermindContent({
                 })}
               </div>
 
-              <form className={styles.filters} onSubmit={applySearch}>
-                <label className={styles.searchField}>
-                  <span>Search plans</span>
-                  <SearchRoundedIcon aria-hidden="true" />
-                  <input
-                    type="search"
-                    value={searchDraft}
-                    disabled={scopeLoading}
-                    onChange={(event) => setSearchDraft(event.target.value)}
-                    placeholder="Title, premise, takeaway…"
-                  />
-                </label>
-                <button
-                  type="submit"
-                  className={styles.applySearch}
-                  disabled={scopeLoading || searchDraft.trim() === query}
-                >
-                  {scopeLoading ? 'Loading…' : 'Search'}
-                </button>
-                <label>
-                  <span>Season</span>
-                  <select
-                    value={seasonId}
-                    disabled={scopeLoading}
-                    onChange={(event) => {
-                      const nextSeasonId = event.target.value;
-                      setSeasonId(nextSeasonId);
-                      setCalendarMonth(
-                        firstMonthForSeason(workspace, nextSeasonId)
-                      );
-                      requestPlanScope({ seasonId: nextSeasonId });
-                    }}
-                  >
-                    {workspace.seasons.map((season) => (
-                      <option value={season.season_id} key={season.season_id}>
-                        {season.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label>
-                  <span>Host</span>
-                  <select
-                    value={hostFilter}
-                    disabled={scopeLoading}
-                    onChange={(event) => {
-                      const nextHostFilter = event.target.value;
-                      setHostFilter(nextHostFilter);
-                      requestPlanScope({ hostFilter: nextHostFilter });
-                    }}
-                  >
-                    <option value="">All hosts</option>
-                    {hostOptions.map((host) => (
-                      <option value={host.id} key={host.id}>
-                        {host.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label>
-                  <span>Status</span>
-                  <select
-                    value={statusFilter}
-                    disabled={scopeLoading}
-                    onChange={(event) => {
-                      const nextStatusFilter = event.target.value;
-                      setStatusFilter(nextStatusFilter);
-                      requestPlanScope({ statusFilter: nextStatusFilter });
-                    }}
-                  >
-                    <option value="active">All active</option>
-                    {MASTERMIND_STATUS_OPTIONS.map((status) => (
-                      <option value={status.id} key={status.id}>
-                        {status.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label>
-                  <span>Type</span>
-                  <select
-                    value={typeFilter}
-                    disabled={scopeLoading}
-                    onChange={(event) => {
-                      const nextTypeFilter = event.target.value;
-                      setTypeFilter(nextTypeFilter);
-                      requestPlanScope({ typeFilter: nextTypeFilter });
-                    }}
-                  >
-                    <option value="">All types</option>
-                    {MASTERMIND_EPISODE_TYPES.map((type) => (
-                      <option value={type.id} key={type.id}>
-                        {type.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label>
-                  <span>Air date</span>
-                  <input
-                    type="date"
-                    value={dateFilter}
-                    disabled={scopeLoading}
-                    onChange={(event) => {
-                      const nextDateFilter = event.target.value;
-                      setDateFilter(nextDateFilter);
-                      requestPlanScope({ dateFilter: nextDateFilter });
-                    }}
-                  />
-                </label>
-                {hasFilters ? (
+              <details className={styles.filterDisclosure}>
+                <summary>
+                  <span>
+                    <SearchRoundedIcon aria-hidden="true" />
+                    <strong>Search &amp; filters</strong>
+                    <small>
+                      Find a plan or narrow the season, host, status, type, or
+                      date.
+                    </small>
+                  </span>
+                  <span className={styles.filterDisclosureState}>
+                    <span className={styles.filterStateClosed}>
+                      {hasFilters ? 'Filters active' : 'Show'}
+                    </span>
+                    <span className={styles.filterStateOpen}>Hide</span>
+                  </span>
+                </summary>
+                <form className={styles.filters} onSubmit={applySearch}>
+                  <label className={styles.searchField}>
+                    <span>Search plans</span>
+                    <SearchRoundedIcon aria-hidden="true" />
+                    <input
+                      type="search"
+                      value={searchDraft}
+                      disabled={scopeLoading}
+                      onChange={(event) => setSearchDraft(event.target.value)}
+                      placeholder="Title, premise, takeaway…"
+                    />
+                  </label>
                   <button
-                    type="button"
-                    className={styles.clearFilters}
-                    onClick={clearFilters}
-                    disabled={scopeLoading}
+                    type="submit"
+                    className={styles.applySearch}
+                    disabled={scopeLoading || searchDraft.trim() === query}
                   >
-                    <FilterAltOffRoundedIcon aria-hidden="true" />
-                    Clear
+                    {scopeLoading ? 'Loading…' : 'Search'}
                   </button>
-                ) : null}
-              </form>
+                  <label>
+                    <span>Season</span>
+                    <select
+                      value={seasonId}
+                      disabled={scopeLoading}
+                      onChange={(event) => {
+                        const nextSeasonId = event.target.value;
+                        setSeasonId(nextSeasonId);
+                        setCalendarMonth(
+                          firstMonthForSeason(workspace, nextSeasonId)
+                        );
+                        requestPlanScope({ seasonId: nextSeasonId });
+                      }}
+                    >
+                      {workspace.seasons.map((season) => (
+                        <option value={season.season_id} key={season.season_id}>
+                          {season.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    <span>Host</span>
+                    <select
+                      value={hostFilter}
+                      disabled={scopeLoading}
+                      onChange={(event) => {
+                        const nextHostFilter = event.target.value;
+                        setHostFilter(nextHostFilter);
+                        requestPlanScope({ hostFilter: nextHostFilter });
+                      }}
+                    >
+                      <option value="">All hosts</option>
+                      {hostOptions.map((host) => (
+                        <option value={host.id} key={host.id}>
+                          {host.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    <span>Status</span>
+                    <select
+                      value={statusFilter}
+                      disabled={scopeLoading}
+                      onChange={(event) => {
+                        const nextStatusFilter = event.target.value;
+                        setStatusFilter(nextStatusFilter);
+                        requestPlanScope({ statusFilter: nextStatusFilter });
+                      }}
+                    >
+                      <option value="active">All active</option>
+                      {MASTERMIND_STATUS_OPTIONS.map((status) => (
+                        <option value={status.id} key={status.id}>
+                          {status.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    <span>Type</span>
+                    <select
+                      value={typeFilter}
+                      disabled={scopeLoading}
+                      onChange={(event) => {
+                        const nextTypeFilter = event.target.value;
+                        setTypeFilter(nextTypeFilter);
+                        requestPlanScope({ typeFilter: nextTypeFilter });
+                      }}
+                    >
+                      <option value="">All types</option>
+                      {MASTERMIND_EPISODE_TYPES.map((type) => (
+                        <option value={type.id} key={type.id}>
+                          {type.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    <span>Air date</span>
+                    <input
+                      type="date"
+                      value={dateFilter}
+                      disabled={scopeLoading}
+                      onChange={(event) => {
+                        const nextDateFilter = event.target.value;
+                        setDateFilter(nextDateFilter);
+                        if (nextDateFilter) {
+                          setCalendarMonth(
+                            mastermindMonthStart(nextDateFilter)
+                          );
+                        }
+                        requestPlanScope({ dateFilter: nextDateFilter });
+                      }}
+                    />
+                  </label>
+                  {hasFilters ? (
+                    <button
+                      type="button"
+                      className={styles.clearFilters}
+                      onClick={clearFilters}
+                      disabled={scopeLoading}
+                    >
+                      <FilterAltOffRoundedIcon aria-hidden="true" />
+                      Clear
+                    </button>
+                  ) : null}
+                </form>
+              </details>
             </section>
 
             {scopeError ? (

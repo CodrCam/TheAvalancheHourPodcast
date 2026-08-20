@@ -20,8 +20,14 @@ export async function getServerSideProps() {
 export default function SeasonMastermindPreviewPage() {
   const router = useRouter();
   const previewState = String(router.query.state || 'ready');
+  const previewView = ['list', 'board', 'calendar', 'research'].includes(
+    String(router.query.view)
+  )
+    ? String(router.query.view)
+    : undefined;
   const data = {
     ...previewData,
+    ...(previewView ? { view: previewView } : {}),
     preview_state: previewState,
     featureEnabled: previewState !== 'disabled',
     configured: previewState !== 'unconfigured',

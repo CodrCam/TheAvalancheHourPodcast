@@ -3872,6 +3872,155 @@
   box-shadow: 0 15px 42px rgba(25, 48, 60, 0.07);
 }
 
+.scheduleMonthShell {
+  container-name: schedule-month;
+  container-type: inline-size;
+}
+
+.scheduleMonthLayout {
+  display: grid;
+  min-width: 0;
+  gap: 18px;
+  align-items: start;
+}
+
+.monthAgenda {
+  overflow: hidden;
+  border: 1px solid var(--episode-line);
+  border-radius: 19px;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 15px 42px rgba(25, 48, 60, 0.07);
+}
+
+.monthAgendaHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 15px 16px;
+  border-bottom: 1px solid var(--episode-line);
+}
+
+.monthAgendaHeader .eyebrow {
+  margin-bottom: 4px;
+}
+
+.monthAgendaHeader h2 {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.2;
+}
+
+.monthAgendaCount {
+  flex: 0 0 auto;
+  padding: 5px 8px;
+  color: #5f747d;
+  font-size: 0.58rem;
+  font-weight: 800;
+  border: 1px solid rgba(20, 38, 56, 0.09);
+  border-radius: 999px;
+  background: #f4f7f6;
+}
+
+.monthAgendaList {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  padding: 12px;
+}
+
+.monthAgendaRow {
+  display: grid;
+  gap: 4px;
+  padding: 11px 12px;
+  color: #294e5f;
+  text-decoration: none;
+  border: 1px solid rgba(20, 38, 56, 0.1);
+  border-left: 4px solid #527f92;
+  border-radius: 10px;
+  background: #fff;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease,
+    transform 150ms ease;
+}
+
+.monthAgendaRow:hover,
+.monthAgendaRow:focus-visible {
+  border-color: rgba(53, 107, 131, 0.3);
+  outline: 3px solid rgba(83, 139, 164, 0.18);
+  outline-offset: 2px;
+  box-shadow: 0 8px 18px rgba(25, 48, 60, 0.08);
+  transform: translateY(-1px);
+}
+
+.monthAgendaRow time {
+  color: #527184;
+  font-size: 0.61rem;
+  font-weight: 820;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.monthAgendaRow strong {
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.monthAgendaRow span,
+.monthAgendaRow small {
+  color: #6b7d85;
+  font-size: 0.61rem;
+  line-height: 1.4;
+}
+
+.monthAgendaRow small {
+  color: #446776;
+  font-weight: 780;
+}
+
+.monthAgendaRowOffTrack {
+  color: #8e422b;
+  border-left-color: #cf7957;
+  background: #fff7f1;
+}
+
+.monthAgendaRowOffTrack small {
+  color: #a65334;
+}
+
+.monthAgendaRowOffTrack:hover,
+.monthAgendaRowOffTrack:focus-visible {
+  border-left-color: #cf7957;
+}
+
+.monthAgendaEmpty {
+  margin: 0;
+  padding: 22px 14px;
+  color: var(--episode-muted);
+  font-size: 0.72rem;
+  line-height: 1.55;
+  text-align: center;
+  border: 1px dashed rgba(20, 38, 56, 0.13);
+  border-radius: 11px;
+  background: #f8faf9;
+}
+
+@container schedule-month (min-width: 920px) {
+  .scheduleMonthLayout {
+    grid-template-columns: minmax(0, 1fr) minmax(260px, 300px);
+  }
+
+  .scheduleMonthLayout .calendarGrid {
+    min-width: 630px;
+    grid-template-columns: repeat(7, minmax(90px, 1fr));
+  }
+
+  .scheduleMonthLayout .calendarDay {
+    min-height: 116px;
+  }
+}
+
 .readOnlyCalendar {
   margin-bottom: 22px;
 }
@@ -3950,6 +4099,11 @@
 
 .calendarScroll {
   overflow-x: auto;
+}
+
+.calendarScroll:focus-visible {
+  outline: 3px solid rgba(83, 139, 164, 0.18);
+  outline-offset: -3px;
 }
 
 .calendarGrid {
@@ -4049,6 +4203,14 @@
   opacity: 0;
   transform: translateY(2px);
   transition: opacity 150ms ease, transform 150ms ease;
+}
+
+.calendarDayTarget:disabled {
+  cursor: default;
+}
+
+.calendarDayTarget:disabled small {
+  display: none;
 }
 
 .calendarDay:hover .calendarDayTarget,
@@ -4497,20 +4659,26 @@
     display: none;
   }
 
-  .calendarEpisode {
-    position: relative;
+  .calendarDay:has(.calendarEpisode)::after {
+    position: absolute;
+    top: 32px;
+    left: 50%;
     z-index: 2;
-    display: inline-block;
     width: 7px;
     height: 7px;
-    margin: 30px 1px 0 5px;
-    padding: 0;
-    overflow: hidden;
-    color: transparent;
-    vertical-align: top;
-    border: 0;
     border-radius: 999px;
     background: #527f92;
+    content: '';
+    pointer-events: none;
+    transform: translateX(-50%);
+  }
+
+  .calendarDay:has(.calendarEpisodeOffTrack)::after {
+    background: #cf7957;
+  }
+
+  .calendarEpisode {
+    display: none;
   }
 
   .calendarEpisode strong,
@@ -4694,7 +4862,13 @@
 @media (prefers-reduced-motion: reduce) {
   .workflowViewToggle button,
   .workflowManagerRow,
-  .workflowManagerReset {
+  .workflowManagerReset,
+  .monthAgendaRow {
     transition: none;
+  }
+
+  .monthAgendaRow:hover,
+  .monthAgendaRow:focus-visible {
+    transform: none;
   }
 }
