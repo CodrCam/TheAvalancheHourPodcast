@@ -69,6 +69,7 @@ function serviceErrorResponse(error) {
         ok: false,
         code: error.code || 'MASTERMIND_REQUEST_FAILED',
         error: error.message,
+        ...(error.requestId ? { request_id: error.requestId } : {}),
       },
     };
   }
@@ -188,10 +189,13 @@ export default async function handler(req, res) {
         viewer_person_id: actor.person_id,
       });
   } catch (error) {
-    if (
-      !(error instanceof MastermindInputError) &&
-      !(error instanceof SeasonMastermindServiceError)
-    ) {
+    if (error instanceof SeasonMastermindServiceError) {
+      console.warn('season mastermind upstream request failed:', {
+        code: String(error.code || 'MASTERMIND_REQUEST_FAILED').slice(0, 80),
+        status: Number(error.status) || 500,
+        ...(error.requestId ? { request_id: error.requestId } : {}),
+      });
+    } else if (!(error instanceof MastermindInputError)) {
       console.error('season mastermind request failed:', error);
     }
     const response = serviceErrorResponse(error);

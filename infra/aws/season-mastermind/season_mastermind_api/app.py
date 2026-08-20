@@ -182,7 +182,7 @@ def _settings() -> Settings:
         database=database,
         user=user,
         connect_timeout_seconds=_bounded_number_environment(
-            "MASTERMIND_DB_CONNECT_TIMEOUT_SECONDS", "3", 0.5, 4.0, float
+            "MASTERMIND_DB_CONNECT_TIMEOUT_SECONDS", "30", 0.5, 30.0, float
         ),
         statement_timeout_ms=_bounded_number_environment(
             "MASTERMIND_SQL_STATEMENT_TIMEOUT_MS", "2000", 250, 2000, int

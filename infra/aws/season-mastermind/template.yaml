@@ -100,7 +100,7 @@ Resources:
       Architectures:
         - arm64
       MemorySize: 128
-      Timeout: 10
+      Timeout: 40
       RecursiveLoop: Terminate
       Tracing: Disabled
       Role: !GetAtt SeasonMastermindExecutionRole.Arn
@@ -121,7 +121,7 @@ Resources:
           MASTERMIND_DB_NAME: !Ref DatabaseName
           MASTERMIND_DB_USER: !Ref DatabaseUser
           MASTERMIND_DB_SSL_MODE: verify-full
-          MASTERMIND_DB_CONNECT_TIMEOUT_SECONDS: "3"
+          MASTERMIND_DB_CONNECT_TIMEOUT_SECONDS: "30"
           MASTERMIND_SQL_STATEMENT_TIMEOUT_MS: "2000"
           MASTERMIND_SQL_LOCK_TIMEOUT_MS: "500"
           MASTERMIND_DEFAULT_PAGE_SIZE: "20"

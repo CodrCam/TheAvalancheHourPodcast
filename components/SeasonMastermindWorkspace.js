@@ -58,6 +58,7 @@ const TYPE_LABELS = Object.fromEntries(
   MASTERMIND_EPISODE_TYPES.map((type) => [type.id, type.label])
 );
 const SAFE_HANDOFF_ID = /^[A-Za-z0-9][A-Za-z0-9._:@/+=#-]{0,179}$/;
+const MAX_LOAD_RETRIES = 3;
 
 function episodeStudioHref(value, { preview = false } = {}) {
   const episodeId = String(value || '').trim();
@@ -933,7 +934,7 @@ function SeasonMastermindContent({
       ? previewData.error || 'Season Mastermind could not be opened.'
       : ''
   );
-  const [retryUsed, setRetryUsed] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
   const [reloadKey, setReloadKey] = useState(0);
   const [view, setView] = useState(previewData?.view || 'list');
   const [seasonId, setSeasonId] = useState(initialSeasonId);
@@ -1860,12 +1861,12 @@ function SeasonMastermindContent({
           title="Season Mastermind did not open"
           detail={loadError}
           action={
-            preview || retryUsed ? null : (
+            preview || retryCount >= MAX_LOAD_RETRIES ? null : (
               <button
                 type="button"
                 className={styles.stateAction}
                 onClick={() => {
-                  setRetryUsed(true);
+                  setRetryCount((current) => current + 1);
                   setReloadKey((current) => current + 1);
                 }}
               >

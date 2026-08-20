@@ -5,7 +5,7 @@ This directory is an isolated, additive server boundary for the schema in
 Nothing here deploys itself or changes the website. The SAM template creates
 only:
 
-- one 128 MB, ARM64 Lambda function with a ten-second timeout;
+- one 128 MB, ARM64 Lambda function with a 40-second timeout;
 - one `AWS_IAM`-authenticated, buffered Lambda Function URL;
 - one execution role that can write only this function's logs and connect as
   one exact Aurora database user; and
@@ -38,8 +38,12 @@ The template deliberately does not set reserved concurrency. The account's
 regional concurrency quota may be only ten, and Lambda requires at least ten
 unreserved executions, so reserving even one would make this stack fail. Cost
 and invocation bounds instead come from the IAM-only URL, absence of every
-other trigger or schedule, short timeout, 128 MB memory, and the default-off
-backend and write switches.
+other trigger or schedule, bounded timeout, 128 MB memory, and the default-off
+backend and write switches. A database connection gets one TLS-verified attempt
+of up to 30 seconds within the Lambda's 40-second budget. That accommodates an
+Aurora Serverless v2 scale-to-zero resume while leaving time for a structured
+response; it does not poll the database, keep Aurora warm, or add scheduled
+invocations.
 
 ## Proxy contract
 

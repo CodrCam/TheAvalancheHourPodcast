@@ -24,7 +24,7 @@ BASE_ENV = {
     "MASTERMIND_DB_NAME": "postgres",
     "MASTERMIND_DB_USER": "season_mastermind_app",
     "MASTERMIND_DB_SSL_MODE": "verify-full",
-    "MASTERMIND_DB_CONNECT_TIMEOUT_SECONDS": "3",
+    "MASTERMIND_DB_CONNECT_TIMEOUT_SECONDS": "30",
     "MASTERMIND_SQL_STATEMENT_TIMEOUT_MS": "2000",
     "MASTERMIND_SQL_LOCK_TIMEOUT_MS": "500",
     "MASTERMIND_DEFAULT_PAGE_SIZE": "20",
@@ -759,6 +759,23 @@ class SqlBoundaryTests(unittest.TestCase):
 
 
 class ConnectionTests(unittest.TestCase):
+    def test_connection_timeout_defaults_to_thirty_seconds_and_is_hard_capped(self) -> None:
+        without_timeout = {
+            key: value
+            for key, value in BASE_ENV.items()
+            if key != "MASTERMIND_DB_CONNECT_TIMEOUT_SECONDS"
+        }
+        with mock.patch.dict(os.environ, without_timeout, clear=True):
+            self.assertEqual(app._settings().connect_timeout_seconds, 30.0)
+
+        above_limit = {
+            **BASE_ENV,
+            "MASTERMIND_DB_CONNECT_TIMEOUT_SECONDS": "30.1",
+        }
+        with mock.patch.dict(os.environ, above_limit, clear=True):
+            with self.assertRaises(app.ConfigurationError):
+                app._settings()
+
     def test_season_overview_dispatches_in_a_read_only_transaction(self) -> None:
         settings = app.Settings(
             writes_enabled=False,
@@ -767,7 +784,7 @@ class ConnectionTests(unittest.TestCase):
             port=5432,
             database="postgres",
             user="season_mastermind_app",
-            connect_timeout_seconds=3.0,
+            connect_timeout_seconds=30.0,
             statement_timeout_ms=2000,
             lock_timeout_ms=500,
             default_page_size=20,
@@ -805,7 +822,7 @@ class ConnectionTests(unittest.TestCase):
             port=5432,
             database="postgres",
             user="season_mastermind_app",
-            connect_timeout_seconds=3.0,
+            connect_timeout_seconds=30.0,
             statement_timeout_ms=2000,
             lock_timeout_ms=500,
             default_page_size=20,
@@ -842,6 +859,7 @@ class ConnectionTests(unittest.TestCase):
         self.assertEqual(calls["token"]["DBHostname"], settings.host)
         self.assertEqual(calls["connect"]["host"], settings.host)
         self.assertEqual(calls["connect"]["password"], "short-lived-token")
+        self.assertEqual(calls["connect"]["timeout"], 30.0)
         self.assertIs(calls["connect"]["ssl_context"], tls_context)
         self.assertTrue(tls_context.check_hostname)
         self.assertEqual(tls_context.verify_mode, ssl.CERT_REQUIRED)

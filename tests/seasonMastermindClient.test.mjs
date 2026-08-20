@@ -170,7 +170,7 @@ test('maps upstream and invalid responses to safe service errors', async () => {
         { operation: 'list_mastermind' },
         {
           env: ENV,
-          fetchImpl: async () => new Response('<html>bad</html>', { status: 502 }),
+          fetchImpl: async () => new Response('<html>bad</html>', { status: 500 }),
         }
       ),
     (error) => error.code === 'MASTERMIND_BAD_RESPONSE'
@@ -200,6 +200,60 @@ test('maps upstream and invalid responses to safe service errors', async () => {
       assert.equal(error.code, 'REVISION_CONFLICT');
       assert.equal(error.status, 409);
       assert.match(error.message, /Review the latest version/);
+      return true;
+    }
+  );
+});
+
+test('normalizes non-JSON gateway failures as bounded cold-wake errors', async () => {
+  for (const [status, body] of [
+    [502, '<html>Internal Server Error</html>'],
+    [503, 'Service Unavailable'],
+    [504, ''],
+  ]) {
+    await assert.rejects(
+      () =>
+        invokeSeasonMastermind(
+          { operation: 'list_mastermind' },
+          {
+            env: ENV,
+            fetchImpl: async () =>
+              new Response(body, {
+                status,
+                headers: { 'x-amzn-requestid': `request-${status}` },
+              }),
+          }
+        ),
+      (error) => {
+        assert.equal(error instanceof SeasonMastermindServiceError, true);
+        assert.equal(error.code, 'MASTERMIND_WAKING');
+        assert.equal(error.status, status === 504 ? 504 : 503);
+        assert.equal(error.requestId, `request-${status}`);
+        assert.match(error.message, /waking or temporarily unavailable/i);
+        assert.doesNotMatch(error.message, /Internal Server Error|<html>/);
+        return true;
+      }
+    );
+  }
+});
+
+test('drops unsafe upstream request IDs from public service errors', async () => {
+  await assert.rejects(
+    () =>
+      invokeSeasonMastermind(
+        { operation: 'list_mastermind' },
+        {
+          env: ENV,
+          fetchImpl: async () =>
+            new Response('Bad Gateway', {
+              status: 502,
+              headers: { 'x-amzn-requestid': 'request id unsafe' },
+            }),
+        }
+      ),
+    (error) => {
+      assert.equal(error.code, 'MASTERMIND_WAKING');
+      assert.equal(error.requestId, '');
       return true;
     }
   );
