@@ -1,0 +1,24 @@
+SLIDE 1
+- Rebuilt the existing opener with an exact-aspect version of the same avalanche-crown photo so PDF export cannot distort it.
+
+SLIDE 2
+- Expanded the original audience proof into native KPI typography plus a proportional geography bar. Replaced the generic mountain strip with the Drive Maybird avalanche-path image.
+
+SLIDE 3
+- Added a dedicated demographics slide using native age and gender graphics. The source deck carried these as raster posters; the new version makes them editable and brand-consistent.
+
+SLIDE 4
+- Added a dedicated momentum slide for the source deck's 44%, 1,500, and 77K+ figures. The figures are explicitly qualified as source-deck metrics with varying platform definitions.
+
+SLIDE 5
+- Reframed the season slide around the user-confirmed equation 29 regular + 9 Slabs 'n Sluffs = 38 total planned releases and a year-round, almost-weekly cadence.
+- Replaced the Drive photograph with the clean powder-skier photograph embedded in Caleb's source deck, preserving it with an exact 16:9 crop.
+
+SLIDE 6
+- Preserved the flat four-column package comparison, tightened benefit copy, and kept Caleb's source prices authoritative.
+
+SLIDE 7
+- Combined the four source-deck value pillars with a concise Propagation Labs testimonial instead of restoring the stale sponsor wall.
+
+SLIDE 8
+- Rebuilt the closing CTA around the clean helicopter cockpit and mountain photograph embedded in Caleb's source deck, preserving the contact details and custom-package invitation.

@@ -1,0 +1,135 @@
+{
+  "sourcePptx": "/Users/camerongriffin/projects/TheAvalancheHour/public/files/avalanche-hour-s11-sponsorship-guide.pptx",
+  "workspace": "/Users/camerongriffin/projects/TheAvalancheHour",
+  "outDir": "/Users/camerongriffin/projects/TheAvalancheHour/tmp/support-deck-regeneration-v2/template-inspect",
+  "generatedAt": "2026-08-20T20:09:55.469Z",
+  "slideCount": 6,
+  "slideArtifacts": [
+    {
+      "slide": 1,
+      "previewPath": "/Users/camerongriffin/projects/TheAvalancheHour/tmp/support-deck-regeneration-v2/template-inspect/source-slides/source-slide-01.png",
+      "previewRelativePath": "tmp/support-deck-regeneration-v2/template-inspect/source-slides/source-slide-01.png",
+      "layoutPath": "/Users/camerongriffin/projects/TheAvalancheHour/tmp/support-deck-regeneration-v2/template-inspect/layouts/source-slide-01.layout.json",
+      "layoutRelativePath": "tmp/support-deck-regeneration-v2/template-inspect/layouts/source-slide-01.layout.json"
+    },
+    {
+      "slide": 2,
+      "previewPath": "/Users/camerongriffin/projects/TheAvalancheHour/tmp/support-deck-regeneration-v2/template-inspect/source-slides/source-slide-02.png",
+      "previewRelativePath": "tmp/support-deck-regeneration-v2/template-inspect/source-slides/source-slide-02.png",
+      "layoutPath": "/Users/camerongriffin/projects/TheAvalancheHour/tmp/support-deck-regeneration-v2/template-inspect/layouts/source-slide-02.layout.json",
+      "layoutRelativePath": "tmp/support-deck-regeneration-v2/template-inspect/layouts/source-slide-02.layout.json"
+    },
+    {
+      "slide": 3,
+      "previewPath": "/Users/camerongriffin/projects/TheAvalancheHour/tmp/support-deck-regeneration-v2/template-inspect/source-slides/source-slide-03.png",
+      "previewRelativePath": "tmp/support-deck-regeneration-v2/template-inspect/source-slides/source-slide-03.png",
+      "layoutPath": "/Users/camerongriffin/projects/TheAvalancheHour/tmp/support-deck-regeneration-v2/template-inspect/layouts/source-slide-03.layout.json",
+      "layoutRelativePath": "tmp/support-deck-regeneration-v2/template-inspect/layouts/source-slide-03.layout.json"
+    },
+    {
+      "slide": 4,
+      "previewPath": "/Users/camerongriffin/projects/TheAvalancheHour/tmp/support-deck-regeneration-v2/template-inspect/source-slides/source-slide-04.png",
+      "previewRelativePath": "tmp/support-deck-regeneration-v2/template-inspect/source-slides/source-slide-04.png",
+      "layoutPath": "/Users/camerongriffin/projects/TheAvalancheHour/tmp/support-deck-regeneration-v2/template-inspect/layouts/source-slide-04.layout.json",
+      "layoutRelativePath": "tmp/support-deck-regeneration-v2/template-inspect/layouts/source-slide-04.layout.json"
+    },
+    {
+      "slide": 5,
+      "previewPath": "/Users/camerongriffin/projects/TheAvalancheHour/tmp/support-deck-regeneration-v2/template-inspect/source-slides/source-slide-05.png",
+      "previewRelativePath": "tmp/support-deck-regeneration-v2/template-inspect/source-slides/source-slide-05.png",
+      "layoutPath": "/Users/camerongriffin/projects/TheAvalancheHour/tmp/support-deck-regeneration-v2/template-inspect/layouts/source-slide-05.layout.json",
+      "layoutRelativePath": "tmp/support-deck-regeneration-v2/template-inspect/layouts/source-slide-05.layout.json"
+    },
+    {
+      "slide": 6,
+      "previewPath": "/Users/camerongriffin/projects/TheAvalancheHour/tmp/support-deck-regeneration-v2/template-inspect/source-slides/source-slide-06.png",
+      "previewRelativePath": "tmp/support-deck-regeneration-v2/template-inspect/source-slides/source-slide-06.png",
+      "layoutPath": "/Users/camerongriffin/projects/TheAvalancheHour/tmp/support-deck-regeneration-v2/template-inspect/layouts/source-slide-06.layout.json",
+      "layoutRelativePath": "tmp/support-deck-regeneration-v2/template-inspect/layouts/source-slide-06.layout.json"
+    }
+  ],
+  "inspectPath": "/Users/camerongriffin/projects/TheAvalancheHour/tmp/support-deck-regeneration-v2/template-inspect/template-inspect.ndjson",
+  "inspectRelativePath": "tmp/support-deck-regeneration-v2/template-inspect/template-inspect.ndjson",
+  "inspectTruncated": true,
+  "inspectMetadata": {
+    "revision": "ewve0e",
+    "target": {
+      "id": "pr/nis2xq"
+    },
+    "kind": {
+      "requested": "slide,textbox,shape,image,table,chart",
+      "tokens": [
+        "slide",
+        "textbox",
+        "shape",
+        "image",
+        "table",
+        "chart"
+      ]
+    },
+    "include": {
+      "tokens": []
+    },
+    "exclude": {
+      "tokens": []
+    },
+    "notices": []
+  },
+  "extractedMedia": [
+    {
+      "entry": "ppt/media/image.jpeg",
+      "path": "/Users/camerongriffin/projects/TheAvalancheHour/tmp/support-deck-regeneration-v2/template-inspect/assets/ppt/media/image.jpeg",
+      "relativePath": "tmp/support-deck-regeneration-v2/template-inspect/assets/ppt/media/image.jpeg",
+      "bytes": 3603505
+    },
+    {
+      "entry": "ppt/media/image.png",
+      "path": "/Users/camerongriffin/projects/TheAvalancheHour/tmp/support-deck-regeneration-v2/template-inspect/assets/ppt/media/image.png",
+      "relativePath": "tmp/support-deck-regeneration-v2/template-inspect/assets/ppt/media/image.png",
+      "bytes": 21175
+    },
+    {
+      "entry": "ppt/media/image2.jpeg",
+      "path": "/Users/camerongriffin/projects/TheAvalancheHour/tmp/support-deck-regeneration-v2/template-inspect/assets/ppt/media/image2.jpeg",
+      "relativePath": "tmp/support-deck-regeneration-v2/template-inspect/assets/ppt/media/image2.jpeg",
+      "bytes": 4868510
+    },
+    {
+      "entry": "ppt/media/image3.jpeg",
+      "path": "/Users/camerongriffin/projects/TheAvalancheHour/tmp/support-deck-regeneration-v2/template-inspect/assets/ppt/media/image3.jpeg",
+      "relativePath": "tmp/support-deck-regeneration-v2/template-inspect/assets/ppt/media/image3.jpeg",
+      "bytes": 2958578
+    },
+    {
+      "entry": "ppt/media/image4.jpeg",
+      "path": "/Users/camerongriffin/projects/TheAvalancheHour/tmp/support-deck-regeneration-v2/template-inspect/assets/ppt/media/image4.jpeg",
+      "relativePath": "tmp/support-deck-regeneration-v2/template-inspect/assets/ppt/media/image4.jpeg",
+      "bytes": 2652987
+    },
+    {
+      "entry": "ppt/media/image5.jpeg",
+      "path": "/Users/camerongriffin/projects/TheAvalancheHour/tmp/support-deck-regeneration-v2/template-inspect/assets/ppt/media/image5.jpeg",
+      "relativePath": "tmp/support-deck-regeneration-v2/template-inspect/assets/ppt/media/image5.jpeg",
+      "bytes": 3181326
+    },
+    {
+      "entry": "ppt/media/image2.png",
+      "path": "/Users/camerongriffin/projects/TheAvalancheHour/tmp/support-deck-regeneration-v2/template-inspect/assets/ppt/media/image2.png",
+      "relativePath": "tmp/support-deck-regeneration-v2/template-inspect/assets/ppt/media/image2.png",
+      "bytes": 21175
+    }
+  ],
+  "fonts": [
+    "+mj-lt",
+    "+mn-lt",
+    "Arial",
+    "Calibri",
+    "Calibri Light"
+  ],
+  "packageParts": {
+    "mediaCount": 7,
+    "slideXmlCount": 6,
+    "chartCount": 0,
+    "tableSlideCount": 0
+  }
+}

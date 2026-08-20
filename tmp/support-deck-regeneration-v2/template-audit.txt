@@ -1,0 +1,25 @@
+SOURCE STRUCTURE
+- Six 16:9 slides, all built with editable Arial typography and a consistent ink / teal / snow / orange palette.
+- Reusable patterns: full-bleed dark photo opener (slides 1, 3, 5), snow-field information split (slide 2), four-column comparison (slide 4), and split-field CTA (slide 6).
+- No structural PowerPoint placeholders were detected in the source slide inventory.
+
+TYPOGRAPHY AND SPACING
+- Display and body type: Arial.
+- Slide titles: 50-66 pt, bold, tight leading.
+- Eyebrows: 15-17 pt, uppercase, bold, orange or ice.
+- Body: 18-24 pt with generous line spacing.
+- Footer: 13 pt, site at left, two-digit page at right, thin rule at y=676.
+- Primary content margins: 72 px left/right; 44-58 px at top.
+
+BRAND AND ASSET RULES
+- Ink #10222D; deep navy #0B202A; teal #173B4A; snow #F4F6F2; ice #C8E4ED; orange #EF6F35 / #A8431E.
+- Square corners, thin rules, flat native graphics, restrained overlays.
+- Authentic Drive photography is replacing generic website-only imagery on interior slides.
+- All production photos must be pre-cropped to the final display ratio before embedding; image frames must not rely on PowerPoint crop metadata.
+
+INSERTION CONTRACT
+- Duplicate source slides according to template-frame-map.json.
+- Major rewritten slides intentionally remove inherited slide-local elements, retain the imported source hierarchy, and rebuild within the same branded composition system.
+- New primitives are bounded to the full slide only after all inherited slide-local elements are explicitly deleted.
+- Slide 6 retains the four-column comparison concept from source slide 4.
+

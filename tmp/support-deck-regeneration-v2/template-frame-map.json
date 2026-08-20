@@ -1,0 +1,85 @@
+{
+  "outputSlides": [
+    {
+      "outputSlide": 1,
+      "sourceSlide": 1,
+      "narrativeRole": "opening thesis",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        { "action": "delete", "shapeIds": ["sh/547294r6", "sh/7qp4be9c", "sh/65g3298r", "sh/ts7md4r2", "sh/sryl4zqx", "sh/fu94fe98", "sh/utg3698n", "im/jqxw72dk", "im/ipofexcz"] },
+        { "action": "add", "newPrimitiveAllowed": true, "mustNotOverlapInherited": true, "zone": { "left": 0, "top": 0, "width": 1280, "height": 720 }, "reason": "Rebuild the approved opener with exact-aspect imagery while retaining the imported source slide hierarchy and branded composition." }
+      ]
+    },
+    {
+      "outputSlide": 2,
+      "sourceSlide": 2,
+      "narrativeRole": "audience proof and geography analysis",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        { "action": "delete", "shapeIds": ["sh/9072xkry", "sh/ozy1ofad", "sh/b29kza94", "sh/a10jqpsj", "sh/x4r21kru", "sh/w3i1sfa9", "sh/r65knqtk", "sh/q5wjelsz", "sh/ove9o7yd", "sh/9wnqhczy", "sh/mtwrmxg7", "sh/nu58f2hs", "sh/wjy9sry9", "sh/xk7qlczu", "sh/ahwrqhgj", "sh/bip8jmho", "sh/cnupgny5", "sh/do3q9szq", "sh/t8byxkn2", "sh/s72xofmh", "im/cnuxgvm9"] },
+        { "action": "add", "newPrimitiveAllowed": true, "mustNotOverlapInherited": true, "zone": { "left": 0, "top": 0, "width": 1280, "height": 720 }, "reason": "Restore Caleb's geography and audience data as editable native graphics with an exact-aspect Drive avalanche photo." }
+      ]
+    },
+    {
+      "outputSlide": 3,
+      "sourceSlide": 2,
+      "narrativeRole": "listener profile chart analysis",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        { "action": "delete", "shapeIds": ["sh/9072xkry", "sh/ozy1ofad", "sh/b29kza94", "sh/a10jqpsj", "sh/x4r21kru", "sh/w3i1sfa9", "sh/r65knqtk", "sh/q5wjelsz", "sh/ove9o7yd", "sh/9wnqhczy", "sh/mtwrmxg7", "sh/nu58f2hs", "sh/wjy9sry9", "sh/xk7qlczu", "sh/ahwrqhgj", "sh/bip8jmho", "sh/cnupgny5", "sh/do3q9szq", "sh/t8byxkn2", "sh/s72xofmh", "im/cnuxgvm9"] },
+        { "action": "add", "newPrimitiveAllowed": true, "mustNotOverlapInherited": true, "zone": { "left": 0, "top": 0, "width": 1280, "height": 720 }, "reason": "Create dedicated editable age and gender infographics requested by the user, with a Drive fieldwork image." }
+      ]
+    },
+    {
+      "outputSlide": 4,
+      "sourceSlide": 5,
+      "narrativeRole": "reach momentum metric proof",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        { "action": "delete", "shapeIds": ["sh/dgbulwnm", "sh/cf2tcr61", "sh/z2tcnm5s", "sh/yhkbe1o7", "sh/l4bupwny", "sh/032tgr6d", "sh/n6dcr65o", "sh/m5kbi1oj", "sh/w32dkbuh", "sh/x4vedgvm", "sh/ahkvi1cb", "sh/v2twb6dw", "sh/k7mxovud", "sh/58vehgvy", "sh/i54fmlc7", "sh/j6dwfqds", "sh/sb6xsvu9", "sh/tcfel0vu", "sh/hgrmpwj2", "sh/gfi5grih", "sh/fe94nm1w", "sh/ud0ne10b", "sh/pkr6tgjy", "im/7itgf6p8"] },
+        { "action": "add", "newPrimitiveAllowed": true, "mustNotOverlapInherited": true, "zone": { "left": 0, "top": 0, "width": 1280, "height": 720 }, "reason": "Restore source-deck momentum metrics in a low-density branded proof slide over exact-aspect avalanche imagery." }
+      ]
+    },
+    {
+      "outputSlide": 5,
+      "sourceSlide": 3,
+      "narrativeRole": "year-round release cadence synthesis",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        { "action": "delete", "shapeIds": ["sh/cza94vmx", "sh/d0jax03i", "sh/298ryl4v", "sh/3ah8rqlg", "sh/obq90bml", "sh/pcjqtg36", "sh/m5cra54z", "sh/n6ls3alk", "sh/n2l4fq98", "sh/m1c3mlsn", "sh/943mhgre", "sh/83ulovat", "sh/v6l4jq94", "sh/a5c3ql8z", "sh/x8nml0ra", "sh/w7ulsvqp", "im/8ju58bep"] },
+        { "action": "add", "newPrimitiveAllowed": true, "mustNotOverlapInherited": true, "zone": { "left": 0, "top": 0, "width": 1280, "height": 720 }, "reason": "Rebuild the cadence story around the user-confirmed 38-release full-year plan, a native release-mix infographic, and exact-aspect powder photography embedded in the source deck." }
+      ]
+    },
+    {
+      "outputSlide": 6,
+      "sourceSlide": 4,
+      "narrativeRole": "support option comparison",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        { "action": "delete", "shapeIds": ["sh/xknyx4ja", "sh/1cj2d8b6", "sh/0ba143al", "sh/rm1k7yt4", "sh/ql8jytsj", "sh/doj29oba", "sh/sna103ap", "sh/3ihk3et8", "sh/ih8ju9sn", "sh/kbm987y5", "sh/5cva1cfq", "sh/i94r6xgz", "sh/jadsz2xk", "sh/w72947yt", "sh/x8vaxsfe", "sh/a5kr2xg3", "sh/v6tsv2xo", "sh/g36tgryd", "sh/h4fa9wfy", "sh/p0batw72", "sh/oz29krqh", "sh/3ytsrmpw", "sh/2xkrih8b", "sh/1wbapc7q", "sh/gv29g7q5", "sh/fu9sn2p0", "sh/et0reh8f", "sh/tsrqlc7u", "sh/sri9s7q9", "sh/ilwf69kv", "sh/jm5gze1g", "sh/knex8j21", "sh/5ony1oj6", "sh/axcf29kj", "sh/vy5gbe14", "sh/wzex4z2p"] },
+        { "action": "add", "newPrimitiveAllowed": true, "mustNotOverlapInherited": true, "zone": { "left": 0, "top": 0, "width": 1280, "height": 720 }, "reason": "Preserve the source slide's four-column comparison concept while tightening copy and rebuilding with the same brand measurements." }
+      ]
+    },
+    {
+      "outputSlide": 7,
+      "sourceSlide": 5,
+      "narrativeRole": "partnership value and testimonial proof",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        { "action": "delete", "shapeIds": ["sh/dgbulwnm", "sh/cf2tcr61", "sh/z2tcnm5s", "sh/yhkbe1o7", "sh/l4bupwny", "sh/032tgr6d", "sh/n6dcr65o", "sh/m5kbi1oj", "sh/w32dkbuh", "sh/x4vedgvm", "sh/ahkvi1cb", "sh/v2twb6dw", "sh/k7mxovud", "sh/58vehgvy", "sh/i54fmlc7", "sh/j6dwfqds", "sh/sb6xsvu9", "sh/tcfel0vu", "sh/hgrmpwj2", "sh/gfi5grih", "sh/fe94nm1w", "sh/ud0ne10b", "sh/pkr6tgjy", "im/7itgf6p8"] },
+        { "action": "add", "newPrimitiveAllowed": true, "mustNotOverlapInherited": true, "zone": { "left": 0, "top": 0, "width": 1280, "height": 720 }, "reason": "Retain the source value framework and restore one sponsor testimonial over exact-aspect Drive action photography." }
+      ]
+    },
+    {
+      "outputSlide": 8,
+      "sourceSlide": 6,
+      "narrativeRole": "closing callout and contact summary",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        { "action": "delete", "shapeIds": ["sh/j6dcr65c", "sh/zi98nu94", "sh/87ipkzal", "sh/98rqt4r6", "sh/ml07i9sv", "sh/7m98ru9g", "sh/oryp8fah", "sh/pc76hkr2", "sh/w32twb6l", "sh/v2tcn650", "sh/u1kbu1ov", "sh/5svutgni", "sh/47mt0b6x", "im/lw3uh4be", "im/a5sbipcr"] },
+        { "action": "add", "newPrimitiveAllowed": true, "mustNotOverlapInherited": true, "zone": { "left": 0, "top": 0, "width": 1280, "height": 720 }, "reason": "Rebuild the CTA with exact-aspect helicopter cockpit and mountain photography embedded in the source deck while preserving source contact content and brand hierarchy." }
+      ]
+    }
+  ],
+  "omittedSourceSlides": []
+}

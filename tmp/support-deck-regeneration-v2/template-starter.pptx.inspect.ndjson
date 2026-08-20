@@ -1,0 +1,186 @@
+{"kind":"deck","id":"pr/n9zmy5","name":"Deck"}
+{"kind":"layout","layoutId":"/ppt/slideMasters/slideMaster1.xml","name":"Master","type":"master"}
+{"kind":"layout","layoutId":"/ppt/slideLayouts/slideLayout1.xml","name":"Title Slide","type":"title"}
+{"kind":"slide","id":"sl/381ild","slide":1,"title":"INDEPENDENT VOICES - COMMUNITY SUPPORTED","textShapes":6}
+{"kind":"shape","id":"sh/qtw7q5kb","slide":1,"name":"cover-overlay","bbox":[0,0,1280,720]}
+{"kind":"textbox","id":"sh/0zypwf2t","slide":1,"name":"eyebrow-independent-voices-community-supported","text":"INDEPENDENT VOICES - COMMUNITY SUPPORTED","textPreview":"INDEPENDENT VOICES - COMMUNITY SUPPORTED","textChars":40,"textLines":1,"bbox":[206,58,500,26]}
+{"kind":"textbox","id":"sh/l07qpkjy","slide":1,"name":"cover-title","text":"Keep the signal strong.","textPreview":"Keep the signal strong.","textChars":23,"textLines":1,"bbox":[72,226,1040,112]}
+{"kind":"textbox","id":"sh/yxg7u5kn","slide":1,"name":"cover-subtitle","text":"SEASON 11 UNDERWRITING + ADVERTISING","textPreview":"SEASON 11 UNDERWRITING + ADVERTISING","textChars":36,"textLines":1,"bbox":[76,366,760,42]}
+{"kind":"textbox","id":"sh/zyp8na18","slide":1,"name":"cover-season-theme","text":"Finding the Line","textPreview":"Finding the Line","textChars":16,"textLines":1,"bbox":[76,420,330,36]}
+{"kind":"textbox","id":"sh/8ni90z2p","slide":1,"name":"cover-dates","text":"2026-27 YEAR-ROUND PARTNERSHIPS","textPreview":"2026-27 YEAR-ROUND PARTNERSHIPS","textChars":31,"textLines":1,"bbox":[76,472,360,24]}
+{"kind":"textbox","id":"sh/9orqtkja","slide":1,"name":"cover-promise","text":"Put your brand behind the conversations people carry into the field.","textPreview":"Put your brand behind the conversations people carry into the field.","textChars":68,"textLines":1,"bbox":[76,526,490,62]}
+{"kind":"image","id":"im/29wrelw7","slide":1,"name":"","bbox":[0,0,1280,720]}
+{"kind":"image","id":"im/na58nqxs","slide":1,"name":"","bbox":[72,44.2,112,107.59]}
+{"kind":"notes","id":"nt/381ild","slide":1,"text":"[Sources]\n- User-provided Season 11 underwriting deck, slide 1 (season name and Finding the Line theme).\n- User clarification on 2026-08-20 that the partnership may span the full 2026-27 year.\n- The Avalanche Hour support page (headline and community-support framing).\n- The Avalanche Hour local website photography and official logo.\n[/Sources]"}
+{"kind":"slide","id":"sl/jfbdgt","slide":2,"title":"WHY PARTNER","textShapes":15}
+{"kind":"shape","id":"sh/mxsr2d4f","slide":2,"name":"audience-photo-overlay","bbox":[900,0,380,720]}
+{"kind":"textbox","id":"sh/7y1svil0","slide":2,"name":"eyebrow-why-partner","text":"WHY PARTNER","textPreview":"WHY PARTNER","textChars":11,"textLines":1,"bbox":[72,48,420,26]}
+{"kind":"textbox","id":"sh/wnut87mh","slide":2,"name":"slide-title","text":"A focused audience with measurable reach.","textPreview":"A focused audience with measurable reach.","textChars":41,"textLines":1,"bbox":[72,82,760,100]}
+{"kind":"textbox","id":"sh/ho3a1s32","slide":2,"name":"audience-intro","text":"The Avalanche Hour brings forecasters, guides, educators, researchers, patrollers, and backcountry travelers into one focused conversation.","textPreview":"The Avalanche Hour brings forecasters, guides, educators, researchers, patrollers, and backcountry travelers into one focused conversation.","textChars":139,"textLines":1,"bbox":[72,198,760,74]}
+{"kind":"shape","id":"sh/u1sb6x4b","slide":2,"name":"metric-top-rule","bbox":[72,296,760,0]}
+{"kind":"textbox","id":"sh/vm1sz2lw","slide":2,"name":"metric-1-number","text":"964K","textPreview":"964K","textChars":4,"textLines":1,"bbox":[72,322,320,58]}
+{"kind":"textbox","id":"sh/crq9w3md","slide":2,"name":"metric-1-label","text":"episode plays since October 2016","textPreview":"episode plays since October 2016","textChars":32,"textLines":1,"bbox":[72,383,320,58]}
+{"kind":"textbox","id":"sh/xszap83y","slide":2,"name":"metric-2-number","text":"69K","textPreview":"69K","textChars":3,"textLines":1,"bbox":[448,322,320,58]}
+{"kind":"textbox","id":"sh/lgr6p8zm","slide":2,"name":"metric-2-label","text":"episode plays in the last 12 months","textPreview":"episode plays in the last 12 months","textChars":35,"textLines":1,"bbox":[448,383,320,58]}
+{"kind":"shape","id":"sh/kfi5w3i1","slide":2,"name":"metric-mid-rule","bbox":[72,464,760,0]}
+{"kind":"textbox","id":"sh/ze9onyhg","slide":2,"name":"metric-3-number","text":"4K","textPreview":"4K","textChars":2,"textLines":1,"bbox":[72,488,320,58]}
+{"kind":"textbox","id":"sh/yd0nut0b","slide":2,"name":"metric-3-label","text":"plays per episode within the first 3 months","textPreview":"plays per episode within the first 3 months","textChars":43,"textLines":1,"bbox":[72,549,320,58]}
+{"kind":"textbox","id":"sh/9kb6t8zy","slide":2,"name":"metric-4-number","text":"64.7%","textPreview":"64.7%","textChars":5,"textLines":1,"bbox":[448,488,320,58]}
+{"kind":"textbox","id":"sh/8j2503id","slide":2,"name":"metric-4-label","text":"of Spotify listeners are age 28-44","textPreview":"of Spotify listeners are age 28-44","textChars":34,"textLines":1,"bbox":[448,549,320,58]}
+{"kind":"textbox","id":"sh/7i9orihs","slide":2,"name":"audience-global-note","text":"North American at its core, with listeners in New Zealand, the U.K., Norway, Australia, Japan, and beyond.","textPreview":"North American at its core, with listeners in New Zealand, the U.K., Norway, Australia, Japan, and beyond.","textChars":106,"textLines":1,"bbox":[930,476,280,122]}
+{"kind":"textbox","id":"sh/mh0nyd07","slide":2,"name":"audience-metric-note","text":"Source deck prepared August 2026. Reach metrics are self-reported; platform definitions vary.","textPreview":"Source deck prepared August 2026. Reach metrics are self-reported; platform definitions vary.","textChars":93,"textLines":1,"bbox":[930,608,270,44]}
+{"kind":"shape","id":"sh/h8b6xszu","slide":2,"name":"audience-footer-band","bbox":[0,670,1280,50]}
+{"kind":"shape","id":"sh/w72p4ni9","slide":2,"name":"footer-rule-2","bbox":[72,676,1136,0]}
+{"kind":"textbox","id":"sh/grap0r6l","slide":2,"name":"footer-site-2","text":"THEAVALANCHEHOUR.COM/SUPPORT","textPreview":"THEAVALANCHEHOUR.COM/SUPPORT","textChars":28,"textLines":1,"bbox":[72,686,350,18]}
+{"kind":"textbox","id":"sh/hsjqtw76","slide":2,"name":"footer-page-2","text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[1168,686,40,18]}
+{"kind":"image","id":"im/tofi50fq","slide":2,"name":"","bbox":[900,0,380,720]}
+{"kind":"notes","id":"nt/jfbdgt","slide":2,"text":"[Sources]\n- User-provided Season 11 underwriting deck, slide 3 (audience metrics and geographic distribution).\n- User-provided Season 11 underwriting deck, slide 2 (audience description).\n- The Avalanche Hour local website photography.\n[/Sources]"}
+{"kind":"slide","id":"sl/a1tx2i","slide":3,"title":"WHY PARTNER","textShapes":15}
+{"kind":"shape","id":"sh/gbed4b2x","slide":3,"name":"audience-photo-overlay","bbox":[900,0,380,720]}
+{"kind":"textbox","id":"sh/hcnedg3i","slide":3,"name":"eyebrow-why-partner","text":"WHY PARTNER","textPreview":"WHY PARTNER","textChars":11,"textLines":1,"bbox":[72,48,420,26]}
+{"kind":"textbox","id":"sh/6lcvy1kv","slide":3,"name":"slide-title","text":"A focused audience with measurable reach.","textPreview":"A focused audience with measurable reach.","textChars":41,"textLines":1,"bbox":[72,82,760,100]}
+{"kind":"textbox","id":"sh/7mlw76lg","slide":3,"name":"audience-intro","text":"The Avalanche Hour brings forecasters, guides, educators, researchers, patrollers, and backcountry travelers into one focused conversation.","textPreview":"The Avalanche Hour brings forecasters, guides, educators, researchers, patrollers, and backcountry travelers into one focused conversation.","textChars":139,"textLines":1,"bbox":[72,198,760,74]}
+{"kind":"shape","id":"sh/8nud0r2l","slide":3,"name":"metric-top-rule","bbox":[72,296,760,0]}
+{"kind":"textbox","id":"sh/tone9w36","slide":3,"name":"metric-1-number","text":"964K","textPreview":"964K","textChars":4,"textLines":1,"bbox":[72,322,320,58]}
+{"kind":"textbox","id":"sh/qhgfalkz","slide":3,"name":"metric-1-label","text":"episode plays since October 2016","textPreview":"episode plays since October 2016","textChars":32,"textLines":1,"bbox":[72,383,320,58]}
+{"kind":"textbox","id":"sh/ripwjqlk","slide":3,"name":"metric-2-number","text":"69K","textPreview":"69K","textChars":3,"textLines":1,"bbox":[448,322,320,58]}
+{"kind":"textbox","id":"sh/jipcvq9g","slide":3,"name":"metric-2-label","text":"episode plays in the last 12 months","textPreview":"episode plays in the last 12 months","textChars":35,"textLines":1,"bbox":[448,383,320,58]}
+{"kind":"shape","id":"sh/ihgv2lsv","slide":3,"name":"metric-mid-rule","bbox":[72,464,760,0]}
+{"kind":"textbox","id":"sh/5k7ux0rm","slide":3,"name":"metric-3-number","text":"4K","textPreview":"4K","textChars":2,"textLines":1,"bbox":[72,488,320,58]}
+{"kind":"textbox","id":"sh/4jyd4vq1","slide":3,"name":"metric-3-label","text":"plays per episode within the first 3 months","textPreview":"plays per episode within the first 3 months","textChars":43,"textLines":1,"bbox":[72,549,320,58]}
+{"kind":"textbox","id":"sh/rmpcza9c","slide":3,"name":"metric-4-number","text":"64.7%","textPreview":"64.7%","textChars":5,"textLines":1,"bbox":[448,488,320,58]}
+{"kind":"textbox","id":"sh/6lgv6587","slide":3,"name":"metric-4-label","text":"of Spotify listeners are age 28-44","textPreview":"of Spotify listeners are age 28-44","textChars":34,"textLines":1,"bbox":[448,549,320,58]}
+{"kind":"textbox","id":"sh/toru1kri","slide":3,"name":"audience-global-note","text":"North American at its core, with listeners in New Zealand, the U.K., Norway, Australia, Japan, and beyond.","textPreview":"North American at its core, with listeners in New Zealand, the U.K., Norway, Australia, Japan, and beyond.","textChars":106,"textLines":1,"bbox":[930,476,280,122]}
+{"kind":"textbox","id":"sh/snyd8fqx","slide":3,"name":"audience-metric-note","text":"Source deck prepared August 2026. Reach metrics are self-reported; platform definitions vary.","textPreview":"Source deck prepared August 2026. Reach metrics are self-reported; platform definitions vary.","textChars":93,"textLines":1,"bbox":[930,608,270,44]}
+{"kind":"shape","id":"sh/fq9w3a9o","slide":3,"name":"audience-footer-band","bbox":[0,670,1280,50]}
+{"kind":"shape","id":"sh/ep0va583","slide":3,"name":"footer-rule-2","bbox":[72,676,1136,0]}
+{"kind":"textbox","id":"sh/alkf29sb","slide":3,"name":"footer-site-2","text":"THEAVALANCHEHOUR.COM/SUPPORT","textPreview":"THEAVALANCHEHOUR.COM/SUPPORT","textChars":28,"textLines":1,"bbox":[72,686,350,18]}
+{"kind":"textbox","id":"sh/b6tgvetw","slide":3,"name":"footer-page-2","text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[1168,686,40,18]}
+{"kind":"image","id":"im/jm1kv2hg","slide":3,"name":"","bbox":[900,0,380,720]}
+{"kind":"notes","id":"nt/a1tx2i","slide":3,"text":"[Sources]\n- User-provided Season 11 underwriting deck, slide 3 (audience metrics and geographic distribution).\n- User-provided Season 11 underwriting deck, slide 2 (audience description).\n- The Avalanche Hour local website photography.\n[/Sources]"}
+{"kind":"slide","id":"sl/lhgjjg","slide":4,"title":"WHAT PARTNERSHIP DELIVERS","textShapes":17}
+{"kind":"shape","id":"sh/nat0jqtc","slide":4,"name":"value-photo-overlay","bbox":[0,0,1280,720]}
+{"kind":"textbox","id":"sh/29kja5c7","slide":4,"name":"eyebrow-what-partnership-delivers","text":"WHAT PARTNERSHIP DELIVERS","textPreview":"WHAT PARTNERSHIP DELIVERS","textChars":25,"textLines":1,"bbox":[72,48,520,26]}
+{"kind":"textbox","id":"sh/1obih0bm","slide":4,"name":"slide-title","text":"Recognition that respects the audience.","textPreview":"Recognition that respects the audience.","textChars":39,"textLines":1,"bbox":[72,82,900,96]}
+{"kind":"textbox","id":"sh/0ni18vu1","slide":4,"name":"value-intro","text":"Support is built around acknowledgement, access, and useful visibility - while keeping the audience relationship at the center.","textPreview":"Support is built around acknowledgement, access, and useful visibility - while keeping the audience relationship at the center.","textChars":127,"textLines":1,"bbox":[72,188,770,66]}
+{"kind":"textbox","id":"sh/fm90fqtg","slide":4,"name":"value-01-number","text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[76,282,48,30]}
+{"kind":"textbox","id":"sh/el0z6lcv","slide":4,"name":"value-01-label","text":"Authentic reach","textPreview":"Authentic reach","textChars":15,"textLines":1,"bbox":[138,280,186,36]}
+{"kind":"textbox","id":"sh/dkridgba","slide":4,"name":"value-01-copy","text":"Connect with people already engaged in avalanche education, professional practice, and backcountry culture.","textPreview":"Connect with people already engaged in avalanche education, professional practice, and backcountry culture.","textChars":107,"textLines":1,"bbox":[332,280,468,58]}
+{"kind":"shape","id":"sh/sjih4bup","slide":4,"name":"value-01-rule","bbox":[76,346,724,0]}
+{"kind":"textbox","id":"sh/i5kn2t8f","slide":4,"name":"value-02-number","text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[76,368,48,30]}
+{"kind":"textbox","id":"sh/36toby9k","slide":4,"name":"value-02-label","text":"Brand visibility","textPreview":"Brand visibility","textChars":16,"textLines":1,"bbox":[138,366,186,36]}
+{"kind":"textbox","id":"sh/472543q5","slide":4,"name":"value-02-copy","text":"Build recognition through episode acknowledgements, social promotion, website placement, and season-long presence.","textPreview":"Build recognition through episode acknowledgements, social promotion, website placement, and season-long presence.","textChars":114,"textLines":1,"bbox":[332,366,468,58]}
+{"kind":"shape","id":"sh/p8v6d8rq","slide":4,"name":"value-02-rule","bbox":[76,432,724,0]}
+{"kind":"textbox","id":"sh/u1kny983","slide":4,"name":"value-03-number","text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[76,454,48,30]}
+{"kind":"textbox","id":"sh/v2t47e9o","slide":4,"name":"value-03-label","text":"Credibility","textPreview":"Credibility","textChars":11,"textLines":1,"bbox":[138,452,186,36]}
+{"kind":"textbox","id":"sh/g3250jq9","slide":4,"name":"value-03-copy","text":"Associate with an established, community-focused voice in the avalanche world.","textPreview":"Associate with an established, community-focused voice in the avalanche world.","textChars":78,"textLines":1,"bbox":[332,452,468,58]}
+{"kind":"shape","id":"sh/h4b69oru","slide":4,"name":"value-03-rule","bbox":[76,518,724,0]}
+{"kind":"textbox","id":"sh/6d0nu987","slide":4,"name":"value-04-number","text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[76,540,48,30]}
+{"kind":"textbox","id":"sh/7e943e9c","slide":4,"name":"value-04-label","text":"Access","textPreview":"Access","textChars":6,"textLines":1,"bbox":[138,538,186,36]}
+{"kind":"textbox","id":"sh/bipkbap4","slide":4,"name":"value-04-copy","text":"Representative access; guest or topic proposals, subject to editorial approval.","textPreview":"Representative access; guest or topic proposals, subject to editorial approval.","textChars":79,"textLines":1,"bbox":[332,538,468,58]}
+{"kind":"shape","id":"sh/ahg325oz","slide":4,"name":"value-04-rule","bbox":[76,604,724,0]}
+{"kind":"shape","id":"sh/xk72dk7a","slide":4,"name":"footer-rule-5","bbox":[72,676,1136,0]}
+{"kind":"textbox","id":"sh/wjyl4f6p","slide":4,"name":"footer-site-5","text":"THEAVALANCHEHOUR.COM/SUPPORT","textPreview":"THEAVALANCHEHOUR.COM/SUPPORT","textChars":28,"textLines":1,"bbox":[72,686,350,18]}
+{"kind":"textbox","id":"sh/j6pkfapg","slide":4,"name":"footer-page-5","text":"05","textPreview":"05","textChars":2,"textLines":1,"bbox":[1168,686,40,18]}
+{"kind":"image","id":"im/t4natgz6","slide":4,"name":"","bbox":[0,0,1280,720]}
+{"kind":"notes","id":"nt/lhgjjg","slide":4,"text":"[Sources]\n- User-provided Season 11 underwriting deck, slide 5 (reach, visibility, credibility, and access framework).\n- User-provided Season 11 underwriting deck, slide 4 (package access and collaboration language).\n- The Avalanche Hour local website photography and community-first voice.\n[/Sources]"}
+{"kind":"slide","id":"sl/jzcb8o","slide":5,"title":"SEASON 11 - FINDING THE LINE","textShapes":12}
+{"kind":"shape","id":"sh/d8bexkvu","slide":5,"name":"season-photo-overlay","bbox":[0,0,1280,720]}
+{"kind":"textbox","id":"sh/c72xozup","slide":5,"name":"eyebrow-season-11-finding-the-line","text":"SEASON 11 - FINDING THE LINE","textPreview":"SEASON 11 - FINDING THE LINE","textChars":28,"textLines":1,"bbox":[72,52,520,26]}
+{"kind":"textbox","id":"sh/zatwzud0","slide":5,"name":"slide-title","text":"A high-frequency season builds recognition.","textPreview":"A high-frequency season builds recognition.","textChars":43,"textLines":1,"bbox":[72,88,760,104]}
+{"kind":"textbox","id":"sh/y9kfqpcf","slide":5,"name":"season-metric-30","text":"38","textPreview":"38","textChars":2,"textLines":1,"bbox":[74,236,160,96]}
+{"kind":"textbox","id":"sh/lcve14v6","slide":5,"name":"season-metric-30-label","text":"PLANNED SEASON\nRELEASES","textPreview":"PLANNED SEASON | RELEASES","textChars":23,"textLines":2,"bbox":[214,248,220,78]}
+{"kind":"shape","id":"sh/0bmxszul","slide":5,"name":"season-metric-divider","bbox":[456,230,0,112]}
+{"kind":"textbox","id":"sh/nedw3edc","slide":5,"name":"season-metric-9","text":"9","textPreview":"9","textChars":1,"textLines":1,"bbox":[508,236,100,96]}
+{"kind":"textbox","id":"sh/md4fu9cr","slide":5,"name":"season-metric-9-label","text":"SLABS 'N SLUFFS\nEPISODES","textPreview":"SLABS 'N SLUFFS | EPISODES","textChars":24,"textLines":2,"bbox":[592,248,220,78]}
+{"kind":"shape","id":"sh/4jm1c3it","slide":5,"name":"season-program-surface","bbox":[850,92,358,482]}
+{"kind":"textbox","id":"sh/5kv2l8jy","slide":5,"name":"season-program-heading","text":"THE PROGRAM INCLUDES","textPreview":"THE PROGRAM INCLUDES","textChars":20,"textLines":1,"bbox":[886,126,284,30]}
+{"kind":"textbox","id":"sh/ih4jat0n","slide":5,"name":"season-program-bullets","text":"Stories and interviews with avalanche professionals\nA rotating international host and contributor cadre\nGuests from the U.S., Canada, Europe, and South America\nLegacy and Partner supporter highlights\nSlabs 'n Sluffs recaps, listener voicemails, and partner features","textPreview":"Stories and interviews with avalanche professionals | A rotating international host and contributor cadre | Guests from the U.S., Canada,...","textChars":265,"textLines":5,"bbox":[886,176,286,332]}
+{"kind":"textbox","id":"sh/jidkjy18","slide":5,"name":"season-repetition-note","text":"Almost weekly - with selected weeks carrying a second release.","textPreview":"Almost weekly - with selected weeks carrying a second release.","textChars":62,"textLines":1,"bbox":[76,390,680,80]}
+{"kind":"textbox","id":"sh/sn61gnip","slide":5,"name":"season-value-note","text":"Season-long partners can be acknowledged across 25+ episodes, building recognition inside programming the audience has already chosen to hear.","textPreview":"Season-long partners can be acknowledged across 25+ episodes, building recognition inside programming the audience has already chosen to ...","textChars":142,"textLines":1,"bbox":[76,492,650,72]}
+{"kind":"shape","id":"sh/tof2p8ja","slide":5,"name":"footer-rule-3","bbox":[72,676,1136,0]}
+{"kind":"textbox","id":"sh/6l4jed0j","slide":5,"name":"footer-site-3","text":"THEAVALANCHEHOUR.COM/SUPPORT","textPreview":"THEAVALANCHEHOUR.COM/SUPPORT","textChars":28,"textLines":1,"bbox":[72,686,350,18]}
+{"kind":"textbox","id":"sh/rmxkni14","slide":5,"name":"footer-page-3","text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[1168,686,40,18]}
+{"kind":"image","id":"im/rqtkzu1w","slide":5,"name":"","bbox":[0,0,1280,720]}
+{"kind":"notes","id":"nt/jzcb8o","slide":5,"text":"[Sources]\n- User-provided Season 11 underwriting deck, slide 2 (Slabs n Sluffs plan, host cadre, geography, and supporter highlights).\n- User clarification on 2026-08-20 that Season 11 currently plans 38 releases, with an almost-weekly cadence and selected two-release weeks.\n- User clarification on 2026-08-20 that Caleb's source deck is the information authority and the partnership may span the full year.\n- User-provided Season 11 underwriting deck, slide 4 (25+ episode Partner acknowledgement).\n- The Avalanche Hour local website photography.\n[/Sources]"}
+{"kind":"slide","id":"sl/lvsqqa","slide":6,"title":"SUPPORT OPTIONS","textShapes":26}
+{"kind":"shape","id":"sh/h0zmdw76","slide":6,"name":"support-accent-band","bbox":[0,0,1280,14]}
+{"kind":"textbox","id":"sh/1w3ud83q","slide":6,"name":"eyebrow-support-options","text":"SUPPORT OPTIONS","textPreview":"SUPPORT OPTIONS","textChars":15,"textLines":1,"bbox":[72,48,440,26]}
+{"kind":"textbox","id":"sh/0budk325","slide":6,"name":"slide-title","text":"Four ways to support the show.","textPreview":"Four ways to support the show.","textChars":30,"textLines":1,"bbox":[72,82,920,78]}
+{"kind":"textbox","id":"sh/nylcfylw","slide":6,"name":"support-intro","text":"Choose a focused message or a full-year partnership.","textPreview":"Choose a focused message or a full-year partnership.","textChars":52,"textLines":1,"bbox":[72,166,820,34]}
+{"kind":"textbox","id":"sh/mxcvmdkb","slide":6,"name":"support-0-kicker","text":"SINGLE EPISODE","textPreview":"SINGLE EPISODE","textChars":14,"textLines":1,"bbox":[72,242,263,24]}
+{"kind":"textbox","id":"sh/90nuh83m","slide":6,"name":"support-0-name","text":"FRIEND","textPreview":"FRIEND","textChars":6,"textLines":1,"bbox":[72,274,263,46]}
+{"kind":"textbox","id":"sh/ozedo321","slide":6,"name":"support-0-price","text":"$500","textPreview":"$500","textChars":4,"textLines":1,"bbox":[72,332,263,52]}
+{"kind":"textbox","id":"sh/321c3elc","slide":6,"name":"support-0-unit","text":"/ episode","textPreview":"/ episode","textChars":9,"textLines":1,"bbox":[72,382,263,26]}
+{"kind":"shape","id":"sh/i1sba9kr","slide":6,"name":"support-0-rule","bbox":[72,424,263,0]}
+{"kind":"textbox","id":"sh/83mhwn29","slide":6,"name":"support-0-bullets","text":"1-2 minute mid-episode message\nIntro or outro acknowledgment\nSocial post + website logo","textPreview":"1-2 minute mid-episode message | Intro or outro acknowledgment | Social post + website logo","textChars":87,"textLines":3,"bbox":[72,448,263,146]}
+{"kind":"shape","id":"sh/t4vi5sju","slide":6,"name":"support-divider-1","bbox":[349,238,0,350]}
+{"kind":"textbox","id":"sh/6h4zudkj","slide":6,"name":"support-1-kicker","text":"SEASON-LONG","textPreview":"SEASON-LONG","textChars":11,"textLines":1,"bbox":[363,242,263,24]}
+{"kind":"textbox","id":"sh/72d03i1o","slide":6,"name":"support-1-name","text":"PARTNER","textPreview":"PARTNER","textChars":7,"textLines":1,"bbox":[363,274,263,46]}
+{"kind":"textbox","id":"sh/g76h0n2l","slide":6,"name":"support-1-price","text":"$4,000","textPreview":"$4,000","textChars":6,"textLines":1,"bbox":[363,332,263,52]}
+{"kind":"textbox","id":"sh/h8fi9sj6","slide":6,"name":"support-1-unit","text":"/ season","textPreview":"/ season","textChars":8,"textLines":1,"bbox":[363,382,263,26]}
+{"kind":"shape","id":"sh/u5ozyxkf","slide":6,"name":"support-1-rule","bbox":[363,424,263,0]}
+{"kind":"textbox","id":"sh/f6x07210","slide":6,"name":"support-1-bullets","text":"10-15 minutes for a representative\nAcknowledgment on 25+ episodes\nSocial post + website logo","textPreview":"10-15 minutes for a representative | Acknowledgment on 25+ episodes | Social post + website logo","textChars":92,"textLines":3,"bbox":[363,448,263,146]}
+{"kind":"shape","id":"sh/wb2ho321","slide":6,"name":"support-divider-2","bbox":[640,238,0,350]}
+{"kind":"textbox","id":"sh/xcbix8jm","slide":6,"name":"support-2-kicker","text":"PREMIER","textPreview":"PREMIER","textChars":7,"textLines":1,"bbox":[654,242,263,24]}
+{"kind":"textbox","id":"sh/dw3650re","slide":6,"name":"support-2-name","text":"LEGACY","textPreview":"LEGACY","textChars":6,"textLines":1,"bbox":[654,274,263,46]}
+{"kind":"textbox","id":"sh/cvapcvqt","slide":6,"name":"support-2-price","text":"From $6,000","textPreview":"From $6,000","textChars":11,"textLines":1,"bbox":[654,332,263,52]}
+{"kind":"textbox","id":"sh/ru1o3q98","slide":6,"name":"support-2-unit","text":"/ season","textPreview":"/ season","textChars":8,"textLines":1,"bbox":[654,382,263,26]}
+{"kind":"shape","id":"sh/qts7al8n","slide":6,"name":"support-2-rule","bbox":[654,424,263,0]}
+{"kind":"textbox","id":"sh/1k369k7a","slide":6,"name":"support-2-bullets","text":"Season-long support that helps grow the podcast\nDesigned for deeper, ongoing alignment\nHigher-level access and collaboration","textPreview":"Season-long support that helps grow the podcast | Designed for deeper, ongoing alignment | Higher-level access and collaboration","textChars":124,"textLines":3,"bbox":[654,448,263,146]}
+{"kind":"shape","id":"sh/0zupgfqp","slide":6,"name":"support-divider-3","bbox":[931,238,0,350]}
+{"kind":"textbox","id":"sh/zylo7a94","slide":6,"name":"support-3-kicker","text":"RECAP SHOW","textPreview":"RECAP SHOW","textChars":10,"textLines":1,"bbox":[945,242,263,24]}
+{"kind":"textbox","id":"sh/exc7e58z","slide":6,"name":"support-3-name","text":"SLABS 'N SLUFFS","textPreview":"SLABS 'N SLUFFS","textChars":15,"textLines":1,"bbox":[945,274,263,46]}
+{"kind":"textbox","id":"sh/9on6dk7m","slide":6,"name":"support-3-price","text":"From $5,000","textPreview":"From $5,000","textChars":11,"textLines":1,"bbox":[945,332,263,52]}
+{"kind":"textbox","id":"sh/onupkfq1","slide":6,"name":"support-3-unit","text":"/ season","textPreview":"/ season","textChars":8,"textLines":1,"bbox":[945,382,263,26]}
+{"kind":"shape","id":"sh/69o3yhoj","slide":6,"name":"support-3-rule","bbox":[945,424,263,0]}
+{"kind":"textbox","id":"sh/7ux47mp4","slide":6,"name":"support-3-bullets","text":"Extended representative access\nGuest/topic selection opportunities\nCustom collaboration options","textPreview":"Extended representative access | Guest/topic selection opportunities | Custom collaboration options","textChars":95,"textLines":3,"bbox":[945,448,263,146]}
+{"kind":"shape","id":"sh/sv6l0r69","slide":6,"name":"custom-package-band","bbox":[72,610,1136,46]}
+{"kind":"textbox","id":"sh/twfm9w7u","slide":6,"name":"custom-package-note","text":"Custom packages are available. Current checkout links and sponsor roster: theavalanchehour.com/support","textPreview":"Custom packages are available. Current checkout links and sponsor roster: theavalanchehour.com/support","textChars":102,"textLines":1,"bbox":[92,623,1096,22]}
+{"kind":"shape","id":"sh/ux832hof","slide":6,"name":"footer-rule-4","bbox":[72,676,1136,0]}
+{"kind":"textbox","id":"sh/fyh4bmp0","slide":6,"name":"footer-site-4","text":"THEAVALANCHEHOUR.COM/SUPPORT","textPreview":"THEAVALANCHEHOUR.COM/SUPPORT","textChars":28,"textLines":1,"bbox":[72,686,350,18]}
+{"kind":"textbox","id":"sh/gzql4r6l","slide":6,"name":"footer-page-4","text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[1168,686,40,18]}
+{"kind":"notes","id":"nt/lvsqqa","slide":6,"text":"[Sources]\n- User-provided Season 11 underwriting deck, slide 4 (prices, support levels, and package detail).\n- User-provided Season 11 underwriting deck, slide 5 (higher-level access and collaboration detail).\n- User clarification on 2026-08-20 that Caleb's source deck is the information authority.\n[/Sources]"}
+{"kind":"slide","id":"sl/4cono9","slide":7,"title":"WHAT PARTNERSHIP DELIVERS","textShapes":17}
+{"kind":"shape","id":"sh/50bihcba","slide":7,"name":"value-photo-overlay","bbox":[0,0,1280,720]}
+{"kind":"textbox","id":"sh/4f2h87ap","slide":7,"name":"eyebrow-what-partnership-delivers","text":"WHAT PARTNERSHIP DELIVERS","textPreview":"WHAT PARTNERSHIP DELIVERS","textChars":25,"textLines":1,"bbox":[72,48,520,26]}
+{"kind":"textbox","id":"sh/va90b2ts","slide":7,"name":"slide-title","text":"Recognition that respects the audience.","textPreview":"Recognition that respects the audience.","textChars":39,"textLines":1,"bbox":[72,82,900,96]}
+{"kind":"textbox","id":"sh/u90z2xcn","slide":7,"name":"value-intro","text":"Support is built around acknowledgement, access, and useful visibility - while keeping the audience relationship at the center.","textPreview":"Support is built around acknowledgement, access, and useful visibility - while keeping the audience relationship at the center.","textChars":127,"textLines":1,"bbox":[72,188,770,66]}
+{"kind":"textbox","id":"sh/hcridcby","slide":7,"name":"value-01-number","text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[76,282,48,30]}
+{"kind":"textbox","id":"sh/wbih47ud","slide":7,"name":"value-01-label","text":"Authentic reach","textPreview":"Authentic reach","textChars":15,"textLines":1,"bbox":[138,280,186,36]}
+{"kind":"textbox","id":"sh/f6d0n6tc","slide":7,"name":"value-01-copy","text":"Connect with people already engaged in avalanche education, professional practice, and backcountry culture.","textPreview":"Connect with people already engaged in avalanche education, professional practice, and backcountry culture.","textChars":107,"textLines":1,"bbox":[332,280,468,58]}
+{"kind":"shape","id":"sh/e54je1sr","slide":7,"name":"value-01-rule","bbox":[76,346,724,0]}
+{"kind":"textbox","id":"sh/4jip0b69","slide":7,"name":"value-02-number","text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[76,368,48,30]}
+{"kind":"textbox","id":"sh/5kb6tgnu","slide":7,"name":"value-02-label","text":"Brand visibility","textPreview":"Brand visibility","textChars":16,"textLines":1,"bbox":[138,366,186,36]}
+{"kind":"textbox","id":"sh/ih07y1oj","slide":7,"name":"value-02-copy","text":"Build recognition through episode acknowledgements, social promotion, website placement, and season-long presence.","textPreview":"Build recognition through episode acknowledgements, social promotion, website placement, and season-long presence.","textChars":114,"textLines":1,"bbox":[332,366,468,58]}
+{"kind":"shape","id":"sh/3i9or654","slide":7,"name":"value-02-rule","bbox":[76,432,724,0]}
+{"kind":"textbox","id":"sh/gfipwr6d","slide":7,"name":"value-03-number","text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[76,454,48,30]}
+{"kind":"textbox","id":"sh/hgr6pwny","slide":7,"name":"value-03-label","text":"Credibility","textPreview":"Credibility","textChars":11,"textLines":1,"bbox":[138,452,186,36]}
+{"kind":"textbox","id":"sh/ud07u1o7","slide":7,"name":"value-03-copy","text":"Associate with an established, community-focused voice in the avalanche world.","textPreview":"Associate with an established, community-focused voice in the avalanche world.","textChars":78,"textLines":1,"bbox":[332,452,468,58]}
+{"kind":"shape","id":"sh/ve9on65s","slide":7,"name":"value-03-rule","bbox":[76,518,724,0]}
+{"kind":"textbox","id":"sh/8bypsr6h","slide":7,"name":"value-04-number","text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[76,540,48,30]}
+{"kind":"textbox","id":"sh/tc76lwnm","slide":7,"name":"value-04-label","text":"Access","textPreview":"Access","textChars":6,"textLines":1,"bbox":[138,538,186,36]}
+{"kind":"textbox","id":"sh/pwze9obe","slide":7,"name":"value-04-copy","text":"Representative access; guest or topic proposals, subject to editorial approval.","textPreview":"Representative access; guest or topic proposals, subject to editorial approval.","textChars":79,"textLines":1,"bbox":[332,538,468,58]}
+{"kind":"shape","id":"sh/ovqd0jut","slide":7,"name":"value-04-rule","bbox":[76,604,724,0]}
+{"kind":"shape","id":"sh/nuxw7et8","slide":7,"name":"footer-rule-5","bbox":[72,676,1136,0]}
+{"kind":"textbox","id":"sh/2tovy9cn","slide":7,"name":"footer-site-5","text":"THEAVALANCHEHOUR.COM/SUPPORT","textPreview":"THEAVALANCHEHOUR.COM/SUPPORT","textChars":28,"textLines":1,"bbox":[72,686,350,18]}
+{"kind":"textbox","id":"sh/18fe5obi","slide":7,"name":"footer-page-5","text":"05","textPreview":"05","textChars":2,"textLines":1,"bbox":[1168,686,40,18]}
+{"kind":"image","id":"im/zu9o72dg","slide":7,"name":"","bbox":[0,0,1280,720]}
+{"kind":"notes","id":"nt/4cono9","slide":7,"text":"[Sources]\n- User-provided Season 11 underwriting deck, slide 5 (reach, visibility, credibility, and access framework).\n- User-provided Season 11 underwriting deck, slide 4 (package access and collaboration language).\n- The Avalanche Hour local website photography and community-first voice.\n[/Sources]"}
+{"kind":"slide","id":"sl/1bvy45","slide":8,"title":"START A CONVERSATION","textShapes":8}
+{"kind":"shape","id":"sh/be94jmdw","slide":8,"name":"close-left-field","bbox":[0,0,746,720]}
+{"kind":"shape","id":"sh/n6p4jmxo","slide":8,"name":"close-photo-overlay","bbox":[746,0,534,720]}
+{"kind":"textbox","id":"sh/cbi5gry5","slide":8,"name":"eyebrow-start-a-conversation","text":"START A CONVERSATION","textPreview":"START A CONVERSATION","textChars":20,"textLines":1,"bbox":[72,54,430,26]}
+{"kind":"textbox","id":"sh/xcrmpwfq","slide":8,"name":"slide-title","text":"Let's build the right fit.","textPreview":"Let's build the right fit.","textChars":26,"textLines":1,"bbox":[72,92,620,116]}
+{"kind":"textbox","id":"sh/a90nehgz","slide":8,"name":"close-body","text":"If one of the standard options is close - but not quite right - we can shape a custom underwriting or advertising package around your goals.","textPreview":"If one of the standard options is close - but not quite right - we can shape a custom underwriting or advertising package around your goals.","textChars":140,"textLines":1,"bbox":[72,230,580,108]}
+{"kind":"shape","id":"sh/ba94nmxk","slide":8,"name":"close-signal-rule","bbox":[72,368,102,0]}
+{"kind":"textbox","id":"sh/sfe54ny1","slide":8,"name":"close-contact","text":"theavalanchehourpodcast@gmail.com\ntheavalanchehour.com/support\n@theavalanchehourpodcast","textPreview":"theavalanchehourpodcast@gmail.com | theavalanchehour.com/support | @theavalanchehourpodcast","textChars":87,"textLines":3,"bbox":[72,398,590,118]}
+{"kind":"textbox","id":"sh/dg7mdsfm","slide":8,"name":"close-dates","text":"SEASON 11  /  2026-27 YEAR-ROUND PARTNERSHIPS","textPreview":"SEASON 11  /  2026-27 YEAR-ROUND PARTNERSHIPS","textChars":45,"textLines":1,"bbox":[72,570,500,26]}
+{"kind":"textbox","id":"sh/ori5o7e5","slide":8,"name":"close-photo-line","text":"STORIES, KNOWLEDGE, AND HARD-EARNED LESSONS FROM THE AVALANCHE COMMUNITY.","textPreview":"STORIES, KNOWLEDGE, AND HARD-EARNED LESSONS FROM THE AVALANCHE COMMUNITY.","textChars":73,"textLines":1,"bbox":[812,92,348,84]}
+{"kind":"shape","id":"sh/nq94f2d0","slide":8,"name":"close-footer-band","bbox":[0,670,1280,50]}
+{"kind":"shape","id":"sh/2pgnmxwf","slide":8,"name":"footer-rule-6","bbox":[72,676,1136,0]}
+{"kind":"textbox","id":"sh/xgrmlwv2","slide":8,"name":"footer-site-6","text":"THEAVALANCHEHOUR.COM/SUPPORT","textPreview":"THEAVALANCHEHOUR.COM/SUPPORT","textChars":28,"textLines":1,"bbox":[72,686,350,18]}
+{"kind":"textbox","id":"sh/cfi5sreh","slide":8,"name":"footer-page-6","text":"06","textPreview":"06","textChars":2,"textLines":1,"bbox":[1168,686,40,18]}
+{"kind":"image","id":"im/lkfy1wja","slide":8,"name":"","bbox":[746,0,534,720]}
+{"kind":"image","id":"im/mlozu10v","slide":8,"name":"","bbox":[938,444.35,170,163.31]}
+{"kind":"notes","id":"nt/1bvy45","slide":8,"text":"[Sources]\n- User-provided Season 11 underwriting deck, slide 6 (contact details and custom-package invitation).\n- The Avalanche Hour support page (custom support language and support URL).\n- The Avalanche Hour local website photography and official logo.\n[/Sources]"}

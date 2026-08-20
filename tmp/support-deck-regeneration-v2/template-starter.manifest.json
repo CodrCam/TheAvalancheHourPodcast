@@ -1,0 +1,101 @@
+{
+  "sourcePptx": "/Users/camerongriffin/projects/TheAvalancheHour/public/files/avalanche-hour-s11-sponsorship-guide.pptx",
+  "mapPath": "/Users/camerongriffin/projects/TheAvalancheHour/tmp/support-deck-regeneration-v2/template-frame-map.json",
+  "output": "/Users/camerongriffin/projects/TheAvalancheHour/tmp/support-deck-regeneration-v2/template-starter.pptx",
+  "outputBytes": 17241422,
+  "sourceSlideCount": 6,
+  "slideCount": 8,
+  "previewDir": "/Users/camerongriffin/projects/TheAvalancheHour/tmp/support-deck-regeneration-v2/template-starter-preview",
+  "layoutDir": "/Users/camerongriffin/projects/TheAvalancheHour/tmp/support-deck-regeneration-v2/template-starter-layout",
+  "contactSheet": "/Users/camerongriffin/projects/TheAvalancheHour/tmp/support-deck-regeneration-v2/template-starter-contact-sheet.png",
+  "slides": [
+    {
+      "outputSlide": 1,
+      "sourceSlide": 1,
+      "narrativeRole": "opening thesis",
+      "reuseMode": "duplicate-slide",
+      "editTargetCount": 2,
+      "previewPath": "/Users/camerongriffin/projects/TheAvalancheHour/tmp/support-deck-regeneration-v2/template-starter-preview/starter-slide-01.png",
+      "previewRelativePath": "template-starter-preview/starter-slide-01.png",
+      "layoutPath": "/Users/camerongriffin/projects/TheAvalancheHour/tmp/support-deck-regeneration-v2/template-starter-layout/starter-slide-01.layout.json",
+      "layoutRelativePath": "template-starter-layout/starter-slide-01.layout.json"
+    },
+    {
+      "outputSlide": 2,
+      "sourceSlide": 2,
+      "narrativeRole": "audience proof and geography analysis",
+      "reuseMode": "duplicate-slide",
+      "editTargetCount": 2,
+      "previewPath": "/Users/camerongriffin/projects/TheAvalancheHour/tmp/support-deck-regeneration-v2/template-starter-preview/starter-slide-02.png",
+      "previewRelativePath": "template-starter-preview/starter-slide-02.png",
+      "layoutPath": "/Users/camerongriffin/projects/TheAvalancheHour/tmp/support-deck-regeneration-v2/template-starter-layout/starter-slide-02.layout.json",
+      "layoutRelativePath": "template-starter-layout/starter-slide-02.layout.json"
+    },
+    {
+      "outputSlide": 3,
+      "sourceSlide": 2,
+      "narrativeRole": "listener profile chart analysis",
+      "reuseMode": "duplicate-slide",
+      "editTargetCount": 2,
+      "previewPath": "/Users/camerongriffin/projects/TheAvalancheHour/tmp/support-deck-regeneration-v2/template-starter-preview/starter-slide-03.png",
+      "previewRelativePath": "template-starter-preview/starter-slide-03.png",
+      "layoutPath": "/Users/camerongriffin/projects/TheAvalancheHour/tmp/support-deck-regeneration-v2/template-starter-layout/starter-slide-03.layout.json",
+      "layoutRelativePath": "template-starter-layout/starter-slide-03.layout.json"
+    },
+    {
+      "outputSlide": 4,
+      "sourceSlide": 5,
+      "narrativeRole": "reach momentum metric proof",
+      "reuseMode": "duplicate-slide",
+      "editTargetCount": 2,
+      "previewPath": "/Users/camerongriffin/projects/TheAvalancheHour/tmp/support-deck-regeneration-v2/template-starter-preview/starter-slide-04.png",
+      "previewRelativePath": "template-starter-preview/starter-slide-04.png",
+      "layoutPath": "/Users/camerongriffin/projects/TheAvalancheHour/tmp/support-deck-regeneration-v2/template-starter-layout/starter-slide-04.layout.json",
+      "layoutRelativePath": "template-starter-layout/starter-slide-04.layout.json"
+    },
+    {
+      "outputSlide": 5,
+      "sourceSlide": 3,
+      "narrativeRole": "year-round release cadence synthesis",
+      "reuseMode": "duplicate-slide",
+      "editTargetCount": 2,
+      "previewPath": "/Users/camerongriffin/projects/TheAvalancheHour/tmp/support-deck-regeneration-v2/template-starter-preview/starter-slide-05.png",
+      "previewRelativePath": "template-starter-preview/starter-slide-05.png",
+      "layoutPath": "/Users/camerongriffin/projects/TheAvalancheHour/tmp/support-deck-regeneration-v2/template-starter-layout/starter-slide-05.layout.json",
+      "layoutRelativePath": "template-starter-layout/starter-slide-05.layout.json"
+    },
+    {
+      "outputSlide": 6,
+      "sourceSlide": 4,
+      "narrativeRole": "support option comparison",
+      "reuseMode": "duplicate-slide",
+      "editTargetCount": 2,
+      "previewPath": "/Users/camerongriffin/projects/TheAvalancheHour/tmp/support-deck-regeneration-v2/template-starter-preview/starter-slide-06.png",
+      "previewRelativePath": "template-starter-preview/starter-slide-06.png",
+      "layoutPath": "/Users/camerongriffin/projects/TheAvalancheHour/tmp/support-deck-regeneration-v2/template-starter-layout/starter-slide-06.layout.json",
+      "layoutRelativePath": "template-starter-layout/starter-slide-06.layout.json"
+    },
+    {
+      "outputSlide": 7,
+      "sourceSlide": 5,
+      "narrativeRole": "partnership value and testimonial proof",
+      "reuseMode": "duplicate-slide",
+      "editTargetCount": 2,
+      "previewPath": "/Users/camerongriffin/projects/TheAvalancheHour/tmp/support-deck-regeneration-v2/template-starter-preview/starter-slide-07.png",
+      "previewRelativePath": "template-starter-preview/starter-slide-07.png",
+      "layoutPath": "/Users/camerongriffin/projects/TheAvalancheHour/tmp/support-deck-regeneration-v2/template-starter-layout/starter-slide-07.layout.json",
+      "layoutRelativePath": "template-starter-layout/starter-slide-07.layout.json"
+    },
+    {
+      "outputSlide": 8,
+      "sourceSlide": 6,
+      "narrativeRole": "closing callout and contact summary",
+      "reuseMode": "duplicate-slide",
+      "editTargetCount": 2,
+      "previewPath": "/Users/camerongriffin/projects/TheAvalancheHour/tmp/support-deck-regeneration-v2/template-starter-preview/starter-slide-08.png",
+      "previewRelativePath": "template-starter-preview/starter-slide-08.png",
+      "layoutPath": "/Users/camerongriffin/projects/TheAvalancheHour/tmp/support-deck-regeneration-v2/template-starter-layout/starter-slide-08.layout.json",
+      "layoutRelativePath": "template-starter-layout/starter-slide-08.layout.json"
+    }
+  ]
+}

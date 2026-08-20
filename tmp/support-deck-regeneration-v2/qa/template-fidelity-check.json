@@ -1,0 +1,13 @@
+{
+  "status": "pass",
+  "checkedAt": "2026-08-20T21:17:46.882Z",
+  "workspace": "/Users/camerongriffin/projects/TheAvalancheHour/tmp/support-deck-regeneration-v2",
+  "finalPptx": "/Users/camerongriffin/projects/TheAvalancheHour/public/files/avalanche-hour-s11-sponsorship-guide.pptx",
+  "starterPptx": "/Users/camerongriffin/projects/TheAvalancheHour/tmp/support-deck-regeneration-v2/template-starter.pptx",
+  "mapPath": "/Users/camerongriffin/projects/TheAvalancheHour/tmp/support-deck-regeneration-v2/template-frame-map.json",
+  "starterLayoutDir": "/Users/camerongriffin/projects/TheAvalancheHour/tmp/support-deck-regeneration-v2/template-starter-layout",
+  "finalLayoutDir": "/Users/camerongriffin/projects/TheAvalancheHour/tmp/support-deck-regeneration-v2/final-layout",
+  "editDir": "/Users/camerongriffin/projects/TheAvalancheHour/tmp/support-deck-regeneration-v2",
+  "issueCount": 0,
+  "issues": []
+}

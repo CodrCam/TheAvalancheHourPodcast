@@ -15,10 +15,11 @@ import {
 import {
   ArrowForward,
   Campaign,
-  Download,
   Handshake,
   LibraryMusic,
   LocalOffer,
+  OpenInNew,
+  PictureAsPdf,
   WorkspacePremium,
 } from '@mui/icons-material';
 import Navbar from '../components/Navbar';
@@ -31,57 +32,59 @@ import {
 import publicStyles from '../styles/PublicSite.module.css';
 
 const rateCardUrl = '/files/avalanche-hour-s11-rate-card.pdf';
+const sponsorshipGuideUrl = '/files/avalanche-hour-s11-sponsorship-guide.pdf';
 
 const supportTiers = [
   {
-    name: 'Friend Level',
-    subtitle: 'Single Episode Support',
+    name: 'Friend',
+    subtitle: 'Single-episode support',
     price: '$500 / episode',
     checkoutUrl: 'https://buy.stripe.com/14A6oH6ifbYlbdj6VvgrS01',
+    ctaLabel: 'Sponsor an Episode',
     icon: <Campaign />,
     highlights: [
-      '1-2 minutes of mid-episode advertising or messaging',
-      'Support acknowledgement in the episode intro or outro',
+      '1–2 minutes of mid-episode advertising or messaging',
+      'Support acknowledgment in the episode intro or outro',
       'Social media post and logo placement on the website',
     ],
   },
   {
-    name: 'Partner Level',
-    subtitle: 'Season-Long Support',
-    price: '$4000 / season',
+    name: 'Partner',
+    subtitle: 'Season-long support',
+    price: '$4,000 / season',
     checkoutUrl: 'https://buy.stripe.com/6oUfZh5eb1jH6X3cfPgrS02',
+    ctaLabel: 'Become a Season Partner',
     icon: <Handshake />,
     highlights: [
-      '10-15 minutes per season for a representative to talk to the audience',
-      'Support acknowledgement in the intro or outro of 25+ episodes',
+      '10–15 minutes per season for a representative to talk to the audience',
+      'Support acknowledgment in the intro or outro of 25+ episodes',
       'Social media post and logo placement on the website',
     ],
   },
   {
-    name: 'Legacy Level',
-    subtitle: 'Season-long support that helps grow the podcast',
-    price: '$6000+ / season',
+    name: 'Legacy',
+    subtitle: 'Deeper, ongoing alignment',
+    price: '$6,000 / season',
     checkoutUrl: 'https://buy.stripe.com/aFa14ngWT7I5gxD2FfgrS03',
+    ctaLabel: 'Choose Legacy Support',
     icon: <WorkspacePremium />,
     featured: true,
     highlights: [
-      'The Avalanche Hour Podcast proudly presented by your company',
-      '10-15 minute slots per season for a representative to talk to the audience',
-      'Selection of a guest or topic for a podcast episode',
-      'Social media posts and logo placement on the website',
+      'Season-long support designed to help grow the podcast',
+      'A deeper, ongoing relationship with The Avalanche Hour',
     ],
   },
   {
-    name: "Slabs 'n Sluffs",
-    subtitle: 'Season-long support of the pod spinoff and recap show',
-    price: '$5000 / season',
+    name: 'Slabs ’n Sluffs',
+    subtitle: 'Dedicated support for the recap show',
+    price: '$5,000+ / season',
     checkoutUrl: 'https://buy.stripe.com/6oUfZhbCz3rP817enXgrS00',
+    ctaLabel: 'Support Slabs ’n Sluffs',
     icon: <LibraryMusic />,
     highlights: [
-      "Slabs and Sluffs proudly presented by your company",
-      "Company logo on the cover art for Slabs 'n Sluffs",
-      'Selection of a guest or topic for a podcast episode',
-      'Social media posts and logo placement on the website',
+      'Extended access for a company representative',
+      'Guest or topic proposals, subject to editorial approval',
+      'Custom collaboration options',
     ],
   },
 ];
@@ -246,8 +249,8 @@ export default function SupportPage({ sponsors = [] }) {
   return (
     <>
       <SEO
-        title="Support & Advertise | The Avalanche Hour"
-        description="Support The Avalanche Hour Podcast, explore advertising and underwriting opportunities, and find current sponsor offers for listeners."
+        title="Support the Show | The Avalanche Hour"
+        description="Fund independent avalanche storytelling, sponsor an episode or season, explore year-round partnerships, and review The Avalanche Hour sponsorship guide."
         keywords="The Avalanche Hour sponsorship, podcast advertising, avalanche podcast support, podcast underwriting"
         url="/support"
       />
@@ -258,42 +261,83 @@ export default function SupportPage({ sponsors = [] }) {
         <PublicPageHero
           eyebrow="Independent voices · community supported"
           title="Keep the signal strong."
-          description="Help the podcast grow through single-episode ads, season-long support, underwriting, or a direct contribution to the conversations."
+          description="Fund independent avalanche storytelling and the conversations people carry into the field. Choose a support level below, or review the sponsorship guide if you want the full picture first."
         >
-          <Stack spacing={1.25}>
+          <Stack
+            spacing={1.25}
+            sx={{ '& .MuiButton-root': { mt: '0 !important' } }}
+          >
+            <Typography
+              variant="overline"
+              component="p"
+              sx={{ color: '#C8E4ED', fontWeight: 800, letterSpacing: '0.16em' }}
+            >
+              Ready to support the show?
+            </Typography>
+            <Button
+              component="a"
+              href="#support-options"
+              variant="contained"
+              startIcon={<Handshake />}
+              endIcon={<ArrowForward />}
+            >
+              Choose a Support Level
+            </Button>
+            <Divider sx={{ borderColor: 'rgba(200,228,237,.28)', my: 0.5 }} />
+            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,.72)' }}>
+              Want the details first?
+            </Typography>
+            <Button
+              component="a"
+              href={sponsorshipGuideUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              variant="outlined"
+              startIcon={<PictureAsPdf />}
+              endIcon={<OpenInNew />}
+              aria-label="View Sponsorship Guide PDF (opens in a new tab)"
+              sx={{ color: '#fff', borderColor: 'rgba(255,255,255,.52)' }}
+            >
+              View Sponsorship Guide
+            </Button>
             <Button
               component="a"
               href={rateCardUrl}
               target="_blank"
               rel="noopener noreferrer"
-              variant="contained"
-              startIcon={<Download />}
-            >
-              View Rate Card
-            </Button>
-            <Button
-              component={Link}
-              href="/contact"
-              variant="outlined"
+              variant="text"
+              startIcon={<PictureAsPdf />}
+              endIcon={<OpenInNew />}
+              aria-label="See Rates at a Glance PDF (opens in a new tab)"
               sx={{
                 color: '#fff',
-                borderColor: 'rgba(255,255,255,.52)',
+                justifyContent: 'flex-start',
               }}
             >
-              Ask About Custom Support
+              See Rates at a Glance
             </Button>
           </Stack>
         </PublicPageHero>
 
-        <Box component="section" sx={{ bgcolor: 'background.default', py: { xs: 5, md: 8 } }}>
+        <Box
+          component="section"
+          id="support-options"
+          sx={{
+            bgcolor: 'background.default',
+            py: { xs: 5, md: 8 },
+            scrollMarginTop: '96px',
+          }}
+        >
           <Container maxWidth="lg">
             <Box sx={{ mb: 4 }}>
               <Typography variant="h2" sx={{ mb: 1 }}>
-                Advertising and Underwriting Options
+                Choose Your Level of Support
               </Typography>
               <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 760 }}>
-                Choose the level that matches your message. Each checkout button opens a
-                secure Stripe payment link in a new tab.
+                From one focused episode to a season-long or year-round relationship,
+                choose the option that fits. Every level helps fund independent
+                conversations across the avalanche community. Checkout opens securely in
+                a new tab.
               </Typography>
             </Box>
 
@@ -327,7 +371,7 @@ export default function SupportPage({ sponsors = [] }) {
                         </Box>
                         <Box sx={{ minWidth: 0 }}>
                           <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
-                            <Typography variant="h5" component="h2">
+                            <Typography variant="h5" component="h3">
                               {tier.name}
                             </Typography>
                             {tier.featured && <Chip label="Premier" size="small" color="primary" />}
@@ -365,8 +409,9 @@ export default function SupportPage({ sponsors = [] }) {
                           variant="contained"
                           fullWidth
                           endIcon={<ArrowForward />}
+                          aria-label={`${tier.ctaLabel} — ${tier.price} (checkout opens in a new tab)`}
                         >
-                          Buy Now
+                          {tier.ctaLabel}
                         </Button>
                       </Box>
                     </CardContent>
@@ -384,16 +429,16 @@ export default function SupportPage({ sponsors = [] }) {
           <Container maxWidth="lg">
             <Box sx={{ mb: 4 }}>
               <Typography variant="h2" sx={{ mb: 1 }}>
-                Support the Sponsors Who Support the Show
+                Support the Sponsors Behind the Show
               </Typography>
               <Typography
                 variant="body1"
                 color="text.secondary"
                 sx={{ maxWidth: 760 }}
               >
-                Explore every current Avalanche Hour sponsor. When a listener
-                offer is available, the details and show-specific code appear
-                right on the sponsor card.
+                These partners help carry The Avalanche Hour forward. When a
+                listener offer is available, you’ll find the details and code
+                on the sponsor card.
               </Typography>
             </Box>
 
@@ -409,8 +454,7 @@ export default function SupportPage({ sponsors = [] }) {
               <Card variant="outlined" sx={{ borderRadius: 0 }}>
                 <CardContent>
                   <Typography color="text.secondary">
-                    The current sponsor list is being updated. Please check back
-                    soon.
+                    We’re updating the current sponsor list. Check back soon.
                   </Typography>
                 </CardContent>
               </Card>
@@ -425,24 +469,15 @@ export default function SupportPage({ sponsors = [] }) {
               alignItems="center"
               sx={{ textAlign: 'center' }}
             >
-              <Typography variant="h2">Need Something Different?</Typography>
+              <Typography variant="h2">Have Another Idea?</Typography>
               <Typography variant="body1" color="text.secondary">
-                If these options are not quite right, reach out and the team can
-                collaborate on a support package that fits your goals.
+                If these options don’t fit, tell us what you have in mind. We’ll
+                work with you on a sponsorship or underwriting package that serves
+                your goals and the avalanche community.
               </Typography>
               <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
                 <Button component={Link} href="/contact" variant="contained">
-                  Contact the Team
-                </Button>
-                <Button
-                  component="a"
-                  href={rateCardUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  variant="outlined"
-                  startIcon={<Download />}
-                >
-                  Download PDF
+                  Start a Conversation
                 </Button>
               </Stack>
             </Stack>

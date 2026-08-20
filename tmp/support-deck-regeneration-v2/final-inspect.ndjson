@@ -1,0 +1,268 @@
+{"kind":"slide","id":"sl/y90nupkv","slide":1,"title":"INDEPENDENT VOICES · COMMUNITY SUPPORTED","textShapes":6}
+{"kind":"shape","id":"sh/547294r6","slide":1,"name":"cover-overlay","bbox":[0,0,1280,720]}
+{"kind":"shape","id":"sh/k3yl0zql","slide":1,"name":"cover-signal-line","bbox":[72,36,1136,0]}
+{"kind":"textbox","id":"sh/65g3298r","slide":1,"name":"eyebrow-independent-voices-community-supported","text":"INDEPENDENT VOICES · COMMUNITY SUPPORTED","textPreview":"INDEPENDENT VOICES · COMMUNITY SUPPORTED","textChars":40,"textLines":1,"bbox":[214,70,560,26]}
+{"kind":"textbox","id":"sh/ts7md4r2","slide":1,"name":"cover-title","text":"Keep the signal strong.","textPreview":"Keep the signal strong.","textChars":23,"textLines":1,"bbox":[72,228,1040,92]}
+{"kind":"textbox","id":"sh/sryl4zqx","slide":1,"name":"cover-subtitle","text":"SEASON 11 UNDERWRITING + ADVERTISING","textPreview":"SEASON 11 UNDERWRITING + ADVERTISING","textChars":36,"textLines":1,"bbox":[76,356,760,36]}
+{"kind":"textbox","id":"sh/fu94fe98","slide":1,"name":"cover-theme","text":"Finding the Line","textPreview":"Finding the Line","textChars":16,"textLines":1,"bbox":[76,414,360,34]}
+{"kind":"textbox","id":"sh/utg3698n","slide":1,"name":"cover-year-round","text":"2026–27 YEAR-ROUND PARTNERSHIPS","textPreview":"2026–27 YEAR-ROUND PARTNERSHIPS","textChars":31,"textLines":1,"bbox":[76,470,430,24]}
+{"kind":"textbox","id":"sh/wn6dc7eh","slide":1,"name":"cover-promise","text":"Put your brand behind the conversations people carry into the field.","textPreview":"Put your brand behind the conversations people carry into the field.","textChars":68,"textLines":1,"bbox":[76,526,530,62]}
+{"kind":"image","id":"im/3e9kr2xw","slide":1,"name":"","alt":"Avalanche crown and wind-textured snow","bbox":[0,0,1280,720]}
+{"kind":"image","id":"im/qh0jmhw7","slide":1,"name":"","alt":"The Avalanche Hour Podcast logo","bbox":[72,54,118,113.35]}
+{"kind":"notes","id":"nt/y90nupkv","slide":1,"text":"[Sources]\n- User-provided Season 11 underwriting deck, slide 1 (season title, underwriting and advertising framing, and Finding the Line theme).\n- User clarification on 2026-08-20 that the partnership plan may span the full year.\n- The Avalanche Hour website avalanche-crown image, retained because the user approved the existing first page.\n[/Sources]"}
+{"kind":"slide","id":"sl/hwbqtkby","slide":2,"title":"AUDIENCE PROOF","textShapes":18}
+{"kind":"shape","id":"sh/9072xkry","slide":2,"name":"audience-photo-overlay","bbox":[800,0,480,720]}
+{"kind":"textbox","id":"sh/ozy1ofad","slide":2,"name":"eyebrow-audience-proof","text":"AUDIENCE PROOF","textPreview":"AUDIENCE PROOF","textChars":14,"textLines":1,"bbox":[72,48,420,26]}
+{"kind":"textbox","id":"sh/b29kza94","slide":2,"name":"slide-title","text":"A focused audience.\nMeasurable reach.","textPreview":"A focused audience. | Measurable reach.","textChars":37,"textLines":2,"bbox":[72,82,660,108]}
+{"kind":"textbox","id":"sh/a10jqpsj","slide":2,"name":"audience-intro","text":"Forecasters, guides, educators, researchers, patrollers, and backcountry travelers meet in one focused conversation.","textPreview":"Forecasters, guides, educators, researchers, patrollers, and backcountry travelers meet in one focused conversation.","textChars":116,"textLines":1,"bbox":[72,204,650,60]}
+{"kind":"shape","id":"sh/x4r21kru","slide":2,"name":"audience-metric-rule-top","bbox":[72,286,656,0]}
+{"kind":"textbox","id":"sh/w3i1sfa9","slide":2,"name":"metric-audience-1-value","text":"964K","textPreview":"964K","textChars":4,"textLines":1,"bbox":[72,308,184,58]}
+{"kind":"textbox","id":"sh/r65knqtk","slide":2,"name":"metric-audience-1-label","text":"episode plays since October 2016","textPreview":"episode plays since October 2016","textChars":32,"textLines":1,"bbox":[72,369,184,48]}
+{"kind":"shape","id":"sh/q5wjelsz","slide":2,"name":"audience-metric-divider-1","bbox":[284,306,0,108]}
+{"kind":"textbox","id":"sh/ove9o7yd","slide":2,"name":"metric-audience-2-value","text":"69K","textPreview":"69K","textChars":3,"textLines":1,"bbox":[316,308,184,58]}
+{"kind":"textbox","id":"sh/9wnqhczy","slide":2,"name":"metric-audience-2-label","text":"episode plays in the last 12 months","textPreview":"episode plays in the last 12 months","textChars":35,"textLines":1,"bbox":[316,369,184,48]}
+{"kind":"shape","id":"sh/mtwrmxg7","slide":2,"name":"audience-metric-divider-2","bbox":[528,306,0,108]}
+{"kind":"textbox","id":"sh/nu58f2hs","slide":2,"name":"metric-audience-3-value","text":"4K","textPreview":"4K","textChars":2,"textLines":1,"bbox":[560,308,168,58]}
+{"kind":"textbox","id":"sh/wjy9sry9","slide":2,"name":"metric-audience-3-label","text":"plays per episode within three months","textPreview":"plays per episode within three months","textChars":37,"textLines":1,"bbox":[560,369,168,48]}
+{"kind":"textbox","id":"sh/xk7qlczu","slide":2,"name":"geography-heading","text":"WHERE LISTENERS ARE","textPreview":"WHERE LISTENERS ARE","textChars":19,"textLines":1,"bbox":[72,450,360,22]}
+{"kind":"shape","id":"sh/ahwrqhgj","slide":2,"name":"geography-us","bbox":[72,486,458.54,30]}
+{"kind":"shape","id":"sh/bip8jmho","slide":2,"name":"geography-canada","bbox":[530.54,486,105.62,30]}
+{"kind":"shape","id":"sh/cnupgny5","slide":2,"name":"geography-other","bbox":[636.16,486,91.84,30]}
+{"kind":"textbox","id":"sh/do3q9szq","slide":2,"name":"geography-us-label","text":"U.S. 69.9%","textPreview":"U.S. 69.9%","textChars":10,"textLines":1,"bbox":[72,528,190,24]}
+{"kind":"textbox","id":"sh/t8byxkn2","slide":2,"name":"geography-canada-label","text":"CANADA 16.1%","textPreview":"CANADA 16.1%","textChars":12,"textLines":1,"bbox":[302,528,190,24]}
+{"kind":"textbox","id":"sh/s72xofmh","slide":2,"name":"geography-other-label","text":"OTHER 14.0%","textPreview":"OTHER 14.0%","textChars":11,"textLines":1,"bbox":[540,528,188,24]}
+{"kind":"textbox","id":"sh/76twva5c","slide":2,"name":"geography-other-markets","text":"New Zealand · United Kingdom · Norway · Australia · Japan · beyond","textPreview":"New Zealand · United Kingdom · Norway · Australia · Japan · beyond","textChars":66,"textLines":1,"bbox":[72,566,656,42]}
+{"kind":"textbox","id":"sh/65kfmpor","slide":2,"name":"audience-photo-line","text":"BUILT FOR THE PEOPLE WHO WORK, LEARN, AND TRAVEL IN AVALANCHE TERRAIN.","textPreview":"BUILT FOR THE PEOPLE WHO WORK, LEARN, AND TRAVEL IN AVALANCHE TERRAIN.","textChars":70,"textLines":1,"bbox":[838,510,370,92]}
+{"kind":"textbox","id":"sh/hcvy14ne","slide":2,"name":"audience-photo-note","text":"Metrics reported in Caleb’s source deck.","textPreview":"Metrics reported in Caleb’s source deck.","textChars":40,"textLines":1,"bbox":[838,620,360,22]}
+{"kind":"shape","id":"sh/gbmxszmt","slide":2,"name":"audience-footer-band","bbox":[0,670,1280,50]}
+{"kind":"shape","id":"sh/fadgzu58","slide":2,"name":"footer-rule-2","bbox":[72,676,1136,0]}
+{"kind":"textbox","id":"sh/u94fqp4n","slide":2,"name":"footer-site-2","text":"THEAVALANCHEHOUR.COM/SUPPORT","textPreview":"THEAVALANCHEHOUR.COM/SUPPORT","textChars":28,"textLines":1,"bbox":[72,686,350,18]}
+{"kind":"textbox","id":"sh/p0vy54na","slide":2,"name":"footer-page-2","text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[1168,686,40,18]}
+{"kind":"image","id":"im/jah0jy1g","slide":2,"name":"","alt":"Maybird avalanche path above a winter road","bbox":[800,0,480,720]}
+{"kind":"notes","id":"nt/hwbqtkby","slide":2,"text":"[Sources]\n- User-provided Season 11 underwriting deck, slide 3 (964K, 69K, 4K, and geographic distribution).\n- Maybird Path 1.JPG, Google Drive file ID 1r6kjwvBAlTvBVJ8HtwcDA-etmdg1FKXk.\n[/Sources]"}
+{"kind":"slide","id":"sl/ofy9wn61","slide":3,"title":"LISTENER PROFILE","textShapes":26}
+{"kind":"shape","id":"sh/cza94vmx","slide":3,"name":"profile-photo-overlay","bbox":[850,0,430,720]}
+{"kind":"textbox","id":"sh/d0jax03i","slide":3,"name":"eyebrow-listener-profile","text":"LISTENER PROFILE","textPreview":"LISTENER PROFILE","textChars":16,"textLines":1,"bbox":[72,44,420,26]}
+{"kind":"textbox","id":"sh/298ryl4v","slide":3,"name":"slide-title","text":"The core audience is 28–44.","textPreview":"The core audience is 28–44.","textChars":27,"textLines":1,"bbox":[72,78,690,68]}
+{"kind":"textbox","id":"sh/3ah8rqlg","slide":3,"name":"profile-intro","text":"64.7% of Spotify listeners sit in the 28–44 range—an audience actively shaping mountain culture and professional practice.","textPreview":"64.7% of Spotify listeners sit in the 28–44 range—an audience actively shaping mountain culture and professional practice.","textChars":122,"textLines":1,"bbox":[72,154,690,58]}
+{"kind":"textbox","id":"sh/obq90bml","slide":3,"name":"age-chart-label","text":"AGE DISTRIBUTION","textPreview":"AGE DISTRIBUTION","textChars":16,"textLines":1,"bbox":[72,232,280,20]}
+{"kind":"shape","id":"sh/pcjqtg36","slide":3,"name":"age-axis","bbox":[72,520,666,0]}
+{"kind":"shape","id":"sh/m5cra54z","slide":3,"name":"age-bar-0","bbox":[72,518,66,2]}
+{"kind":"textbox","id":"sh/n6ls3alk","slide":3,"name":"age-value-0","text":"0.1%","textPreview":"0.1%","textChars":4,"textLines":1,"bbox":[64,494,82,20]}
+{"kind":"textbox","id":"sh/n2l4fq98","slide":3,"name":"age-label-0","text":"0–17","textPreview":"0–17","textChars":4,"textLines":1,"bbox":[64,530,82,20]}
+{"kind":"shape","id":"sh/m1c3mlsn","slide":3,"name":"age-bar-1","bbox":[172,508.6,66,11.4]}
+{"kind":"textbox","id":"sh/943mhgre","slide":3,"name":"age-value-1","text":"1.9%","textPreview":"1.9%","textChars":4,"textLines":1,"bbox":[164,484.6,82,20]}
+{"kind":"textbox","id":"sh/83ulovat","slide":3,"name":"age-label-1","text":"18–22","textPreview":"18–22","textChars":5,"textLines":1,"bbox":[164,530,82,20]}
+{"kind":"shape","id":"sh/v6l4jq94","slide":3,"name":"age-bar-2","bbox":[272,450.4,66,69.6]}
+{"kind":"textbox","id":"sh/a5c3ql8z","slide":3,"name":"age-value-2","text":"11.6%","textPreview":"11.6%","textChars":5,"textLines":1,"bbox":[264,426.4,82,20]}
+{"kind":"textbox","id":"sh/x8nml0ra","slide":3,"name":"age-label-2","text":"23–27","textPreview":"23–27","textChars":5,"textLines":1,"bbox":[264,530,82,20]}
+{"kind":"shape","id":"sh/w7ulsvqp","slide":3,"name":"age-bar-3","bbox":[372,316.6,66,203.4]}
+{"kind":"textbox","id":"sh/ja54na9g","slide":3,"name":"age-value-3","text":"33.9%","textPreview":"33.9%","textChars":5,"textLines":1,"bbox":[364,292.6,82,20]}
+{"kind":"textbox","id":"sh/i9w3u58v","slide":3,"name":"age-label-3","text":"28–34","textPreview":"28–34","textChars":5,"textLines":1,"bbox":[364,530,82,20]}
+{"kind":"shape","id":"sh/e10f2twf","slide":3,"name":"age-bar-4","bbox":[472,335.2,66,184.8]}
+{"kind":"textbox","id":"sh/f29gbyx0","slide":3,"name":"age-value-4","text":"30.8%","textPreview":"30.8%","textChars":5,"textLines":1,"bbox":[464,311.2,82,20]}
+{"kind":"textbox","id":"sh/03ix43e5","slide":3,"name":"age-label-4","text":"35–44","textPreview":"35–44","textChars":5,"textLines":1,"bbox":[464,530,82,20]}
+{"kind":"shape","id":"sh/14ryd8fq","slide":3,"name":"age-bar-5","bbox":[572,425.2,66,94.8]}
+{"kind":"textbox","id":"sh/6d0fytg3","slide":3,"name":"age-value-5","text":"15.8%","textPreview":"15.8%","textChars":5,"textLines":1,"bbox":[564,401.2,82,20]}
+{"kind":"textbox","id":"sh/re9g7yxo","slide":3,"name":"age-label-5","text":"45–59","textPreview":"45–59","textChars":5,"textLines":1,"bbox":[564,530,82,20]}
+{"kind":"shape","id":"sh/sfix03y9","slide":3,"name":"age-bar-6","bbox":[672,485.2,66,34.8]}
+{"kind":"textbox","id":"sh/tgry9ofu","slide":3,"name":"age-value-6","text":"5.8%","textPreview":"5.8%","textChars":4,"textLines":1,"bbox":[664,461.2,82,20]}
+{"kind":"textbox","id":"sh/a9kfadwn","slide":3,"name":"age-label-6","text":"60+","textPreview":"60+","textChars":3,"textLines":1,"bbox":[664,530,82,20]}
+{"kind":"textbox","id":"sh/batgjixs","slide":3,"name":"gender-chart-label","text":"GENDER","textPreview":"GENDER","textChars":6,"textLines":1,"bbox":[72,566,120,20]}
+{"kind":"shape","id":"sh/l4fi9cza","slide":3,"name":"gender-male","bbox":[178,565,438.48,20]}
+{"kind":"shape","id":"sh/k3m1g7yp","slide":3,"name":"gender-female","bbox":[616.48,565,102.48,20]}
+{"kind":"shape","id":"sh/z2d07mh4","slide":3,"name":"gender-nonbinary","bbox":[718.96,565,3.92,20]}
+{"kind":"shape","id":"sh/y14jehgj","slide":3,"name":"gender-unspecified","bbox":[722.88,565,15.12,20]}
+{"kind":"shape","id":"sh/x0vi5czy","slide":3,"name":"gender-key-0","bbox":[72,606,11,11]}
+{"kind":"textbox","id":"sh/czmhc7id","slide":3,"name":"gender-key-label-0","text":"MALE 78.3%","textPreview":"MALE 78.3%","textChars":10,"textLines":1,"bbox":[90,601,176,22]}
+{"kind":"shape","id":"sh/byd032h8","slide":3,"name":"gender-key-1","bbox":[252,606,11,11]}
+{"kind":"textbox","id":"sh/ax4zax0n","slide":3,"name":"gender-key-label-1","text":"FEMALE 18.3%","textPreview":"FEMALE 18.3%","textChars":12,"textLines":1,"bbox":[270,601,176,22]}
+{"kind":"shape","id":"sh/hwzihwzi","slide":3,"name":"gender-key-2","bbox":[448,606,11,11]}
+{"kind":"textbox","id":"sh/wv61obyx","slide":3,"name":"gender-key-label-2","text":"NON-BINARY 0.7%","textPreview":"NON-BINARY 0.7%","textChars":15,"textLines":1,"bbox":[466,601,176,22]}
+{"kind":"shape","id":"sh/4nuhs7uh","slide":3,"name":"gender-key-3","bbox":[650,606,11,11]}
+{"kind":"textbox","id":"sh/po3ilcvm","slide":3,"name":"gender-key-label-3","text":"NOT SPECIFIED 2.7%","textPreview":"NOT SPECIFIED 2.7%","textChars":18,"textLines":1,"bbox":[668,601,176,22]}
+{"kind":"textbox","id":"sh/21szqxcb","slide":3,"name":"profile-photo-caption","text":"A field-earned audience\nwith technical depth.","textPreview":"A field-earned audience | with technical depth.","textChars":45,"textLines":2,"bbox":[892,558,320,70]}
+{"kind":"shape","id":"sh/32l0j2dw","slide":3,"name":"profile-footer-band","bbox":[0,670,1280,50]}
+{"kind":"shape","id":"sh/cruhwrud","slide":3,"name":"footer-rule-3","bbox":[72,676,1136,0]}
+{"kind":"textbox","id":"sh/ds3ipcvy","slide":3,"name":"footer-site-3","text":"THEAVALANCHEHOUR.COM/SUPPORT","textPreview":"THEAVALANCHEHOUR.COM/SUPPORT","textChars":28,"textLines":1,"bbox":[72,686,350,18]}
+{"kind":"textbox","id":"sh/qpczuhc7","slide":3,"name":"footer-page-3","text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[1168,686,40,18]}
+{"kind":"image","id":"im/ux4nyx0b","slide":3,"name":"","alt":"Avalanche field participant holding an extended probe in deep snow","bbox":[850,0,430,720]}
+{"kind":"notes","id":"nt/ofy9wn61","slide":3,"text":"[Sources]\n- User-provided Season 11 underwriting deck, slide 3 (age and gender distributions).\n- IMG_1204.jpg, Google Drive file ID 1KrvFYfV5DQSIMR3FnKRTdAuANYURik9i.\n[/Sources]"}
+{"kind":"slide","id":"sl/jyx0ra1s","slide":4,"title":"AUDIENCE MOMENTUM","textShapes":15}
+{"kind":"shape","id":"sh/1cj2d8b6","slide":4,"name":"momentum-photo-overlay","bbox":[0,0,1280,720]}
+{"kind":"textbox","id":"sh/0ba143al","slide":4,"name":"eyebrow-audience-momentum","text":"AUDIENCE MOMENTUM","textPreview":"AUDIENCE MOMENTUM","textChars":17,"textLines":1,"bbox":[72,48,440,26]}
+{"kind":"textbox","id":"sh/rm1k7yt4","slide":4,"name":"slide-title","text":"Reach that keeps moving.","textPreview":"Reach that keeps moving.","textChars":24,"textLines":1,"bbox":[72,82,900,72]}
+{"kind":"textbox","id":"sh/ql8jytsj","slide":4,"name":"momentum-intro","text":"The source deck reports meaningful growth across listening and social discovery.","textPreview":"The source deck reports meaningful growth across listening and social discovery.","textChars":80,"textLines":1,"bbox":[72,166,760,40]}
+{"kind":"shape","id":"sh/doj29oba","slide":4,"name":"momentum-surface-0","bbox":[72,254,342,266]}
+{"kind":"shape","id":"sh/sna103ap","slide":4,"name":"momentum-accent-0","bbox":[72,254,342,7]}
+{"kind":"textbox","id":"sh/3ihk3et8","slide":4,"name":"momentum-value-0","text":"44%","textPreview":"44%","textChars":3,"textLines":1,"bbox":[100,292,286,74]}
+{"kind":"textbox","id":"sh/ih8ju9sn","slide":4,"name":"momentum-label-0","text":"LISTENER-BASE INCREASE","textPreview":"LISTENER-BASE INCREASE","textChars":22,"textLines":1,"bbox":[100,382,286,46]}
+{"kind":"textbox","id":"sh/kbm987y5","slide":4,"name":"momentum-detail-0","text":"Reported from the Season 9, 2024–25 winter-season baseline.","textPreview":"Reported from the Season 9, 2024–25 winter-season baseline.","textChars":59,"textLines":1,"bbox":[100,444,286,62]}
+{"kind":"shape","id":"sh/5cva1cfq","slide":4,"name":"momentum-surface-1","bbox":[448,254,342,266]}
+{"kind":"shape","id":"sh/i94r6xgz","slide":4,"name":"momentum-accent-1","bbox":[448,254,342,7]}
+{"kind":"textbox","id":"sh/jadsz2xk","slide":4,"name":"momentum-value-1","text":"+1,500","textPreview":"+1,500","textChars":6,"textLines":1,"bbox":[476,292,286,74]}
+{"kind":"textbox","id":"sh/w72947yt","slide":4,"name":"momentum-label-1","text":"NEW INSTAGRAM FOLLOWERS","textPreview":"NEW INSTAGRAM FOLLOWERS","textChars":23,"textLines":1,"bbox":[476,382,286,46]}
+{"kind":"textbox","id":"sh/x8vaxsfe","slide":4,"name":"momentum-detail-1","text":"Reported across the latest 12-month period in Caleb’s deck.","textPreview":"Reported across the latest 12-month period in Caleb’s deck.","textChars":59,"textLines":1,"bbox":[476,444,286,62]}
+{"kind":"shape","id":"sh/a5kr2xg3","slide":4,"name":"momentum-surface-2","bbox":[824,254,342,266]}
+{"kind":"shape","id":"sh/v6tsv2xo","slide":4,"name":"momentum-accent-2","bbox":[824,254,342,7]}
+{"kind":"textbox","id":"sh/g36tgryd","slide":4,"name":"momentum-value-2","text":"77K+","textPreview":"77K+","textChars":4,"textLines":1,"bbox":[852,292,286,74]}
+{"kind":"textbox","id":"sh/h4fa9wfy","slide":4,"name":"momentum-label-2","text":"LISTENERS REACHED","textPreview":"LISTENERS REACHED","textChars":17,"textLines":1,"bbox":[852,382,286,46]}
+{"kind":"textbox","id":"sh/p0batw72","slide":4,"name":"momentum-detail-2","text":"Reported all-time reach in the source audience graphic.","textPreview":"Reported all-time reach in the source audience graphic.","textChars":55,"textLines":1,"bbox":[852,444,286,62]}
+{"kind":"textbox","id":"sh/oz29krqh","slide":4,"name":"momentum-source-note","text":"As reported in the source deck. Platform periods, definitions, and counting methods vary.","textPreview":"As reported in the source deck. Platform periods, definitions, and counting methods vary.","textChars":89,"textLines":1,"bbox":[72,622,920,24]}
+{"kind":"shape","id":"sh/3ytsrmpw","slide":4,"name":"footer-rule-4","bbox":[72,676,1136,0]}
+{"kind":"textbox","id":"sh/2xkrih8b","slide":4,"name":"footer-site-4","text":"THEAVALANCHEHOUR.COM/SUPPORT","textPreview":"THEAVALANCHEHOUR.COM/SUPPORT","textChars":28,"textLines":1,"bbox":[72,686,350,18]}
+{"kind":"textbox","id":"sh/1wbapc7q","slide":4,"name":"footer-page-4","text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[1168,686,40,18]}
+{"kind":"image","id":"im/3y1cz61w","slide":4,"name":"","alt":"Wet-slab avalanche debris below a broken crown","bbox":[0,0,1280,720]}
+{"kind":"notes","id":"nt/jyx0ra1s","slide":4,"text":"[Sources]\n- User-provided Season 11 underwriting deck, slide 3 (44% listener-base increase, 1,500 new Instagram followers, and 77K+ listeners reached).\n- Wet slab&cornice debris_SZW.JPG, Google Drive file ID 1DWZ7Ld0Rst_iX3bA0lP6vieK_HWLYzKt.\n[/Sources]"}
+{"kind":"slide","id":"sl/i107q5of","slide":5,"title":"YEAR-ROUND PROGRAMMING","textShapes":18}
+{"kind":"shape","id":"sh/dgbulwnm","slide":5,"name":"cadence-photo-overlay","bbox":[0,0,1280,720]}
+{"kind":"textbox","id":"sh/cf2tcr61","slide":5,"name":"eyebrow-year-round-programming","text":"YEAR-ROUND PROGRAMMING","textPreview":"YEAR-ROUND PROGRAMMING","textChars":22,"textLines":1,"bbox":[72,48,480,26]}
+{"kind":"textbox","id":"sh/z2tcnm5s","slide":5,"name":"slide-title","text":"38 releases keep the signal active.","textPreview":"38 releases keep the signal active.","textChars":35,"textLines":1,"bbox":[72,82,1040,64]}
+{"kind":"shape","id":"sh/yhkbe1o7","slide":5,"name":"cadence-equation-surface","bbox":[72,190,756,218]}
+{"kind":"textbox","id":"sh/l4bupwny","slide":5,"name":"cadence-29","text":"29","textPreview":"29","textChars":2,"textLines":1,"bbox":[104,224,150,82]}
+{"kind":"textbox","id":"sh/032tgr6d","slide":5,"name":"cadence-29-label","text":"REGULAR\nCONVERSATIONS","textPreview":"REGULAR | CONVERSATIONS","textChars":21,"textLines":2,"bbox":[104,316,170,52]}
+{"kind":"textbox","id":"sh/n6dcr65o","slide":5,"name":"cadence-plus","text":"+","textPreview":"+","textChars":1,"textLines":1,"bbox":[282,242,58,60]}
+{"kind":"textbox","id":"sh/m5kbi1oj","slide":5,"name":"cadence-9","text":"9","textPreview":"9","textChars":1,"textLines":1,"bbox":[374,224,100,82]}
+{"kind":"textbox","id":"sh/w32dkbuh","slide":5,"name":"cadence-9-label","text":"SLABS ’N SLUFFS\nEPISODES","textPreview":"SLABS ’N SLUFFS | EPISODES","textChars":24,"textLines":2,"bbox":[374,316,174,52]}
+{"kind":"textbox","id":"sh/x4vedgvm","slide":5,"name":"cadence-equals","text":"=","textPreview":"=","textChars":1,"textLines":1,"bbox":[552,242,58,60]}
+{"kind":"textbox","id":"sh/ahkvi1cb","slide":5,"name":"cadence-38","text":"38","textPreview":"38","textChars":2,"textLines":1,"bbox":[636,224,146,82]}
+{"kind":"textbox","id":"sh/v2twb6dw","slide":5,"name":"cadence-38-label","text":"PLANNED\nRELEASES","textPreview":"PLANNED | RELEASES","textChars":16,"textLines":2,"bbox":[636,316,146,52]}
+{"kind":"shape","id":"sh/k7mxovud","slide":5,"name":"release-block-1","bbox":[72,456,16,20]}
+{"kind":"shape","id":"sh/58vehgvy","slide":5,"name":"release-block-2","bbox":[92,456,16,20]}
+{"kind":"shape","id":"sh/i54fmlc7","slide":5,"name":"release-block-3","bbox":[112,456,16,20]}
+{"kind":"shape","id":"sh/j6dwfqds","slide":5,"name":"release-block-4","bbox":[132,456,16,20]}
+{"kind":"shape","id":"sh/sb6xsvu9","slide":5,"name":"release-block-5","bbox":[152,456,16,20]}
+{"kind":"shape","id":"sh/tcfel0vu","slide":5,"name":"release-block-6","bbox":[172,456,16,20]}
+{"kind":"shape","id":"sh/hgrmpwj2","slide":5,"name":"release-block-7","bbox":[192,456,16,20]}
+{"kind":"shape","id":"sh/gfi5grih","slide":5,"name":"release-block-8","bbox":[212,456,16,20]}
+{"kind":"shape","id":"sh/fe94nm1w","slide":5,"name":"release-block-9","bbox":[232,456,16,20]}
+{"kind":"shape","id":"sh/ud0ne10b","slide":5,"name":"release-block-10","bbox":[252,456,16,20]}
+{"kind":"shape","id":"sh/pkr6tgjy","slide":5,"name":"release-block-11","bbox":[272,456,16,20]}
+{"kind":"shape","id":"sh/4ji5kbid","slide":5,"name":"release-block-12","bbox":[292,456,16,20]}
+{"kind":"shape","id":"sh/3i94r61s","slide":5,"name":"release-block-13","bbox":[312,456,16,20]}
+{"kind":"shape","id":"sh/2h0ni107","slide":5,"name":"release-block-14","bbox":[332,456,16,20]}
+{"kind":"shape","id":"sh/5o7mhcju","slide":5,"name":"release-block-15","bbox":[352,456,16,20]}
+{"kind":"shape","id":"sh/kny587i9","slide":5,"name":"release-block-16","bbox":[372,456,16,20]}
+{"kind":"shape","id":"sh/atcjidg7","slide":5,"name":"release-block-17","bbox":[392,456,16,20]}
+{"kind":"shape","id":"sh/vu5kbihc","slide":5,"name":"release-block-18","bbox":[412,456,16,20]}
+{"kind":"shape","id":"sh/wve1knyx","slide":5,"name":"release-block-19","bbox":[432,456,16,20]}
+{"kind":"shape","id":"sh/xwn2dszi","slide":5,"name":"release-block-20","bbox":[452,456,16,20]}
+{"kind":"shape","id":"sh/ihw3mxg3","slide":5,"name":"release-block-21","bbox":[472,456,16,20]}
+{"kind":"shape","id":"sh/ji5kf2ho","slide":5,"name":"release-block-22","bbox":[492,456,16,20]}
+{"kind":"shape","id":"sh/kjelony9","slide":5,"name":"release-block-23","bbox":[512,456,16,20]}
+{"kind":"shape","id":"sh/5kn2hszu","slide":5,"name":"release-block-24","bbox":[532,456,16,20]}
+{"kind":"shape","id":"sh/e1sjatgz","slide":5,"name":"release-block-25","bbox":[552,456,16,20]}
+{"kind":"shape","id":"sh/zmlk3yhk","slide":5,"name":"release-block-26","bbox":[572,456,16,20]}
+{"kind":"shape","id":"sh/fid07u98","slide":5,"name":"release-block-27","bbox":[592,456,16,20]}
+{"kind":"shape","id":"sh/ehkzepsn","slide":5,"name":"release-block-28","bbox":[612,456,16,20]}
+{"kind":"shape","id":"sh/1kvi94re","slide":5,"name":"release-block-29","bbox":[632,456,16,20]}
+{"kind":"shape","id":"sh/gjmhgzqt","slide":5,"name":"release-block-30","bbox":[652,456,16,20]}
+{"kind":"shape","id":"sh/3md0bu94","slide":5,"name":"release-block-31","bbox":[672,456,16,20]}
+{"kind":"shape","id":"sh/2l4zip8j","slide":5,"name":"release-block-32","bbox":[692,456,16,20]}
+{"kind":"shape","id":"sh/povid4ra","slide":5,"name":"release-block-33","bbox":[712,456,16,20]}
+{"kind":"shape","id":"sh/onmhkzqp","slide":5,"name":"release-block-34","bbox":[732,456,16,20]}
+{"kind":"shape","id":"sh/bqx0fe9g","slide":5,"name":"release-block-35","bbox":[752,456,16,20]}
+{"kind":"shape","id":"sh/qp4jm98v","slide":5,"name":"release-block-36","bbox":[772,456,16,20]}
+{"kind":"shape","id":"sh/8f6hcj6t","slide":5,"name":"release-block-37","bbox":[792,456,16,20]}
+{"kind":"shape","id":"sh/9gfy5o7e","slide":5,"name":"release-block-38","bbox":[812,456,16,20]}
+{"kind":"textbox","id":"sh/mdoza9o3","slide":5,"name":"release-regular-label","text":"29 REGULAR CONVERSATIONS","textPreview":"29 REGULAR CONVERSATIONS","textChars":24,"textLines":1,"bbox":[72,490,310,22]}
+{"kind":"textbox","id":"sh/nexg3epo","slide":5,"name":"release-slabs-label","text":"9 SLABS ’N SLUFFS","textPreview":"9 SLABS ’N SLUFFS","textChars":17,"textLines":1,"bbox":[586,490,242,22]}
+{"kind":"textbox","id":"sh/0r6h8z6x","slide":5,"name":"cadence-right-heading","text":"A YEAR-ROUND WINDOW","textPreview":"A YEAR-ROUND WINDOW","textChars":19,"textLines":1,"bbox":[884,204,300,24]}
+{"kind":"textbox","id":"sh/lcfy147i","slide":5,"name":"cadence-right-copy","text":"Almost weekly, with selected weeks carrying a second release.","textPreview":"Almost weekly, with selected weeks carrying a second release.","textChars":61,"textLines":1,"bbox":[884,246,314,132]}
+{"kind":"shape","id":"sh/yp4z69or","slide":5,"name":"cadence-right-rule","bbox":[884,406,110,0]}
+{"kind":"textbox","id":"sh/zqxgzupc","slide":5,"name":"cadence-25","text":"25+","textPreview":"25+","textChars":3,"textLines":1,"bbox":[884,434,150,58]}
+{"kind":"textbox","id":"sh/cnmh4z61","slide":5,"name":"cadence-25-copy","text":"episode acknowledgements included at the Partner level","textPreview":"episode acknowledgements included at the Partner level","textChars":54,"textLines":1,"bbox":[884,504,292,74]}
+{"kind":"shape","id":"sh/dovyx476","slide":5,"name":"footer-rule-5","bbox":[72,676,1136,0]}
+{"kind":"textbox","id":"sh/t8n6lwvy","slide":5,"name":"footer-site-5","text":"THEAVALANCHEHOUR.COM/SUPPORT","textPreview":"THEAVALANCHEHOUR.COM/SUPPORT","textChars":28,"textLines":1,"bbox":[72,686,350,18]}
+{"kind":"textbox","id":"sh/s7u5crud","slide":5,"name":"footer-page-5","text":"05","textPreview":"05","textChars":2,"textLines":1,"bbox":[1168,686,40,18]}
+{"kind":"image","id":"im/7i1cr6po","slide":5,"name":"","alt":"Skier making a powder turn through a snow-covered forest","bbox":[0,0,1280,720]}
+{"kind":"notes","id":"nt/i107q5of","slide":5,"text":"[Sources]\n- User clarification on 2026-08-20 that the plan may span a full year, with 38 releases, nearly weekly and selected second-release weeks.\n- User-provided Season 11 underwriting deck, slide 2 (9 Slabs ’n Sluffs episodes) and slide 4 (25+ Partner acknowledgements).\n- Powder-skier photograph embedded in the user-provided Season 11 underwriting deck, slide 1 (ppt/media/image2.jpeg).\n[/Sources]"}
+{"kind":"slide","id":"sl/x8f69ofe","slide":6,"title":"SUPPORT OPTIONS","textShapes":26}
+{"kind":"shape","id":"sh/lkrqp4ra","slide":6,"name":"support-top-accent","bbox":[0,0,1280,14]}
+{"kind":"textbox","id":"sh/yhg7epsj","slide":6,"name":"eyebrow-support-options","text":"SUPPORT OPTIONS","textPreview":"SUPPORT OPTIONS","textChars":15,"textLines":1,"bbox":[72,48,420,26]}
+{"kind":"textbox","id":"sh/zi98nu94","slide":6,"name":"slide-title","text":"Choose the level that fits.","textPreview":"Choose the level that fits.","textChars":27,"textLines":1,"bbox":[72,82,960,70]}
+{"kind":"textbox","id":"sh/87ipkzal","slide":6,"name":"support-intro","text":"From one focused episode to a season-long or year-round relationship.","textPreview":"From one focused episode to a season-long or year-round relationship.","textChars":69,"textLines":1,"bbox":[72,162,860,34]}
+{"kind":"shape","id":"sh/98rqt4r6","slide":6,"name":"support-card-0","bbox":[72,222,270,370]}
+{"kind":"shape","id":"sh/ml07i9sv","slide":6,"name":"support-card-accent-0","bbox":[72,222,270,7]}
+{"kind":"textbox","id":"sh/7m98ru9g","slide":6,"name":"support-kicker-0","text":"SINGLE EPISODE","textPreview":"SINGLE EPISODE","textChars":14,"textLines":1,"bbox":[94,250,226,20]}
+{"kind":"textbox","id":"sh/oryp8fah","slide":6,"name":"support-name-0","text":"FRIEND","textPreview":"FRIEND","textChars":6,"textLines":1,"bbox":[94,280,226,38]}
+{"kind":"textbox","id":"sh/pc76hkr2","slide":6,"name":"support-price-0","text":"$500","textPreview":"$500","textChars":4,"textLines":1,"bbox":[94,328,226,48]}
+{"kind":"textbox","id":"sh/h4bupgn6","slide":6,"name":"support-unit-0","text":"/ episode","textPreview":"/ episode","textChars":9,"textLines":1,"bbox":[94,374,226,24]}
+{"kind":"shape","id":"sh/w32twb6l","slide":6,"name":"support-rule-0","bbox":[94,416,226,0]}
+{"kind":"textbox","id":"sh/v2tcn650","slide":6,"name":"support-bullets-0","text":"• 1–2 minute mid-episode message\n• Intro or outro acknowledgement\n• Social post + website logo","textPreview":"• 1–2 minute mid-episode message | • Intro or outro acknowledgement | • Social post + website logo","textChars":94,"textLines":3,"bbox":[94,438,226,136]}
+{"kind":"shape","id":"sh/u1kbu1ov","slide":6,"name":"support-card-1","bbox":[360,222,270,370]}
+{"kind":"shape","id":"sh/5svutgni","slide":6,"name":"support-card-accent-1","bbox":[360,222,270,7]}
+{"kind":"textbox","id":"sh/47mt0b6x","slide":6,"name":"support-kicker-1","text":"SEASON-LONG","textPreview":"SEASON-LONG","textChars":11,"textLines":1,"bbox":[382,250,226,20]}
+{"kind":"textbox","id":"sh/j6dcr65c","slide":6,"name":"support-name-1","text":"PARTNER","textPreview":"PARTNER","textChars":7,"textLines":1,"bbox":[382,280,226,38]}
+{"kind":"textbox","id":"sh/i54bylor","slide":6,"name":"support-price-1","text":"$4,000","textPreview":"$4,000","textChars":6,"textLines":1,"bbox":[382,328,226,48]}
+{"kind":"textbox","id":"sh/twfux0ne","slide":6,"name":"support-unit-1","text":"/ season","textPreview":"/ season","textChars":8,"textLines":1,"bbox":[382,374,226,24]}
+{"kind":"shape","id":"sh/svmt4v6t","slide":6,"name":"support-rule-1","bbox":[382,416,226,0]}
+{"kind":"textbox","id":"sh/cbe5g3ih","slide":6,"name":"support-bullets-1","text":"• Season-long support\n• 10–15 minutes per season for a representative\n• Acknowledgement on 25+ episodes\n• Social post + website logo","textPreview":"• Season-long support | • 10–15 minutes per season for a representative | • Acknowledgement on 25+ episodes | • Social post + website logo","textChars":132,"textLines":4,"bbox":[382,438,226,136]}
+{"kind":"shape","id":"sh/dcnm98zm","slide":6,"name":"support-card-2","bbox":[648,222,270,370]}
+{"kind":"shape","id":"sh/qpwnet0b","slide":6,"name":"support-card-accent-2","bbox":[648,222,270,7]}
+{"kind":"textbox","id":"sh/bq547yhw","slide":6,"name":"support-kicker-2","text":"DEEPER ALIGNMENT","textPreview":"DEEPER ALIGNMENT","textChars":16,"textLines":1,"bbox":[670,250,226,20]}
+{"kind":"textbox","id":"sh/0fy5k3id","slide":6,"name":"support-name-2","text":"LEGACY","textPreview":"LEGACY","textChars":6,"textLines":1,"bbox":[670,280,226,38]}
+{"kind":"textbox","id":"sh/lg76d8zy","slide":6,"name":"support-price-2","text":"$6,000","textPreview":"$6,000","textChars":6,"textLines":1,"bbox":[670,328,226,48]}
+{"kind":"textbox","id":"sh/ydgnit07","slide":6,"name":"support-unit-2","text":"/ season","textPreview":"/ season","textChars":8,"textLines":1,"bbox":[670,374,226,24]}
+{"kind":"shape","id":"sh/zep4byhs","slide":6,"name":"support-rule-2","bbox":[670,416,226,0]}
+{"kind":"textbox","id":"sh/gju58ji9","slide":6,"name":"support-bullets-2","text":"• Season-long support that helps grow the podcast\n• Designed for deeper, ongoing alignment","textPreview":"• Season-long support that helps grow the podcast | • Designed for deeper, ongoing alignment","textChars":90,"textLines":2,"bbox":[670,438,226,136]}
+{"kind":"shape","id":"sh/1k3mhozu","slide":6,"name":"support-card-3","bbox":[936,222,270,370]}
+{"kind":"shape","id":"sh/jet8nm1c","slide":6,"name":"support-card-accent-3","bbox":[936,222,270,7]}
+{"kind":"textbox","id":"sh/idk7ehkr","slide":6,"name":"support-kicker-3","text":"RECAP SHOW","textPreview":"RECAP SHOW","textChars":10,"textLines":1,"bbox":[958,250,226,20]}
+{"kind":"textbox","id":"sh/50bqpcj2","slide":6,"name":"support-name-3","text":"SLABS ’N SLUFFS","textPreview":"SLABS ’N SLUFFS","textChars":15,"textLines":1,"bbox":[958,280,226,38]}
+{"kind":"textbox","id":"sh/4f2pgr2h","slide":6,"name":"support-price-3","text":"$5,000+","textPreview":"$5,000+","textChars":7,"textLines":1,"bbox":[958,328,226,48]}
+{"kind":"textbox","id":"sh/va98j210","slide":6,"name":"support-unit-3","text":"/ season","textPreview":"/ season","textChars":8,"textLines":1,"bbox":[958,374,226,24]}
+{"kind":"shape","id":"sh/u907axkf","slide":6,"name":"support-rule-3","bbox":[958,416,226,0]}
+{"kind":"textbox","id":"sh/hcrqlcj6","slide":6,"name":"support-bullets-3","text":"• Extended representative access\n• Guest or topic selection opportunities\n• Custom collaboration options","textPreview":"• Extended representative access | • Guest or topic selection opportunities | • Custom collaboration options","textChars":104,"textLines":3,"bbox":[958,438,226,136]}
+{"kind":"shape","id":"sh/wbipc72l","slide":6,"name":"support-note-band","bbox":[72,608,1134,44]}
+{"kind":"textbox","id":"sh/7698f214","slide":6,"name":"support-note","text":"Custom packages are available. Guest or topic proposals remain subject to editorial approval.","textPreview":"Custom packages are available. Guest or topic proposals remain subject to editorial approval.","textChars":93,"textLines":1,"bbox":[92,620,1094,22]}
+{"kind":"shape","id":"sh/m5076xkj","slide":6,"name":"footer-rule-6","bbox":[72,676,1136,0]}
+{"kind":"textbox","id":"sh/2dkbalg3","slide":6,"name":"footer-site-6","text":"THEAVALANCHEHOUR.COM/SUPPORT","textPreview":"THEAVALANCHEHOUR.COM/SUPPORT","textChars":28,"textLines":1,"bbox":[72,686,350,18]}
+{"kind":"textbox","id":"sh/netcjqxo","slide":6,"name":"footer-page-6","text":"06","textPreview":"06","textChars":2,"textLines":1,"bbox":[1168,686,40,18]}
+{"kind":"notes","id":"nt/x8f69ofe","slide":6,"text":"[Sources]\n- User-provided Season 11 underwriting deck, slide 4 (package names, prices, and listed benefits).\n- User clarification on 2026-08-20 that Caleb’s source deck is the factual authority for this guide.\n[/Sources]"}
+{"kind":"slide","id":"sl/gnmp4jqx","slide":7,"title":"WHAT PARTNERSHIP DELIVERS","textShapes":20}
+{"kind":"shape","id":"sh/cb2tkvap","slide":7,"name":"value-photo-overlay","bbox":[0,0,1280,720]}
+{"kind":"textbox","id":"sh/dcbud0ra","slide":7,"name":"eyebrow-what-partnership-delivers","text":"WHAT PARTNERSHIP DELIVERS","textPreview":"WHAT PARTNERSHIP DELIVERS","textChars":25,"textLines":1,"bbox":[72,44,520,26]}
+{"kind":"textbox","id":"sh/ydkbm5sv","slide":7,"name":"slide-title","text":"Recognition that respects the audience.","textPreview":"Recognition that respects the audience.","textChars":39,"textLines":1,"bbox":[72,78,1030,58]}
+{"kind":"textbox","id":"sh/zedcfa9g","slide":7,"name":"value-intro","text":"Useful visibility, real access, and a credible place inside the avalanche conversation.","textPreview":"Useful visibility, real access, and a credible place inside the avalanche conversation.","textChars":87,"textLines":1,"bbox":[72,150,720,38]}
+{"kind":"textbox","id":"sh/kzmdova1","slide":7,"name":"value-01-number","text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[72,222,46,26]}
+{"kind":"textbox","id":"sh/l0vuh0rm","slide":7,"name":"value-01-label","text":"Authentic reach","textPreview":"Authentic reach","textChars":15,"textLines":1,"bbox":[132,220,176,30]}
+{"kind":"textbox","id":"sh/eh0ba1sr","slide":7,"name":"value-01-copy","text":"Connect with people already engaged in avalanche education, professional practice, and backcountry culture.","textPreview":"Connect with people already engaged in avalanche education, professional practice, and backcountry culture.","textChars":107,"textLines":1,"bbox":[326,220,432,52]}
+{"kind":"shape","id":"sh/fi9c369c","slide":7,"name":"value-01-rule","bbox":[72,281,686,0]}
+{"kind":"textbox","id":"sh/baxkjqlk","slide":7,"name":"value-02-number","text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[72,308,46,26]}
+{"kind":"textbox","id":"sh/a9ojq5kz","slide":7,"name":"value-02-label","text":"Brand visibility","textPreview":"Brand visibility","textChars":16,"textLines":1,"bbox":[132,306,176,30]}
+{"kind":"textbox","id":"sh/xcz2l03q","slide":7,"name":"value-02-copy","text":"Episode acknowledgements, social promotion, website placement, and recurring season-long presence.","textPreview":"Episode acknowledgements, social promotion, website placement, and recurring season-long presence.","textChars":98,"textLines":1,"bbox":[326,306,432,52]}
+{"kind":"shape","id":"sh/cbq1sv25","slide":7,"name":"value-02-rule","bbox":[72,367,686,0]}
+{"kind":"textbox","id":"sh/n6x0fqlo","slide":7,"name":"value-03-number","text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[72,394,46,26]}
+{"kind":"textbox","id":"sh/25ojml43","slide":7,"name":"value-03-label","text":"Credibility","textPreview":"Credibility","textChars":11,"textLines":1,"bbox":[132,392,176,30]}
+{"kind":"textbox","id":"sh/p8fih03e","slide":7,"name":"value-03-copy","text":"Associate with an established, community-focused voice in the avalanche world.","textPreview":"Associate with an established, community-focused voice in the avalanche world.","textChars":78,"textLines":1,"bbox":[326,392,432,52]}
+{"kind":"shape","id":"sh/o761ov2t","slide":7,"name":"value-03-rule","bbox":[72,453,686,0]}
+{"kind":"textbox","id":"sh/f2d0b6lc","slide":7,"name":"value-04-number","text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[72,480,46,26]}
+{"kind":"textbox","id":"sh/eh4jil4r","slide":7,"name":"value-04-label","text":"Access","textPreview":"Access","textChars":6,"textLines":1,"bbox":[132,478,176,30]}
+{"kind":"textbox","id":"sh/id4ju1oz","slide":7,"name":"value-04-copy","text":"Representative access and guest or topic proposals, subject to editorial approval.","textPreview":"Representative access and guest or topic proposals, subject to editorial approval.","textChars":82,"textLines":1,"bbox":[326,478,432,52]}
+{"kind":"shape","id":"sh/jedkn654","slide":7,"name":"value-04-rule","bbox":[72,539,686,0]}
+{"kind":"shape","id":"sh/4fm1wb6p","slide":7,"name":"testimonial-surface","bbox":[842,236,366,330]}
+{"kind":"shape","id":"sh/50v2pgna","slide":7,"name":"testimonial-mark","bbox":[874,264,42,42]}
+{"kind":"textbox","id":"sh/q143ylov","slide":7,"name":"testimonial-quote-mark","text":"“","textPreview":"“","textChars":1,"textLines":1,"bbox":[882,260,28,38]}
+{"kind":"textbox","id":"sh/r2dkrq5g","slide":7,"name":"testimonial-quote","text":"Advertising on The Avalanche Hour has been an incredible way for us to connect with the core snow and avalanche community.","textPreview":"Advertising on The Avalanche Hour has been an incredible way for us to connect with the core snow and avalanche community.","textChars":122,"textLines":1,"bbox":[874,326,302,132]}
+{"kind":"shape","id":"sh/s3ml0v61","slide":7,"name":"testimonial-rule","bbox":[874,476,86,0]}
+{"kind":"textbox","id":"sh/d4f2t0nm","slide":7,"name":"testimonial-name","text":"GARRETT HARMSEN\nCO-FOUNDER · PROPAGATION LABS","textPreview":"GARRETT HARMSEN | CO-FOUNDER · PROPAGATION LABS","textChars":45,"textLines":2,"bbox":[874,500,302,44]}
+{"kind":"shape","id":"sh/e5o32lor","slide":7,"name":"footer-rule-7","bbox":[72,676,1136,0]}
+{"kind":"textbox","id":"sh/f6xkvq5c","slide":7,"name":"footer-site-7","text":"THEAVALANCHEHOUR.COM/SUPPORT","textPreview":"THEAVALANCHEHOUR.COM/SUPPORT","textChars":28,"textLines":1,"bbox":[72,686,350,18]}
+{"kind":"textbox","id":"sh/p0zmlk7u","slide":7,"name":"footer-page-7","text":"07","textPreview":"07","textChars":2,"textLines":1,"bbox":[1168,686,40,18]}
+{"kind":"image","id":"im/uls3e5or","slide":7,"name":"","alt":"Skier moving through deep powder in storm conditions","bbox":[0,0,1280,720]}
+{"kind":"notes","id":"nt/gnmp4jqx","slide":7,"text":"[Sources]\n- User-provided Season 11 underwriting deck, slide 5 (authentic reach, brand visibility, credibility, and access framework).\n- User-provided Season 11 underwriting deck, slide 2 (Propagation Labs testimonial; excerpt reproduced).\n- 200117 Snowbird Sean Z EDITED (6 of 10).jpg, Google Drive file ID 192y0Tsf_apOYh_H78aYztEhiLLiEwAvt.\n[/Sources]"}
+{"kind":"slide","id":"sl/fu1gfa1s","slide":8,"title":"START A CONVERSATION","textShapes":7}
+{"kind":"shape","id":"sh/18byd4zy","slide":8,"name":"close-photo-overlay","bbox":[0,0,1280,720]}
+{"kind":"textbox","id":"sh/ri9g7uhw","slide":8,"name":"eyebrow-start-a-conversation","text":"START A CONVERSATION","textPreview":"START A CONVERSATION","textChars":20,"textLines":1,"bbox":[214,68,430,26]}
+{"kind":"textbox","id":"sh/6h0fypgb","slide":8,"name":"slide-title","text":"Let’s build the right fit.","textPreview":"Let’s build the right fit.","textChars":26,"textLines":1,"bbox":[72,222,690,88]}
+{"kind":"textbox","id":"sh/tkby9kzm","slide":8,"name":"close-body","text":"If one of the standard options is close—but not quite right—we can shape a custom underwriting or advertising package around your goals.","textPreview":"If one of the standard options is close—but not quite right—we can shape a custom underwriting or advertising package around your goals.","textChars":136,"textLines":1,"bbox":[72,330,594,92]}
+{"kind":"shape","id":"sh/sjix0zy1","slide":8,"name":"close-signal-rule","bbox":[72,450,108,0]}
+{"kind":"textbox","id":"sh/je9g3ahk","slide":8,"name":"close-contact","text":"theavalanchehourpodcast@gmail.com\ntheavalanchehour.com/support\n@theavalanchehourpodcast","textPreview":"theavalanchehourpodcast@gmail.com | theavalanchehour.com/support | @theavalanchehourpodcast","textChars":87,"textLines":3,"bbox":[72,478,610,110]}
+{"kind":"textbox","id":"sh/id0fu50z","slide":8,"name":"close-year-round","text":"SEASON 11  ·  2026–27 YEAR-ROUND PARTNERSHIPS","textPreview":"SEASON 11  ·  2026–27 YEAR-ROUND PARTNERSHIPS","textChars":45,"textLines":1,"bbox":[72,620,520,24]}
+{"kind":"shape","id":"sh/o7ydoret","slide":8,"name":"footer-rule-8","bbox":[72,676,1136,0]}
+{"kind":"textbox","id":"sh/98rehwve","slide":8,"name":"footer-site-8","text":"THEAVALANCHEHOUR.COM/SUPPORT","textPreview":"THEAVALANCHEHOUR.COM/SUPPORT","textChars":28,"textLines":1,"bbox":[72,686,350,18]}
+{"kind":"textbox","id":"sh/m5gvmhwn","slide":8,"name":"footer-page-8","text":"08","textPreview":"08","textChars":2,"textLines":1,"bbox":[1168,686,40,18]}
+{"kind":"image","id":"im/nq1076ho","slide":8,"name":"","alt":"Snow-covered mountain terrain viewed from a helicopter cockpit","bbox":[0,0,1280,720]}
+{"kind":"image","id":"im/9sji9gzu","slide":8,"name":"","alt":"The Avalanche Hour Podcast logo","bbox":[72,50,118,113.35]}
+{"kind":"notes","id":"nt/fu1gfa1s","slide":8,"text":"[Sources]\n- User-provided Season 11 underwriting deck, slide 6 (contact details and custom-package invitation).\n- The current website contact handle and support URL are used for link accuracy.\n- Helicopter cockpit and mountain photograph embedded in the user-provided Season 11 underwriting deck, slide 6 (ppt/media/image10.jpeg).\n[/Sources]"}

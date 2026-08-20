@@ -176,8 +176,8 @@ export default function Home() {
               <span>Long-form conversations from the field.</span>
             </Box>
             <Box>
-              <strong>October—May</strong>
-              <span>Weekly core episodes plus monthly Slabs n Sluffs.</span>
+              <strong>Year-round</strong>
+              <span>Nearly weekly, with selected weeks carrying a second release.</span>
             </Box>
             <Box>
               <strong>Community supported</strong>
