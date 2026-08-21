@@ -7,12 +7,12 @@ const sponsorshipGuidePath = new URL(
   '../public/files/avalanche-hour-s11-sponsorship-guide.pdf',
   import.meta.url
 );
-const rateCardPath = new URL(
-  '../public/files/avalanche-hour-s11-rate-card.pdf',
+const season11SponsorshipDeckPath = new URL(
+  '../public/files/avalanche-hour-s11-sponsorship-deck.pdf',
   import.meta.url
 );
 
-test('support page presents the detailed guide and concise rate card as distinct resources', async () => {
+test('support page presents the Season 11 deck and expanded guide as distinct resources', async () => {
   const source = await readFile(supportPagePath, 'utf8');
 
   assert.match(
@@ -21,20 +21,23 @@ test('support page presents the detailed guide and concise rate card as distinct
   );
   assert.match(
     source,
-    /const rateCardUrl = '\/files\/avalanche-hour-s11-rate-card\.pdf';/
+    /const season11SponsorshipDeckUrl = '\/files\/avalanche-hour-s11-sponsorship-deck\.pdf';/
   );
-  assert.match(source, />\s*View Sponsorship Guide\s*</);
-  assert.match(source, />\s*See Rates at a Glance\s*</);
+  assert.match(source, />\s*View Season 11 Sponsorship Deck\s*</);
+  assert.match(source, />\s*View Expanded Sponsorship Guide\s*</);
   assert.match(source, /href="#support-options"[\s\S]*?>\s*Choose a Support Level\s*</);
   assert.match(source, /id="support-options"/);
   assert.match(
     source,
-    /href=\{sponsorshipGuideUrl\}[\s\S]*?target="_blank"[\s\S]*?rel="noopener noreferrer"/
+    /href=\{season11SponsorshipDeckUrl\}[\s\S]*?target="_blank"[\s\S]*?rel="noopener noreferrer"/
   );
   assert.match(
     source,
-    /href=\{rateCardUrl\}[\s\S]*?target="_blank"[\s\S]*?rel="noopener noreferrer"/
+    /href=\{sponsorshipGuideUrl\}[\s\S]*?target="_blank"[\s\S]*?rel="noopener noreferrer"/
   );
+  assert.doesNotMatch(source, /rateCardUrl/);
+  assert.doesNotMatch(source, /Rates at a Glance/);
+  assert.doesNotMatch(source, /avalanche-hour-s11-rate-card\.pdf/);
   assert.doesNotMatch(source, />\s*Download PDF\s*</);
 });
 
@@ -53,7 +56,7 @@ test('support tiers match Caleb’s authoritative package pricing and use specif
 });
 
 test('both linked resource files are valid PDFs', async () => {
-  for (const resourcePath of [sponsorshipGuidePath, rateCardPath]) {
+  for (const resourcePath of [season11SponsorshipDeckPath, sponsorshipGuidePath]) {
     const resource = await readFile(resourcePath);
     assert.equal(resource.subarray(0, 5).toString('ascii'), '%PDF-');
   }

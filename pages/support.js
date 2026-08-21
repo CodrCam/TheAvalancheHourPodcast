@@ -31,7 +31,7 @@ import {
 } from '../lib/sponsorStore';
 import publicStyles from '../styles/PublicSite.module.css';
 
-const rateCardUrl = '/files/avalanche-hour-s11-rate-card.pdf';
+const season11SponsorshipDeckUrl = '/files/avalanche-hour-s11-sponsorship-deck.pdf';
 const sponsorshipGuideUrl = '/files/avalanche-hour-s11-sponsorship-guide.pdf';
 
 const supportTiers = [
@@ -261,7 +261,7 @@ export default function SupportPage({ sponsors = [] }) {
         <PublicPageHero
           eyebrow="Independent voices · community supported"
           title="Keep the signal strong."
-          description="Fund independent avalanche storytelling and the conversations people carry into the field. Choose a support level below, or review the sponsorship guide if you want the full picture first."
+          description="Fund independent avalanche storytelling and the conversations people carry into the field. Choose a support level below, or review the Season 11 deck and expanded guide first."
         >
           <Stack
             spacing={1.25}
@@ -285,36 +285,37 @@ export default function SupportPage({ sponsors = [] }) {
             </Button>
             <Divider sx={{ borderColor: 'rgba(200,228,237,.28)', my: 0.5 }} />
             <Typography variant="body2" sx={{ color: 'rgba(255,255,255,.72)' }}>
-              Want the details first?
+              Review the Season 11 sponsorship deck, or open the expanded guide for
+              additional audience and partnership details.
             </Typography>
             <Button
               component="a"
-              href={sponsorshipGuideUrl}
+              href={season11SponsorshipDeckUrl}
               target="_blank"
               rel="noopener noreferrer"
               variant="outlined"
               startIcon={<PictureAsPdf />}
               endIcon={<OpenInNew />}
-              aria-label="View Sponsorship Guide PDF (opens in a new tab)"
+              aria-label="View Season 11 Sponsorship Deck PDF (opens in a new tab)"
               sx={{ color: '#fff', borderColor: 'rgba(255,255,255,.52)' }}
             >
-              View Sponsorship Guide
+              View Season 11 Sponsorship Deck
             </Button>
             <Button
               component="a"
-              href={rateCardUrl}
+              href={sponsorshipGuideUrl}
               target="_blank"
               rel="noopener noreferrer"
               variant="text"
               startIcon={<PictureAsPdf />}
               endIcon={<OpenInNew />}
-              aria-label="See Rates at a Glance PDF (opens in a new tab)"
+              aria-label="View Expanded Sponsorship Guide PDF (opens in a new tab)"
               sx={{
                 color: '#fff',
                 justifyContent: 'flex-start',
               }}
             >
-              See Rates at a Glance
+              View Expanded Sponsorship Guide
             </Button>
           </Stack>
         </PublicPageHero>
