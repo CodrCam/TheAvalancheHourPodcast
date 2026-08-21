@@ -1,0 +1,500 @@
+{
+  "schema": "openai.presentation.layout/v4",
+  "unit": "px",
+  "slide": {
+    "aid": "sl/mwnzwv",
+    "id": "mwnzwv",
+    "slide": 2,
+    "layoutId": "10d80bed-2eb4-408f-8926-84b55b4d17cb",
+    "layoutName": "Title Slide",
+    "layoutType": "title",
+    "masterLayoutId": "89f75baf-1cb5-461f-adb0-d27834a45999",
+    "masterLayoutName": "Master",
+    "backgroundColor": "#F4F6F2",
+    "frame": {
+      "left": 0,
+      "top": 0,
+      "width": 1280,
+      "height": 720
+    }
+  },
+  "theme": {
+    "colorSchemeName": "ChatGPT",
+    "colors": {
+      "accent1": "#156082",
+      "accent2": "#E97132",
+      "accent3": "#196B24",
+      "accent4": "#0F9ED5",
+      "accent5": "#A02B93",
+      "accent6": "#4EA72E",
+      "bg1": "#FFFFFF",
+      "bg2": "#000000",
+      "tx1": "#1F1F1F",
+      "tx2": "#FFFFFF",
+      "dk1": "#000000",
+      "lt1": "#FFFFFF",
+      "dk2": "#0E2841",
+      "lt2": "#E8E8E8",
+      "hlink": "#467886",
+      "folHlink": "#96607D"
+    },
+    "typefaces": [
+      "Bebas Neue",
+      "Helvetica Neue"
+    ]
+  },
+  "inheritedLayers": [
+    {
+      "scope": "layout",
+      "id": "10d80bed-2eb4-408f-8926-84b55b4d17cb",
+      "name": "Title Slide",
+      "type": "title",
+      "parentLayoutId": "89f75baf-1cb5-461f-adb0-d27834a45999",
+      "elements": []
+    },
+    {
+      "scope": "master",
+      "id": "89f75baf-1cb5-461f-adb0-d27834a45999",
+      "name": "Master",
+      "type": "master",
+      "elements": []
+    }
+  ],
+  "elements": [
+    {
+      "order": 1,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/tsba5gri",
+      "id": "1",
+      "name": "eyebrow-independent-voices-community-supported",
+      "bbox": [
+        64,
+        42,
+        650,
+        24
+      ],
+      "geometry": "rect",
+      "text": "INDEPENDENT VOICES · COMMUNITY SUPPORTED",
+      "textPreview": "INDEPENDENT VOICES · COMMUNITY SUPPORTED",
+      "resolvedFontSize": 16,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 16,
+        "typeface": "Helvetica Neue",
+        "color": "#B9471D",
+        "bold": true,
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "autoFit": "none",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "INDEPENDENT VOICES · COMMUNITY SUPPORTED"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "INDEPENDENT VOICES · COMMUNITY SUPPORTED",
+          "lineSpacingPercent": 100000,
+          "resolvedTextStyle": {
+            "fontSize": 16,
+            "typeface": "Helvetica Neue",
+            "color": "#B9471D",
+            "bold": true,
+            "alignment": "left",
+            "lineSpacing": 1
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "INDEPENDENT VOICES · COMMUNITY SUPPORTED",
+              "fontSize": 16,
+              "typeface": "Helvetica Neue",
+              "color": "#B9471D",
+              "bold": true,
+              "alignment": "left",
+              "lineSpacing": 1
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 2,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/65kra18r",
+      "id": "2",
+      "name": "slide-title",
+      "bbox": [
+        64,
+        72,
+        820,
+        96
+      ],
+      "geometry": "rect",
+      "text": "Stories, knowledge,\nand hard-earned lessons.",
+      "textPreview": "Stories, knowledge, | and hard-earned lessons.",
+      "resolvedFontSize": 44,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 44,
+        "typeface": "Bebas Neue",
+        "color": "#10222D",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "autoFit": "none",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Stories, knowledge,"
+          },
+          {
+            "index": 2,
+            "text": "and hard-earned lessons."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Stories, knowledge,",
+          "lineSpacingPercent": 94000,
+          "resolvedTextStyle": {
+            "fontSize": 44,
+            "typeface": "Bebas Neue",
+            "color": "#10222D",
+            "alignment": "left",
+            "lineSpacing": 0.94
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Stories, knowledge,",
+              "fontSize": 44,
+              "typeface": "Bebas Neue",
+              "color": "#10222D",
+              "alignment": "left",
+              "lineSpacing": 0.94
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 2,
+          "text": "and hard-earned lessons.",
+          "lineSpacingPercent": 94000,
+          "resolvedTextStyle": {
+            "fontSize": 44,
+            "typeface": "Bebas Neue",
+            "color": "#10222D",
+            "alignment": "left",
+            "lineSpacing": 0.94
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "and hard-earned lessons.",
+              "fontSize": 44,
+              "typeface": "Bebas Neue",
+              "color": "#10222D",
+              "alignment": "left",
+              "lineSpacing": 0.94
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 3,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/7qts369c",
+      "id": "3",
+      "name": "purpose-body",
+      "bbox": [
+        64,
+        174,
+        820,
+        42
+      ],
+      "geometry": "rect",
+      "text": "The Avalanche Hour is built around the people, decisions, and lived experience that shape the snow and avalanche community.",
+      "textPreview": "The Avalanche Hour is built around the people, decisions, and lived experience that shape the snow and avalanche community.",
+      "resolvedFontSize": 18,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 18,
+        "typeface": "Helvetica Neue",
+        "color": "#526A75",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "autoFit": "none",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "The Avalanche Hour is built around the people, decisions, and lived experience that shape the snow"
+          },
+          {
+            "index": 2,
+            "text": "and avalanche community."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "The Avalanche Hour is built around the people, decisions, and lived experience that shape the snow and avalanche community.",
+          "lineSpacingPercent": 124000,
+          "resolvedTextStyle": {
+            "fontSize": 18,
+            "typeface": "Helvetica Neue",
+            "color": "#526A75",
+            "alignment": "left",
+            "lineSpacing": 1.24
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "The Avalanche Hour is built around the people, decisions, and lived experience that shape the snow and avalanche community.",
+              "fontSize": 18,
+              "typeface": "Helvetica Neue",
+              "color": "#526A75",
+              "alignment": "left",
+              "lineSpacing": 1.24
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 4,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/k3298rql",
+      "id": "4",
+      "name": "purpose-cadence-number",
+      "bbox": [
+        982,
+        66,
+        230,
+        56
+      ],
+      "geometry": "rect",
+      "text": "29 + 9",
+      "textPreview": "29 + 9",
+      "resolvedFontSize": 50,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 50,
+        "typeface": "Bebas Neue",
+        "color": "#B9471D",
+        "alignment": "right",
+        "verticalAlignment": "top",
+        "autoFit": "none",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "29 + 9"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "29 + 9",
+          "lineSpacingPercent": 100000,
+          "resolvedTextStyle": {
+            "fontSize": 50,
+            "typeface": "Bebas Neue",
+            "color": "#B9471D",
+            "alignment": "right",
+            "lineSpacing": 1
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "29 + 9",
+              "fontSize": 50,
+              "typeface": "Bebas Neue",
+              "color": "#B9471D",
+              "alignment": "right",
+              "lineSpacing": 1
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 5,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/54ba1wr6",
+      "id": "5",
+      "name": "purpose-cadence-label",
+      "bbox": [
+        952,
+        126,
+        260,
+        48
+      ],
+      "geometry": "rect",
+      "text": "regular episodes +\nSlabs ’n Sluffs releases",
+      "textPreview": "regular episodes + | Slabs ’n Sluffs releases",
+      "resolvedFontSize": 16,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 16,
+        "typeface": "Helvetica Neue",
+        "color": "#10222D",
+        "bold": true,
+        "alignment": "right",
+        "verticalAlignment": "top",
+        "autoFit": "none",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "regular episodes +"
+          },
+          {
+            "index": 2,
+            "text": "Slabs ’n Sluffs releases"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "regular episodes +",
+          "lineSpacingPercent": 125000,
+          "resolvedTextStyle": {
+            "fontSize": 16,
+            "typeface": "Helvetica Neue",
+            "color": "#10222D",
+            "bold": true,
+            "alignment": "right",
+            "lineSpacing": 1.25
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "regular episodes +",
+              "fontSize": 16,
+              "typeface": "Helvetica Neue",
+              "color": "#10222D",
+              "bold": true,
+              "alignment": "right",
+              "lineSpacing": 1.25
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 2,
+          "text": "Slabs ’n Sluffs releases",
+          "lineSpacingPercent": 125000,
+          "resolvedTextStyle": {
+            "fontSize": 16,
+            "typeface": "Helvetica Neue",
+            "color": "#10222D",
+            "bold": true,
+            "alignment": "right",
+            "lineSpacing": 1.25
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Slabs ’n Sluffs releases",
+              "fontSize": 16,
+              "typeface": "Helvetica Neue",
+              "color": "#10222D",
+              "bold": true,
+              "alignment": "right",
+              "lineSpacing": 1.25
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 6,
+      "kind": "image",
+      "scope": "slide",
+      "aid": "im/zqxozixk",
+      "id": "6",
+      "bbox": [
+        138,
+        234,
+        1004,
+        486.1
+      ],
+      "alt": "Hand-drawn Avalanche Hour mountain, snowmobile, ski, and helicopter artwork",
+      "contentType": "image/png",
+      "imageFit": "contain",
+      "asset": {
+        "assetId": "63620148-f343-4589-8acf-2c2e0ffd832c",
+        "contentType": "image/png",
+        "byteLength": 263403
+      }
+    }
+  ],
+  "composeRuns": []
+}

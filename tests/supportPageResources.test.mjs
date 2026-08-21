@@ -1,40 +1,54 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { access, readFile } from 'node:fs/promises';
 
 const supportPagePath = new URL('../pages/support.js', import.meta.url);
-const sponsorshipGuidePath = new URL(
-  '../public/files/avalanche-hour-s11-sponsorship-guide.pdf',
+const yearRoundPartnershipDeckPath = new URL(
+  '../public/files/avalanche-hour-season-11-partnership-deck.pdf',
   import.meta.url
 );
-const rateCardPath = new URL(
+const season11SponsorshipDeckPath = new URL(
+  '../public/files/avalanche-hour-s11-sponsorship-deck.pdf',
+  import.meta.url
+);
+
+const oldRateCardPath = new URL(
   '../public/files/avalanche-hour-s11-rate-card.pdf',
   import.meta.url
 );
+const replacedGuidePath = new URL(
+  '../public/files/avalanche-hour-s11-sponsorship-guide.pdf',
+  import.meta.url
+);
 
-test('support page presents the detailed guide and concise rate card as distinct resources', async () => {
+test('support page presents the Season 11 and year-round partnership decks as distinct resources', async () => {
   const source = await readFile(supportPagePath, 'utf8');
 
   assert.match(
     source,
-    /const sponsorshipGuideUrl = '\/files\/avalanche-hour-s11-sponsorship-guide\.pdf';/
+    /const yearRoundPartnershipDeckUrl = '\/files\/avalanche-hour-season-11-partnership-deck\.pdf';/
   );
   assert.match(
     source,
-    /const rateCardUrl = '\/files\/avalanche-hour-s11-rate-card\.pdf';/
+    /const season11SponsorshipDeckUrl = '\/files\/avalanche-hour-s11-sponsorship-deck\.pdf';/
   );
-  assert.match(source, />\s*View Sponsorship Guide\s*</);
-  assert.match(source, />\s*See Rates at a Glance\s*</);
+  assert.match(source, />\s*View Season 11 Sponsorship Deck\s*</);
+  assert.match(source, />\s*View Year-Round Partnership Deck\s*</);
   assert.match(source, /href="#support-options"[\s\S]*?>\s*Choose a Support Level\s*</);
   assert.match(source, /id="support-options"/);
   assert.match(
     source,
-    /href=\{sponsorshipGuideUrl\}[\s\S]*?target="_blank"[\s\S]*?rel="noopener noreferrer"/
+    /href=\{season11SponsorshipDeckUrl\}[\s\S]*?target="_blank"[\s\S]*?rel="noopener noreferrer"/
   );
   assert.match(
     source,
-    /href=\{rateCardUrl\}[\s\S]*?target="_blank"[\s\S]*?rel="noopener noreferrer"/
+    /href=\{yearRoundPartnershipDeckUrl\}[\s\S]*?target="_blank"[\s\S]*?rel="noopener noreferrer"/
   );
+  assert.doesNotMatch(source, /sponsorshipGuideUrl/);
+  assert.doesNotMatch(source, /Expanded Sponsorship Guide/);
+  assert.doesNotMatch(source, /rateCardUrl/);
+  assert.doesNotMatch(source, /Rates at a Glance/);
+  assert.doesNotMatch(source, /avalanche-hour-s11-rate-card\.pdf/);
   assert.doesNotMatch(source, />\s*Download PDF\s*</);
 });
 
@@ -52,9 +66,12 @@ test('support tiers match Caleb’s authoritative package pricing and use specif
   assert.match(source, /checkout opens in a new tab/);
 });
 
-test('both linked resource files are valid PDFs', async () => {
-  for (const resourcePath of [sponsorshipGuidePath, rateCardPath]) {
+test('both linked resource files are valid PDFs and retired files are absent', async () => {
+  for (const resourcePath of [season11SponsorshipDeckPath, yearRoundPartnershipDeckPath]) {
     const resource = await readFile(resourcePath);
     assert.equal(resource.subarray(0, 5).toString('ascii'), '%PDF-');
   }
+
+  await assert.rejects(access(oldRateCardPath), { code: 'ENOENT' });
+  await assert.rejects(access(replacedGuidePath), { code: 'ENOENT' });
 });

@@ -1,0 +1,33 @@
+Primary design source
+- Caleb Merrill, “Season 11 Partnership Pitch” email, August 20, 2026.
+- The email’s Canva-hosted imagery is preserved in source-assets/ and treated as visual reference or embedded artwork.
+
+Content sources
+- Caleb Merrill’s original Season 11 underwriting deck: public/files/avalanche-hour-s11-sponsorship-deck.pdf.
+- Season 11 planning data: lib/season11MastermindSchedule.mjs.
+- User-provided planning context in this conversation: year-round partnership window, nearly weekly releases, selected two-release weeks, and 38 planned releases.
+- Current site language and contact details: pages/support.js.
+
+Name verification
+- Anna Heuberger: https://lawine.salzburg.at/en/organisation/staff
+- Gabrielle Antonioli: https://www.montana.edu/earthsciences/graduate-program/students/antonioli.html
+- Pascal Haegeli: https://www.sfu.ca/rem/about/people/haegeli.html
+- Brendan Cronin follows the project’s current Season 11 planning data; the newest email spells the first name “Brenden.”
+
+Intentional conflict resolution
+- “Once a month” applies only to Slabs ’n Sluffs, not the overall podcast cadence.
+- The newest email includes a screenshot from an earlier support-page state with Legacy at $6,000+ and Slabs ’n Sluffs at $5,000. Per the user’s earlier source-of-truth instruction and Caleb’s original package slide, this deck uses Legacy at $6,000 and Slabs ’n Sluffs at $5,000+.
+- The expired ISSW event block is not carried into the evergreen deck.
+
+Canva email asset URLs
+- 01 hero: https://d_njttksooxmmcpyhyg31og-5ou2kss6yozwtmmk5wi.canva-cdn.email/d5567ab6088921ab11e3edf90daa95c1.jpg
+- 02 partner testimonials: https://d_njttksooxmmcpyhyg31og-5ou2kss6yozwtmmk5wi.canva-cdn.email/b1d49f8389ed2bc1f242cb638a880167.png
+- 03 hand-drawn show artwork: https://d_njttksooxmmcpyhyg31og-5ou2kss6yozwtmmk5wi.canva-cdn.email/1caa8a9eaaa8dd3a3304ac68bb61efaf.png
+- 04 listener review: https://d_njttksooxmmcpyhyg31og-5ou2kss6yozwtmmk5wi.canva-cdn.email/dfdcfe5ccf177a0a1444615eced9cd32.png
+- 05 listener review: https://d_njttksooxmmcpyhyg31og-5ou2kss6yozwtmmk5wi.canva-cdn.email/0d2fbc6af5285a2af632ba640c6cae15.png
+- 06 mountain banner: https://d_njttksooxmmcpyhyg31og-5ou2kss6yozwtmmk5wi.canva-cdn.email/1fb68819acc8c67929845f77ec577d77.jpg
+- 07 audience and demographics infographic: https://d_njttksooxmmcpyhyg31og-5ou2kss6yozwtmmk5wi.canva-cdn.email/f777476d05600889b91baac055a5139f.png
+- 08 Slabs ’n Sluffs artwork: https://d_njttksooxmmcpyhyg31og-5ou2kss6yozwtmmk5wi.canva-cdn.email/47cc8130e5fd1fb4f7ecfce926b37e87.jpg
+- 09 host collage: https://d_njttksooxmmcpyhyg31og-5ou2kss6yozwtmmk5wi.canva-cdn.email/1b966910a3808ce6adf918345e94d83a.jpg
+- 10 fieldwork closing banner: https://d_njttksooxmmcpyhyg31og-5ou2kss6yozwtmmk5wi.canva-cdn.email/2f4939ae307c90f8a41edc9fbcf7cf91.jpg
+- 11 package screenshot: https://d_njttksooxmmcpyhyg31og-5ou2kss6yozwtmmk5wi.canva-cdn.email/389462a9714a03c1ede1664992ba6346.png
