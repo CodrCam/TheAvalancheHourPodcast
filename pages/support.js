@@ -32,7 +32,7 @@ import {
 import publicStyles from '../styles/PublicSite.module.css';
 
 const season11SponsorshipDeckUrl = '/files/avalanche-hour-s11-sponsorship-deck.pdf';
-const sponsorshipGuideUrl = '/files/avalanche-hour-s11-sponsorship-guide.pdf';
+const yearRoundPartnershipDeckUrl = '/files/avalanche-hour-season-11-partnership-deck.pdf';
 
 const supportTiers = [
   {
@@ -250,7 +250,7 @@ export default function SupportPage({ sponsors = [] }) {
     <>
       <SEO
         title="Support the Show | The Avalanche Hour"
-        description="Fund independent avalanche storytelling, sponsor an episode or season, explore year-round partnerships, and review The Avalanche Hour sponsorship guide."
+        description="Fund independent avalanche storytelling, sponsor an episode or season, explore year-round partnerships, and review The Avalanche Hour Season 11 partnership decks."
         keywords="The Avalanche Hour sponsorship, podcast advertising, avalanche podcast support, podcast underwriting"
         url="/support"
       />
@@ -261,7 +261,7 @@ export default function SupportPage({ sponsors = [] }) {
         <PublicPageHero
           eyebrow="Independent voices · community supported"
           title="Keep the signal strong."
-          description="Fund independent avalanche storytelling and the conversations people carry into the field. Choose a support level below, or review the Season 11 deck and expanded guide first."
+          description="Fund independent avalanche storytelling and the conversations people carry into the field. Choose a support level below, or review the Season 11 sponsorship and year-round partnership decks first."
         >
           <Stack
             spacing={1.25}
@@ -285,8 +285,8 @@ export default function SupportPage({ sponsors = [] }) {
             </Button>
             <Divider sx={{ borderColor: 'rgba(200,228,237,.28)', my: 0.5 }} />
             <Typography variant="body2" sx={{ color: 'rgba(255,255,255,.72)' }}>
-              Review the Season 11 sponsorship deck, or open the expanded guide for
-              additional audience and partnership details.
+              Review the Season 11 sponsorship deck, or open the updated year-round
+              partnership deck for audience, release-plan, and support details.
             </Typography>
             <Button
               component="a"
@@ -303,19 +303,19 @@ export default function SupportPage({ sponsors = [] }) {
             </Button>
             <Button
               component="a"
-              href={sponsorshipGuideUrl}
+              href={yearRoundPartnershipDeckUrl}
               target="_blank"
               rel="noopener noreferrer"
               variant="text"
               startIcon={<PictureAsPdf />}
               endIcon={<OpenInNew />}
-              aria-label="View Expanded Sponsorship Guide PDF (opens in a new tab)"
+              aria-label="View Year-Round Partnership Deck PDF (opens in a new tab)"
               sx={{
                 color: '#fff',
                 justifyContent: 'flex-start',
               }}
             >
-              View Expanded Sponsorship Guide
+              View Year-Round Partnership Deck
             </Button>
           </Stack>
         </PublicPageHero>
