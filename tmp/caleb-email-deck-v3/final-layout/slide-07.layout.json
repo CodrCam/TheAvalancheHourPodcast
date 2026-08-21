@@ -1,0 +1,1041 @@
+{
+  "schema": "openai.presentation.layout/v4",
+  "unit": "px",
+  "slide": {
+    "aid": "sl/ogid3s",
+    "id": "ogid3s",
+    "slide": 7,
+    "layoutId": "10d80bed-2eb4-408f-8926-84b55b4d17cb",
+    "layoutName": "Title Slide",
+    "layoutType": "title",
+    "masterLayoutId": "89f75baf-1cb5-461f-adb0-d27834a45999",
+    "masterLayoutName": "Master",
+    "backgroundColor": "#D5EEF5",
+    "frame": {
+      "left": 0,
+      "top": 0,
+      "width": 1280,
+      "height": 720
+    }
+  },
+  "theme": {
+    "colorSchemeName": "ChatGPT",
+    "colors": {
+      "accent1": "#156082",
+      "accent2": "#E97132",
+      "accent3": "#196B24",
+      "accent4": "#0F9ED5",
+      "accent5": "#A02B93",
+      "accent6": "#4EA72E",
+      "bg1": "#FFFFFF",
+      "bg2": "#000000",
+      "tx1": "#1F1F1F",
+      "tx2": "#FFFFFF",
+      "dk1": "#000000",
+      "lt1": "#FFFFFF",
+      "dk2": "#0E2841",
+      "lt2": "#E8E8E8",
+      "hlink": "#467886",
+      "folHlink": "#96607D"
+    },
+    "typefaces": [
+      "Bebas Neue",
+      "Georgia",
+      "Helvetica Neue"
+    ]
+  },
+  "inheritedLayers": [
+    {
+      "scope": "layout",
+      "id": "10d80bed-2eb4-408f-8926-84b55b4d17cb",
+      "name": "Title Slide",
+      "type": "title",
+      "parentLayoutId": "89f75baf-1cb5-461f-adb0-d27834a45999",
+      "elements": []
+    },
+    {
+      "scope": "master",
+      "id": "89f75baf-1cb5-461f-adb0-d27834a45999",
+      "name": "Master",
+      "type": "master",
+      "elements": []
+    }
+  ],
+  "elements": [
+    {
+      "order": 1,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/103qpcr6",
+      "id": "1",
+      "name": "eyebrow-partner-proof",
+      "bbox": [
+        64,
+        42,
+        300,
+        24
+      ],
+      "geometry": "rect",
+      "text": "PARTNER PROOF",
+      "textPreview": "PARTNER PROOF",
+      "resolvedFontSize": 16,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 16,
+        "typeface": "Helvetica Neue",
+        "color": "#B9471D",
+        "bold": true,
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "autoFit": "none",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "PARTNER PROOF"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "PARTNER PROOF",
+          "lineSpacingPercent": 100000,
+          "resolvedTextStyle": {
+            "fontSize": 16,
+            "typeface": "Helvetica Neue",
+            "color": "#B9471D",
+            "bold": true,
+            "alignment": "left",
+            "lineSpacing": 1
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "PARTNER PROOF",
+              "fontSize": 16,
+              "typeface": "Helvetica Neue",
+              "color": "#B9471D",
+              "bold": true,
+              "alignment": "left",
+              "lineSpacing": 1
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 2,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/edc7ux8v",
+      "id": "2",
+      "name": "slide-title",
+      "bbox": [
+        64,
+        72,
+        980,
+        64
+      ],
+      "geometry": "rect",
+      "text": "Because you always need a good partner…",
+      "textPreview": "Because you always need a good partner…",
+      "resolvedFontSize": 50,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 50,
+        "typeface": "Bebas Neue",
+        "color": "#10222D",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "autoFit": "none",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Because you always need a good partner…"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Because you always need a good partner…",
+          "lineSpacingPercent": 94000,
+          "resolvedTextStyle": {
+            "fontSize": 50,
+            "typeface": "Bebas Neue",
+            "color": "#10222D",
+            "alignment": "left",
+            "lineSpacing": 0.94
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Because you always need a good partner…",
+              "fontSize": 50,
+              "typeface": "Bebas Neue",
+              "color": "#10222D",
+              "alignment": "left",
+              "lineSpacing": 0.94
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 3,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/zelon29g",
+      "id": "3",
+      "name": "partner-proof-intro",
+      "bbox": [
+        64,
+        140,
+        980,
+        52
+      ],
+      "geometry": "rect",
+      "text": "The value is not generic reach. It is a credible place inside a community that already cares about the subject.",
+      "textPreview": "The value is not generic reach. It is a credible place inside a community that already cares about the subject.",
+      "resolvedFontSize": 20,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 20,
+        "typeface": "Helvetica Neue",
+        "color": "#526A75",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "autoFit": "none",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "The value is not generic reach. It is a credible place inside a community that already cares about the subject."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "The value is not generic reach. It is a credible place inside a community that already cares about the subject.",
+          "lineSpacingPercent": 122000,
+          "resolvedTextStyle": {
+            "fontSize": 20,
+            "typeface": "Helvetica Neue",
+            "color": "#526A75",
+            "alignment": "left",
+            "lineSpacing": 1.22
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "The value is not generic reach. It is a credible place inside a community that already cares about the subject.",
+              "fontSize": 20,
+              "typeface": "Helvetica Neue",
+              "color": "#526A75",
+              "alignment": "left",
+              "lineSpacing": 1.22
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 4,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/cbups7qp",
+      "id": "4",
+      "name": "partner-proof-divider",
+      "bbox": [
+        640,
+        224,
+        0,
+        350
+      ],
+      "geometry": "line",
+      "lineColor": "#AFC7CE",
+      "lineWidth": 1
+    },
+    {
+      "order": 5,
+      "kind": "image",
+      "scope": "slide",
+      "aid": "im/0f6x0jqx",
+      "id": "5",
+      "bbox": [
+        64,
+        224,
+        260,
+        47.1
+      ],
+      "alt": "Austin Powder Avalanche sponsor logo",
+      "contentType": "image/png",
+      "imageFit": "contain",
+      "asset": {
+        "assetId": "261308b1-6cbe-4875-ace0-9487ab1d578d",
+        "contentType": "image/png",
+        "byteLength": 131524
+      }
+    },
+    {
+      "order": 6,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/q9s7qx8j",
+      "id": "6",
+      "name": "austin-quote-mark",
+      "bbox": [
+        64,
+        284,
+        54,
+        54
+      ],
+      "geometry": "rect",
+      "text": "“",
+      "textPreview": "“",
+      "resolvedFontSize": 52,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 52,
+        "typeface": "Georgia",
+        "color": "#EF6F35",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "autoFit": "none",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "“"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "“",
+          "lineSpacingPercent": 100000,
+          "resolvedTextStyle": {
+            "fontSize": 52,
+            "typeface": "Georgia",
+            "color": "#EF6F35",
+            "alignment": "left",
+            "lineSpacing": 1
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "“",
+              "fontSize": 52,
+              "typeface": "Georgia",
+              "color": "#EF6F35",
+              "alignment": "left",
+              "lineSpacing": 1
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 7,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/raloj294",
+      "id": "7",
+      "name": "austin-quote",
+      "bbox": [
+        98,
+        300,
+        470,
+        150
+      ],
+      "geometry": "rect",
+      "text": "Austin Powder Avalanche is proud to sponsor the Avalanche Hour Podcast, helping bring the past and future of our industry to the forefront.",
+      "textPreview": "Austin Powder Avalanche is proud to sponsor the Avalanche Hour Podcast, helping bring the past and future of our industry to the forefront.",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 24,
+        "typeface": "Georgia",
+        "color": "#10222D",
+        "italic": true,
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "autoFit": "none",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 4,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Austin Powder Avalanche is proud to"
+          },
+          {
+            "index": 2,
+            "text": "sponsor the Avalanche Hour Podcast,"
+          },
+          {
+            "index": 3,
+            "text": "helping bring the past and future of our"
+          },
+          {
+            "index": 4,
+            "text": "industry to the forefront."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Austin Powder Avalanche is proud to sponsor the Avalanche Hour Podcast, helping bring the past and future of our industry to the forefront.",
+          "lineSpacingPercent": 125000,
+          "resolvedTextStyle": {
+            "fontSize": 24,
+            "typeface": "Georgia",
+            "color": "#10222D",
+            "italic": true,
+            "alignment": "left",
+            "lineSpacing": 1.25
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Austin Powder Avalanche is proud to sponsor the Avalanche Hour Podcast, helping bring the past and future of our industry to the forefront.",
+              "fontSize": 24,
+              "typeface": "Georgia",
+              "color": "#10222D",
+              "italic": true,
+              "alignment": "left",
+              "lineSpacing": 1.25
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 8,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/w7ep4rqt",
+      "id": "8",
+      "name": "austin-quote-rule",
+      "bbox": [
+        98,
+        470,
+        84,
+        0
+      ],
+      "geometry": "line",
+      "lineColor": "#EF6F35",
+      "lineWidth": 4
+    },
+    {
+      "order": 9,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/x8nqxwre",
+      "id": "9",
+      "name": "austin-attribution",
+      "bbox": [
+        98,
+        490,
+        470,
+        50
+      ],
+      "geometry": "rect",
+      "text": "BRADEN SCHMIDT\nPRESIDENT · AUSTIN POWDER AVALANCHE",
+      "textPreview": "BRADEN SCHMIDT | PRESIDENT · AUSTIN POWDER AVALANCHE",
+      "resolvedFontSize": 15,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 15,
+        "typeface": "Helvetica Neue",
+        "color": "#2F6794",
+        "bold": true,
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "autoFit": "none",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "BRADEN SCHMIDT"
+          },
+          {
+            "index": 2,
+            "text": "PRESIDENT · AUSTIN POWDER AVALANCHE"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "BRADEN SCHMIDT",
+          "lineSpacingPercent": 125000,
+          "resolvedTextStyle": {
+            "fontSize": 15,
+            "typeface": "Helvetica Neue",
+            "color": "#2F6794",
+            "bold": true,
+            "alignment": "left",
+            "lineSpacing": 1.25
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "BRADEN SCHMIDT",
+              "fontSize": 15,
+              "typeface": "Helvetica Neue",
+              "color": "#2F6794",
+              "bold": true,
+              "alignment": "left",
+              "lineSpacing": 1.25
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 2,
+          "text": "PRESIDENT · AUSTIN POWDER AVALANCHE",
+          "lineSpacingPercent": 125000,
+          "resolvedTextStyle": {
+            "fontSize": 15,
+            "typeface": "Helvetica Neue",
+            "color": "#2F6794",
+            "bold": true,
+            "alignment": "left",
+            "lineSpacing": 1.25
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "PRESIDENT · AUSTIN POWDER AVALANCHE",
+              "fontSize": 15,
+              "typeface": "Helvetica Neue",
+              "color": "#2F6794",
+              "bold": true,
+              "alignment": "left",
+              "lineSpacing": 1.25
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 10,
+      "kind": "image",
+      "scope": "slide",
+      "aid": "im/ep8jmls7",
+      "id": "10",
+      "bbox": [
+        700,
+        218,
+        268,
+        65.4
+      ],
+      "alt": "Propagation Labs sponsor logo",
+      "contentType": "image/png",
+      "imageFit": "contain",
+      "asset": {
+        "assetId": "a27c1097-d4b5-4284-bf46-eb88f898205c",
+        "contentType": "image/png",
+        "byteLength": 485907
+      }
+    },
+    {
+      "order": 11,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/onqlgzi5",
+      "id": "11",
+      "name": "propagation-quote-mark",
+      "bbox": [
+        700,
+        284,
+        54,
+        54
+      ],
+      "geometry": "rect",
+      "text": "“",
+      "textPreview": "“",
+      "resolvedFontSize": 52,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 52,
+        "typeface": "Georgia",
+        "color": "#EF6F35",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "autoFit": "none",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "“"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "“",
+          "lineSpacingPercent": 100000,
+          "resolvedTextStyle": {
+            "fontSize": 52,
+            "typeface": "Georgia",
+            "color": "#EF6F35",
+            "alignment": "left",
+            "lineSpacing": 1
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "“",
+              "fontSize": 52,
+              "typeface": "Georgia",
+              "color": "#EF6F35",
+              "alignment": "left",
+              "lineSpacing": 1
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 12,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/nmhknu1k",
+      "id": "12",
+      "name": "propagation-quote",
+      "bbox": [
+        734,
+        300,
+        450,
+        150
+      ],
+      "geometry": "rect",
+      "text": "Advertising on The Avalanche Hour has been an incredible way for us to connect with the core snow and avalanche community.",
+      "textPreview": "Advertising on The Avalanche Hour has been an incredible way for us to connect with the core snow and avalanche community.",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 24,
+        "typeface": "Georgia",
+        "color": "#10222D",
+        "italic": true,
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "autoFit": "none",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 4,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Advertising on The Avalanche Hour has"
+          },
+          {
+            "index": 2,
+            "text": "been an incredible way for us to connect"
+          },
+          {
+            "index": 3,
+            "text": "with the core snow and avalanche"
+          },
+          {
+            "index": 4,
+            "text": "community."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Advertising on The Avalanche Hour has been an incredible way for us to connect with the core snow and avalanche community.",
+          "lineSpacingPercent": 125000,
+          "resolvedTextStyle": {
+            "fontSize": 24,
+            "typeface": "Georgia",
+            "color": "#10222D",
+            "italic": true,
+            "alignment": "left",
+            "lineSpacing": 1.25
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Advertising on The Avalanche Hour has been an incredible way for us to connect with the core snow and avalanche community.",
+              "fontSize": 24,
+              "typeface": "Georgia",
+              "color": "#10222D",
+              "italic": true,
+              "alignment": "left",
+              "lineSpacing": 1.25
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 13,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/2lo3ep0z",
+      "id": "13",
+      "name": "propagation-quote-rule",
+      "bbox": [
+        734,
+        470,
+        84,
+        0
+      ],
+      "geometry": "line",
+      "lineColor": "#EF6F35",
+      "lineWidth": 4
+    },
+    {
+      "order": 14,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/1kf2lkje",
+      "id": "14",
+      "name": "propagation-attribution",
+      "bbox": [
+        734,
+        490,
+        450,
+        50
+      ],
+      "geometry": "rect",
+      "text": "GARRETT HARMSEN\nCO-FOUNDER · PROPAGATION LABS",
+      "textPreview": "GARRETT HARMSEN | CO-FOUNDER · PROPAGATION LABS",
+      "resolvedFontSize": 15,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 15,
+        "typeface": "Helvetica Neue",
+        "color": "#2F6794",
+        "bold": true,
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "autoFit": "none",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "GARRETT HARMSEN"
+          },
+          {
+            "index": 2,
+            "text": "CO-FOUNDER · PROPAGATION LABS"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "GARRETT HARMSEN",
+          "lineSpacingPercent": 125000,
+          "resolvedTextStyle": {
+            "fontSize": 15,
+            "typeface": "Helvetica Neue",
+            "color": "#2F6794",
+            "bold": true,
+            "alignment": "left",
+            "lineSpacing": 1.25
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "GARRETT HARMSEN",
+              "fontSize": 15,
+              "typeface": "Helvetica Neue",
+              "color": "#2F6794",
+              "bold": true,
+              "alignment": "left",
+              "lineSpacing": 1.25
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 2,
+          "text": "CO-FOUNDER · PROPAGATION LABS",
+          "lineSpacingPercent": 125000,
+          "resolvedTextStyle": {
+            "fontSize": 15,
+            "typeface": "Helvetica Neue",
+            "color": "#2F6794",
+            "bold": true,
+            "alignment": "left",
+            "lineSpacing": 1.25
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "CO-FOUNDER · PROPAGATION LABS",
+              "fontSize": 15,
+              "typeface": "Helvetica Neue",
+              "color": "#2F6794",
+              "bold": true,
+              "alignment": "left",
+              "lineSpacing": 1.25
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 15,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/0j61cfi9",
+      "id": "15",
+      "name": "footer-rule-7",
+      "bbox": [
+        56,
+        678,
+        1168,
+        0
+      ],
+      "geometry": "line",
+      "lineColor": "#BCC8CB",
+      "lineWidth": 1
+    },
+    {
+      "order": 16,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/fixkja1o",
+      "id": "16",
+      "name": "footer-site-7",
+      "bbox": [
+        56,
+        688,
+        360,
+        16
+      ],
+      "geometry": "rect",
+      "text": "THEAVALANCHEHOUR.COM/SUPPORT",
+      "textPreview": "THEAVALANCHEHOUR.COM/SUPPORT",
+      "resolvedFontSize": 12,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 12,
+        "typeface": "Helvetica Neue",
+        "color": "#526A75",
+        "bold": true,
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "autoFit": "none",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "THEAVALANCHEHOUR.COM/SUPPORT"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "THEAVALANCHEHOUR.COM/SUPPORT",
+          "lineSpacingPercent": 100000,
+          "resolvedTextStyle": {
+            "fontSize": 12,
+            "typeface": "Helvetica Neue",
+            "color": "#526A75",
+            "bold": true,
+            "alignment": "left",
+            "lineSpacing": 1
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "THEAVALANCHEHOUR.COM/SUPPORT",
+              "fontSize": 12,
+              "typeface": "Helvetica Neue",
+              "color": "#526A75",
+              "bold": true,
+              "alignment": "left",
+              "lineSpacing": 1
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 17,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/exojap03",
+      "id": "17",
+      "name": "footer-page-7",
+      "bbox": [
+        1170,
+        688,
+        54,
+        16
+      ],
+      "geometry": "rect",
+      "text": "07",
+      "textPreview": "07",
+      "resolvedFontSize": 12,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 12,
+        "typeface": "Helvetica Neue",
+        "color": "#526A75",
+        "bold": true,
+        "alignment": "right",
+        "verticalAlignment": "top",
+        "autoFit": "none",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "07"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "07",
+          "lineSpacingPercent": 100000,
+          "resolvedTextStyle": {
+            "fontSize": 12,
+            "typeface": "Helvetica Neue",
+            "color": "#526A75",
+            "bold": true,
+            "alignment": "right",
+            "lineSpacing": 1
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "07",
+              "fontSize": 12,
+              "typeface": "Helvetica Neue",
+              "color": "#526A75",
+              "bold": true,
+              "alignment": "right",
+              "lineSpacing": 1
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    }
+  ],
+  "composeRuns": []
+}

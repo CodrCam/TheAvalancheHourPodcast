@@ -5,7 +5,7 @@ import { FileBlob, PresentationFile } from '@oai/artifact-tool';
 const ROOT = '/Users/camerongriffin/projects/TheAvalancheHour';
 const TMP = path.join(ROOT, 'tmp/support-deck-regeneration-v2');
 const STARTER = path.join(TMP, 'template-starter.pptx');
-const OUT = path.join(TMP, 'avalanche-hour-s11-sponsorship-guide.pptx');
+const OUT = path.join(ROOT, 'public/files/avalanche-hour-s11-sponsorship-guide.pptx');
 const RENDER_DIR = path.join(TMP, 'final-render');
 const LAYOUT_DIR = path.join(TMP, 'final-layout');
 

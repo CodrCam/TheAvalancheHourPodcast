@@ -1,0 +1,216 @@
+{"kind":"slide","id":"sl/gncm65","slide":1,"title":"SEASON 11","textShapes":6}
+{"kind":"shape","id":"sh/h4fmhwnm","slide":1,"name":"cover-season-source-typo-mask","bbox":[260,286,154,38]}
+{"kind":"textbox","id":"sh/w36lor61","slide":1,"name":"cover-season-corrected","text":"SEASON 11","textPreview":"SEASON 11","textChars":9,"textLines":1,"bbox":[270,296,134,18]}
+{"kind":"shape","id":"sh/j6x4jm5c","slide":1,"name":"cover-season-corrected-rule","bbox":[260,324,154,0]}
+{"kind":"textbox","id":"sh/i5o3q1or","slide":1,"name":"eyebrow-season-11-sponsorship-deck","text":"SEASON 11 SPONSORSHIP DECK","textPreview":"SEASON 11 SPONSORSHIP DECK","textChars":26,"textLines":1,"bbox":[708,78,450,24]}
+{"kind":"shape","id":"sh/5szmlwni","slide":1,"name":"cover-signal-rule","bbox":[708,118,96,0]}
+{"kind":"textbox","id":"sh/4rqlsr6x","slide":1,"name":"slide-title","text":"Partnership +\nUnderwriting","textPreview":"Partnership + | Underwriting","textChars":26,"textLines":2,"bbox":[708,154,500,154]}
+{"kind":"textbox","id":"sh/ruh4n65o","slide":1,"name":"cover-subtitle","text":"Year-round opportunities to support independent avalanche storytelling.","textPreview":"Year-round opportunities to support independent avalanche storytelling.","textChars":71,"textLines":1,"bbox":[708,334,470,80]}
+{"kind":"textbox","id":"sh/6t83u1o3","slide":1,"name":"cover-cadence","text":"38 planned releases\nNearly weekly · selected two-release weeks","textPreview":"38 planned releases | Nearly weekly · selected two-release weeks","textChars":62,"textLines":2,"bbox":[708,470,470,78]}
+{"kind":"textbox","id":"sh/8fy9gvqx","slide":1,"name":"cover-url","text":"THEAVALANCHEHOUR.COM/SUPPORT","textPreview":"THEAVALANCHEHOUR.COM/SUPPORT","textChars":28,"textLines":1,"bbox":[708,644,470,22]}
+{"kind":"image","id":"im/76h8ba9k","slide":1,"name":"","alt":"Season 11 Finding the Line powder-skier poster from Caleb’s partnership email","bbox":[0,0,647.19,720]}
+{"kind":"notes","id":"nt/gncm65","slide":1,"text":"[Sources]\n- Caleb Merrill, “Season 11 Partnership Pitch” email, August 20, 2026 (cover artwork and visual direction).\n- User-provided planning context, August 20, 2026 (year-round window, nearly weekly cadence, selected two-release weeks, 38 planned releases).\n[/Sources]"}
+{"kind":"slide","id":"sl/mwnzwv","slide":2,"title":"INDEPENDENT VOICES · COMMUNITY SUPPORTED","textShapes":5}
+{"kind":"textbox","id":"sh/tsba5gri","slide":2,"name":"eyebrow-independent-voices-community-supported","text":"INDEPENDENT VOICES · COMMUNITY SUPPORTED","textPreview":"INDEPENDENT VOICES · COMMUNITY SUPPORTED","textChars":40,"textLines":1,"bbox":[64,42,650,24]}
+{"kind":"textbox","id":"sh/65kra18r","slide":2,"name":"slide-title","text":"Stories, knowledge,\nand hard-earned lessons.","textPreview":"Stories, knowledge, | and hard-earned lessons.","textChars":44,"textLines":2,"bbox":[64,72,820,96]}
+{"kind":"textbox","id":"sh/7qts369c","slide":2,"name":"purpose-body","text":"The Avalanche Hour is built around the people, decisions, and lived experience that shape the snow and avalanche community.","textPreview":"The Avalanche Hour is built around the people, decisions, and lived experience that shape the snow and avalanche community.","textChars":123,"textLines":1,"bbox":[64,174,820,42]}
+{"kind":"textbox","id":"sh/k3298rql","slide":2,"name":"purpose-cadence-number","text":"29 + 9","textPreview":"29 + 9","textChars":6,"textLines":1,"bbox":[982,66,230,56]}
+{"kind":"textbox","id":"sh/54ba1wr6","slide":2,"name":"purpose-cadence-label","text":"regular episodes +\nSlabs ’n Sluffs releases","textPreview":"regular episodes + | Slabs ’n Sluffs releases","textChars":43,"textLines":2,"bbox":[952,126,260,48]}
+{"kind":"image","id":"im/zqxozixk","slide":2,"name":"","alt":"Hand-drawn Avalanche Hour mountain, snowmobile, ski, and helicopter artwork","bbox":[138,234,1004,486.1]}
+{"kind":"notes","id":"nt/mwnzwv","slide":2,"text":"[Sources]\n- Caleb Merrill, “Season 11 Partnership Pitch” email, August 20, 2026 (hand-drawn show artwork and show description).\n- Season 11 planning source, lib/season11MastermindSchedule.mjs, and user-provided planning context (29 regular releases + 9 Slabs ’n Sluffs releases).\n[/Sources]"}
+{"kind":"slide","id":"sl/y4921d","slide":3,"title":"AUDIENCE REACH","textShapes":13}
+{"kind":"shape","id":"sh/4vql0zex","slide":3,"name":"reach-title-band","bbox":[0,0,1280,94]}
+{"kind":"textbox","id":"sh/5wjm94fi","slide":3,"name":"eyebrow-audience-reach","text":"AUDIENCE REACH","textPreview":"AUDIENCE REACH","textChars":14,"textLines":1,"bbox":[64,24,300,24]}
+{"kind":"textbox","id":"sh/qxs32pw3","slide":3,"name":"slide-title","text":"A decade of listening has built measurable reach.","textPreview":"A decade of listening has built measurable reach.","textChars":49,"textLines":1,"bbox":[64,48,980,48]}
+{"kind":"textbox","id":"sh/ry14buxo","slide":3,"name":"metric-964k-value","text":"964K","textPreview":"964K","textChars":4,"textLines":1,"bbox":[72,405,230,58]}
+{"kind":"textbox","id":"sh/szal4ze9","slide":3,"name":"metric-964k-label","text":"EPISODE PLAYS\nSINCE OCTOBER 2016","textPreview":"EPISODE PLAYS | SINCE OCTOBER 2016","textChars":32,"textLines":2,"bbox":[72,465,230,62]}
+{"kind":"textbox","id":"sh/d0jmd4fe","slide":3,"name":"metric-69k-value","text":"69K","textPreview":"69K","textChars":3,"textLines":1,"bbox":[366,405,230,58]}
+{"kind":"textbox","id":"sh/e1s369wz","slide":3,"name":"metric-69k-label","text":"EPISODE PLAYS\nIN THE LAST 12 MONTHS","textPreview":"EPISODE PLAYS | IN THE LAST 12 MONTHS","textChars":35,"textLines":2,"bbox":[366,465,230,62]}
+{"kind":"textbox","id":"sh/f214fexk","slide":3,"name":"metric-4k-value","text":"4K","textPreview":"4K","textChars":2,"textLines":1,"bbox":[660,405,230,58]}
+{"kind":"textbox","id":"sh/bm5cfml4","slide":3,"name":"metric-4k-label","text":"PLAYS / DOWNLOADS\nPER EPISODE\nWITHIN FIRST 3 MONTHS","textPreview":"PLAYS / DOWNLOADS | PER EPISODE | WITHIN FIRST 3 MONTHS","textChars":51,"textLines":3,"bbox":[660,465,230,62]}
+{"kind":"textbox","id":"sh/alwb6h4j","slide":3,"name":"metric-44--value","text":"44%","textPreview":"44%","textChars":3,"textLines":1,"bbox":[954,405,230,58]}
+{"kind":"textbox","id":"sh/xonuhw3u","slide":3,"name":"metric-44--label","text":"LISTENER-BASE GROWTH\nSINCE SEASON 9","textPreview":"LISTENER-BASE GROWTH | SINCE SEASON 9","textChars":35,"textLines":2,"bbox":[954,465,230,62]}
+{"kind":"textbox","id":"sh/cnet8rm9","slide":3,"name":"reach-secondary-metrics","text":"1,500 NEW INSTAGRAM FOLLOWERS IN 12 MONTHS    ·    77K+ ALL-TIME LISTENERS REACHED","textPreview":"1,500 NEW INSTAGRAM FOLLOWERS IN 12 MONTHS    ·    77K+ ALL-TIME LISTENERS REACHED","textChars":82,"textLines":1,"bbox":[72,628,1136,24]}
+{"kind":"shape","id":"sh/nilcbmls","slide":3,"name":"footer-rule-3","bbox":[56,678,1168,0]}
+{"kind":"textbox","id":"sh/2hcb2h47","slide":3,"name":"footer-site-3","text":"THEAVALANCHEHOUR.COM/SUPPORT","textPreview":"THEAVALANCHEHOUR.COM/SUPPORT","textChars":28,"textLines":1,"bbox":[56,688,360,16]}
+{"kind":"textbox","id":"sh/pk3udc3y","slide":3,"name":"footer-page-3","text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[1170,688,54,16]}
+{"kind":"image","id":"im/2ps3y14j","slide":3,"name":"","alt":"Two people travelling below a snow-covered mountain, framed by Caleb’s blue wave treatment","bbox":[40,0,1200,360]}
+{"kind":"notes","id":"nt/y4921d","slide":3,"text":"[Sources]\n- Caleb Merrill, “Season 11 Partnership Pitch” email, August 20, 2026 (mountain banner and audience infographic).\n- Audience metrics transcribed from the email infographic: 964K plays since October 2016; 69K plays in 12 months; 4K plays/downloads per episode within three months; 44% growth since Season 9; 1,500 new Instagram followers; 77K+ all-time listeners reached.\n[/Sources]"}
+{"kind":"slide","id":"sl/smyy9t","slide":4,"title":"AUDIENCE SNAPSHOT","textShapes":31}
+{"kind":"textbox","id":"sh/fup8na5c","slide":4,"name":"eyebrow-audience-snapshot","text":"AUDIENCE SNAPSHOT","textPreview":"AUDIENCE SNAPSHOT","textChars":17,"textLines":1,"bbox":[64,40,340,24]}
+{"kind":"textbox","id":"sh/gvypgf6x","slide":4,"name":"slide-title","text":"The audience is established—and the show is\nbroadening who gets heard.","textPreview":"The audience is established—and the show is | broadening who gets heard.","textChars":70,"textLines":2,"bbox":[64,70,1120,100]}
+{"kind":"textbox","id":"sh/hg7qp0ni","slide":4,"name":"demographics-intro","text":"Current reporting still skews male. The host team, guests, and stories are intentionally expanding representation across the industry.","textPreview":"Current reporting still skews male. The host team, guests, and stories are intentionally expanding representation across the industry.","textChars":134,"textLines":1,"bbox":[64,174,1110,46]}
+{"kind":"textbox","id":"sh/2hg7i5on","slide":4,"name":"gender-chart-label","text":"GENDER REPORTING","textPreview":"GENDER REPORTING","textChars":16,"textLines":1,"bbox":[76,226,360,24]}
+{"kind":"textbox","id":"sh/4ji9kf6t","slide":4,"name":"gender-center-label","text":"78.3%\nMALE","textPreview":"78.3% | MALE","textChars":10,"textLines":2,"bbox":[166,342,184,62]}
+{"kind":"textbox","id":"sh/pkrqtkne","slide":4,"name":"gender-minority-breakout","text":"FEMALE 18.3%  ·  NON-BINARY 0.7%  ·  NOT SPECIFIED 2.7%","textPreview":"FEMALE 18.3%  ·  NON-BINARY 0.7%  ·  NOT SPECIFIED 2.7%","textChars":55,"textLines":1,"bbox":[54,568,410,18]}
+{"kind":"textbox","id":"sh/ql0rmpoz","slide":4,"name":"age-chart-label","text":"AGE DISTRIBUTION","textPreview":"AGE DISTRIBUTION","textChars":16,"textLines":1,"bbox":[520,226,660,24]}
+{"kind":"shape","id":"sh/rm98vu5k","slide":4,"name":"age-grid-0","bbox":[546,528,620,0]}
+{"kind":"textbox","id":"sh/32x0ny94","slide":4,"name":"age-y-label-0","text":"0%","textPreview":"0%","textChars":2,"textLines":1,"bbox":[502,520,36,16]}
+{"kind":"shape","id":"sh/21ojutsj","slide":4,"name":"age-grid-10","bbox":[546,463.5,620,0]}
+{"kind":"textbox","id":"sh/p4fip8ru","slide":4,"name":"age-y-label-10","text":"10%","textPreview":"10%","textChars":3,"textLines":1,"bbox":[502,455.5,36,16]}
+{"kind":"shape","id":"sh/4361w3a9","slide":4,"name":"age-grid-20","bbox":[546,399,620,0]}
+{"kind":"textbox","id":"sh/fyd0jy9s","slide":4,"name":"age-y-label-20","text":"20%","textPreview":"20%","textChars":3,"textLines":1,"bbox":[502,391,36,16]}
+{"kind":"shape","id":"sh/ux4jqts7","slide":4,"name":"age-grid-30","bbox":[546,334.5,620,0]}
+{"kind":"textbox","id":"sh/h0vil8ry","slide":4,"name":"age-y-label-30","text":"30%","textPreview":"30%","textChars":3,"textLines":1,"bbox":[502,326.5,36,16]}
+{"kind":"shape","id":"sh/gzm1s3ad","slide":4,"name":"age-grid-40","bbox":[546,270,620,0]}
+{"kind":"textbox","id":"sh/zuh0vi9w","slide":4,"name":"age-y-label-40","text":"40%","textPreview":"40%","textChars":3,"textLines":1,"bbox":[502,262,36,16]}
+{"kind":"shape","id":"sh/yt8jmx8r","slide":4,"name":"age-bar-0","bbox":[557.75,526.5,54,1.5]}
+{"kind":"textbox","id":"sh/u1cvalgv","slide":4,"name":"age-value-0","text":"0.1%","textPreview":"0.1%","textChars":4,"textLines":1,"bbox":[549.75,506.5,70,16]}
+{"kind":"textbox","id":"sh/v2lc3qxg","slide":4,"name":"age-category-0","text":"0–17","textPreview":"0–17","textChars":4,"textLines":1,"bbox":[546,536,77.5,18]}
+{"kind":"shape","id":"sh/w3udcvy1","slide":4,"name":"age-bar-1","bbox":[635.25,515.74,54,12.26]}
+{"kind":"textbox","id":"sh/h43u50fm","slide":4,"name":"age-value-1","text":"1.9%","textPreview":"1.9%","textChars":4,"textLines":1,"bbox":[627.25,495.74,70,16]}
+{"kind":"textbox","id":"sh/i5wvelw7","slide":4,"name":"age-category-1","text":"18–22","textPreview":"18–22","textChars":5,"textLines":1,"bbox":[623.5,536,77.5,18]}
+{"kind":"shape","id":"sh/j65c7qxs","slide":4,"name":"age-bar-2","bbox":[712.75,453.18,54,74.82]}
+{"kind":"textbox","id":"sh/4redgved","slide":4,"name":"age-value-2","text":"11.6%","textPreview":"11.6%","textChars":5,"textLines":1,"bbox":[704.75,433.18,70,16]}
+{"kind":"textbox","id":"sh/5snu90fi","slide":4,"name":"age-category-2","text":"23–27","textPreview":"23–27","textChars":5,"textLines":1,"bbox":[701,536,77.5,18]}
+{"kind":"shape","id":"sh/y9sb21gn","slide":4,"name":"age-bar-3","bbox":[790.25,309.34,54,218.66]}
+{"kind":"textbox","id":"sh/za1cb6x8","slide":4,"name":"age-value-3","text":"33.9%","textPreview":"33.9%","textChars":5,"textLines":1,"bbox":[782.25,289.34,70,16]}
+{"kind":"textbox","id":"sh/1oryh4zq","slide":4,"name":"age-category-3","text":"28–34","textPreview":"28–34","textChars":5,"textLines":1,"bbox":[778.5,536,77.5,18]}
+{"kind":"shape","id":"sh/gnyx8zyl","slide":4,"name":"age-bar-4","bbox":[867.75,329.34,54,198.66]}
+{"kind":"textbox","id":"sh/fmpgfuh0","slide":4,"name":"age-value-4","text":"30.8%","textPreview":"30.8%","textChars":5,"textLines":1,"bbox":[859.75,309.34,70,16]}
+{"kind":"textbox","id":"sh/elgf6p0f","slide":4,"name":"age-category-4","text":"35–44","textPreview":"35–44","textChars":5,"textLines":1,"bbox":[856,536,77.5,18]}
+{"kind":"shape","id":"sh/psryloz2","slide":4,"name":"age-bar-5","bbox":[945.25,426.09,54,101.91]}
+{"kind":"textbox","id":"sh/orixcjyh","slide":4,"name":"age-value-5","text":"15.8%","textPreview":"15.8%","textChars":5,"textLines":1,"bbox":[937.25,406.09,70,16]}
+{"kind":"textbox","id":"sh/3q9gjehw","slide":4,"name":"age-category-5","text":"45–59","textPreview":"45–59","textChars":5,"textLines":1,"bbox":[933.5,536,77.5,18]}
+{"kind":"shape","id":"sh/2p0fa9gb","slide":4,"name":"age-bar-6","bbox":[1022.75,490.59,54,37.41]}
+{"kind":"textbox","id":"sh/5wne9kzi","slide":4,"name":"age-value-6","text":"5.8%","textPreview":"5.8%","textChars":4,"textLines":1,"bbox":[1014.75,470.59,70,16]}
+{"kind":"textbox","id":"sh/4vex0fid","slide":4,"name":"age-category-6","text":"60+","textPreview":"60+","textChars":3,"textLines":1,"bbox":[1011,536,77.5,18]}
+{"kind":"shape","id":"sh/8bm18nil","slide":4,"name":"age-bar-7","bbox":[1100.25,526.5,54,1.5]}
+{"kind":"textbox","id":"sh/9cvihsj6","slide":4,"name":"age-value-7","text":"0%","textPreview":"0%","textChars":2,"textLines":1,"bbox":[1092.25,506.5,70,16]}
+{"kind":"textbox","id":"sh/mp4j6d0v","slide":4,"name":"age-category-7","text":"Unknown","textPreview":"Unknown","textChars":7,"textLines":1,"bbox":[1088.5,536,77.5,18]}
+{"kind":"textbox","id":"sh/7qd0fi1g","slide":4,"name":"demographics-insight","text":"64.7% of reported listeners are 28–44. The opportunity is to keep that core while widening who sees themselves in the conversation.","textPreview":"64.7% of reported listeners are 28–44. The opportunity is to keep that core while widening who sees themselves in the conversation.","textChars":131,"textLines":1,"bbox":[64,602,1110,44]}
+{"kind":"shape","id":"sh/kn214nip","slide":4,"name":"footer-rule-4","bbox":[56,678,1168,0]}
+{"kind":"textbox","id":"sh/lovid8ja","slide":4,"name":"footer-site-4","text":"THEAVALANCHEHOUR.COM/SUPPORT","textPreview":"THEAVALANCHEHOUR.COM/SUPPORT","textChars":28,"textLines":1,"bbox":[56,688,360,16]}
+{"kind":"textbox","id":"sh/ylkz2d0j","slide":4,"name":"footer-page-4","text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[1170,688,54,16]}
+{"kind":"chart","id":"ch/va1gre9w","slide":4,"name":"","chartType":"doughnut","bbox":[54,252,410,316]}
+{"kind":"notes","id":"nt/smyy9t","slide":4,"text":"[Sources]\n- Caleb Merrill, “Season 11 Partnership Pitch” email, August 20, 2026 (demographic source graphic).\n- Gender data: male 78.3%, female 18.3%, non-binary 0.7%, not specified 2.7%.\n- Age data: 0–17 0.1%, 18–22 1.9%, 23–27 11.6%, 28–34 33.9%, 35–44 30.8%, 45–59 15.8%, 60+ 5.8%, unknown 0%.\n[/Sources]"}
+{"kind":"slide","id":"sl/y3gvcb","slide":5,"title":"THE PEOPLE BEHIND THE SIGNAL","textShapes":22}
+{"kind":"textbox","id":"sh/218vidon","slide":5,"name":"eyebrow-the-people-behind-the-signal","text":"THE PEOPLE BEHIND THE SIGNAL","textPreview":"THE PEOPLE BEHIND THE SIGNAL","textChars":28,"textLines":1,"bbox":[56,38,520,24]}
+{"kind":"textbox","id":"sh/p4jut87y","slide":5,"name":"slide-title","text":"A 17-person host team brings field-earned\nperspective.","textPreview":"A 17-person host team brings field-earned | perspective.","textChars":54,"textLines":2,"bbox":[56,66,1120,96]}
+{"kind":"textbox","id":"sh/43qdk36d","slide":5,"name":"hosts-subtitle","text":"Different regions, disciplines, and lived experience—held together by curiosity and a respect for the work.","textPreview":"Different regions, disciplines, and lived experience—held together by curiosity and a respect for the work.","textChars":107,"textLines":1,"bbox":[56,164,1050,44]}
+{"kind":"textbox","id":"sh/ud8vetob","slide":5,"name":"host-left-1","text":"DOM BAKER","textPreview":"DOM BAKER","textChars":9,"textLines":1,"bbox":[764,220,240,35.56]}
+{"kind":"shape","id":"sh/h0zup872","slide":5,"name":"host-left-1-divider","bbox":[764,259.56,240,0]}
+{"kind":"textbox","id":"sh/gfqdg36h","slide":5,"name":"host-left-2","text":"DR. BRUCE JAMIESON","textPreview":"DR. BRUCE JAMIESON","textChars":18,"textLines":1,"bbox":[764,263.56,240,35.56]}
+{"kind":"shape","id":"sh/7axcjypk","slide":5,"name":"host-left-2-divider","bbox":[764,303.11,240,0]}
+{"kind":"textbox","id":"sh/69obatof","slide":5,"name":"host-left-3","text":"KIM VINET","textPreview":"KIM VINET","textChars":9,"textLines":1,"bbox":[764,307.11,240,35.56]}
+{"kind":"shape","id":"sh/8vm9g3ah","slide":5,"name":"host-left-3-divider","bbox":[764,346.67,240,0]}
+{"kind":"textbox","id":"sh/9wva9ob2","slide":5,"name":"host-left-4","text":"MORGAN DINSDALE","textPreview":"MORGAN DINSDALE","textChars":15,"textLines":1,"bbox":[764,350.67,240,35.56]}
+{"kind":"shape","id":"sh/mtkretsr","slide":5,"name":"host-left-4-divider","bbox":[764,390.22,240,0]}
+{"kind":"textbox","id":"sh/nuds7ytw","slide":5,"name":"host-left-5","text":"NIKKI CHAMPION","textPreview":"NIKKI CHAMPION","textChars":14,"textLines":1,"bbox":[764,394.22,240,35.56]}
+{"kind":"shape","id":"sh/0r29cjal","slide":5,"name":"host-left-5-divider","bbox":[764,433.78,240,0]}
+{"kind":"textbox","id":"sh/lsba5ob6","slide":5,"name":"host-left-6","text":"MATTHIAS WALCHER","textPreview":"MATTHIAS WALCHER","textChars":16,"textLines":1,"bbox":[764,437.78,240,35.56]}
+{"kind":"shape","id":"sh/ypkra9sf","slide":5,"name":"host-left-6-divider","bbox":[764,477.33,240,0]}
+{"kind":"textbox","id":"sh/zqts3et0","slide":5,"name":"host-left-7","text":"ANNA HEUBERGER","textPreview":"ANNA HEUBERGER","textChars":14,"textLines":1,"bbox":[764,481.33,240,35.56]}
+{"kind":"shape","id":"sh/kn698nap","slide":5,"name":"host-left-7-divider","bbox":[764,520.89,240,0]}
+{"kind":"textbox","id":"sh/5ofah8ba","slide":5,"name":"host-left-8","text":"GABRIELLE ANTONIOLI","textPreview":"GABRIELLE ANTONIOLI","textChars":19,"textLines":1,"bbox":[764,524.89,240,35.56]}
+{"kind":"shape","id":"sh/tkba183e","slide":5,"name":"host-left-8-divider","bbox":[764,564.44,240,0]}
+{"kind":"textbox","id":"sh/sj29s32t","slide":5,"name":"host-left-9","text":"SEAN ZIMMERMAN-WALL","textPreview":"SEAN ZIMMERMAN-WALL","textChars":19,"textLines":1,"bbox":[764,568.44,240,35.56]}
+{"kind":"textbox","id":"sh/ritszil8","slide":5,"name":"host-right-1","text":"DR. SARA BOILEN","textPreview":"DR. SARA BOILEN","textChars":15,"textLines":1,"bbox":[1020,220,206,41]}
+{"kind":"shape","id":"sh/6hkrqdk3","slide":5,"name":"host-right-1-divider","bbox":[1020,265,206,0]}
+{"kind":"textbox","id":"sh/5grax83i","slide":5,"name":"host-right-2","text":"DALLAS GLASS","textPreview":"DALLAS GLASS","textChars":12,"textLines":1,"bbox":[1020,269,206,41]}
+{"kind":"shape","id":"sh/4fi9o32x","slide":5,"name":"host-right-2-divider","bbox":[1020,314,206,0]}
+{"kind":"textbox","id":"sh/je98vylc","slide":5,"name":"host-right-3","text":"JAKE HUTCHINSON","textPreview":"JAKE HUTCHINSON","textChars":15,"textLines":1,"bbox":[1020,318,206,41]}
+{"kind":"shape","id":"sh/id0rmtkr","slide":5,"name":"host-right-3-divider","bbox":[1020,363,206,0]}
+{"kind":"textbox","id":"sh/hcrqto36","slide":5,"name":"host-right-4","text":"SIERRA BISHOP","textPreview":"SIERRA BISHOP","textChars":13,"textLines":1,"bbox":[1020,367,206,41]}
+{"kind":"shape","id":"sh/wbi9kj2l","slide":5,"name":"host-right-4-divider","bbox":[1020,412,206,0]}
+{"kind":"textbox","id":"sh/mhg7up0j","slide":5,"name":"host-right-5","text":"BRENDAN CRONIN","textPreview":"BRENDAN CRONIN","textChars":14,"textLines":1,"bbox":[1020,416,206,41]}
+{"kind":"shape","id":"sh/7ipo3u14","slide":5,"name":"host-right-5-divider","bbox":[1020,461,206,0]}
+{"kind":"textbox","id":"sh/8jypwzip","slide":5,"name":"host-right-6","text":"PASCAL HAEGELI","textPreview":"PASCAL HAEGELI","textChars":14,"textLines":1,"bbox":[1020,465,206,41]}
+{"kind":"shape","id":"sh/9k7654ja","slide":5,"name":"host-right-6-divider","bbox":[1020,510,206,0]}
+{"kind":"textbox","id":"sh/ytw7qp0n","slide":5,"name":"host-right-7","text":"CALEB MERRILL","textPreview":"CALEB MERRILL","textChars":13,"textLines":1,"bbox":[1020,514,206,41]}
+{"kind":"shape","id":"sh/zu5ozu18","slide":5,"name":"host-right-7-divider","bbox":[1020,559,206,0]}
+{"kind":"textbox","id":"sh/kvepsfid","slide":5,"name":"host-right-8","text":"BROOKE EDWARDS","textPreview":"BROOKE EDWARDS","textChars":14,"textLines":1,"bbox":[1020,563,206,41]}
+{"kind":"shape","id":"sh/lgn61kjy","slide":5,"name":"hosts-accent-rule","bbox":[40,622,1186,0]}
+{"kind":"shape","id":"sh/apcnm50b","slide":5,"name":"footer-rule-5","bbox":[56,678,1168,0]}
+{"kind":"textbox","id":"sh/bq5ova1w","slide":5,"name":"footer-site-5","text":"THEAVALANCHEHOUR.COM/SUPPORT","textPreview":"THEAVALANCHEHOUR.COM/SUPPORT","textChars":28,"textLines":1,"bbox":[56,688,360,16]}
+{"kind":"textbox","id":"sh/3i5krq5s","slide":5,"name":"footer-page-5","text":"05","textPreview":"05","textChars":2,"textLines":1,"bbox":[1170,688,54,16]}
+{"kind":"image","id":"im/ydofihgv","slide":5,"name":"","alt":"Nine-person Avalanche Hour remote host collage from Caleb’s partnership email","bbox":[40,216,700,392]}
+{"kind":"notes","id":"nt/y3gvcb","slide":5,"text":"[Sources]\n- Caleb Merrill, “Season 11 Partnership Pitch” email, August 20, 2026 (host collage and host list).\n- Anna Heuberger spelling verified at https://lawine.salzburg.at/en/organisation/staff.\n- Gabrielle Antonioli spelling verified at https://www.montana.edu/earthsciences/graduate-program/students/antonioli.html.\n- Pascal Haegeli spelling verified at https://www.sfu.ca/rem/about/people/haegeli.html.\n- Brendan Cronin follows the current Season 11 planning source, lib/season11MastermindSchedule.mjs.\n[/Sources]"}
+{"kind":"slide","id":"sl/oyk0qd","slide":6,"title":"LISTENER PROOF","textShapes":13}
+{"kind":"textbox","id":"sh/kbetk7a9","slide":6,"name":"eyebrow-listener-proof","text":"LISTENER PROOF","textPreview":"LISTENER PROOF","textChars":14,"textLines":1,"bbox":[64,44,300,24]}
+{"kind":"textbox","id":"sh/za5sr29o","slide":6,"name":"slide-title","text":"Listeners carry something useful away.","textPreview":"Listeners carry something useful away.","textChars":38,"textLines":1,"bbox":[64,76,930,62]}
+{"kind":"textbox","id":"sh/y9cbixs3","slide":6,"name":"reviews-intro","text":"The feedback is consistent: practical value, different perspectives, and a voice people want in the background when they are not in the mountains.","textPreview":"The feedback is consistent: practical value, different perspectives, and a voice people want in the background when they are not in the m...","textChars":146,"textLines":1,"bbox":[64,142,1060,54]}
+{"kind":"shape","id":"sh/x83apsry","slide":6,"name":"reviews-divider","bbox":[640,230,0,310]}
+{"kind":"textbox","id":"sh/c7u9gnad","slide":6,"name":"review-one-stars","text":"★★★★★","textPreview":"★★★★★","textChars":5,"textLines":1,"bbox":[70,238,220,32]}
+{"kind":"textbox","id":"sh/b6lsnits","slide":6,"name":"review-one-title","text":"Educational & Enjoyable","textPreview":"Educational & Enjoyable","textChars":23,"textLines":1,"bbox":[70,290,500,60]}
+{"kind":"textbox","id":"sh/a5creds7","slide":6,"name":"review-one-summary","text":"“I always walk away from an episode with at least one piece of wisdom.”","textPreview":"“I always walk away from an episode with at least one piece of wisdom.”","textChars":71,"textLines":1,"bbox":[70,374,490,86]}
+{"kind":"textbox","id":"sh/h47a1wr2","slide":6,"name":"review-one-attribution","text":"PhilSkis23  ·  Mar 30, 2026","textPreview":"PhilSkis23  ·  Mar 30, 2026","textChars":27,"textLines":1,"bbox":[70,502,480,24]}
+{"kind":"textbox","id":"sh/w3ytsrah","slide":6,"name":"review-two-stars","text":"★★★★★","textPreview":"★★★★★","textChars":5,"textLines":1,"bbox":[694,238,220,32]}
+{"kind":"textbox","id":"sh/yt032pwf","slide":6,"name":"review-two-title","text":"Tremendous content and guests","textPreview":"Tremendous content and guests","textChars":29,"textLines":1,"bbox":[694,290,500,78]}
+{"kind":"textbox","id":"sh/je9kvux0","slide":6,"name":"review-two-summary","text":"“It’s highly educational—from emotional well-being and self-care to technical know-how—and, best of all, it’s entertaining.”","textPreview":"“It’s highly educational—from emotional well-being and self-care to technical know-how—and, best of all, it’s entertaining.”","textChars":124,"textLines":1,"bbox":[694,388,500,86]}
+{"kind":"textbox","id":"sh/kfil4zel","slide":6,"name":"review-two-attribution","text":"WhistleTrout  ·  Dec 5, 2023","textPreview":"WhistleTrout  ·  Dec 5, 2023","textChars":28,"textLines":1,"bbox":[694,502,480,24]}
+{"kind":"shape","id":"sh/lgr2x4fq","slide":6,"name":"footer-rule-6","bbox":[56,678,1168,0]}
+{"kind":"textbox","id":"sh/apgjypw3","slide":6,"name":"footer-site-6","text":"THEAVALANCHEHOUR.COM/SUPPORT","textPreview":"THEAVALANCHEHOUR.COM/SUPPORT","textChars":28,"textLines":1,"bbox":[56,688,360,16]}
+{"kind":"textbox","id":"sh/bq9kraxo","slide":6,"name":"footer-page-6","text":"06","textPreview":"06","textChars":2,"textLines":1,"bbox":[1170,688,54,16]}
+{"kind":"notes","id":"nt/oyk0qd","slide":6,"text":"[Sources]\n- Caleb Merrill, “Season 11 Partnership Pitch” email, August 20, 2026, embedded listener-review images (review titles, usernames, dates, and summarized review themes).\n- The body copy uses direct review excerpts; the WhistleTrout excerpt is lightly copyedited for punctuation and grammar without changing its meaning.\n[/Sources]"}
+{"kind":"slide","id":"sl/ogid3s","slide":7,"title":"PARTNER PROOF","textShapes":11}
+{"kind":"textbox","id":"sh/103qpcr6","slide":7,"name":"eyebrow-partner-proof","text":"PARTNER PROOF","textPreview":"PARTNER PROOF","textChars":13,"textLines":1,"bbox":[64,42,300,24]}
+{"kind":"textbox","id":"sh/edc7ux8v","slide":7,"name":"slide-title","text":"Because you always need a good partner…","textPreview":"Because you always need a good partner…","textChars":39,"textLines":1,"bbox":[64,72,980,64]}
+{"kind":"textbox","id":"sh/zelon29g","slide":7,"name":"partner-proof-intro","text":"The value is not generic reach. It is a credible place inside a community that already cares about the subject.","textPreview":"The value is not generic reach. It is a credible place inside a community that already cares about the subject.","textChars":111,"textLines":1,"bbox":[64,140,980,52]}
+{"kind":"shape","id":"sh/cbups7qp","slide":7,"name":"partner-proof-divider","bbox":[640,224,0,350]}
+{"kind":"textbox","id":"sh/q9s7qx8j","slide":7,"name":"austin-quote-mark","text":"“","textPreview":"“","textChars":1,"textLines":1,"bbox":[64,284,54,54]}
+{"kind":"textbox","id":"sh/raloj294","slide":7,"name":"austin-quote","text":"Austin Powder Avalanche is proud to sponsor the Avalanche Hour Podcast, helping bring the past and future of our industry to the forefront.","textPreview":"Austin Powder Avalanche is proud to sponsor the Avalanche Hour Podcast, helping bring the past and future of our industry to the forefront.","textChars":139,"textLines":1,"bbox":[98,300,470,150]}
+{"kind":"shape","id":"sh/w7ep4rqt","slide":7,"name":"austin-quote-rule","bbox":[98,470,84,0]}
+{"kind":"textbox","id":"sh/x8nqxwre","slide":7,"name":"austin-attribution","text":"BRADEN SCHMIDT\nPRESIDENT · AUSTIN POWDER AVALANCHE","textPreview":"BRADEN SCHMIDT | PRESIDENT · AUSTIN POWDER AVALANCHE","textChars":50,"textLines":2,"bbox":[98,490,470,50]}
+{"kind":"textbox","id":"sh/onqlgzi5","slide":7,"name":"propagation-quote-mark","text":"“","textPreview":"“","textChars":1,"textLines":1,"bbox":[700,284,54,54]}
+{"kind":"textbox","id":"sh/nmhknu1k","slide":7,"name":"propagation-quote","text":"Advertising on The Avalanche Hour has been an incredible way for us to connect with the core snow and avalanche community.","textPreview":"Advertising on The Avalanche Hour has been an incredible way for us to connect with the core snow and avalanche community.","textChars":122,"textLines":1,"bbox":[734,300,450,150]}
+{"kind":"shape","id":"sh/2lo3ep0z","slide":7,"name":"propagation-quote-rule","bbox":[734,470,84,0]}
+{"kind":"textbox","id":"sh/1kf2lkje","slide":7,"name":"propagation-attribution","text":"GARRETT HARMSEN\nCO-FOUNDER · PROPAGATION LABS","textPreview":"GARRETT HARMSEN | CO-FOUNDER · PROPAGATION LABS","textChars":45,"textLines":2,"bbox":[734,490,450,50]}
+{"kind":"shape","id":"sh/0j61cfi9","slide":7,"name":"footer-rule-7","bbox":[56,678,1168,0]}
+{"kind":"textbox","id":"sh/fixkja1o","slide":7,"name":"footer-site-7","text":"THEAVALANCHEHOUR.COM/SUPPORT","textPreview":"THEAVALANCHEHOUR.COM/SUPPORT","textChars":28,"textLines":1,"bbox":[56,688,360,16]}
+{"kind":"textbox","id":"sh/exojap03","slide":7,"name":"footer-page-7","text":"07","textPreview":"07","textChars":2,"textLines":1,"bbox":[1170,688,54,16]}
+{"kind":"image","id":"im/0f6x0jqx","slide":7,"name":"","alt":"Austin Powder Avalanche sponsor logo","bbox":[64,224,260,47.1]}
+{"kind":"image","id":"im/ep8jmls7","slide":7,"name":"","alt":"Propagation Labs sponsor logo","bbox":[700,218,268,65.4]}
+{"kind":"notes","id":"nt/ogid3s","slide":7,"text":"[Sources]\n- Caleb Merrill, “Season 11 Partnership Pitch” email, August 20, 2026 (Austin Powder and Propagation Labs testimonials).\n- Current project sponsor assets, public/images/sponsors/AustinPowder.png and public/images/sponsors/prop_labs.jpg.\n- Direct testimonial excerpts reproduced from Caleb’s email asset.\n[/Sources]"}
+{"kind":"slide","id":"sl/f8eb1v","slide":8,"title":"PARTNERSHIP LEVELS","textShapes":18}
+{"kind":"textbox","id":"sh/w7a9cvml","slide":8,"name":"eyebrow-partnership-levels","text":"PARTNERSHIP LEVELS","textPreview":"PARTNERSHIP LEVELS","textChars":18,"textLines":1,"bbox":[56,40,360,24]}
+{"kind":"textbox","id":"sh/v6183ql0","slide":8,"name":"slide-title","text":"Start with one episode—or\nstay present all year.","textPreview":"Start with one episode—or | stay present all year.","textChars":48,"textLines":2,"bbox":[56,68,1100,94]}
+{"kind":"textbox","id":"sh/u5sra54f","slide":8,"name":"packages-intro","text":"Each level supports production while giving partners a clear, credible presence with the audience.","textPreview":"Each level supports production while giving partners a clear, credible presence with the audience.","textChars":98,"textLines":1,"bbox":[56,164,1040,40]}
+{"kind":"shape","id":"sh/94jq103u","slide":8,"name":"package-divider-1","bbox":[350,214,0,370]}
+{"kind":"shape","id":"sh/83a98vmp","slide":8,"name":"package-divider-2","bbox":[650,214,0,370]}
+{"kind":"shape","id":"sh/7218zql4","slide":8,"name":"package-divider-3","bbox":[950,214,0,370]}
+{"kind":"textbox","id":"sh/m18r6l4j","slide":8,"name":"package-friend-name","text":"FRIEND","textPreview":"FRIEND","textChars":6,"textLines":1,"bbox":[56,220,254,32]}
+{"kind":"textbox","id":"sh/l0zqxg3y","slide":8,"name":"package-friend-price","text":"$500\n/ EPISODE","textPreview":"$500 | / EPISODE","textChars":14,"textLines":2,"bbox":[56,260,254,68]}
+{"kind":"shape","id":"sh/kzq94bmd","slide":8,"name":"package-friend-rule","bbox":[56,338,76,0]}
+{"kind":"textbox","id":"sh/yp8nqhs7","slide":8,"name":"package-friend-detail","text":"1–2 minute mid-episode message\n\nIntro / outro acknowledgment\n\nSocial post + website logo","textPreview":"1–2 minute mid-episode message |  | Intro / outro acknowledgment |  | Social post + website logo","textChars":88,"textLines":5,"bbox":[56,358,254,232]}
+{"kind":"textbox","id":"sh/jqhoj2tc","slide":8,"name":"package-partner-name","text":"PARTNER","textPreview":"PARTNER","textChars":7,"textLines":1,"bbox":[380,220,238,32]}
+{"kind":"textbox","id":"sh/krq5s7ax","slide":8,"name":"package-partner-price","text":"$4,000\n/ SEASON","textPreview":"$4,000 | / SEASON","textChars":15,"textLines":2,"bbox":[380,260,238,68]}
+{"kind":"shape","id":"sh/lsz6lcbi","slide":8,"name":"package-partner-rule","bbox":[380,338,76,0]}
+{"kind":"textbox","id":"sh/alonmxsv","slide":8,"name":"package-partner-detail","text":"10–15 minutes per season for a representative\n\nAcknowledgment on 25+ episodes\n\nSocial post + website logo","textPreview":"10–15 minutes per season for a representative |  | Acknowledgment on 25+ episodes |  | Social post + website logo","textChars":105,"textLines":5,"bbox":[380,358,238,232]}
+{"kind":"textbox","id":"sh/bmh4f2tg","slide":8,"name":"package-legacy-name","text":"LEGACY","textPreview":"LEGACY","textChars":6,"textLines":1,"bbox":[680,220,238,32]}
+{"kind":"textbox","id":"sh/wnq5o7a1","slide":8,"name":"package-legacy-price","text":"$6,000\n/ SEASON","textPreview":"$6,000 | / SEASON","textChars":15,"textLines":2,"bbox":[680,260,238,68]}
+{"kind":"shape","id":"sh/xoz6hcbm","slide":8,"name":"package-legacy-rule","bbox":[680,338,76,0]}
+{"kind":"textbox","id":"sh/2xonixsz","slide":8,"name":"package-legacy-detail","text":"Season-long support that helps grow the podcast\n\nDesigned for deeper, ongoing alignment","textPreview":"Season-long support that helps grow the podcast |  | Designed for deeper, ongoing alignment","textChars":87,"textLines":3,"bbox":[680,358,238,232]}
+{"kind":"textbox","id":"sh/nyx4bit4","slide":8,"name":"package-slabs-n-sluffs-name","text":"SLABS ’N SLUFFS","textPreview":"SLABS ’N SLUFFS","textChars":15,"textLines":1,"bbox":[980,220,244,32]}
+{"kind":"textbox","id":"sh/rqtc3u50","slide":8,"name":"package-slabs-n-sluffs-price","text":"$5,000+\n/ SEASON","textPreview":"$5,000+ | / SEASON","textChars":16,"textLines":2,"bbox":[980,260,244,68]}
+{"kind":"shape","id":"sh/6pkbup4f","slide":8,"name":"package-slabs-n-sluffs-rule","bbox":[980,338,76,0]}
+{"kind":"textbox","id":"sh/tsbu54nq","slide":8,"name":"package-slabs-n-sluffs-detail","text":"Extended representative access\n\nGuest or topic proposals, subject to editorial approval\n\nCustom collaboration options","textPreview":"Extended representative access |  | Guest or topic proposals, subject to editorial approval |  | Custom collaboration options","textChars":117,"textLines":5,"bbox":[980,358,244,232]}
+{"kind":"textbox","id":"sh/sr2twzml","slide":8,"name":"packages-note","text":"Custom packages are available when the standard levels are close—but not quite right.","textPreview":"Custom packages are available when the standard levels are close—but not quite right.","textChars":85,"textLines":1,"bbox":[56,616,1168,28]}
+{"kind":"shape","id":"sh/futc7u5w","slide":8,"name":"footer-rule-8","bbox":[56,678,1168,0]}
+{"kind":"textbox","id":"sh/etkby94b","slide":8,"name":"footer-site-8","text":"THEAVALANCHEHOUR.COM/SUPPORT","textPreview":"THEAVALANCHEHOUR.COM/SUPPORT","textChars":28,"textLines":1,"bbox":[56,688,360,16]}
+{"kind":"textbox","id":"sh/1gbu94n2","slide":8,"name":"footer-page-8","text":"08","textPreview":"08","textChars":2,"textLines":1,"bbox":[1170,688,54,16]}
+{"kind":"notes","id":"nt/f8eb1v","slide":8,"text":"[Sources]\n- Caleb Merrill’s original Season 11 underwriting deck, package slide (package names, prices, and benefits).\n- User instruction that Caleb’s source deck—not the website—is authoritative for package information.\n- The newest email’s package screenshot reflects an older website state with the plus signs reversed; the original package slide values are retained here.\n[/Sources]"}
+{"kind":"slide","id":"sl/vufncs","slide":9,"title":"THE MONTHLY COMPANION SHOW","textShapes":6}
+{"kind":"shape","id":"sh/w721sj2l","slide":9,"name":"slabs-copy-field","bbox":[640,0,640,720]}
+{"kind":"textbox","id":"sh/x8bi1o36","slide":9,"name":"eyebrow-the-monthly-companion-show","text":"THE MONTHLY COMPANION SHOW","textPreview":"THE MONTHLY COMPANION SHOW","textChars":26,"textLines":1,"bbox":[696,70,460,24]}
+{"kind":"textbox","id":"sh/mh0zm9kj","slide":9,"name":"slide-title","text":"Monthly, irreverent, and unmistakably Avalanche Hour.","textPreview":"Monthly, irreverent, and unmistakably Avalanche Hour.","textChars":53,"textLines":1,"bbox":[696,110,500,130]}
+{"kind":"textbox","id":"sh/n290vel4","slide":9,"name":"slabs-body","text":"Hosted by Dom Baker and Sara Boilen, Slabs ’n Sluffs turns listener voicemails, episode recaps, field banter, and partner highlights into a dedicated monthly touchpoint.","textPreview":"Hosted by Dom Baker and Sara Boilen, Slabs ’n Sluffs turns listener voicemails, episode recaps, field banter, and partner highlights into...","textChars":169,"textLines":1,"bbox":[696,274,500,130]}
+{"kind":"textbox","id":"sh/o3i1oz2p","slide":9,"name":"slabs-price","text":"$5,000+ / SEASON","textPreview":"$5,000+ / SEASON","textChars":16,"textLines":1,"bbox":[696,448,470,60]}
+{"kind":"shape","id":"sh/94bix43a","slide":9,"name":"slabs-rule","bbox":[696,524,108,0]}
+{"kind":"textbox","id":"sh/ed0zip4n","slide":9,"name":"slabs-benefits","text":"Extended representative access\nGuest or topic proposals\nCustom collaboration options","textPreview":"Extended representative access | Guest or topic proposals | Custom collaboration options","textChars":84,"textLines":3,"bbox":[696,548,480,88]}
+{"kind":"textbox","id":"sh/ze90rul8","slide":9,"name":"slabs-page-number","text":"09","textPreview":"09","textChars":2,"textLines":1,"bbox":[1180,684,44,16]}
+{"kind":"image","id":"im/ip4ve18z","slide":9,"name":"","alt":"Original hand-drawn Slabs ’n Sluffs artwork with two hosts at microphones","bbox":[48,80,560,560]}
+{"kind":"notes","id":"nt/vufncs","slide":9,"text":"[Sources]\n- Caleb Merrill, “Season 11 Partnership Pitch” email, August 20, 2026 (Slabs ’n Sluffs artwork and monthly show format).\n- Caleb Merrill’s original Season 11 underwriting deck, package slide (Slabs ’n Sluffs price and benefits).\n[/Sources]"}
+{"kind":"slide","id":"sl/bzya51","slide":10,"title":"START A CONVERSATION","textShapes":7}
+{"kind":"textbox","id":"sh/lsrixs32","slide":10,"name":"eyebrow-start-a-conversation","text":"START A CONVERSATION","textPreview":"START A CONVERSATION","textChars":20,"textLines":1,"bbox":[64,422,380,24]}
+{"kind":"textbox","id":"sh/krihonmh","slide":10,"name":"slide-title","text":"Build the partnership that fits.","textPreview":"Build the partnership that fits.","textChars":32,"textLines":1,"bbox":[64,456,690,60]}
+{"kind":"textbox","id":"sh/b2pgryl0","slide":10,"name":"close-body","text":"Choose a standard level—or collaborate on a custom underwriting and advertising package around your goals.","textPreview":"Choose a standard level—or collaborate on a custom underwriting and advertising package around your goals.","textChars":106,"textLines":1,"bbox":[64,522,650,66]}
+{"kind":"textbox","id":"sh/a1gzit4f","slide":10,"name":"close-action","text":"EXPLORE SEASON 11 ADVERTISING + UNDERWRITING","textPreview":"EXPLORE SEASON 11 ADVERTISING + UNDERWRITING","textChars":44,"textLines":1,"bbox":[774,438,430,42]}
+{"kind":"textbox","id":"sh/x4ryt836","slide":10,"name":"close-contact","text":"theavalanchehour.com/support\ntheavalanchehourpodcast@gmail.com","textPreview":"theavalanchehour.com/support | theavalanchehourpodcast@gmail.com","textChars":62,"textLines":2,"bbox":[738,504,466,76]}
+{"kind":"shape","id":"sh/w3yhk3ml","slide":10,"name":"instagram-mark-frame","bbox":[1134,606,38,38]}
+{"kind":"shape","id":"sh/fyt032l4","slide":10,"name":"instagram-mark-lens","bbox":[1143.5,615.5,19,19]}
+{"kind":"shape","id":"sh/uxkzux4j","slide":10,"name":"instagram-mark-dot","bbox":[1160.98,612.46,3.8,3.8]}
+{"kind":"textbox","id":"sh/0bmlgr2t","slide":10,"name":"close-instagram","text":"@THEAVALANCHEHOURPODCAST","textPreview":"@THEAVALANCHEHOURPODCAST","textChars":24,"textLines":1,"bbox":[824,616,298,20]}
+{"kind":"textbox","id":"sh/1cv2pwje","slide":10,"name":"close-page-number","text":"10","textPreview":"10","textChars":2,"textLines":1,"bbox":[1180,684,44,16]}
+{"kind":"image","id":"im/f2pg3atg","slide":10,"name":"","alt":"Avalanche Hour field observation and snow-profile image from Caleb’s partnership email","bbox":[40,24,1200,360]}
+{"kind":"notes","id":"nt/bzya51","slide":10,"text":"[Sources]\n- Caleb Merrill, “Season 11 Partnership Pitch” email, August 20, 2026 (fieldwork closing banner and Instagram icon).\n- Current project support-page path and contact details, pages/support.js.\n[/Sources]"}

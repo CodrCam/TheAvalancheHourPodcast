@@ -1,0 +1,1848 @@
+{
+  "schema": "openai.presentation.layout/v4",
+  "unit": "px",
+  "slide": {
+    "aid": "sl/f8eb1v",
+    "id": "f8eb1v",
+    "slide": 8,
+    "layoutId": "10d80bed-2eb4-408f-8926-84b55b4d17cb",
+    "layoutName": "Title Slide",
+    "layoutType": "title",
+    "masterLayoutId": "89f75baf-1cb5-461f-adb0-d27834a45999",
+    "masterLayoutName": "Master",
+    "backgroundColor": "#F4F6F2",
+    "frame": {
+      "left": 0,
+      "top": 0,
+      "width": 1280,
+      "height": 720
+    }
+  },
+  "theme": {
+    "colorSchemeName": "ChatGPT",
+    "colors": {
+      "accent1": "#156082",
+      "accent2": "#E97132",
+      "accent3": "#196B24",
+      "accent4": "#0F9ED5",
+      "accent5": "#A02B93",
+      "accent6": "#4EA72E",
+      "bg1": "#FFFFFF",
+      "bg2": "#000000",
+      "tx1": "#1F1F1F",
+      "tx2": "#FFFFFF",
+      "dk1": "#000000",
+      "lt1": "#FFFFFF",
+      "dk2": "#0E2841",
+      "lt2": "#E8E8E8",
+      "hlink": "#467886",
+      "folHlink": "#96607D"
+    },
+    "typefaces": [
+      "Bebas Neue",
+      "Helvetica Neue"
+    ]
+  },
+  "inheritedLayers": [
+    {
+      "scope": "layout",
+      "id": "10d80bed-2eb4-408f-8926-84b55b4d17cb",
+      "name": "Title Slide",
+      "type": "title",
+      "parentLayoutId": "89f75baf-1cb5-461f-adb0-d27834a45999",
+      "elements": []
+    },
+    {
+      "scope": "master",
+      "id": "89f75baf-1cb5-461f-adb0-d27834a45999",
+      "name": "Master",
+      "type": "master",
+      "elements": []
+    }
+  ],
+  "elements": [
+    {
+      "order": 1,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/w7a9cvml",
+      "id": "1",
+      "name": "eyebrow-partnership-levels",
+      "bbox": [
+        56,
+        40,
+        360,
+        24
+      ],
+      "geometry": "rect",
+      "text": "PARTNERSHIP LEVELS",
+      "textPreview": "PARTNERSHIP LEVELS",
+      "resolvedFontSize": 16,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 16,
+        "typeface": "Helvetica Neue",
+        "color": "#B9471D",
+        "bold": true,
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "autoFit": "none",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "PARTNERSHIP LEVELS"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "PARTNERSHIP LEVELS",
+          "lineSpacingPercent": 100000,
+          "resolvedTextStyle": {
+            "fontSize": 16,
+            "typeface": "Helvetica Neue",
+            "color": "#B9471D",
+            "bold": true,
+            "alignment": "left",
+            "lineSpacing": 1
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "PARTNERSHIP LEVELS",
+              "fontSize": 16,
+              "typeface": "Helvetica Neue",
+              "color": "#B9471D",
+              "bold": true,
+              "alignment": "left",
+              "lineSpacing": 1
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 2,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/v6183ql0",
+      "id": "2",
+      "name": "slide-title",
+      "bbox": [
+        56,
+        68,
+        1100,
+        94
+      ],
+      "geometry": "rect",
+      "text": "Start with one episode—or\nstay present all year.",
+      "textPreview": "Start with one episode—or | stay present all year.",
+      "resolvedFontSize": 43,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 43,
+        "typeface": "Bebas Neue",
+        "color": "#10222D",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "autoFit": "none",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Start with one episode—or"
+          },
+          {
+            "index": 2,
+            "text": "stay present all year."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Start with one episode—or",
+          "lineSpacingPercent": 94000,
+          "resolvedTextStyle": {
+            "fontSize": 43,
+            "typeface": "Bebas Neue",
+            "color": "#10222D",
+            "alignment": "left",
+            "lineSpacing": 0.94
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Start with one episode—or",
+              "fontSize": 43,
+              "typeface": "Bebas Neue",
+              "color": "#10222D",
+              "alignment": "left",
+              "lineSpacing": 0.94
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 2,
+          "text": "stay present all year.",
+          "lineSpacingPercent": 94000,
+          "resolvedTextStyle": {
+            "fontSize": 43,
+            "typeface": "Bebas Neue",
+            "color": "#10222D",
+            "alignment": "left",
+            "lineSpacing": 0.94
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "stay present all year.",
+              "fontSize": 43,
+              "typeface": "Bebas Neue",
+              "color": "#10222D",
+              "alignment": "left",
+              "lineSpacing": 0.94
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 3,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/u5sra54f",
+      "id": "3",
+      "name": "packages-intro",
+      "bbox": [
+        56,
+        164,
+        1040,
+        40
+      ],
+      "geometry": "rect",
+      "text": "Each level supports production while giving partners a clear, credible presence with the audience.",
+      "textPreview": "Each level supports production while giving partners a clear, credible presence with the audience.",
+      "resolvedFontSize": 19,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 19,
+        "typeface": "Helvetica Neue",
+        "color": "#526A75",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "autoFit": "none",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Each level supports production while giving partners a clear, credible presence with the audience."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Each level supports production while giving partners a clear, credible presence with the audience.",
+          "lineSpacingPercent": 120000,
+          "resolvedTextStyle": {
+            "fontSize": 19,
+            "typeface": "Helvetica Neue",
+            "color": "#526A75",
+            "alignment": "left",
+            "lineSpacing": 1.2
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Each level supports production while giving partners a clear, credible presence with the audience.",
+              "fontSize": 19,
+              "typeface": "Helvetica Neue",
+              "color": "#526A75",
+              "alignment": "left",
+              "lineSpacing": 1.2
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 4,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/94jq103u",
+      "id": "4",
+      "name": "package-divider-1",
+      "bbox": [
+        350,
+        214,
+        0,
+        370
+      ],
+      "geometry": "line",
+      "lineColor": "#C4CDCF",
+      "lineWidth": 1
+    },
+    {
+      "order": 5,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/83a98vmp",
+      "id": "5",
+      "name": "package-divider-2",
+      "bbox": [
+        650,
+        214,
+        0,
+        370
+      ],
+      "geometry": "line",
+      "lineColor": "#C4CDCF",
+      "lineWidth": 1
+    },
+    {
+      "order": 6,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/7218zql4",
+      "id": "6",
+      "name": "package-divider-3",
+      "bbox": [
+        950,
+        214,
+        0,
+        370
+      ],
+      "geometry": "line",
+      "lineColor": "#C4CDCF",
+      "lineWidth": 1
+    },
+    {
+      "order": 7,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/m18r6l4j",
+      "id": "7",
+      "name": "package-friend-name",
+      "bbox": [
+        56,
+        220,
+        254,
+        32
+      ],
+      "geometry": "rect",
+      "text": "FRIEND",
+      "textPreview": "FRIEND",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 24,
+        "typeface": "Bebas Neue",
+        "color": "#B9471D",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "autoFit": "none",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "FRIEND"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "FRIEND",
+          "lineSpacingPercent": 100000,
+          "resolvedTextStyle": {
+            "fontSize": 24,
+            "typeface": "Bebas Neue",
+            "color": "#B9471D",
+            "alignment": "left",
+            "lineSpacing": 1
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "FRIEND",
+              "fontSize": 24,
+              "typeface": "Bebas Neue",
+              "color": "#B9471D",
+              "alignment": "left",
+              "lineSpacing": 1
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 8,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/l0zqxg3y",
+      "id": "8",
+      "name": "package-friend-price",
+      "bbox": [
+        56,
+        260,
+        254,
+        68
+      ],
+      "geometry": "rect",
+      "text": "$500\n/ EPISODE",
+      "textPreview": "$500 | / EPISODE",
+      "resolvedFontSize": 31,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 31,
+        "typeface": "Bebas Neue",
+        "color": "#10222D",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "autoFit": "none",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "$500"
+          },
+          {
+            "index": 2,
+            "text": "/ EPISODE"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "$500",
+          "lineSpacingPercent": 94000,
+          "resolvedTextStyle": {
+            "fontSize": 31,
+            "typeface": "Bebas Neue",
+            "color": "#10222D",
+            "alignment": "left",
+            "lineSpacing": 0.94
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "$500",
+              "fontSize": 31,
+              "typeface": "Bebas Neue",
+              "color": "#10222D",
+              "alignment": "left",
+              "lineSpacing": 0.94
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 2,
+          "text": "/ EPISODE",
+          "lineSpacingPercent": 94000,
+          "resolvedTextStyle": {
+            "fontSize": 31,
+            "typeface": "Bebas Neue",
+            "color": "#10222D",
+            "alignment": "left",
+            "lineSpacing": 0.94
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "/ EPISODE",
+              "fontSize": 31,
+              "typeface": "Bebas Neue",
+              "color": "#10222D",
+              "alignment": "left",
+              "lineSpacing": 0.94
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 9,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/kzq94bmd",
+      "id": "9",
+      "name": "package-friend-rule",
+      "bbox": [
+        56,
+        338,
+        76,
+        0
+      ],
+      "geometry": "line",
+      "lineColor": "#EF6F35",
+      "lineWidth": 4
+    },
+    {
+      "order": 10,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/yp8nqhs7",
+      "id": "10",
+      "name": "package-friend-detail",
+      "bbox": [
+        56,
+        358,
+        254,
+        232
+      ],
+      "geometry": "rect",
+      "text": "1–2 minute mid-episode message\n\nIntro / outro acknowledgment\n\nSocial post + website logo",
+      "textPreview": "1–2 minute mid-episode message |  | Intro / outro acknowledgment |  | Social post + website logo",
+      "resolvedFontSize": 18,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 18,
+        "typeface": "Helvetica Neue",
+        "color": "#10222D",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "autoFit": "none",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 6,
+        "lines": [
+          {
+            "index": 1,
+            "text": "1–2 minute mid-episode"
+          },
+          {
+            "index": 2,
+            "text": "message"
+          },
+          {
+            "index": 3,
+            "text": ""
+          },
+          {
+            "index": 4,
+            "text": "Intro / outro acknowledgment"
+          },
+          {
+            "index": 5,
+            "text": ""
+          },
+          {
+            "index": 6,
+            "text": "Social post + website logo"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "1–2 minute mid-episode message",
+          "lineSpacingPercent": 135000,
+          "resolvedTextStyle": {
+            "fontSize": 18,
+            "typeface": "Helvetica Neue",
+            "color": "#10222D",
+            "alignment": "left",
+            "lineSpacing": 1.35
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "1–2 minute mid-episode message",
+              "fontSize": 18,
+              "typeface": "Helvetica Neue",
+              "color": "#10222D",
+              "alignment": "left",
+              "lineSpacing": 1.35
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 3,
+          "text": "Intro / outro acknowledgment",
+          "lineSpacingPercent": 135000,
+          "resolvedTextStyle": {
+            "fontSize": 18,
+            "typeface": "Helvetica Neue",
+            "color": "#10222D",
+            "alignment": "left",
+            "lineSpacing": 1.35
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Intro / outro acknowledgment",
+              "fontSize": 18,
+              "typeface": "Helvetica Neue",
+              "color": "#10222D",
+              "alignment": "left",
+              "lineSpacing": 1.35
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 5,
+          "text": "Social post + website logo",
+          "lineSpacingPercent": 135000,
+          "resolvedTextStyle": {
+            "fontSize": 18,
+            "typeface": "Helvetica Neue",
+            "color": "#10222D",
+            "alignment": "left",
+            "lineSpacing": 1.35
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Social post + website logo",
+              "fontSize": 18,
+              "typeface": "Helvetica Neue",
+              "color": "#10222D",
+              "alignment": "left",
+              "lineSpacing": 1.35
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 11,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/jqhoj2tc",
+      "id": "11",
+      "name": "package-partner-name",
+      "bbox": [
+        380,
+        220,
+        238,
+        32
+      ],
+      "geometry": "rect",
+      "text": "PARTNER",
+      "textPreview": "PARTNER",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 24,
+        "typeface": "Bebas Neue",
+        "color": "#B9471D",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "autoFit": "none",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "PARTNER"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "PARTNER",
+          "lineSpacingPercent": 100000,
+          "resolvedTextStyle": {
+            "fontSize": 24,
+            "typeface": "Bebas Neue",
+            "color": "#B9471D",
+            "alignment": "left",
+            "lineSpacing": 1
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "PARTNER",
+              "fontSize": 24,
+              "typeface": "Bebas Neue",
+              "color": "#B9471D",
+              "alignment": "left",
+              "lineSpacing": 1
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 12,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/krq5s7ax",
+      "id": "12",
+      "name": "package-partner-price",
+      "bbox": [
+        380,
+        260,
+        238,
+        68
+      ],
+      "geometry": "rect",
+      "text": "$4,000\n/ SEASON",
+      "textPreview": "$4,000 | / SEASON",
+      "resolvedFontSize": 31,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 31,
+        "typeface": "Bebas Neue",
+        "color": "#10222D",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "autoFit": "none",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "$4,000"
+          },
+          {
+            "index": 2,
+            "text": "/ SEASON"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "$4,000",
+          "lineSpacingPercent": 94000,
+          "resolvedTextStyle": {
+            "fontSize": 31,
+            "typeface": "Bebas Neue",
+            "color": "#10222D",
+            "alignment": "left",
+            "lineSpacing": 0.94
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "$4,000",
+              "fontSize": 31,
+              "typeface": "Bebas Neue",
+              "color": "#10222D",
+              "alignment": "left",
+              "lineSpacing": 0.94
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 2,
+          "text": "/ SEASON",
+          "lineSpacingPercent": 94000,
+          "resolvedTextStyle": {
+            "fontSize": 31,
+            "typeface": "Bebas Neue",
+            "color": "#10222D",
+            "alignment": "left",
+            "lineSpacing": 0.94
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "/ SEASON",
+              "fontSize": 31,
+              "typeface": "Bebas Neue",
+              "color": "#10222D",
+              "alignment": "left",
+              "lineSpacing": 0.94
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 13,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/lsz6lcbi",
+      "id": "13",
+      "name": "package-partner-rule",
+      "bbox": [
+        380,
+        338,
+        76,
+        0
+      ],
+      "geometry": "line",
+      "lineColor": "#EF6F35",
+      "lineWidth": 4
+    },
+    {
+      "order": 14,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/alonmxsv",
+      "id": "14",
+      "name": "package-partner-detail",
+      "bbox": [
+        380,
+        358,
+        238,
+        232
+      ],
+      "geometry": "rect",
+      "text": "10–15 minutes per season for a representative\n\nAcknowledgment on 25+ episodes\n\nSocial post + website logo",
+      "textPreview": "10–15 minutes per season for a representative |  | Acknowledgment on 25+ episodes |  | Social post + website logo",
+      "resolvedFontSize": 18,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 18,
+        "typeface": "Helvetica Neue",
+        "color": "#10222D",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "autoFit": "none",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 7,
+        "lines": [
+          {
+            "index": 1,
+            "text": "10–15 minutes per season"
+          },
+          {
+            "index": 2,
+            "text": "for a representative"
+          },
+          {
+            "index": 3,
+            "text": ""
+          },
+          {
+            "index": 4,
+            "text": "Acknowledgment on 25+"
+          },
+          {
+            "index": 5,
+            "text": "episodes"
+          },
+          {
+            "index": 6,
+            "text": ""
+          },
+          {
+            "index": 7,
+            "text": "Social post + website logo"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "10–15 minutes per season for a representative",
+          "lineSpacingPercent": 135000,
+          "resolvedTextStyle": {
+            "fontSize": 18,
+            "typeface": "Helvetica Neue",
+            "color": "#10222D",
+            "alignment": "left",
+            "lineSpacing": 1.35
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "10–15 minutes per season for a representative",
+              "fontSize": 18,
+              "typeface": "Helvetica Neue",
+              "color": "#10222D",
+              "alignment": "left",
+              "lineSpacing": 1.35
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 3,
+          "text": "Acknowledgment on 25+ episodes",
+          "lineSpacingPercent": 135000,
+          "resolvedTextStyle": {
+            "fontSize": 18,
+            "typeface": "Helvetica Neue",
+            "color": "#10222D",
+            "alignment": "left",
+            "lineSpacing": 1.35
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Acknowledgment on 25+ episodes",
+              "fontSize": 18,
+              "typeface": "Helvetica Neue",
+              "color": "#10222D",
+              "alignment": "left",
+              "lineSpacing": 1.35
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 5,
+          "text": "Social post + website logo",
+          "lineSpacingPercent": 135000,
+          "resolvedTextStyle": {
+            "fontSize": 18,
+            "typeface": "Helvetica Neue",
+            "color": "#10222D",
+            "alignment": "left",
+            "lineSpacing": 1.35
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Social post + website logo",
+              "fontSize": 18,
+              "typeface": "Helvetica Neue",
+              "color": "#10222D",
+              "alignment": "left",
+              "lineSpacing": 1.35
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 15,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/bmh4f2tg",
+      "id": "15",
+      "name": "package-legacy-name",
+      "bbox": [
+        680,
+        220,
+        238,
+        32
+      ],
+      "geometry": "rect",
+      "text": "LEGACY",
+      "textPreview": "LEGACY",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 24,
+        "typeface": "Bebas Neue",
+        "color": "#B9471D",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "autoFit": "none",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "LEGACY"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "LEGACY",
+          "lineSpacingPercent": 100000,
+          "resolvedTextStyle": {
+            "fontSize": 24,
+            "typeface": "Bebas Neue",
+            "color": "#B9471D",
+            "alignment": "left",
+            "lineSpacing": 1
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "LEGACY",
+              "fontSize": 24,
+              "typeface": "Bebas Neue",
+              "color": "#B9471D",
+              "alignment": "left",
+              "lineSpacing": 1
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 16,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/wnq5o7a1",
+      "id": "16",
+      "name": "package-legacy-price",
+      "bbox": [
+        680,
+        260,
+        238,
+        68
+      ],
+      "geometry": "rect",
+      "text": "$6,000\n/ SEASON",
+      "textPreview": "$6,000 | / SEASON",
+      "resolvedFontSize": 31,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 31,
+        "typeface": "Bebas Neue",
+        "color": "#10222D",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "autoFit": "none",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "$6,000"
+          },
+          {
+            "index": 2,
+            "text": "/ SEASON"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "$6,000",
+          "lineSpacingPercent": 94000,
+          "resolvedTextStyle": {
+            "fontSize": 31,
+            "typeface": "Bebas Neue",
+            "color": "#10222D",
+            "alignment": "left",
+            "lineSpacing": 0.94
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "$6,000",
+              "fontSize": 31,
+              "typeface": "Bebas Neue",
+              "color": "#10222D",
+              "alignment": "left",
+              "lineSpacing": 0.94
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 2,
+          "text": "/ SEASON",
+          "lineSpacingPercent": 94000,
+          "resolvedTextStyle": {
+            "fontSize": 31,
+            "typeface": "Bebas Neue",
+            "color": "#10222D",
+            "alignment": "left",
+            "lineSpacing": 0.94
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "/ SEASON",
+              "fontSize": 31,
+              "typeface": "Bebas Neue",
+              "color": "#10222D",
+              "alignment": "left",
+              "lineSpacing": 0.94
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 17,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/xoz6hcbm",
+      "id": "17",
+      "name": "package-legacy-rule",
+      "bbox": [
+        680,
+        338,
+        76,
+        0
+      ],
+      "geometry": "line",
+      "lineColor": "#EF6F35",
+      "lineWidth": 4
+    },
+    {
+      "order": 18,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/2xonixsz",
+      "id": "18",
+      "name": "package-legacy-detail",
+      "bbox": [
+        680,
+        358,
+        238,
+        232
+      ],
+      "geometry": "rect",
+      "text": "Season-long support that helps grow the podcast\n\nDesigned for deeper, ongoing alignment",
+      "textPreview": "Season-long support that helps grow the podcast |  | Designed for deeper, ongoing alignment",
+      "resolvedFontSize": 18,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 18,
+        "typeface": "Helvetica Neue",
+        "color": "#10222D",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "autoFit": "none",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 5,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Season-long support that"
+          },
+          {
+            "index": 2,
+            "text": "helps grow the podcast"
+          },
+          {
+            "index": 3,
+            "text": ""
+          },
+          {
+            "index": 4,
+            "text": "Designed for deeper, ongoing"
+          },
+          {
+            "index": 5,
+            "text": "alignment"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Season-long support that helps grow the podcast",
+          "lineSpacingPercent": 135000,
+          "resolvedTextStyle": {
+            "fontSize": 18,
+            "typeface": "Helvetica Neue",
+            "color": "#10222D",
+            "alignment": "left",
+            "lineSpacing": 1.35
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Season-long support that helps grow the podcast",
+              "fontSize": 18,
+              "typeface": "Helvetica Neue",
+              "color": "#10222D",
+              "alignment": "left",
+              "lineSpacing": 1.35
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 3,
+          "text": "Designed for deeper, ongoing alignment",
+          "lineSpacingPercent": 135000,
+          "resolvedTextStyle": {
+            "fontSize": 18,
+            "typeface": "Helvetica Neue",
+            "color": "#10222D",
+            "alignment": "left",
+            "lineSpacing": 1.35
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Designed for deeper, ongoing alignment",
+              "fontSize": 18,
+              "typeface": "Helvetica Neue",
+              "color": "#10222D",
+              "alignment": "left",
+              "lineSpacing": 1.35
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 19,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/nyx4bit4",
+      "id": "19",
+      "name": "package-slabs-n-sluffs-name",
+      "bbox": [
+        980,
+        220,
+        244,
+        32
+      ],
+      "geometry": "rect",
+      "text": "SLABS ’N SLUFFS",
+      "textPreview": "SLABS ’N SLUFFS",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 24,
+        "typeface": "Bebas Neue",
+        "color": "#B9471D",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "autoFit": "none",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "SLABS ’N SLUFFS"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "SLABS ’N SLUFFS",
+          "lineSpacingPercent": 100000,
+          "resolvedTextStyle": {
+            "fontSize": 24,
+            "typeface": "Bebas Neue",
+            "color": "#B9471D",
+            "alignment": "left",
+            "lineSpacing": 1
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "SLABS ’N SLUFFS",
+              "fontSize": 24,
+              "typeface": "Bebas Neue",
+              "color": "#B9471D",
+              "alignment": "left",
+              "lineSpacing": 1
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 20,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/rqtc3u50",
+      "id": "20",
+      "name": "package-slabs-n-sluffs-price",
+      "bbox": [
+        980,
+        260,
+        244,
+        68
+      ],
+      "geometry": "rect",
+      "text": "$5,000+\n/ SEASON",
+      "textPreview": "$5,000+ | / SEASON",
+      "resolvedFontSize": 31,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 31,
+        "typeface": "Bebas Neue",
+        "color": "#10222D",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "autoFit": "none",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "$5,000+"
+          },
+          {
+            "index": 2,
+            "text": "/ SEASON"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "$5,000+",
+          "lineSpacingPercent": 94000,
+          "resolvedTextStyle": {
+            "fontSize": 31,
+            "typeface": "Bebas Neue",
+            "color": "#10222D",
+            "alignment": "left",
+            "lineSpacing": 0.94
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "$5,000+",
+              "fontSize": 31,
+              "typeface": "Bebas Neue",
+              "color": "#10222D",
+              "alignment": "left",
+              "lineSpacing": 0.94
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 2,
+          "text": "/ SEASON",
+          "lineSpacingPercent": 94000,
+          "resolvedTextStyle": {
+            "fontSize": 31,
+            "typeface": "Bebas Neue",
+            "color": "#10222D",
+            "alignment": "left",
+            "lineSpacing": 0.94
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "/ SEASON",
+              "fontSize": 31,
+              "typeface": "Bebas Neue",
+              "color": "#10222D",
+              "alignment": "left",
+              "lineSpacing": 0.94
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 21,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/6pkbup4f",
+      "id": "21",
+      "name": "package-slabs-n-sluffs-rule",
+      "bbox": [
+        980,
+        338,
+        76,
+        0
+      ],
+      "geometry": "line",
+      "lineColor": "#EF6F35",
+      "lineWidth": 4
+    },
+    {
+      "order": 22,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/tsbu54nq",
+      "id": "22",
+      "name": "package-slabs-n-sluffs-detail",
+      "bbox": [
+        980,
+        358,
+        244,
+        232
+      ],
+      "geometry": "rect",
+      "text": "Extended representative access\n\nGuest or topic proposals, subject to editorial approval\n\nCustom collaboration options",
+      "textPreview": "Extended representative access |  | Guest or topic proposals, subject to editorial approval |  | Custom collaboration options",
+      "resolvedFontSize": 18,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 18,
+        "typeface": "Helvetica Neue",
+        "color": "#10222D",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "autoFit": "none",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 7,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Extended representative"
+          },
+          {
+            "index": 2,
+            "text": "access"
+          },
+          {
+            "index": 3,
+            "text": ""
+          },
+          {
+            "index": 4,
+            "text": "Guest or topic proposals,"
+          },
+          {
+            "index": 5,
+            "text": "subject to editorial approval"
+          },
+          {
+            "index": 6,
+            "text": ""
+          },
+          {
+            "index": 7,
+            "text": "Custom collaboration options"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Extended representative access",
+          "lineSpacingPercent": 135000,
+          "resolvedTextStyle": {
+            "fontSize": 18,
+            "typeface": "Helvetica Neue",
+            "color": "#10222D",
+            "alignment": "left",
+            "lineSpacing": 1.35
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Extended representative access",
+              "fontSize": 18,
+              "typeface": "Helvetica Neue",
+              "color": "#10222D",
+              "alignment": "left",
+              "lineSpacing": 1.35
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 3,
+          "text": "Guest or topic proposals, subject to editorial approval",
+          "lineSpacingPercent": 135000,
+          "resolvedTextStyle": {
+            "fontSize": 18,
+            "typeface": "Helvetica Neue",
+            "color": "#10222D",
+            "alignment": "left",
+            "lineSpacing": 1.35
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Guest or topic proposals, subject to editorial approval",
+              "fontSize": 18,
+              "typeface": "Helvetica Neue",
+              "color": "#10222D",
+              "alignment": "left",
+              "lineSpacing": 1.35
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 5,
+          "text": "Custom collaboration options",
+          "lineSpacingPercent": 135000,
+          "resolvedTextStyle": {
+            "fontSize": 18,
+            "typeface": "Helvetica Neue",
+            "color": "#10222D",
+            "alignment": "left",
+            "lineSpacing": 1.35
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Custom collaboration options",
+              "fontSize": 18,
+              "typeface": "Helvetica Neue",
+              "color": "#10222D",
+              "alignment": "left",
+              "lineSpacing": 1.35
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 23,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/sr2twzml",
+      "id": "23",
+      "name": "packages-note",
+      "bbox": [
+        56,
+        616,
+        1168,
+        28
+      ],
+      "geometry": "rect",
+      "text": "Custom packages are available when the standard levels are close—but not quite right.",
+      "textPreview": "Custom packages are available when the standard levels are close—but not quite right.",
+      "resolvedFontSize": 17,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 17,
+        "typeface": "Helvetica Neue",
+        "color": "#10222D",
+        "bold": true,
+        "alignment": "center",
+        "verticalAlignment": "top",
+        "autoFit": "none",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Custom packages are available when the standard levels are close—but not quite right."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Custom packages are available when the standard levels are close—but not quite right.",
+          "lineSpacingPercent": 100000,
+          "resolvedTextStyle": {
+            "fontSize": 17,
+            "typeface": "Helvetica Neue",
+            "color": "#10222D",
+            "bold": true,
+            "alignment": "center",
+            "lineSpacing": 1
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Custom packages are available when the standard levels are close—but not quite right.",
+              "fontSize": 17,
+              "typeface": "Helvetica Neue",
+              "color": "#10222D",
+              "bold": true,
+              "alignment": "center",
+              "lineSpacing": 1
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 24,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/futc7u5w",
+      "id": "24",
+      "name": "footer-rule-8",
+      "bbox": [
+        56,
+        678,
+        1168,
+        0
+      ],
+      "geometry": "line",
+      "lineColor": "#BCC8CB",
+      "lineWidth": 1
+    },
+    {
+      "order": 25,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/etkby94b",
+      "id": "25",
+      "name": "footer-site-8",
+      "bbox": [
+        56,
+        688,
+        360,
+        16
+      ],
+      "geometry": "rect",
+      "text": "THEAVALANCHEHOUR.COM/SUPPORT",
+      "textPreview": "THEAVALANCHEHOUR.COM/SUPPORT",
+      "resolvedFontSize": 12,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 12,
+        "typeface": "Helvetica Neue",
+        "color": "#526A75",
+        "bold": true,
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "autoFit": "none",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "THEAVALANCHEHOUR.COM/SUPPORT"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "THEAVALANCHEHOUR.COM/SUPPORT",
+          "lineSpacingPercent": 100000,
+          "resolvedTextStyle": {
+            "fontSize": 12,
+            "typeface": "Helvetica Neue",
+            "color": "#526A75",
+            "bold": true,
+            "alignment": "left",
+            "lineSpacing": 1
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "THEAVALANCHEHOUR.COM/SUPPORT",
+              "fontSize": 12,
+              "typeface": "Helvetica Neue",
+              "color": "#526A75",
+              "bold": true,
+              "alignment": "left",
+              "lineSpacing": 1
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 26,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/1gbu94n2",
+      "id": "26",
+      "name": "footer-page-8",
+      "bbox": [
+        1170,
+        688,
+        54,
+        16
+      ],
+      "geometry": "rect",
+      "text": "08",
+      "textPreview": "08",
+      "resolvedFontSize": 12,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 12,
+        "typeface": "Helvetica Neue",
+        "color": "#526A75",
+        "bold": true,
+        "alignment": "right",
+        "verticalAlignment": "top",
+        "autoFit": "none",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "08"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "08",
+          "lineSpacingPercent": 100000,
+          "resolvedTextStyle": {
+            "fontSize": 12,
+            "typeface": "Helvetica Neue",
+            "color": "#526A75",
+            "bold": true,
+            "alignment": "right",
+            "lineSpacing": 1
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "08",
+              "fontSize": 12,
+              "typeface": "Helvetica Neue",
+              "color": "#526A75",
+              "bold": true,
+              "alignment": "right",
+              "lineSpacing": 1
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    }
+  ],
+  "composeRuns": []
+}

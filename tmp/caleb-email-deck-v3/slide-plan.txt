@@ -1,0 +1,20 @@
+Communication job
+By the end, prospective partners should see The Avalanche Hour as an original, trusted way to reach the avalanche community repeatedly through a 38-release, year-round plan—and choose a support level.
+
+Slide sequence
+1. Season 11: Finding the Line — sponsorship and underwriting cover.
+2. Independent conversations from the avalanche community — show purpose, hand-drawn art, and updated cadence.
+3. A decade of listening has built measurable reach — editable headline metrics and authentic mountain imagery.
+4. The audience is established—and the show is broadening who gets heard — native demographic charts rebuilt from Caleb’s source graphic.
+5. A 17-person host cadre brings field-earned perspective — authentic host collage and corrected host names.
+6. Listeners carry something useful away — editable summaries of the two listener reviews.
+7. Partners value the connection — preserved testimonial artwork plus a readable Propagation Labs excerpt.
+8. Start with one episode—or stay present through the season — four editable package lanes with corrected source pricing.
+9. Slabs ’n Sluffs offers its own monthly partnership — original artwork and current package details.
+10. Build the partnership that fits — fieldwork image, contact details, and support-page CTA.
+
+Visual system
+- 16:9, deep terrain ink, snow, ice blue, muted mountain blue, and restrained signal orange.
+- Bebas Neue for strong display titles, Amatic SC for occasional handwritten accents, and Helvetica Neue/Arial for body copy.
+- Preserve the slightly handmade asymmetry of Caleb’s email; avoid rounded card dashboards, stock imagery, gradients, and decorative AI-style geometry.
+- Use source imagery at its native aspect ratio. Rebuild only text, charts, names, metrics, and packages that would otherwise be unreadable or inaccurate.
